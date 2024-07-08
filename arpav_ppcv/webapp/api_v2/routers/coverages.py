@@ -52,6 +52,7 @@ async def list_configuration_parameters(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
+    name_contains: str | None = None,
 ):
     """List configuration parameters."""
     config_params, filtered_total = db.list_configuration_parameters(
@@ -59,6 +60,7 @@ async def list_configuration_parameters(
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
+        name_filter=name_contains,
     )
     _, unfiltered_total = db.list_configuration_parameters(
         db_session, limit=1, offset=0, include_total=True

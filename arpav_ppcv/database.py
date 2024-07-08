@@ -710,11 +710,16 @@ def list_configuration_parameters(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
+    name_filter: str | None = None,
 ) -> tuple[Sequence[coverages.ConfigurationParameter], Optional[int]]:
     """List existing configuration parameters."""
     statement = sqlmodel.select(coverages.ConfigurationParameter).order_by(
         coverages.ConfigurationParameter.name
     )
+    if name_filter is not None:
+        statement = _add_substring_filter(
+            statement, name_filter, coverages.ConfigurationParameter.name
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -853,20 +858,20 @@ def list_coverage_configurations(
         coverages.CoverageConfiguration.name
     )
     if name_filter is not None:
-        statement = statement.where(
-            coverages.CoverageConfiguration.name.ilike(name_filter)
+        statement = _add_substring_filter(
+            statement, name_filter, coverages.CoverageConfiguration.name
         )
     if english_display_name_filter is not None:
-        statement = statement.where(
-            coverages.CoverageConfiguration.display_name_english.ilike(
-                english_display_name_filter
-            )
+        statement = _add_substring_filter(
+            statement,
+            english_display_name_filter,
+            coverages.CoverageConfiguration.display_name_english,
         )
     if italian_display_name_filter is not None:
-        statement = statement.where(
-            coverages.CoverageConfiguration.display_name_italian.ilike(
-                italian_display_name_filter
-            )
+        statement = _add_substring_filter(
+            statement,
+            italian_display_name_filter,
+            coverages.CoverageConfiguration.display_name_italian,
         )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
@@ -1093,14 +1098,16 @@ def list_municipalities(
         municipalities.Municipality.name
     )
     if name_filter is not None:
-        statement = statement.where(municipalities.Municipality.name.ilike(name_filter))
+        statement = _add_substring_filter(
+            statement, name_filter, municipalities.Municipality.name
+        )
     if province_name_filter is not None:
-        statement = statement.where(
-            municipalities.Municipality.province_name.ilike(province_name_filter)
+        statement = _add_substring_filter(
+            statement, province_name_filter, municipalities.Municipality.province_name
         )
     if region_name_filter is not None:
-        statement = statement.where(
-            municipalities.Municipality.region_name.ilike(region_name_filter)
+        statement = _add_substring_filter(
+            statement, region_name_filter, municipalities.Municipality.region_name
         )
     if polygon_intersection_filter is not None:
         statement = statement.where(
@@ -1187,3 +1194,15 @@ def _get_total_num_records(session: sqlmodel.Session, statement):
     return session.exec(
         sqlmodel.select(sqlmodel.func.count()).select_from(statement)
     ).first()
+
+
+def _add_substring_filter(statement, value: str, *columns):
+    filter_ = value.replace("%", "")
+    filter_ = f"%{filter_}%"
+    if len(columns) == 1:
+        result = statement.where(columns[0].ilike(filter_))  # type: ignore[attr-defined]
+    elif len(columns) > 1:
+        result = statement.where(sqlalchemy.or_(*[c.ilike(filter_) for c in columns]))
+    else:
+        raise RuntimeError("Invalid columns argument")
+    return result
