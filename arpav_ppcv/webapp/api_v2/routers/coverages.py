@@ -172,8 +172,8 @@ def get_coverage_configuration(
     db_coverage_configuration = db.get_coverage_configuration(
         db_session, coverage_configuration_id
     )
-    allowed_coverage_identifiers = db.list_allowed_coverage_identifiers(
-        db_session, coverage_configuration_id=db_coverage_configuration.id
+    allowed_coverage_identifiers = db.generate_coverage_identifiers(
+        db_session, coverage_configuration=db_coverage_configuration
     )
     return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
         db_coverage_configuration, allowed_coverage_identifiers, request
@@ -407,8 +407,8 @@ def get_climate_barometer_time_series(
             db_session, coverage_identifier
         )
     ) is not None:
-        allowed_cov_ids = db.list_allowed_coverage_identifiers(
-            db_session, coverage_configuration_id=db_cov_conf.id
+        allowed_cov_ids = db.generate_coverage_identifiers(
+            db_session, coverage_configuration=db_cov_conf
         )
         if coverage_identifier in allowed_cov_ids:
             coverage = CoverageInternal(
@@ -480,8 +480,8 @@ def get_time_series(
             db_session, coverage_identifier
         )
     ) is not None:
-        allowed_cov_ids = db.list_allowed_coverage_identifiers(
-            db_session, coverage_configuration_id=db_cov_conf.id
+        allowed_cov_ids = db.generate_coverage_identifiers(
+            db_session, coverage_configuration=db_cov_conf
         )
         if coverage_identifier in allowed_cov_ids:
             coverage = CoverageInternal(

@@ -137,10 +137,12 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name=pv.configuration_parameter_value.configuration_parameter.name,
                     configuration_parameter_display_name_english=(
-                        pv.configuration_parameter_value.configuration_parameter.display_name_english
+                        pv.configuration_parameter_value.configuration_parameter.display_name_english or
+                        pv.configuration_parameter_value.configuration_parameter.name
                     ),
                     configuration_parameter_display_name_italian=(
-                        pv.configuration_parameter_value.configuration_parameter.display_name_italian
+                        pv.configuration_parameter_value.configuration_parameter.display_name_italian or
+                        pv.configuration_parameter_value.configuration_parameter.name
                     ),
                     configuration_parameter_value=pv.configuration_parameter_value.name,
                 )
@@ -194,10 +196,12 @@ class CoverageIdentifierReadListItem(pydantic.BaseModel):
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name=pv.configuration_parameter_value.configuration_parameter.name,
                     configuration_parameter_display_name_english=(
-                        pv.configuration_parameter_value.configuration_parameter.display_name_english
+                        pv.configuration_parameter_value.configuration_parameter.display_name_english or
+                        pv.configuration_parameter_value.configuration_parameter.name
                     ),
                     configuration_parameter_display_name_italian=(
-                        pv.configuration_parameter_value.configuration_parameter.display_name_italian
+                        pv.configuration_parameter_value.configuration_parameter.display_name_italian or
+                        pv.configuration_parameter_value.configuration_parameter.name
                     ),
                     configuration_parameter_value=pv.configuration_parameter_value.name,
                 )
