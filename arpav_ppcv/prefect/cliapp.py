@@ -14,6 +14,7 @@ def start_periodic_tasks(
     refresh_monthly_measurements: bool = False,
     refresh_seasonal_measurements: bool = False,
     refresh_yearly_measurements: bool = False,
+    refresh_station_variables: bool = False,
 ):
     """Starts a prefect worker to perform background tasks.
 
@@ -24,6 +25,8 @@ def start_periodic_tasks(
     - refreshing observation monthly measurements for known stations
     - refreshing observation seasonal measurements for known stations
     - refreshing observation yearly measurements for known stations
+    - refreshing the database views which contain available observation stations for
+      each indicator
 
     """
     settings: ArpavPpcvSettings = ctx.obj["settings"]
@@ -54,4 +57,12 @@ def start_periodic_tasks(
             cron=settings.prefect.observation_yearly_measurements_refresher_flow_cron_schedule,
         )
         to_serve.append(yearly_measurement_refresher_deployment)
+    if refresh_station_variables:
+        station_variables_deployment = (
+            observations_flows.refresh_station_variables.to_deployment(
+                name="station_variables_refresher",
+                cron=settings.prefect.station_variables_refresher_flow_cron_schedule,
+            )
+        )
+        to_serve.append(station_variables_deployment)
     prefect.serve(*to_serve)

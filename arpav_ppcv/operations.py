@@ -1128,3 +1128,53 @@ def get_forecast_variable_parameters(
                 if pv.configuration_parameter_value.name not in existing_value_names:
                     values.append(pv.configuration_parameter_value)
     return result
+
+
+def create_db_schema(session: sqlmodel.Session, schema_name: str):
+    session.execute(sqlmodel.text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
+    session.commit()
+
+
+def refresh_station_variable_database_view(
+    session: sqlmodel.Session,
+    variable: observations.Variable,
+    db_schema_name: Optional[str] = "public",
+):
+    sanitized_name = sanitize_observation_variable_name(variable.name)
+    view_name = f"{db_schema_name}.stations_{sanitized_name}"
+    index_name = f"idx_{sanitized_name}"
+    drop_view_statement = sqlmodel.text(f"DROP MATERIALIZED VIEW IF EXISTS {view_name}")
+    create_view_statement = sqlmodel.text(
+        f"CREATE MATERIALIZED VIEW {view_name} "
+        f"AS SELECT DISTINCT s.* "
+        f"FROM yearlymeasurement AS ym "
+        f"JOIN station AS s ON s.id = ym.station_id "
+        f"JOIN variable AS v ON v.id = ym.variable_id "
+        f"WHERE v.name = '{variable.name}' "
+        f"UNION "
+        f"SELECT DISTINCT s.* "
+        f"FROM seasonalmeasurement AS sm "
+        f"JOIN station AS s ON s.id = sm.station_id "
+        f"JOIN variable AS v ON v.id = sm.variable_id "
+        f"WHERE v.name = '{variable.name}' "
+        f"UNION "
+        f"SELECT DISTINCT s.* "
+        f"FROM monthlymeasurement AS mm "
+        f"JOIN station AS s ON s.id = mm.station_id "
+        f"JOIN variable AS v ON v.id = mm.variable_id "
+        f"WHERE v.name = '{variable.name}' "
+        f"WITH DATA"
+    )
+    drop_index_statement = sqlmodel.text(f"DROP INDEX IF EXISTS {index_name}")
+    create_index_statement = sqlmodel.text(
+        f"CREATE INDEX {index_name} ON {view_name} USING gist (geom)"
+    )
+    session.execute(drop_view_statement)
+    session.execute(drop_index_statement)
+    session.execute(create_view_statement)
+    session.execute(create_index_statement)
+    session.commit()
+
+
+def sanitize_observation_variable_name(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("-", "_")

@@ -38,6 +38,9 @@ class PrefectSettings(pydantic.BaseModel):
     observation_yearly_measurements_refresher_flow_cron_schedule: str = (
         "0 4 * * 1"  # run once every week, at 04:00 on monday
     )
+    station_variables_refresher_flow_cron_schedule: str = (
+        "0 5 * * 1"  # run once every week, at 05:00 on monday
+    )
 
 
 class ThreddsServerSettings(pydantic.BaseModel):
@@ -125,6 +128,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     cors_methods: list[str] = []
     allow_cors_credentials: bool = False
     coverage_download_settings: CoverageDownloadSettings = CoverageDownloadSettings()
+    variable_stations_db_schema: str = "stations"
 
     @pydantic.model_validator(mode="after")
     def ensure_test_db_dsn(self):

@@ -1,4 +1,5 @@
 import datetime as dt
+import uuid
 from typing import Sequence
 
 import httpx
@@ -10,6 +11,10 @@ import pyproj
 from arpav_ppcv import database
 from arpav_ppcv.config import get_settings
 from arpav_ppcv.observations_harvester import operations
+from arpav_ppcv.operations import (
+    create_db_schema,
+    refresh_station_variable_database_view,
+)
 from arpav_ppcv.schemas import (
     base,
     observations,
@@ -546,3 +551,44 @@ def build_yearly_measurement_id(
             str(measurement.year),
         )
     )
+
+
+@prefect.task(
+    retries=settings.prefect.num_task_retries,
+    retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+)
+def refresh_stations_for_variable(variable_id: uuid.UUID, db_schema_name: str):
+    with sqlmodel.Session(db_engine) as db_session:
+        variable = database.get_variable(db_session, variable_id)
+        return refresh_station_variable_database_view(
+            db_session, variable, db_schema_name=db_schema_name
+        )
+
+
+@prefect.flow(
+    log_prints=True,
+    retries=settings.prefect.num_flow_retries,
+    retry_delay_seconds=settings.prefect.flow_retry_delay_seconds,
+)
+def refresh_station_variables(
+    variable_name: str | None = None,
+):
+    with sqlmodel.Session(db_engine) as db_session:
+        create_db_schema(db_session, settings.variable_stations_db_schema)
+        variable_ids = [v.id for v in _get_variables(db_session, variable_name)]
+    if len(variable_ids) > 0:
+        to_wait_on = []
+        for variable_id in variable_ids:
+            print(
+                f"refreshing stations that have values for "
+                f"variable {variable_id!r}..."
+            )
+            var_future = refresh_stations_for_variable.submit(
+                variable_id,
+                settings.variable_stations_db_schema,
+            )
+            to_wait_on.append(var_future)
+        for future in to_wait_on:
+            future.result()
+    else:
+        print("There are no variables to process, skipping...")

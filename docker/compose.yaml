@@ -130,6 +130,7 @@ services:
       "--refresh-monthly-measurements",
       "--refresh-seasonal-measurements",
       "--refresh-yearly-measurements",
+      "--refresh-station-variables",
     ]
     depends_on:
       prefect-server:

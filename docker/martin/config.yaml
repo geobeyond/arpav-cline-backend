@@ -2,7 +2,13 @@ listen_addresses: '0.0.0.0:3000'
 cache_size_mb: 512
 postgres:
   connection_string: ${DATABASE_URL}
-  auto_publish: false
+
+  auto_publish:
+    from_schemas:
+      - stations
+    tables:
+      id_columns: id
+
   tables:
 
     stations:

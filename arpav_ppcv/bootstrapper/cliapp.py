@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Annotated
 
 import geojson_pydantic
 import sqlmodel
@@ -8,6 +9,7 @@ from rich import print
 from sqlalchemy.exc import IntegrityError
 
 from .. import database
+from ..prefect.flows import observations as observations_flows
 from ..schemas import (
     municipalities,
 )
@@ -140,6 +142,23 @@ def bootstrap_municipality_centroids(
         session.execute(create_view_statement)
         session.execute(create_index_statement)
         session.commit()
+    print("Done!")
+
+
+@app.command("station-variables")
+def bootstrap_station_variables(
+    variable: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "Name of the variable to process. If not provided, all "
+                "variables are processed."
+            )
+        ),
+    ] = None,
+):
+    """Refresh views with stations that have values for each variable."""
+    observations_flows.refresh_station_variables(variable_name=variable)
     print("Done!")
 
 
