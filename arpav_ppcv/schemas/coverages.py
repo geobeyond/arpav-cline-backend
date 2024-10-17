@@ -187,6 +187,7 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     palette: str
     color_scale_min: float = 0.0
     color_scale_max: float = 1.0
+    data_precision: int = 3
     observation_variable_id: Optional[uuid.UUID] = sqlmodel.Field(
         default=None, foreign_key="variable.id"
     )
@@ -444,6 +445,7 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
     palette: str
     color_scale_min: float
     color_scale_max: float
+    data_precision: int = 3
     possible_values: list["ConfigurationParameterPossibleValueCreate"]
     observation_variable_id: Optional[uuid.UUID] = None
     observation_variable_aggregation_type: Optional[
@@ -479,6 +481,7 @@ class CoverageConfigurationUpdate(sqlmodel.SQLModel):
     palette: Optional[str] = None
     color_scale_min: Optional[float] = None
     color_scale_max: Optional[float] = None
+    data_precision: Optional[int] = None
     observation_variable_id: Optional[uuid.UUID] = None
     observation_variable_aggregation_type: Optional[
         base.ObservationAggregationType

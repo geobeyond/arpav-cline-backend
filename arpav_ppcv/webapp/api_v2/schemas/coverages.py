@@ -136,6 +136,7 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
     description_english: str | None
     description_italian: str | None
     legend: CoverageImageLegend
+    data_precision: int
 
     @classmethod
     def from_db_instance(

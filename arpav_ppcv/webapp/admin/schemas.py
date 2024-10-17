@@ -58,6 +58,7 @@ class CoverageConfigurationRead(sqlmodel.SQLModel):
     palette: str
     color_scale_min: float
     color_scale_max: float
+    data_precision: int
     possible_values: list[ConfigurationParameterPossibleValueRead]
     observation_variable_aggregation_type: ObservationAggregationType
     observation_variable: Optional["ObservationVariableRead"]

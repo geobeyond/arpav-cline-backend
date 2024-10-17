@@ -358,9 +358,23 @@ class CoverageConfigurationView(ModelView):
         starlette_admin.StringField("coverage_id_pattern", disabled=True),
         starlette_admin.StringField("unit_english", required=True),
         starlette_admin.StringField("unit_italian", required=True),
-        starlette_admin.StringField("palette", required=True),
+        starlette_admin.StringField(
+            "palette",
+            required=True,
+            help_text=(
+                "Name of the palette that should used by the THREDDS WMS server. "
+                "Available values can be found at https://reading-escience-centre.gitbooks.io/ncwms-user-guide/content/04-usage.html#getmap"
+            ),
+        ),
         starlette_admin.FloatField("color_scale_min", required=True),
         starlette_admin.FloatField("color_scale_max", required=True),
+        starlette_admin.IntegerField(
+            "data_precision",
+            required=True,
+            help_text=(
+                "Number of decimal places to be used when displaying data values"
+            ),
+        ),
         fields.RelatedObservationsVariableField(
             "observation_variable",
             help_text="Related observation variable",
@@ -419,6 +433,7 @@ class CoverageConfigurationView(ModelView):
         "palette",
         "color_scale_min",
         "color_scale_max",
+        "data_precision",
         "observation_variable",
         "observation_variable_aggregation_type",
         "uncertainty_lower_bounds_coverage_configuration",
@@ -594,6 +609,7 @@ class CoverageConfigurationView(ModelView):
                 palette=data["palette"],
                 color_scale_min=data["color_scale_min"],
                 color_scale_max=data["color_scale_max"],
+                data_precision=data["data_precision"],
                 possible_values=possible_values_create,
                 observation_variable_id=(
                     related_obs_variable.id if related_obs_variable else None
@@ -678,6 +694,7 @@ class CoverageConfigurationView(ModelView):
                 palette=data.get("palette"),
                 color_scale_min=data.get("color_scale_min"),
                 color_scale_max=data.get("color_scale_max"),
+                data_precision=data.get("data_precision"),
                 possible_values=possible_values,
                 observation_variable_id=(
                     related_obs_variable.id if related_obs_variable else None
