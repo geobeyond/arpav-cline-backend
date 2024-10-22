@@ -13,6 +13,7 @@ _DESCRIPTION_ITALIAN = (
     "Numero massimo di giorni asciutti consecutivi (precipitazioni giornaliere "
     "inferiori a 1 mm)"
 )
+_DATA_PRECISION = 0
 
 
 def generate_configurations(
@@ -33,6 +34,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -95,6 +97,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -160,6 +163,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -225,6 +229,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -287,6 +292,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -352,6 +358,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -417,6 +424,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -484,6 +492,7 @@ def generate_configurations(
             palette="default/seq-BuYl-inv",
             color_scale_min=0,
             color_scale_max=100,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -553,6 +562,7 @@ def generate_configurations(
             palette="uncert-stippled/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -625,6 +635,7 @@ def generate_configurations(
             palette="default/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -700,6 +711,7 @@ def generate_configurations(
             palette="default/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -775,6 +787,7 @@ def generate_configurations(
             palette="default/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -847,6 +860,7 @@ def generate_configurations(
             palette="default/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -922,6 +936,7 @@ def generate_configurations(
             palette="default/seq-YlOrBr-inv",
             color_scale_min=-50,
             color_scale_max=0,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

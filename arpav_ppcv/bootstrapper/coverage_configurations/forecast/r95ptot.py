@@ -13,6 +13,7 @@ _DESCRIPTION_ITALIAN = (
     "Precipitazioni cumulative totali superiori al 95° percentile del periodo di "
     "riferimento"
 )
+_DATA_PRECISION = 0
 
 
 def generate_configurations(
@@ -33,6 +34,7 @@ def generate_configurations(
             palette="uncert-stippled/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -119,6 +121,7 @@ def generate_configurations(
             palette="default/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -208,6 +211,7 @@ def generate_configurations(
             palette="default/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -297,6 +301,7 @@ def generate_configurations(
             palette="default/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -383,6 +388,7 @@ def generate_configurations(
             palette="default/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -472,6 +478,7 @@ def generate_configurations(
             palette="default/div-BrBG",
             color_scale_min=-160,
             color_scale_max=160,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

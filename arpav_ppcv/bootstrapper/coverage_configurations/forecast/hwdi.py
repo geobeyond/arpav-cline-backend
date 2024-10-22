@@ -14,6 +14,7 @@ _DESCRIPTION_ITALIAN = (
     "Sequenze di 5 giorni consecutivi in cui la temperatura è maggiore di 5°C rispetto "
     "alla media di riferimento per quel giorno dell'anno"
 )
+_DATA_PRECISION = 0
 
 
 def generate_configurations(
@@ -35,6 +36,7 @@ def generate_configurations(
             palette="uncert-stippled/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -107,6 +109,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -182,6 +185,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -257,6 +261,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -329,6 +334,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -404,6 +410,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=50,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

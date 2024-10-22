@@ -50,7 +50,9 @@ class ConfigurationParameterValue(sqlmodel.SQLModel, table=True):
     configuration_parameter: "ConfigurationParameter" = sqlmodel.Relationship(
         back_populates="allowed_values",
     )
-    used_in_configurations: "ConfigurationParameterPossibleValue" = sqlmodel.Relationship(
+    used_in_configurations: list[
+        "ConfigurationParameterPossibleValue"
+    ] = sqlmodel.Relationship(
         back_populates="configuration_parameter_value",
         sa_relationship_kwargs={
             "cascade": "all, delete, delete-orphan",
