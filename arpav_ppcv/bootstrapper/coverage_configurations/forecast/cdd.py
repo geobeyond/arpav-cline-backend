@@ -13,6 +13,7 @@ _DESCRIPTION_ITALIAN = (
     "Numero massimo di giorni consecutivi asciutti (precipitazione giornaliera "
     "inferiore a 1 mm)"
 )
+_DATA_PRECISION = 0
 
 
 def generate_configurations(
@@ -34,6 +35,7 @@ def generate_configurations(
             palette="uncert-stippled/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -121,6 +123,7 @@ def generate_configurations(
             palette="default/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -211,6 +214,7 @@ def generate_configurations(
             palette="default/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -301,6 +305,7 @@ def generate_configurations(
             palette="default/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -388,6 +393,7 @@ def generate_configurations(
             palette="default/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -478,6 +484,7 @@ def generate_configurations(
             palette="default/div-BrBG-inv",
             color_scale_min=-40,
             color_scale_max=40,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

@@ -17,6 +17,7 @@ _UNIT = "gg"
 _COLOR_SCALE_MIN = 0
 _COLOR_SCALE_MAX = 50
 _RELATED_OBSERVATION_VARIABLE_NAME = "TR"
+_DATA_PRECISION = 0
 
 
 def generate_configurations(
@@ -36,6 +37,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -82,6 +84,7 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
+            data_precision=_DATA_PRECISION,
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
