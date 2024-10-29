@@ -19,6 +19,7 @@ from . import base
 
 if TYPE_CHECKING:
     from . import observations
+    from . import climaticindicators
 
 logger = logging.getLogger(__name__)
 _NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
@@ -190,6 +191,9 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     color_scale_min: float = 0.0
     color_scale_max: float = 1.0
     data_precision: int = 3
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="climaticindicator.id"
+    )
     observation_variable_id: Optional[uuid.UUID] = sqlmodel.Field(
         default=None, foreign_key="variable.id"
     )
@@ -233,6 +237,9 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
             ),
             "cascade": "all, delete, delete-orphan",
         },
+    )
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="related_coverage_configurations"
     )
 
     related_observation_variable: "observations.Variable" = sqlmodel.Relationship(
@@ -449,6 +456,7 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
     color_scale_max: float
     data_precision: int = 3
     possible_values: list["ConfigurationParameterPossibleValueCreate"]
+    climatic_indicator_id: int
     observation_variable_id: Optional[uuid.UUID] = None
     observation_variable_aggregation_type: Optional[
         base.ObservationAggregationType
@@ -485,6 +493,7 @@ class CoverageConfigurationUpdate(sqlmodel.SQLModel):
     color_scale_max: Optional[float] = None
     data_precision: Optional[int] = None
     observation_variable_id: Optional[uuid.UUID] = None
+    climatic_indicator_id: Optional[int] = None
     observation_variable_aggregation_type: Optional[
         base.ObservationAggregationType
     ] = None

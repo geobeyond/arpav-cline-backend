@@ -3,12 +3,16 @@ from typing import (
     ClassVar,
     Final,
     Optional,
+    TYPE_CHECKING,
 )
 
 import pydantic
 import sqlmodel
 
 from . import static
+
+if TYPE_CHECKING:
+    from . import coverages
 
 _name_description_text: Final[str] = (
     "Parameter name. Only alphanumeric characters and the underscore are allowed. "
@@ -34,6 +38,10 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     color_scale_max: float
     data_precision: int = sqlmodel.Field(default=0)
     sort_order: int = sqlmodel.Field(default=0)
+
+    related_coverage_configurations: list[
+        "coverages.CoverageConfiguration"
+    ] = sqlmodel.Relationship(back_populates="climatic_indicator")
 
     @pydantic.computed_field
     @property

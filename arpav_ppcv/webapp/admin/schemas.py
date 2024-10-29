@@ -82,6 +82,8 @@ class CoverageConfigurationRead(sqlmodel.SQLModel):
     color_scale_min: float
     color_scale_max: float
     data_precision: int
+    # climatic_indicator: Optional["ClimaticIndicatorRead"]
+    climatic_indicator: Optional[int]
     possible_values: list[ConfigurationParameterPossibleValueRead]
     observation_variable_aggregation_type: ObservationAggregationType
     observation_variable: Optional["ObservationVariableRead"]

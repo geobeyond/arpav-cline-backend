@@ -375,6 +375,11 @@ class CoverageConfigurationView(ModelView):
                 "Number of decimal places to be used when displaying data values"
             ),
         ),
+        fields.RelatedClimaticIndicatorField(
+            "climatic_indicator",
+            help_text="Related climatic indicator",
+            required=True,
+        ),
         fields.RelatedObservationsVariableField(
             "observation_variable",
             help_text="Related observation variable",
@@ -420,6 +425,7 @@ class CoverageConfigurationView(ModelView):
     exclude_fields_from_list = (
         "id",
         "display_name_english",
+        "thredds_url_pattern",
         "display_name_italian",
         "description_english",
         "description_italian",
@@ -488,12 +494,18 @@ class CoverageConfigurationView(ModelView):
         else:
             uncertainty_upper_bounds_coverage_configuration = None
         return read_schemas.CoverageConfigurationRead(
-            **instance.model_dump(exclude={"observation_variable_aggregation_type"}),
+            **instance.model_dump(
+                exclude={
+                    "observation_variable_aggregation_type",
+                    "climatic_indicator_id",
+                },
+            ),
             observation_variable_aggregation_type=(
                 instance.observation_variable_aggregation_type
                 or base.ObservationAggregationType.SEASONAL
             ),
             observation_variable=observation_variable,
+            climatic_indicator=instance.climatic_indicator_id,
             possible_values=[
                 read_schemas.ConfigurationParameterPossibleValueRead(
                     configuration_parameter_value_id=pv.configuration_parameter_value_id,
@@ -563,6 +575,10 @@ class CoverageConfigurationView(ModelView):
                         configuration_parameter_value_id=conf_param_value.id
                     )
                 )
+            # FIXME: looks like this needs to be called with anyio.to_thread.run_sync
+            climatic_indicator = database.get_climatic_indicator(
+                session, data["climatic_indicator"]
+            )
             related_obs_variable = database.get_variable_by_name(
                 session, data["observation_variable"]
             )
@@ -614,6 +630,9 @@ class CoverageConfigurationView(ModelView):
                 observation_variable_id=(
                     related_obs_variable.id if related_obs_variable else None
                 ),
+                climatic_indicator_id=(
+                    climatic_indicator.id if climatic_indicator else None
+                ),
                 observation_variable_aggregation_type=data.get(
                     "observation_variable_aggregation_type"
                 ),
@@ -648,6 +667,10 @@ class CoverageConfigurationView(ModelView):
                         configuration_parameter_value_id=conf_param_value.id
                     )
                 )
+            # FIXME: call this via anyio.to_thread.run_sync
+            climatic_indicator = database.get_climatic_indicator(
+                session, data["climatic_indicator"]
+            )
             related_obs_variable = database.get_variable_by_name(
                 session, data["observation_variable"]
             )
@@ -696,6 +719,9 @@ class CoverageConfigurationView(ModelView):
                 color_scale_max=data.get("color_scale_max"),
                 data_precision=data.get("data_precision"),
                 possible_values=possible_values,
+                climatic_indicator_id=(
+                    climatic_indicator.id if climatic_indicator else None
+                ),
                 observation_variable_id=(
                     related_obs_variable.id if related_obs_variable else None
                 ),
