@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 
 import geojson_pydantic
 import sqlmodel
@@ -47,6 +47,7 @@ from .coverage_configurations.historical import (
 )
 from .variables import generate_variable_configurations
 from .configurationparameters import generate_configuration_parameters
+from .climaticindicators import generate_climatic_indicators
 
 app = typer.Typer()
 
@@ -180,6 +181,33 @@ def bootstrap_observation_variables(
                 )
                 session.rollback()
     print("Done!")
+
+
+@app.command("climatic-indicators")
+def bootstrap_climatic_indicators(
+    ctx: typer.Context, name_filter: Optional[str] = None
+):
+    """Create initial climatic indicators."""
+    climatic_indicators_to_generate = generate_climatic_indicators()
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        for climatic_indicator_create in climatic_indicators_to_generate:
+            if name_filter is None or name_filter in climatic_indicator_create.name:
+                try:
+                    db_climatic_indicator = database.create_climatic_indicator(
+                        session, climatic_indicator_create
+                    )
+                    print(
+                        f"Created climatic indicator {db_climatic_indicator.identifier!r}"
+                    )
+                except IntegrityError as err:
+                    print(
+                        f"Could not create climatic indicator ("
+                        f"{climatic_indicator_create.name!r}, "
+                        f"{climatic_indicator_create.measure_type!r}, "
+                        f"{climatic_indicator_create.aggregation_period!r}"
+                        f"): {err}"
+                    )
+                    session.rollback()
 
 
 @app.command("coverage-configuration-parameters")
