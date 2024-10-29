@@ -15,12 +15,14 @@ from ... import (
     database,
 )
 from ...schemas import (
+    climaticindicators,
     coverages,
     observations,
 )
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
 from .views import (
+    climaticindicators as climaticindicators_views,
     coverages as coverage_views,
     observations as observations_views,
 )
@@ -57,6 +59,11 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             Middleware(SessionMiddleware, secret_key=settings.session_secret_key),
             Middleware(SqlModelDbSessionMiddleware, engine=engine),
         ],
+    )
+    admin.add_view(
+        climaticindicators_views.ClimaticIndicatorView(
+            climaticindicators.ClimaticIndicator
+        )
     )
     admin.add_view(
         coverage_views.ConfigurationParameterView(coverages.ConfigurationParameter)

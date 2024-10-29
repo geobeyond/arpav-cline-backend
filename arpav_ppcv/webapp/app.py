@@ -9,6 +9,7 @@ from .. import (
     database,
 )
 from .api_v2.app import create_app as create_v2_app
+from .api_v3.app import create_app as create_v3_app
 from .admin.app import create_admin
 from .routes import routes
 
@@ -37,7 +38,12 @@ def create_app_from_settings(settings: config.ArpavPpcvSettings) -> Starlette:
     app.state.v2_api_docs_url = "".join(
         (settings.public_url, settings.v2_api_mount_prefix, v2_api.docs_url)
     )
+    v3_api = create_v3_app(settings)
+    app.state.v3_api_docs_url = "".join(
+        (settings.public_url, settings.v3_api_mount_prefix, v3_api.docs_url)
+    )
     app.mount(settings.v2_api_mount_prefix, v2_api)
+    app.mount(settings.v3_api_mount_prefix, v3_api)
     return app
 
 

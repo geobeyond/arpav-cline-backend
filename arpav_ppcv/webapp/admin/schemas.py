@@ -8,6 +8,29 @@ from ...schemas.base import (
     ObservationAggregationType,
     Season,
 )
+from ...schemas.static import (
+    AggregationPeriod,
+    MeasureType,
+)
+
+
+class ClimaticIndicatorRead(sqlmodel.SQLModel):
+    identifier: str
+    id: int
+    name: str
+    measure_type: MeasureType
+    aggregation_period: AggregationPeriod
+    display_name_english: str
+    display_name_italian: str
+    description_english: str
+    description_italian: str
+    unit_english: str
+    unit_italian: str
+    palette: str
+    color_scale_min: float
+    color_scale_max: float
+    data_precision: int
+    sort_order: int
 
 
 class ConfigurationParameterValueRead(sqlmodel.SQLModel):
