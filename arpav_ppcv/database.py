@@ -17,12 +17,17 @@ import sqlmodel
 from geoalchemy2.shape import from_shape
 from sqlalchemy import func
 
-from . import config
+from . import (
+    config,
+    exceptions,
+)
 from .schemas import (
     base,
+    climaticindicators,
     coverages,
     municipalities,
     observations,
+    static,
 )
 
 logger = logging.getLogger(__name__)
@@ -1513,6 +1518,139 @@ def ensure_uncertainty_type_configuration_parameters_exist(
                 ),
             )
     return lower_bound_value, upper_bound_value
+
+
+def get_climatic_indicator(
+    session: sqlmodel.Session, climatic_indicator_id: int
+) -> Optional[climaticindicators.ClimaticIndicator]:
+    return session.get(climaticindicators.ClimaticIndicator, climatic_indicator_id)
+
+
+def get_climatic_indicator_by_identifier(
+    session: sqlmodel.Session, climatic_indicator_identifier: str
+) -> Optional[climaticindicators.ClimaticIndicator]:
+    try:
+        name, raw_measure, raw_aggregation_period = climatic_indicator_identifier.split(
+            "-"
+        )
+        measure_type = static.MeasureType(raw_measure.upper())
+        aggregation_period = static.AggregationPeriod(raw_aggregation_period.upper())
+    except ValueError:
+        raise exceptions.InvalidClimaticIndicatorIdentifierError()
+    else:
+        statement = sqlmodel.select(climaticindicators.ClimaticIndicator).where(
+            climaticindicators.ClimaticIndicator.name == name,
+            climaticindicators.ClimaticIndicator.measure_type == measure_type,
+            climaticindicators.ClimaticIndicator.aggregation_period
+            == aggregation_period,
+        )
+        return session.exec(statement).first()
+
+
+def list_climatic_indicators(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    name_filter: str | None = None,
+    measure_type_filter: str | None = None,
+    aggregation_period_filter: str | None = None,
+) -> tuple[Sequence[climaticindicators.ClimaticIndicator], Optional[int]]:
+    """List existing climatic indicators."""
+    statement = sqlmodel.select(climaticindicators.ClimaticIndicator).order_by(
+        climaticindicators.ClimaticIndicator.sort_order,
+        climaticindicators.ClimaticIndicator.name,
+    )
+    if name_filter is not None:
+        statement = _add_substring_filter(
+            statement, name_filter, climaticindicators.ClimaticIndicator.name
+        )
+    if measure_type_filter is not None:
+        statement = _add_substring_filter(
+            statement,
+            measure_type_filter,
+            climaticindicators.ClimaticIndicator.measure_type,
+        )
+    if aggregation_period_filter is not None:
+        statement = _add_substring_filter(
+            statement,
+            aggregation_period_filter,
+            climaticindicators.ClimaticIndicator.aggregation_period,
+        )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_climatic_indicators(
+    session: sqlmodel.Session,
+    name_filter: Optional[str] = None,
+    measure_type_filter: str | None = None,
+    aggregation_period_filter: str | None = None,
+) -> Sequence[climaticindicators.ClimaticIndicator]:
+    _, num_total = list_climatic_indicators(
+        session,
+        limit=1,
+        include_total=True,
+        name_filter=name_filter,
+        measure_type_filter=measure_type_filter,
+        aggregation_period_filter=aggregation_period_filter,
+    )
+    result, _ = list_climatic_indicators(
+        session,
+        limit=num_total,
+        include_total=False,
+        name_filter=name_filter,
+        measure_type_filter=measure_type_filter,
+        aggregation_period_filter=aggregation_period_filter,
+    )
+    return result
+
+
+def create_climatic_indicator(
+    session: sqlmodel.Session,
+    climatic_indicator_create: climaticindicators.ClimaticIndicatorCreate,
+) -> climaticindicators.ClimaticIndicator:
+    """Create a new climatic indicator."""
+    db_climatic_indicator = climaticindicators.ClimaticIndicator(
+        **climatic_indicator_create.model_dump(),
+    )
+    session.add(db_climatic_indicator)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_climatic_indicator)
+        return db_climatic_indicator
+
+
+def update_climatic_indicator(
+    session: sqlmodel.Session,
+    db_climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator_update: climaticindicators.ClimaticIndicatorUpdate,
+) -> climaticindicators.ClimaticIndicator:
+    """Update a climatic indicator."""
+    data_ = climatic_indicator_update.model_dump(exclude_unset=True)
+    for key, value in data_.items():
+        setattr(db_climatic_indicator, key, value)
+    session.add(db_climatic_indicator)
+    session.commit()
+    session.refresh(db_climatic_indicator)
+    return db_climatic_indicator
+
+
+def delete_climatic_indicator(
+    session: sqlmodel.Session, climatic_indicator_id: int
+) -> None:
+    """Delete a climatic indicator."""
+    db_indicator = get_climatic_indicator(session, climatic_indicator_id)
+    if db_indicator is not None:
+        session.delete(db_indicator)
+        session.commit()
+    else:
+        raise exceptions.InvalidClimaticIndicatorIdError()
 
 
 def _get_total_num_records(session: sqlmodel.Session, statement):
