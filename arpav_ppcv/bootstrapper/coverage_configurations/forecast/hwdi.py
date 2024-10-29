@@ -19,6 +19,7 @@ _DATA_PRECISION = 0
 
 def generate_configurations(
     conf_param_values,
+    climatic_indicators: dict[str, int],
 ) -> list[CoverageConfigurationCreate]:
     return [
         CoverageConfigurationCreate(
@@ -37,6 +38,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -110,6 +112,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -186,6 +189,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -262,6 +266,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -335,6 +340,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -411,6 +417,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=50,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hwdi-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

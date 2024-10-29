@@ -83,7 +83,7 @@ class ClimaticIndicatorView(ModelView):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.icon = "fa-solid fa-quote-left"
+        self.icon = "fa-solid fa-cloud-sun-rain"
 
     async def create(self, request: Request, data: dict[str, Any]) -> Any:
         try:

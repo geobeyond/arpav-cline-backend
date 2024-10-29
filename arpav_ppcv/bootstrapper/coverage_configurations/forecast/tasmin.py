@@ -15,7 +15,9 @@ _DATA_PRECISION = 1
 
 
 def generate_configurations(
-    conf_param_values, variables
+    conf_param_values,
+    variables,
+    climatic_indicators: dict[str, int],
 ) -> list[CoverageConfigurationCreate]:
     return [
         CoverageConfigurationCreate(
@@ -32,6 +34,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -113,6 +116,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -179,6 +183,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -263,6 +268,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -332,6 +338,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -416,6 +423,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -485,6 +493,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -566,6 +575,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -632,6 +642,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -716,6 +727,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -785,6 +797,7 @@ def generate_configurations(
             color_scale_min=-3,
             color_scale_max=32,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -869,6 +882,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -938,6 +952,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1020,6 +1035,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1102,6 +1118,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1169,6 +1186,7 @@ def generate_configurations(
             color_scale_min=-13,
             color_scale_max=27,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1237,6 +1255,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1324,6 +1343,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1414,6 +1434,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1504,6 +1525,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1591,6 +1613,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -1681,6 +1704,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=6,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["tasmin-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

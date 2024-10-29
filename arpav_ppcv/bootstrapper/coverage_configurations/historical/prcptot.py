@@ -21,7 +21,9 @@ _RELATED_OBSERVATION_VARIABLE_NAME = "PRCPTOT"
 
 
 def generate_configurations(
-    conf_param_values, variables
+    conf_param_values,
+    variables,
+    climatic_indicators: dict[str, int],
 ) -> list[CoverageConfigurationCreate]:
     return [
         CoverageConfigurationCreate(
@@ -37,6 +39,8 @@ def generate_configurations(
             palette="default/seq-YlOrRd",
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
+            data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["pr-absolute-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -164,6 +168,7 @@ def generate_configurations(
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -212,6 +217,7 @@ def generate_configurations(
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -275,6 +281,7 @@ def generate_configurations(
             color_scale_min=_COLOR_SCALE_MIN,
             color_scale_max=_COLOR_SCALE_MAX,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[

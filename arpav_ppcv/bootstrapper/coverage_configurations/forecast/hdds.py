@@ -23,6 +23,7 @@ _DATA_PRECISION = 0
 def generate_configurations(
     conf_param_values,
     variables,
+    climatic_indicators: dict[str, int],
 ) -> list[CoverageConfigurationCreate]:
     return [
         CoverageConfigurationCreate(
@@ -39,6 +40,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -105,6 +107,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -170,6 +173,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -235,6 +239,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -297,6 +302,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -362,6 +368,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -427,6 +434,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -494,6 +502,7 @@ def generate_configurations(
             color_scale_min=0,
             color_scale_max=7000,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -563,6 +572,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -635,6 +645,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -710,6 +721,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -785,6 +797,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -857,6 +870,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
@@ -932,6 +946,7 @@ def generate_configurations(
             color_scale_min=-2000,
             color_scale_max=0,
             data_precision=_DATA_PRECISION,
+            climatic_indicator_id=climatic_indicators["hdds-anomaly-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
