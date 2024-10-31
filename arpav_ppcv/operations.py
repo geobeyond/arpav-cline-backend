@@ -23,7 +23,7 @@ import shapely
 import shapely.io
 import sqlmodel
 from anyio.from_thread import start_blocking_portal
-from arpav_ppcv.schemas.base import CoreConfParamName
+from arpav_ppcv.schemas.base import CoreConfParamName, LEGACY_PARAM_NAMES
 from dateutil.parser import isoparse
 from geoalchemy2.shape import to_shape
 from pandas.core.indexes.datetimes import DatetimeIndex
@@ -1019,6 +1019,47 @@ def get_historical_variable_parameters(
                 existing_value_names = [cpv.name for cpv in values]
                 if pv.configuration_parameter_value.name not in existing_value_names:
                     values.append(pv.configuration_parameter_value)
+    return result
+
+
+def new_get_forecast_variable_parameters(
+    session: sqlmodel.Session,
+) -> dict[
+    str,
+    dict[
+        str,
+        dict[
+            str,
+            coverages.ConfigurationParameter
+            | list[coverages.ConfigurationParameterValue],
+        ],
+    ],
+]:
+    result = {}
+    params_to_ignore = [
+        base.CoreConfParamName.UNCERTAINTY_TYPE.value,
+        base.CoreConfParamName.ARCHIVE.value,
+    ] + list(LEGACY_PARAM_NAMES)
+    for climatic_indicator in database.collect_all_climatic_indicators(session):
+        clim_ind_entry = result.setdefault(climatic_indicator.identifier, {})
+        for cov_conf in climatic_indicator.related_coverage_configurations:
+            if cov_conf.archive == "forecast":
+                for pv in cov_conf.possible_values:
+                    param_name = (
+                        pv.configuration_parameter_value.configuration_parameter.name
+                    )
+                    if param_name not in params_to_ignore:
+                        param_entry = clim_ind_entry.setdefault(param_name, {})
+                        param_entry[
+                            "configuration_parameter"
+                        ] = pv.configuration_parameter_value.configuration_parameter
+                        values = param_entry.setdefault("values", [])
+                        existing_value_names = [cpv.name for cpv in values]
+                        if (
+                            pv.configuration_parameter_value.name
+                            not in existing_value_names
+                        ):
+                            values.append(pv.configuration_parameter_value)
     return result
 
 
