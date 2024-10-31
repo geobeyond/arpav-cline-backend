@@ -24,8 +24,8 @@ class MeasureType(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.ABSOLUTE.name: _("absolute"),
-            self.ANOMALY.name: _("anomaly"),
+            self.ABSOLUTE.name: _("absolute description"),
+            self.ANOMALY.name: _("anomaly description"),
         }[self.name] or self.name
 
     def get_sort_order(self) -> int:
@@ -51,8 +51,8 @@ class AggregationPeriod(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.ANNUAL.name: _("annual"),
-            self.THIRTY_YEAR.name: _("30yr"),
+            self.ANNUAL.name: _("annual description"),
+            self.THIRTY_YEAR.name: _("30yr description"),
         }[self.name] or self.name
 
     def get_sort_order(self) -> int:

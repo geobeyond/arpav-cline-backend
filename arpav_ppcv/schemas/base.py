@@ -27,6 +27,13 @@ class CoreConfParamName(enum.Enum):
     YEAR_PERIOD = "year_period"
 
 
+LEGACY_PARAM_NAMES = (
+    CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
+    CoreConfParamName.AGGREGATION_PERIOD.value,
+    CoreConfParamName.MEASURE.value,
+)
+
+
 class Season(enum.Enum):
     WINTER = "WINTER"
     SPRING = "SPRING"

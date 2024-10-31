@@ -13,6 +13,7 @@ from typing import (
 import pydantic
 import sqlalchemy
 import sqlmodel
+from arpav_ppcv.schemas.base import LEGACY_PARAM_NAMES
 
 from .. import exceptions
 from . import base
@@ -287,10 +288,10 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     def coverage_id_pattern(self) -> str:
         other_parts = set()
         for pv in self.possible_values:
-            other_parts.add(
-                pv.configuration_parameter_value.configuration_parameter.name
-            )
-        all_parts = ["name"] + sorted(list(other_parts))
+            param_name = pv.configuration_parameter_value.configuration_parameter.name
+            if param_name not in LEGACY_PARAM_NAMES:
+                other_parts.add(param_name)
+        all_parts = ["climatic_indicator"] + sorted(list(other_parts))
         return "-".join(f"{{{part}}}" for part in all_parts)
 
     @pydantic.computed_field()
@@ -332,7 +333,7 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
         except IndexError as err:
             logger.exception("Could not retrieve used values")
             raise exceptions.InvalidCoverageIdentifierException() from err
-        rendered = template
+        rendered = self.climatic_indicator.render_templated_value(template)
         for used_value in used_values:
             param_name = (
                 used_value.configuration_parameter_value.configuration_parameter.name
@@ -346,21 +347,16 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     def build_coverage_identifier(
         self, parameters: list[ConfigurationParameterValue]
     ) -> str:
-        id_parts = [self.name]
-        for match_obj in re.finditer(r"(\{\w+\})", self.coverage_id_pattern):
-            param_name = match_obj.group(1)[1:-1]
-            if param_name != "name":
-                for conf_param_value in parameters:
-                    conf_param = conf_param_value.configuration_parameter
-                    if conf_param.name == param_name:
-                        id_parts.append(conf_param_value.name)
-                        break
-                else:
-                    raise ValueError(
-                        f"Could not find suitable value for {param_name!r}"
-                    )
+        id_parts = [self.climatic_indicator.identifier]
+        for part in self.coverage_id_pattern.split("-")[1:]:
+            param_name = part.translate(str.maketrans("", "", "{}"))
+            for conf_param_value in parameters:
+                conf_param = conf_param_value.configuration_parameter
+                if conf_param.name == param_name:
+                    id_parts.append(conf_param_value.name)
+                    break
             else:
-                continue
+                raise ValueError(f"Could not find suitable value for {param_name!r}")
         return "-".join(id_parts)
 
     def retrieve_used_values(
@@ -385,15 +381,16 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     def retrieve_configuration_parameters(
         self, coverage_identifier: str
     ) -> dict[str, str]:
-        pattern_parts = re.finditer(
-            r"\{(\w+)\}", self.coverage_id_pattern.partition("-")[-1]
-        )
-        id_parts = coverage_identifier.split("-")[1:]
+        conf_param_name_parts = self.coverage_id_pattern.split("-")[1:]
+
+        # first three are the climatic_indicator name parts
+        conf_param_values = coverage_identifier.split("-")[3:]
+
         result = {}
-        for index, pattern_match_obj in enumerate(pattern_parts):
-            configuration_parameter_name = pattern_match_obj.group(1)
-            id_part = id_parts[index]
-            result[configuration_parameter_name] = id_part
+        for index, param_part in enumerate(conf_param_name_parts):
+            param_name = param_part.translate(str.maketrans("", "", "{}"))
+            result[param_name] = conf_param_values[index]
+
         return result
 
     def get_seasonal_aggregation_query_filter(

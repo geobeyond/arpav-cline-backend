@@ -52,6 +52,14 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
             aggregation_period=self.aggregation_period.value.lower(),
         )
 
+    def render_templated_value(self, template: str) -> str:
+        rendered = template
+        rendered = rendered.replace("{measure_type}", self.measure_type.value)
+        rendered = rendered.replace(
+            "{aggregation_period}", self.aggregation_period.value
+        )
+        return rendered
+
 
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     name: Annotated[

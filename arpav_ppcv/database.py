@@ -2,7 +2,6 @@
 
 import itertools
 import logging
-import re
 import uuid
 from typing import (
     Optional,
@@ -953,11 +952,29 @@ def list_coverage_configurations(
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> tuple[Sequence[coverages.CoverageConfiguration], Optional[int]]:
     """List existing coverage configurations."""
     statement = sqlmodel.select(coverages.CoverageConfiguration).order_by(
         coverages.CoverageConfiguration.name
     )
+    if climatic_indicator_filter is None:
+        (
+            configuration_parameter_values_filter,
+            climatic_indicator_filter,
+        ) = _replace_conf_param_filters_with_climatic_indicator(
+            session, configuration_parameter_values_filter or []
+        )
+        if climatic_indicator_filter is not None:
+            statement = statement.where(
+                coverages.CoverageConfiguration.climatic_indicator_id
+                == climatic_indicator_filter.id
+            )
+    else:
+        statement = statement.where(
+            coverages.CoverageConfiguration.climatic_indicator_id
+            == climatic_indicator_filter.id
+        )
     if name_filter is not None:
         statement = _add_substring_filter(
             statement, name_filter, coverages.CoverageConfiguration.name
@@ -1037,6 +1054,7 @@ def collect_all_coverage_configurations(
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> Sequence[coverages.CoverageConfiguration]:
     _, num_total = list_coverage_configurations(
         session,
@@ -1046,6 +1064,7 @@ def collect_all_coverage_configurations(
         english_display_name_filter=english_display_name_filter,
         italian_display_name_filter=italian_display_name_filter,
         configuration_parameter_values_filter=configuration_parameter_values_filter,
+        climatic_indicator_filter=climatic_indicator_filter,
     )
     result, _ = list_coverage_configurations(
         session,
@@ -1055,6 +1074,7 @@ def collect_all_coverage_configurations(
         english_display_name_filter=english_display_name_filter,
         italian_display_name_filter=italian_display_name_filter,
         configuration_parameter_values_filter=configuration_parameter_values_filter,
+        climatic_indicator_filter=climatic_indicator_filter,
     )
     return result
 
@@ -1231,20 +1251,18 @@ def generate_coverage_identifiers(
     ] = None,
 ) -> list[str]:
     """Build list of legal coverage identifiers for a coverage configuration."""
-
     params_to_filter = {}
     for cpv in configuration_parameter_values_filter or []:
         values = params_to_filter.setdefault(cpv.configuration_parameter.name, [])
         values.append(cpv.name)
-    pattern_parts = re.findall(
-        r"\{(\w+)\}", coverage_configuration.coverage_id_pattern.partition("-")[-1]
-    )
+    conf_param_id_parts = coverage_configuration.coverage_id_pattern.split("-")[1:]
     values_to_combine = []
-    for part in pattern_parts:
+    for part in conf_param_id_parts:
+        param_name = part.translate(str.maketrans("", "", "{}"))
         part_values = []
         for possible_value in coverage_configuration.possible_values:
             this_param_name = possible_value.configuration_parameter_value.configuration_parameter.name
-            if this_param_name == part:
+            if this_param_name == param_name:
                 # check if this param's value is to be filtered out or not
                 this_value = possible_value.configuration_parameter_value.name
                 if this_param_name in params_to_filter:
@@ -1253,14 +1271,12 @@ def generate_coverage_identifiers(
                 else:
                     part_values.append(this_value)
         values_to_combine.append(part_values)
-    # account for the possibility that there is an error in the
-    # coverage_id_pattern, where some of the parts are not actually configured
+
     allowed_identifiers = []
-    for index, container in enumerate(values_to_combine):
-        if len(container) == 0:
-            values_to_combine[index] = [pattern_parts[index]]
     for combination in itertools.product(*values_to_combine):
-        dataset_id = "-".join((coverage_configuration.name, *combination))
+        dataset_id = "-".join(
+            (coverage_configuration.climatic_indicator.identifier, *combination)
+        )
         allowed_identifiers.append(dataset_id)
     return allowed_identifiers
 
@@ -1425,8 +1441,11 @@ def list_coverage_identifiers(
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> tuple[list[coverages.CoverageInternal], Optional[int]]:
-    all_covs = collect_all_coverages(session, configuration_parameter_values_filter)
+    all_covs = collect_all_coverages(
+        session, configuration_parameter_values_filter, climatic_indicator_filter
+    )
     if name_filter is not None:
         for fragment in name_filter:
             all_covs = [c for c in all_covs if fragment.lower() in c.identifier.lower()]
@@ -1441,10 +1460,12 @@ def collect_all_coverages(
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> list[coverages.CoverageInternal]:
     cov_confs = collect_all_coverage_configurations(
         session,
         configuration_parameter_values_filter=configuration_parameter_values_filter,
+        climatic_indicator_filter=climatic_indicator_filter,
     )
     cov_ids = []
     for cov_conf in cov_confs:
@@ -1675,3 +1696,43 @@ def _slugify_internal_value(value: str) -> str:
     """Replace characters in input string in to make it usable as a name."""
     to_translate = "-\, '"
     return value.translate(value.maketrans(to_translate, "_" * len(to_translate)))
+
+
+def _replace_conf_param_filters_with_climatic_indicator(
+    session: sqlmodel.Session,
+    possible_values: list[coverages.ConfigurationParameterValue],
+) -> tuple[
+    list[coverages.ConfigurationParameterValue],
+    Optional[climaticindicators.ClimaticIndicator],
+]:
+    """Tries to extract a `ClimaticIndicator` instance from the input list.
+
+    This function is intended only for compatibility purposes.
+    """
+    raw_name = None
+    raw_measure_type = None
+    raw_aggregation_period = None
+    new_possible_values = []
+    for possible in possible_values:
+        param_name = possible.configuration_parameter.name
+        logger.debug(f"{param_name=}")
+        if param_name == base.CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value:
+            raw_name = possible.name
+        elif param_name == base.CoreConfParamName.MEASURE.value:
+            raw_measure_type = possible.name
+        elif param_name == base.CoreConfParamName.AGGREGATION_PERIOD.value:
+            raw_aggregation_period = {"30yr": "thirty_year"}.get(
+                possible.name, possible.name
+            )
+        else:
+            new_possible_values.append(possible)
+    logger.debug(f"{raw_name=} - {raw_measure_type=} - {raw_aggregation_period=}")
+    result = (possible_values, None)
+    if all((raw_name, raw_measure_type, raw_aggregation_period)):
+        climatic_indicator = get_climatic_indicator_by_identifier(
+            session, f"{raw_name}-{raw_measure_type}-{raw_aggregation_period}"
+        )
+        if climatic_indicator is not None:
+            result = (new_possible_values, climatic_indicator)
+    logger.debug(f"{result=}")
+    return result
