@@ -671,22 +671,15 @@ def get_forecast_variable_combinations(
 ):
     variable_combinations = operations.get_forecast_variable_parameters(db_session)
     var_combinations = []
-    for var_menu in variable_combinations.values():
-        variable_sort_order = (
-            var_menu[CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value].sort_order or 0
-        )
-        aggregation_period_sort_order = (
-            var_menu[CoreConfParamName.AGGREGATION_PERIOD.value].sort_order or 0
-        )
-        measure_sort_order = (
-            var_menu[CoreConfParamName.MEASURE.value].sort_order or 0,
-        )
+    for climatic_indicator, param_combinations in variable_combinations.items():
         var_combinations.append(
             (
-                variable_sort_order,
-                aggregation_period_sort_order,
-                measure_sort_order,
-                coverage_schemas.ForecastVariableCombinations.from_items(var_menu),
+                climatic_indicator.sort_order,
+                climatic_indicator.aggregation_period.get_sort_order(),
+                climatic_indicator.measure_type.get_sort_order(),
+                coverage_schemas.ForecastVariableCombinations.from_items(
+                    climatic_indicator, param_combinations
+                ),
             )
         )
     var_combinations.sort(key=itemgetter(0, 1, 2))
@@ -694,7 +687,7 @@ def get_forecast_variable_combinations(
     return coverage_schemas.ForecastVariableCombinationsList(
         combinations=var_combinations,
         translations=coverage_schemas.ForecastMenuTranslations.from_items(
-            list(variable_combinations.values())
+            variable_combinations
         ),
     )
 

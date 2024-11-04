@@ -1582,6 +1582,8 @@ def list_climatic_indicators(
     statement = sqlmodel.select(climaticindicators.ClimaticIndicator).order_by(
         climaticindicators.ClimaticIndicator.sort_order,
         climaticindicators.ClimaticIndicator.name,
+        climaticindicators.ClimaticIndicator.aggregation_period,
+        climaticindicators.ClimaticIndicator.measure_type,
     )
     if name_filter is not None:
         statement = _add_substring_filter(

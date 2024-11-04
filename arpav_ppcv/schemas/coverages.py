@@ -610,13 +610,6 @@ class VariableMenuTreeCombination(TypedDict):
     values: list[ConfigurationParameterValue]
 
 
-class ForecastVariableMenuTree(TypedDict):
-    climatological_variable: ConfigurationParameterValue
-    aggregation_period: ConfigurationParameterValue
-    measure: ConfigurationParameterValue
-    combinations: dict[str, VariableMenuTreeCombination]
-
-
 class HistoricalVariableMenuTree(TypedDict):
     historical_variable: ConfigurationParameterValue
     aggregation_period: ConfigurationParameterValue

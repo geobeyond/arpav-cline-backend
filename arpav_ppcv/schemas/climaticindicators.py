@@ -60,6 +60,9 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
         )
         return rendered
 
+    def __hash__(self):
+        return hash(self.identifier)
+
 
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     name: Annotated[
