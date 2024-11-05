@@ -15,7 +15,7 @@ _DESCRIPTION_ITALIAN = (
     "temperatura media giornaliera è minore di 20°C."
 )
 _ARCHIVE = "historical"
-_VARIABLE = "hdds"
+# _VARIABLE = "hdds"
 _UNIT = "ºC"
 _COLOR_SCALE_MIN = 2130
 _COLOR_SCALE_MAX = 7800
@@ -49,24 +49,24 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, _ARCHIVE)
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.HISTORICAL_VARIABLE.value, _VARIABLE)
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.HISTORICAL_VARIABLE.value, _VARIABLE)
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         ("climatological_standard_normal", "1991_2020")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
                     ].id
                 ),
                 ConfigurationParameterPossibleValueCreate(
@@ -97,21 +97,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, _ARCHIVE)
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.HISTORICAL_VARIABLE.value, _VARIABLE)
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.HISTORICAL_VARIABLE.value, _VARIABLE)
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.HISTORICAL_YEAR_PERIOD.value, "all_year")

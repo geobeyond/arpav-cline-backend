@@ -177,20 +177,20 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
 
     id: uuid.UUID = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = sqlmodel.Field(unique=True, index=True)
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
+    # display_name_english: Optional[str] = None
+    # display_name_italian: Optional[str] = None
+    # description_english: Optional[str] = None
+    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: str
     thredds_url_pattern: str
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
-    unit_english: str = ""
-    unit_italian: Optional[str] = None
-    palette: str
-    color_scale_min: float = 0.0
-    color_scale_max: float = 1.0
-    data_precision: int = 3
+    # unit_english: str = ""
+    # unit_italian: Optional[str] = None
+    # palette: str
+    # color_scale_min: float = 0.0
+    # color_scale_max: float = 1.0
+    # data_precision: int = 3
     climatic_indicator_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="climaticindicator.id"
     )
@@ -295,7 +295,7 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
             param_name = pv.configuration_parameter_value.configuration_parameter.name
             if param_name not in legacy_param_names:
                 other_parts.add(param_name)
-        all_parts = ["climatic_indicator"] + sorted(list(other_parts))
+        all_parts = ["name", "climatic_indicator"] + sorted(list(other_parts))
         return "-".join(f"{{{part}}}" for part in all_parts)
 
     @pydantic.computed_field()
@@ -351,8 +351,8 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     def build_coverage_identifier(
         self, parameters: list[ConfigurationParameterValue]
     ) -> str:
-        id_parts = [self.climatic_indicator.identifier]
-        for part in self.coverage_id_pattern.split("-")[1:]:
+        id_parts = [self.name, self.climatic_indicator.identifier]
+        for part in self.coverage_id_pattern.split("-")[2:]:
             param_name = part.translate(str.maketrans("", "", "{}"))
             for conf_param_value in parameters:
                 conf_param = conf_param_value.configuration_parameter
@@ -385,10 +385,15 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     def retrieve_configuration_parameters(
         self, coverage_identifier: str
     ) -> dict[str, str]:
-        conf_param_name_parts = self.coverage_id_pattern.split("-")[1:]
+        # - first in the coverage identifier is the cov_conf's `name`
+        # - second is the cov conf's climatic_indicator `identifier`
+        # - then we have all the conf params
+        conf_param_name_parts = self.coverage_id_pattern.split("-")[2:]
 
-        # first three are the climatic_indicator name parts
-        conf_param_values = coverage_identifier.split("-")[3:]
+        # - so, first is the cov_conf.name
+        # - then the next three are the climatic_indicator identifier name parts
+        # - finally, the conf param values
+        conf_param_values = coverage_identifier.split("-")[4:]
 
         result = {}
         for index, param_part in enumerate(conf_param_name_parts):
@@ -440,22 +445,22 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
             ),
         ),
     ]
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
+    # display_name_english: Optional[str] = None
+    # display_name_italian: Optional[str] = None
+    # description_english: Optional[str] = None
+    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: str
     # the point in having a wms_main_layer_name and wms_secondary_layer_name is to let
     # the frontend toggle between them
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
     thredds_url_pattern: str
-    unit_english: str
-    unit_italian: Optional[str] = None
-    palette: str
-    color_scale_min: float
-    color_scale_max: float
-    data_precision: int = 3
+    # unit_english: str
+    # unit_italian: Optional[str] = None
+    # palette: str
+    # color_scale_min: float
+    # color_scale_max: float
+    # data_precision: int = 3
     possible_values: list["ConfigurationParameterPossibleValueCreate"]
     climatic_indicator_id: int
     observation_variable_id: Optional[uuid.UUID] = None
@@ -479,20 +484,20 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
 
 class CoverageConfigurationUpdate(sqlmodel.SQLModel):
     name: Annotated[Optional[str], pydantic.Field(pattern=_NAME_PATTERN)] = None
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
+    # display_name_english: Optional[str] = None
+    # display_name_italian: Optional[str] = None
+    # description_english: Optional[str] = None
+    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: Optional[str] = None
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
     thredds_url_pattern: Optional[str] = None
-    unit_english: Optional[str] = None
-    unit_italian: Optional[str] = None
-    palette: Optional[str] = None
-    color_scale_min: Optional[float] = None
-    color_scale_max: Optional[float] = None
-    data_precision: Optional[int] = None
+    # unit_english: Optional[str] = None
+    # unit_italian: Optional[str] = None
+    # palette: Optional[str] = None
+    # color_scale_min: Optional[float] = None
+    # color_scale_max: Optional[float] = None
+    # data_precision: Optional[int] = None
     observation_variable_id: Optional[uuid.UUID] = None
     climatic_indicator_id: Optional[int] = None
     observation_variable_aggregation_type: Optional[

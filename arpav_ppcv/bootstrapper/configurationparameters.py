@@ -7,284 +7,284 @@ from ..schemas.coverages import (
 
 def generate_configuration_parameters() -> list[ConfigurationParameterCreate]:
     return [
-        ConfigurationParameterCreate(
-            name=CoreConfParamName.HISTORICAL_VARIABLE.value,
-            display_name_english="Variable",
-            display_name_italian="Variabile",
-            description_english="Historical variable",
-            description_italian="Variabile storica",
-            allowed_values=[
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tdd",
-                    display_name_english="Average temperature",
-                    display_name_italian="Temperatura media",
-                    description_english="Average of average temperatures",
-                    description_italian="Media delle temperature medie",
-                    sort_order=0,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tnd",
-                    display_name_english="Minimum temperature",
-                    display_name_italian="Temperatura minima",
-                    description_english="Average of minimum temperatures",
-                    description_italian="Media delle temperature minime",
-                    sort_order=0,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="txd",
-                    display_name_english="Maximum temperature",
-                    display_name_italian="Temperatura massima",
-                    description_english="Average of maximum temperatures",
-                    description_italian="Media delle temperature massime",
-                    sort_order=0,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tr",
-                    display_name_english="Tropical nights (TR)",
-                    display_name_italian="Notti tropicali (TR)",
-                    description_english=(
-                        "Number of days with minimum temperature larger than 20°C"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura minima maggiore di 20°C"
-                    ),
-                    sort_order=3,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="su30",
-                    display_name_english="Summer days (SU30)",
-                    display_name_italian="Giorni caldi (SU30)",
-                    description_english=(
-                        "Number of days with maximum temperature larger than 30°C"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura massima maggiore di 30°C"
-                    ),
-                    sort_order=4,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="fd",
-                    display_name_english="Frost days (FD)",
-                    display_name_italian="Giorni di gelo (FD)",
-                    description_english=(
-                        "Number of days with minimum temperature less than 0°C"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura minima minore di 0°C"
-                    ),
-                    sort_order=5,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="hdds",
-                    display_name_english="Heating degree days (HDDs)",
-                    display_name_italian="Gradi giorno di riscaldamento (HDDs)",
-                    description_english=(
-                        "Sum of 20°C minus the average daily temperature if the "
-                        "average daily temperature is less than 20°C"
-                    ),
-                    description_italian=(
-                        "Somma di 20°C meno la temperatura media giornaliera se la "
-                        "temperatura media giornaliera è minore di 20°C"
-                    ),
-                    sort_order=7,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="cdds",
-                    display_name_english="Cooling degree days (CDDs)",
-                    display_name_italian="Gradi giorno di raffrescamento (CDDs)",
-                    description_english=(
-                        "Sum of the average daily temperature minus 21°C if the "
-                        "average daily temperature is larger than 24°C"
-                    ),
-                    description_italian=(
-                        "Somma della temperatura media giornaliera meno 21°C se la "
-                        "temperatura media giornaliera è maggiore di 24°C"
-                    ),
-                    sort_order=8,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="prcptot",
-                    display_name_english="Precipitation",
-                    display_name_italian="Precipitazione",
-                    description_english="Daily precipitation near the ground",
-                    description_italian="Precipitazione giornaliera vicino al suolo",
-                    sort_order=0,
-                ),
-            ],
-        ),
-        ConfigurationParameterCreate(
-            name=CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
-            display_name_english="Variable",
-            display_name_italian="Variabile",
-            description_english="Climatological variable",
-            description_italian="Variabile climatologica",
-            allowed_values=[
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="cdd",
-                    display_name_english="Consecutive dry days (CDD)",
-                    display_name_italian="Giorni secchi (CDD)",
-                    description_english=(
-                        "Maximum number of consecutive dry days (daily precipitation "
-                        "less than 1 mm)"
-                    ),
-                    description_italian=(
-                        "Numero massimo di giorni consecutivi asciutti "
-                        "(precipitazione giornaliera inferiore a 1 mm)"
-                    ),
-                    sort_order=11,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="cdds",
-                    display_name_english="Cooling degree days (CDDs)",
-                    display_name_italian="Gradi giorno di raffrescamento (CDDs)",
-                    description_english=(
-                        "Sum of the average daily temperature minus 21°C if the "
-                        "average daily temperature is larger than 24°C"
-                    ),
-                    description_italian=(
-                        "Somma della temperatura media giornaliera meno 21°C se la "
-                        "temperatura media giornaliera è maggiore di 24°C"
-                    ),
-                    sort_order=8,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="fd",
-                    display_name_english="Frost days (FD)",
-                    display_name_italian="Giorni di gelo (FD)",
-                    description_english=(
-                        "Number of days with minimum temperature less than 0ºC"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura minima minore di 0°C"
-                    ),
-                    sort_order=5,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="hdds",
-                    display_name_english="Heating degree days (HDDs)",
-                    display_name_italian="Gradi giorno di riscaldamento (HDDs)",
-                    description_english=(
-                        "Sum of 20°C minus the average daily temperature if the "
-                        "average daily temperature is less than 20°C"
-                    ),
-                    description_italian=(
-                        "Somma di 20°C meno la temperatura media giornaliera se la "
-                        "temperatura media giornaliera è minore di 20°C"
-                    ),
-                    sort_order=7,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="hwdi",
-                    display_name_english="Heat waves duration index (HWDI)",
-                    display_name_italian="Durata delle ondate di calore (HWDI)",
-                    description_english=(
-                        "Number of days in which the maximum temperature is 5°C "
-                        "higher than the average for at least 5 consecutive days"
-                    ),
-                    description_italian=(
-                        "Numero di giorni in cui la temperatura massima è maggiore "
-                        "di 5°C rispetto alla media per  almeno 5 giorni consecutivi"
-                    ),
-                    sort_order=6,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="pr",
-                    display_name_english="Precipitation (PR)",
-                    display_name_italian="Precipitazione (PR)",
-                    description_english="Daily precipitation near the ground",
-                    description_italian="Precipitazione giornaliera vicino al suolo",
-                    sort_order=9,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="r95ptot",
-                    display_name_english="Extreme precipitation (R95pTOT)",
-                    display_name_italian="Precipitazione estrema (R95pTOT)",
-                    description_english=(
-                        "Total cumulative precipitation above the 95th percentile "
-                        "with respect to the reference period"
-                    ),
-                    description_italian=(
-                        "Precipitazione totale cumulata al di sopra del 95o "
-                        "percentile del periodo di riferimento"
-                    ),
-                    sort_order=10,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="snwdays",
-                    display_name_english="Snow days (SNWDAYS)",
-                    display_name_italian="Giorni con neve nuova (SNWDAYS)",
-                    description_english=(
-                        "Number of days with average temperature less than 2°C and "
-                        "daily precipitation larger than 1 mm"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura media minore di 2°C e "
-                        "precipitazione giornaliera maggiore di 1 mm"
-                    ),
-                    sort_order=12,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="su30",
-                    display_name_english="Summer days (SU30)",
-                    display_name_italian="Giorni caldi (SU30)",
-                    description_english=(
-                        "Number of days with maximum temperature larger than 30°C"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura massima maggiore di 30°C"
-                    ),
-                    sort_order=4,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tas",
-                    display_name_english="Mean temperature (TAS)",
-                    display_name_italian="Temperatura media (TAS)",
-                    description_english=(
-                        "Daily mean air temperature close to the ground"
-                    ),
-                    description_italian=(
-                        "Temperatura media giornaliera dell'aria vicino al suolo"
-                    ),
-                    sort_order=0,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tasmax",
-                    display_name_english="Maximum temperature (TASMAX)",
-                    display_name_italian="Temperatura massima (TASMAX)",
-                    description_english=(
-                        "Daily maximum air temperature close to the ground"
-                    ),
-                    description_italian=(
-                        "Temperatura massima giornaliera dell'aria vicino al suolo"
-                    ),
-                    sort_order=2,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tasmin",
-                    display_name_english="Minimum temperature (TASMIN)",
-                    display_name_italian="Temperatura minima (TASMIN)",
-                    description_english=(
-                        "Daily minimum air temperature close to the ground"
-                    ),
-                    description_italian=(
-                        "Temperatura minima giornaliera dell'aria vicino al suolo"
-                    ),
-                    sort_order=1,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="tr",
-                    display_name_english="Tropical nights (TR)",
-                    display_name_italian="Notti tropicali (TR)",
-                    description_english=(
-                        "Number of days with minimum temperature larger than 20°C"
-                    ),
-                    description_italian=(
-                        "Numero di giorni con temperatura minima maggiore di 20°C"
-                    ),
-                    sort_order=3,
-                ),
-            ],
-        ),
+        # ConfigurationParameterCreate(
+        #     name=CoreConfParamName.HISTORICAL_VARIABLE.value,
+        #     display_name_english="Variable",
+        #     display_name_italian="Variabile",
+        #     description_english="Historical variable",
+        #     description_italian="Variabile storica",
+        #     allowed_values=[
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tdd",
+        #             display_name_english="Average temperature",
+        #             display_name_italian="Temperatura media",
+        #             description_english="Average of average temperatures",
+        #             description_italian="Media delle temperature medie",
+        #             sort_order=0,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tnd",
+        #             display_name_english="Minimum temperature",
+        #             display_name_italian="Temperatura minima",
+        #             description_english="Average of minimum temperatures",
+        #             description_italian="Media delle temperature minime",
+        #             sort_order=0,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="txd",
+        #             display_name_english="Maximum temperature",
+        #             display_name_italian="Temperatura massima",
+        #             description_english="Average of maximum temperatures",
+        #             description_italian="Media delle temperature massime",
+        #             sort_order=0,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tr",
+        #             display_name_english="Tropical nights (TR)",
+        #             display_name_italian="Notti tropicali (TR)",
+        #             description_english=(
+        #                 "Number of days with minimum temperature larger than 20°C"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura minima maggiore di 20°C"
+        #             ),
+        #             sort_order=3,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="su30",
+        #             display_name_english="Summer days (SU30)",
+        #             display_name_italian="Giorni caldi (SU30)",
+        #             description_english=(
+        #                 "Number of days with maximum temperature larger than 30°C"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura massima maggiore di 30°C"
+        #             ),
+        #             sort_order=4,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="fd",
+        #             display_name_english="Frost days (FD)",
+        #             display_name_italian="Giorni di gelo (FD)",
+        #             description_english=(
+        #                 "Number of days with minimum temperature less than 0°C"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura minima minore di 0°C"
+        #             ),
+        #             sort_order=5,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="hdds",
+        #             display_name_english="Heating degree days (HDDs)",
+        #             display_name_italian="Gradi giorno di riscaldamento (HDDs)",
+        #             description_english=(
+        #                 "Sum of 20°C minus the average daily temperature if the "
+        #                 "average daily temperature is less than 20°C"
+        #             ),
+        #             description_italian=(
+        #                 "Somma di 20°C meno la temperatura media giornaliera se la "
+        #                 "temperatura media giornaliera è minore di 20°C"
+        #             ),
+        #             sort_order=7,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="cdds",
+        #             display_name_english="Cooling degree days (CDDs)",
+        #             display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+        #             description_english=(
+        #                 "Sum of the average daily temperature minus 21°C if the "
+        #                 "average daily temperature is larger than 24°C"
+        #             ),
+        #             description_italian=(
+        #                 "Somma della temperatura media giornaliera meno 21°C se la "
+        #                 "temperatura media giornaliera è maggiore di 24°C"
+        #             ),
+        #             sort_order=8,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="prcptot",
+        #             display_name_english="Precipitation",
+        #             display_name_italian="Precipitazione",
+        #             description_english="Daily precipitation near the ground",
+        #             description_italian="Precipitazione giornaliera vicino al suolo",
+        #             sort_order=0,
+        #         ),
+        #     ],
+        # ),
+        # ConfigurationParameterCreate(
+        #     name=CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
+        #     display_name_english="Variable",
+        #     display_name_italian="Variabile",
+        #     description_english="Climatological variable",
+        #     description_italian="Variabile climatologica",
+        #     allowed_values=[
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="cdd",
+        #             display_name_english="Consecutive dry days (CDD)",
+        #             display_name_italian="Giorni secchi (CDD)",
+        #             description_english=(
+        #                 "Maximum number of consecutive dry days (daily precipitation "
+        #                 "less than 1 mm)"
+        #             ),
+        #             description_italian=(
+        #                 "Numero massimo di giorni consecutivi asciutti "
+        #                 "(precipitazione giornaliera inferiore a 1 mm)"
+        #             ),
+        #             sort_order=11,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="cdds",
+        #             display_name_english="Cooling degree days (CDDs)",
+        #             display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+        #             description_english=(
+        #                 "Sum of the average daily temperature minus 21°C if the "
+        #                 "average daily temperature is larger than 24°C"
+        #             ),
+        #             description_italian=(
+        #                 "Somma della temperatura media giornaliera meno 21°C se la "
+        #                 "temperatura media giornaliera è maggiore di 24°C"
+        #             ),
+        #             sort_order=8,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="fd",
+        #             display_name_english="Frost days (FD)",
+        #             display_name_italian="Giorni di gelo (FD)",
+        #             description_english=(
+        #                 "Number of days with minimum temperature less than 0ºC"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura minima minore di 0°C"
+        #             ),
+        #             sort_order=5,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="hdds",
+        #             display_name_english="Heating degree days (HDDs)",
+        #             display_name_italian="Gradi giorno di riscaldamento (HDDs)",
+        #             description_english=(
+        #                 "Sum of 20°C minus the average daily temperature if the "
+        #                 "average daily temperature is less than 20°C"
+        #             ),
+        #             description_italian=(
+        #                 "Somma di 20°C meno la temperatura media giornaliera se la "
+        #                 "temperatura media giornaliera è minore di 20°C"
+        #             ),
+        #             sort_order=7,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="hwdi",
+        #             display_name_english="Heat waves duration index (HWDI)",
+        #             display_name_italian="Durata delle ondate di calore (HWDI)",
+        #             description_english=(
+        #                 "Number of days in which the maximum temperature is 5°C "
+        #                 "higher than the average for at least 5 consecutive days"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni in cui la temperatura massima è maggiore "
+        #                 "di 5°C rispetto alla media per  almeno 5 giorni consecutivi"
+        #             ),
+        #             sort_order=6,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="pr",
+        #             display_name_english="Precipitation (PR)",
+        #             display_name_italian="Precipitazione (PR)",
+        #             description_english="Daily precipitation near the ground",
+        #             description_italian="Precipitazione giornaliera vicino al suolo",
+        #             sort_order=9,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="r95ptot",
+        #             display_name_english="Extreme precipitation (R95pTOT)",
+        #             display_name_italian="Precipitazione estrema (R95pTOT)",
+        #             description_english=(
+        #                 "Total cumulative precipitation above the 95th percentile "
+        #                 "with respect to the reference period"
+        #             ),
+        #             description_italian=(
+        #                 "Precipitazione totale cumulata al di sopra del 95o "
+        #                 "percentile del periodo di riferimento"
+        #             ),
+        #             sort_order=10,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="snwdays",
+        #             display_name_english="Snow days (SNWDAYS)",
+        #             display_name_italian="Giorni con neve nuova (SNWDAYS)",
+        #             description_english=(
+        #                 "Number of days with average temperature less than 2°C and "
+        #                 "daily precipitation larger than 1 mm"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura media minore di 2°C e "
+        #                 "precipitazione giornaliera maggiore di 1 mm"
+        #             ),
+        #             sort_order=12,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="su30",
+        #             display_name_english="Summer days (SU30)",
+        #             display_name_italian="Giorni caldi (SU30)",
+        #             description_english=(
+        #                 "Number of days with maximum temperature larger than 30°C"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura massima maggiore di 30°C"
+        #             ),
+        #             sort_order=4,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tas",
+        #             display_name_english="Mean temperature (TAS)",
+        #             display_name_italian="Temperatura media (TAS)",
+        #             description_english=(
+        #                 "Daily mean air temperature close to the ground"
+        #             ),
+        #             description_italian=(
+        #                 "Temperatura media giornaliera dell'aria vicino al suolo"
+        #             ),
+        #             sort_order=0,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tasmax",
+        #             display_name_english="Maximum temperature (TASMAX)",
+        #             display_name_italian="Temperatura massima (TASMAX)",
+        #             description_english=(
+        #                 "Daily maximum air temperature close to the ground"
+        #             ),
+        #             description_italian=(
+        #                 "Temperatura massima giornaliera dell'aria vicino al suolo"
+        #             ),
+        #             sort_order=2,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tasmin",
+        #             display_name_english="Minimum temperature (TASMIN)",
+        #             display_name_italian="Temperatura minima (TASMIN)",
+        #             description_english=(
+        #                 "Daily minimum air temperature close to the ground"
+        #             ),
+        #             description_italian=(
+        #                 "Temperatura minima giornaliera dell'aria vicino al suolo"
+        #             ),
+        #             sort_order=1,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="tr",
+        #             display_name_english="Tropical nights (TR)",
+        #             display_name_italian="Notti tropicali (TR)",
+        #             description_english=(
+        #                 "Number of days with minimum temperature larger than 20°C"
+        #             ),
+        #             description_italian=(
+        #                 "Numero di giorni con temperatura minima maggiore di 20°C"
+        #             ),
+        #             sort_order=3,
+        #         ),
+        #     ],
+        # ),
         ConfigurationParameterCreate(
             name=CoreConfParamName.SCENARIO.value,
             display_name_english="Scenario",
@@ -565,35 +565,35 @@ def generate_configuration_parameters() -> list[ConfigurationParameterCreate]:
                 ),
             ],
         ),
-        ConfigurationParameterCreate(
-            name=CoreConfParamName.MEASURE.value,
-            display_name_english="Measurement type",
-            display_name_italian="Tipo di misurazione",
-            description_english="Type of climatological measurement",
-            description_italian="Tipo di misurazione climatologica",
-            allowed_values=[
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="absolute",
-                    display_name_english="Absolute value",
-                    display_name_italian="Valore assoluto",
-                    description_english="Actual value in the selected period",
-                    description_italian="Valore effettivo nel periodo selezionato",
-                    sort_order=0,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="anomaly",
-                    display_name_english="Anomaly",
-                    display_name_italian="Anomalia",
-                    description_english=(
-                        "Change in the future with respect to the reference period"
-                    ),
-                    description_italian=(
-                        "Variazione nel futuro rispetto al periodo di riferimento"
-                    ),
-                    sort_order=1,
-                ),
-            ],
-        ),
+        # ConfigurationParameterCreate(
+        #     name=CoreConfParamName.MEASURE.value,
+        #     display_name_english="Measurement type",
+        #     display_name_italian="Tipo di misurazione",
+        #     description_english="Type of climatological measurement",
+        #     description_italian="Tipo di misurazione climatologica",
+        #     allowed_values=[
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="absolute",
+        #             display_name_english="Absolute value",
+        #             display_name_italian="Valore assoluto",
+        #             description_english="Actual value in the selected period",
+        #             description_italian="Valore effettivo nel periodo selezionato",
+        #             sort_order=0,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="anomaly",
+        #             display_name_english="Anomaly",
+        #             display_name_italian="Anomalia",
+        #             description_english=(
+        #                 "Change in the future with respect to the reference period"
+        #             ),
+        #             description_italian=(
+        #                 "Variazione nel futuro rispetto al periodo di riferimento"
+        #             ),
+        #             sort_order=1,
+        #         ),
+        #     ],
+        # ),
         ConfigurationParameterCreate(
             name=CoreConfParamName.CLIMATOLOGICAL_MODEL.value,
             display_name_english="Forecast model",
@@ -656,31 +656,31 @@ def generate_configuration_parameters() -> list[ConfigurationParameterCreate]:
                 ),
             ],
         ),
-        ConfigurationParameterCreate(
-            name=CoreConfParamName.AGGREGATION_PERIOD.value,
-            display_name_english="Temporal aggregation period",
-            display_name_italian="Periodo di aggregazione temporale",
-            description_english="Aggregation period for climatological datasets",
-            description_italian="Periodo di aggregazione per i set di dati climatologici",
-            allowed_values=[
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="30yr",
-                    display_name_english="30-year",
-                    display_name_italian="Trentennale",
-                    description_english="Average over the selected 30-year period",
-                    description_italian="Media sul trentennio selezionato",
-                    sort_order=1,
-                ),
-                ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-                    internal_value="annual",
-                    display_name_english="Annual",
-                    display_name_italian="Annuale",
-                    description_english="Average over the selected year",
-                    description_italian="Media sull'anno selezionato",
-                    sort_order=0,
-                ),
-            ],
-        ),
+        # ConfigurationParameterCreate(
+        #     name=CoreConfParamName.AGGREGATION_PERIOD.value,
+        #     display_name_english="Temporal aggregation period",
+        #     display_name_italian="Periodo di aggregazione temporale",
+        #     description_english="Aggregation period for climatological datasets",
+        #     description_italian="Periodo di aggregazione per i set di dati climatologici",
+        #     allowed_values=[
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="30yr",
+        #             display_name_english="30-year",
+        #             display_name_italian="Trentennale",
+        #             description_english="Average over the selected 30-year period",
+        #             description_italian="Media sul trentennio selezionato",
+        #             sort_order=1,
+        #         ),
+        #         ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
+        #             internal_value="annual",
+        #             display_name_english="Annual",
+        #             display_name_italian="Annuale",
+        #             description_english="Average over the selected year",
+        #             description_italian="Media sull'anno selezionato",
+        #             sort_order=0,
+        #         ),
+        #     ],
+        # ),
         ConfigurationParameterCreate(
             name=CoreConfParamName.UNCERTAINTY_TYPE.value,
             display_name_english="Uncertainty type",

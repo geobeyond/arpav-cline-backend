@@ -47,21 +47,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "model_ensemble")
@@ -114,21 +114,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -180,21 +180,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -246,21 +246,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "ec_earth_rca4")
@@ -309,21 +309,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -375,21 +375,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -441,21 +441,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "model_ensemble")
@@ -509,21 +509,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "absolute")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "annual")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "absolute")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "model_ensemble")
@@ -579,21 +579,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "model_ensemble")
@@ -652,21 +652,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -728,21 +728,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -804,21 +804,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (CoreConfParamName.CLIMATOLOGICAL_MODEL.value, "ec_earth_rca4")
@@ -877,21 +877,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (
@@ -953,21 +953,21 @@ def generate_configurations(
                         (CoreConfParamName.ARCHIVE.value, "forecast")
                     ].id
                 ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
-                    ].id
-                ),
-                ConfigurationParameterPossibleValueCreate(
-                    configuration_parameter_value_id=conf_param_values[
-                        (CoreConfParamName.MEASURE.value, "anomaly")
-                    ].id
-                ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value, "hdds")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.AGGREGATION_PERIOD.value, "30yr")
+                #     ].id
+                # ),
+                # ConfigurationParameterPossibleValueCreate(
+                #     configuration_parameter_value_id=conf_param_values[
+                #         (CoreConfParamName.MEASURE.value, "anomaly")
+                #     ].id
+                # ),
                 ConfigurationParameterPossibleValueCreate(
                     configuration_parameter_value_id=conf_param_values[
                         (

@@ -391,12 +391,10 @@ class TimeSeries(pydantic.BaseModel):
                 parameter_values={
                     "series_name": {
                         LOCALE_EN.language: (
-                            coverage.configuration.display_name_english
-                            or coverage.configuration.name
+                            coverage.configuration.climatic_indicator.display_name_english
                         ),
                         LOCALE_IT.language: (
-                            coverage.configuration.display_name_italian
-                            or coverage.configuration.name
+                            coverage.configuration.climatic_indicator.display_name_italian
                         ),
                     },
                     "processing_method": {
@@ -413,12 +411,10 @@ class TimeSeries(pydantic.BaseModel):
                     },
                     "coverage_configuration": {
                         LOCALE_EN.language: (
-                            coverage.configuration.display_name_english
-                            or coverage.configuration.name
+                            coverage.configuration.climatic_indicator.display_name_english
                         ),
                         LOCALE_IT.language: (
-                            coverage.configuration.display_name_italian
-                            or coverage.configuration.name
+                            coverage.configuration.climatic_indicator.display_name_italian
                         ),
                     },
                     **param_values_translations,

@@ -188,12 +188,12 @@ def get_coverage_configuration(
         coverage_configuration=db_coverage_configuration
     )
     palette_colors = palette.parse_palette(
-        db_coverage_configuration.palette, settings.palettes_dir
+        db_coverage_configuration.climatic_indicator.palette, settings.palettes_dir
     )
     applied_colors = []
     if palette_colors is not None:
-        minimum = db_coverage_configuration.color_scale_min
-        maximum = db_coverage_configuration.color_scale_max
+        minimum = db_coverage_configuration.climatic_indicator.color_scale_min
+        maximum = db_coverage_configuration.climatic_indicator.color_scale_max
         if abs(maximum - minimum) > 0.001:
             applied_colors = palette.apply_palette(
                 palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
@@ -205,7 +205,10 @@ def get_coverage_configuration(
                 f"colorscale min and max values"
             )
     else:
-        logger.warning(f"Unable to parse palette {db_coverage_configuration.palette!r}")
+        logger.warning(
+            f"Unable to parse palette "
+            f"{db_coverage_configuration.climatic_indicator.palette!r}"
+        )
     return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
         db_coverage_configuration, allowed_coverage_identifiers, applied_colors, request
     )
@@ -321,10 +324,10 @@ async def wms_endpoint(
         if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
             query_params = thredds_utils.tweak_wms_get_map_request(
                 query_params,
-                ncwms_palette=cov.configuration.palette,
+                ncwms_palette=cov.configuration.climatic_indicator.palette,
                 ncwms_color_scale_range=(
-                    cov.configuration.color_scale_min,
-                    cov.configuration.color_scale_max,
+                    cov.configuration.climatic_indicator.color_scale_min,
+                    cov.configuration.climatic_indicator.color_scale_max,
                 ),
                 uncertainty_visualization_scale_range=(
                     settings.thredds_server.uncertainty_visualization_scale_range

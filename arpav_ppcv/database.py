@@ -947,8 +947,6 @@ def list_coverage_configurations(
     offset: int = 0,
     include_total: bool = False,
     name_filter: Optional[str] = None,
-    english_display_name_filter: Optional[str] = None,
-    italian_display_name_filter: Optional[str] = None,
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
@@ -978,18 +976,6 @@ def list_coverage_configurations(
     if name_filter is not None:
         statement = _add_substring_filter(
             statement, name_filter, coverages.CoverageConfiguration.name
-        )
-    if english_display_name_filter is not None:
-        statement = _add_substring_filter(
-            statement,
-            english_display_name_filter,
-            coverages.CoverageConfiguration.display_name_english,
-        )
-    if italian_display_name_filter is not None:
-        statement = _add_substring_filter(
-            statement,
-            italian_display_name_filter,
-            coverages.CoverageConfiguration.display_name_italian,
         )
     if len(conf_params := configuration_parameter_values_filter or []) > 0:
         possible_values_cte = (
@@ -1086,22 +1072,22 @@ def create_coverage_configuration(
     to_refresh = []
     db_coverage_configuration = coverages.CoverageConfiguration(
         name=coverage_configuration_create.name,
-        display_name_english=coverage_configuration_create.display_name_english,
-        display_name_italian=coverage_configuration_create.display_name_italian,
-        description_english=coverage_configuration_create.description_english,
-        description_italian=coverage_configuration_create.description_italian,
+        # display_name_english=coverage_configuration_create.display_name_english,
+        # display_name_italian=coverage_configuration_create.display_name_italian,
+        # description_english=coverage_configuration_create.description_english,
+        # description_italian=coverage_configuration_create.description_italian,
         netcdf_main_dataset_name=coverage_configuration_create.netcdf_main_dataset_name,
         wms_main_layer_name=coverage_configuration_create.wms_main_layer_name,
         wms_secondary_layer_name=coverage_configuration_create.wms_secondary_layer_name,
         thredds_url_pattern=coverage_configuration_create.thredds_url_pattern,
-        unit_english=coverage_configuration_create.unit_english,
-        unit_italian=(
-            coverage_configuration_create.unit_italian
-            or coverage_configuration_create.unit_english
-        ),
-        palette=coverage_configuration_create.palette,
-        color_scale_min=coverage_configuration_create.color_scale_min,
-        color_scale_max=coverage_configuration_create.color_scale_max,
+        # unit_english=coverage_configuration_create.unit_english,
+        # unit_italian=(
+        #     coverage_configuration_create.unit_italian
+        #     or coverage_configuration_create.unit_english
+        # ),
+        # palette=coverage_configuration_create.palette,
+        # color_scale_min=coverage_configuration_create.color_scale_min,
+        # color_scale_max=coverage_configuration_create.color_scale_max,
         climatic_indicator_id=coverage_configuration_create.climatic_indicator_id,
         observation_variable_id=coverage_configuration_create.observation_variable_id,
         observation_variable_aggregation_type=coverage_configuration_create.observation_variable_aggregation_type,
@@ -1255,7 +1241,7 @@ def generate_coverage_identifiers(
     for cpv in configuration_parameter_values_filter or []:
         values = params_to_filter.setdefault(cpv.configuration_parameter.name, [])
         values.append(cpv.name)
-    conf_param_id_parts = coverage_configuration.coverage_id_pattern.split("-")[1:]
+    conf_param_id_parts = coverage_configuration.coverage_id_pattern.split("-")[2:]
     values_to_combine = []
     for part in conf_param_id_parts:
         param_name = part.translate(str.maketrans("", "", "{}"))
@@ -1275,7 +1261,11 @@ def generate_coverage_identifiers(
     allowed_identifiers = []
     for combination in itertools.product(*values_to_combine):
         dataset_id = "-".join(
-            (coverage_configuration.climatic_indicator.identifier, *combination)
+            (
+                coverage_configuration.name,
+                coverage_configuration.climatic_indicator.identifier,
+                *combination,
+            )
         )
         allowed_identifiers.append(dataset_id)
     return allowed_identifiers

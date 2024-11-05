@@ -107,8 +107,8 @@ class CoverageConfigurationReadListItem(pydantic.BaseModel):
                     "display_name_italian",
                 }
             ),
-            display_name_english=instance.display_name_english or instance.name,
-            display_name_italian=instance.display_name_italian or instance.name,
+            display_name_english=instance.climatic_indicator.display_name_english,
+            display_name_italian=instance.climatic_indicator.display_name_italian,
             url=str(url),
             possible_values=[
                 ConfigurationParameterPossibleValueRead(
@@ -151,6 +151,11 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
         )
         return cls(
             **instance.model_dump(),
+            description_english=instance.climatic_indicator.description_english,
+            description_italian=instance.climatic_indicator.description_italian,
+            unit_english=instance.climatic_indicator.unit_english,
+            unit_italian=instance.climatic_indicator.unit_italian,
+            data_precision=instance.climatic_indicator.data_precision,
             url=str(url),
             possible_values=[
                 ConfigurationParameterPossibleValueRead(
