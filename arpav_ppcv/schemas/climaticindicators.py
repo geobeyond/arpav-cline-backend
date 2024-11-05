@@ -6,10 +6,12 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import babel
 import pydantic
 import sqlmodel
 
 from . import static
+from ..config import get_translations
 
 if TYPE_CHECKING:
     from . import coverages
@@ -62,6 +64,18 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
 
     def __hash__(self):
         return hash(self.identifier)
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("climatic indicator")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("climatic indicator description")
 
 
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):

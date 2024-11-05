@@ -275,6 +275,52 @@ class TimeSeries(pydantic.BaseModel):
                     or pv.configuration_parameter_value.name
                 ),
             }
+
+        clim_indicator = coverage.configuration.climatic_indicator
+        climatic_indicator_names_translations = {
+            "climatological_variable": {
+                LOCALE_EN.language: (clim_indicator.get_display_name(LOCALE_EN)),
+                LOCALE_IT.language: (clim_indicator.get_display_name(LOCALE_IT)),
+            },
+            "measure": {
+                LOCALE_EN.language: (
+                    clim_indicator.measure_type.get_param_display_name(LOCALE_EN)
+                ),
+                LOCALE_IT.language: (
+                    clim_indicator.measure_type.get_param_display_name(LOCALE_IT)
+                ),
+            },
+            "aggregation_period": {
+                LOCALE_EN.language: (
+                    clim_indicator.aggregation_period.get_param_display_name(LOCALE_EN)
+                ),
+                LOCALE_IT.language: (
+                    clim_indicator.aggregation_period.get_param_display_name(LOCALE_IT)
+                ),
+            },
+        }
+        climatic_indicator_values_translations = {
+            "climatological_variable": {
+                LOCALE_EN.language: clim_indicator.display_name_english,
+                LOCALE_IT.language: clim_indicator.display_name_italian,
+            },
+            "measure": {
+                LOCALE_EN.language: clim_indicator.measure_type.get_value_display_name(
+                    LOCALE_EN
+                ),
+                LOCALE_IT.language: clim_indicator.measure_type.get_value_display_name(
+                    LOCALE_IT
+                ),
+            },
+            "aggregation_period": {
+                LOCALE_EN.language: clim_indicator.aggregation_period.get_value_display_name(
+                    LOCALE_EN
+                ),
+                LOCALE_IT.language: clim_indicator.aggregation_period.get_value_display_name(
+                    LOCALE_IT
+                ),
+            },
+        }
         logger.info(f"serializing {coverage.identifier=} {smoothing_strategy=}...")
         return TimeSeries(
             name=str(series.name),
@@ -340,6 +386,7 @@ class TimeSeries(pydantic.BaseModel):
                         ),
                     },
                     **param_names_translations,
+                    **climatic_indicator_names_translations,
                 },
                 parameter_values={
                     "series_name": {
@@ -375,6 +422,7 @@ class TimeSeries(pydantic.BaseModel):
                         ),
                     },
                     **param_values_translations,
+                    **climatic_indicator_values_translations,
                 },
             ),
         )

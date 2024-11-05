@@ -23,7 +23,7 @@ import shapely
 import shapely.io
 import sqlmodel
 from anyio.from_thread import start_blocking_portal
-from arpav_ppcv.schemas.base import CoreConfParamName, LEGACY_PARAM_NAMES
+from arpav_ppcv.schemas.base import CoreConfParamName
 from dateutil.parser import isoparse
 from geoalchemy2.shape import to_shape
 from pandas.core.indexes.datetimes import DatetimeIndex
@@ -941,85 +941,47 @@ def _get_spatial_buffer(
 
 def get_historical_variable_parameters(
     session: sqlmodel.Session,
-) -> dict[str, coverages.HistoricalVariableMenuTree]:
+) -> dict[
+    climaticindicators.ClimaticIndicator,
+    dict[
+        str,
+        dict[
+            str,
+            coverages.ConfigurationParameter
+            | list[coverages.ConfigurationParameterValue],
+        ],
+    ],
+]:
     result = {}
-    historical_filter = database.get_configuration_parameter_value_by_names(
-        session, base.CoreConfParamName.ARCHIVE.value, "historical"
-    )
-    relevant_cov_confs = database.collect_all_coverage_configurations(
-        session, configuration_parameter_values_filter=[historical_filter]
-    )
-    for cov_conf in relevant_cov_confs:
-        variable_pvs = [
-            pv
-            for pv in cov_conf.possible_values
-            if pv.configuration_parameter_value.configuration_parameter.name
-            == base.CoreConfParamName.HISTORICAL_VARIABLE.value
-        ]
-        if (num_pvs := len(variable_pvs)) >= 1:
-            variable_pv = variable_pvs[0]
-            if num_pvs > 1:
-                logger.info(
-                    f"coverage configuration {cov_conf.name!r} defines "
-                    f"{len(variable_pvs)} `historical_variable`s, keeping only the "
-                    f"first one..."
-                )
-        else:
-            logger.info(
-                f"coverage configuration {cov_conf.name!r} does not have a "
-                f"`historical_variable`, skipping..."
-            )
-            continue
-        aggreg_period_pvs = [
-            pv
-            for pv in cov_conf.possible_values
-            if pv.configuration_parameter_value.configuration_parameter.name
-            == base.CoreConfParamName.AGGREGATION_PERIOD.value
-        ]
-        if (num_aggreg_periods := len(aggreg_period_pvs)) >= 1:
-            aggreg_period_pv = aggreg_period_pvs[0]
-            if num_aggreg_periods > 1:
-                logger.info(
-                    f"coverage configuration {cov_conf.name!r} defines "
-                    f"{len(variable_pvs)} `aggregation_period`s, keeping only the "
-                    f"first one..."
-                )
-        else:
-            logger.info(
-                f"coverage configuration {cov_conf.name!r} does not have a "
-                f"`aggregation_period`, skipping..."
-            )
-            continue
-        result_key = "-".join(
-            (
-                variable_pv.configuration_parameter_value.name,
-                aggreg_period_pv.configuration_parameter_value.name,
-            )
-        )
-        aggregated_variable = result.setdefault(result_key, {})
-        aggregated_variable[
-            base.CoreConfParamName.HISTORICAL_VARIABLE.value
-        ] = variable_pv.configuration_parameter_value
-        aggregated_variable[
-            base.CoreConfParamName.AGGREGATION_PERIOD.value
-        ] = aggreg_period_pv.configuration_parameter_value
-        combinations = aggregated_variable.setdefault("combinations", {})
-        params_to_ignore = (
-            base.CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
-            base.CoreConfParamName.AGGREGATION_PERIOD.value,
-            base.CoreConfParamName.UNCERTAINTY_TYPE.value,
-        )
-        for pv in cov_conf.possible_values:
-            param_name = pv.configuration_parameter_value.configuration_parameter.name
-            if param_name not in params_to_ignore:
-                param_entry = combinations.setdefault(param_name, {})
-                param_entry[
-                    "configuration_parameter"
-                ] = pv.configuration_parameter_value.configuration_parameter
-                values = param_entry.setdefault("values", [])
-                existing_value_names = [cpv.name for cpv in values]
-                if pv.configuration_parameter_value.name not in existing_value_names:
-                    values.append(pv.configuration_parameter_value)
+    params_to_ignore = [
+        "climatological_variable",
+        "measure",
+        "aggregation_period",
+        base.CoreConfParamName.UNCERTAINTY_TYPE.value,
+        base.CoreConfParamName.ARCHIVE.value,
+    ]
+    for climatic_indicator in database.collect_all_climatic_indicators(session):
+        clim_ind_entry = {}
+        for cov_conf in climatic_indicator.related_coverage_configurations:
+            if cov_conf.archive == "historical":
+                for pv in cov_conf.possible_values:
+                    param_name = (
+                        pv.configuration_parameter_value.configuration_parameter.name
+                    )
+                    if param_name not in params_to_ignore:
+                        param_entry = clim_ind_entry.setdefault(param_name, {})
+                        param_entry[
+                            "configuration_parameter"
+                        ] = pv.configuration_parameter_value.configuration_parameter
+                        values = param_entry.setdefault("values", [])
+                        existing_value_names = [cpv.name for cpv in values]
+                        if (
+                            pv.configuration_parameter_value.name
+                            not in existing_value_names
+                        ):
+                            values.append(pv.configuration_parameter_value)
+        if len(clim_ind_entry) > 0:
+            result[climatic_indicator] = clim_ind_entry
     return result
 
 
@@ -1038,9 +1000,12 @@ def get_forecast_variable_parameters(
 ]:
     result = {}
     params_to_ignore = [
+        "climatological_variable",
+        "measure",
+        "aggregation_period",
         base.CoreConfParamName.UNCERTAINTY_TYPE.value,
         base.CoreConfParamName.ARCHIVE.value,
-    ] + list(LEGACY_PARAM_NAMES)
+    ]
     for climatic_indicator in database.collect_all_climatic_indicators(session):
         # clim_ind_entry = result.setdefault(climatic_indicator, {})
         clim_ind_entry = {}

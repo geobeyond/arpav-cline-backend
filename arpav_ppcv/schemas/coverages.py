@@ -13,7 +13,6 @@ from typing import (
 import pydantic
 import sqlalchemy
 import sqlmodel
-from arpav_ppcv.schemas.base import LEGACY_PARAM_NAMES
 
 from .. import exceptions
 from . import base
@@ -287,9 +286,14 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     @property
     def coverage_id_pattern(self) -> str:
         other_parts = set()
+        legacy_param_names = (
+            "climatological_variable",
+            "measure",
+            "aggregation_period",
+        )
         for pv in self.possible_values:
             param_name = pv.configuration_parameter_value.configuration_parameter.name
-            if param_name not in LEGACY_PARAM_NAMES:
+            if param_name not in legacy_param_names:
                 other_parts.add(param_name)
         all_parts = ["climatic_indicator"] + sorted(list(other_parts))
         return "-".join(f"{{{part}}}" for part in all_parts)

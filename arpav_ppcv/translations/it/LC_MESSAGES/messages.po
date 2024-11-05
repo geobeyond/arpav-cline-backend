@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-10-31 16:36+0000\n"
+"POT-Creation-Date: 2024-11-05 11:51+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -111,34 +111,58 @@ msgstr "serie decennale"
 msgid "Mann-Kendall series"
 msgstr "serie Mann-Kendall"
 
+#: schemas/climaticindicators.py:72
+msgid "climatic indicator"
+msgstr "indicatore"
+
+#: schemas/climaticindicators.py:78
+msgid "climatic indicator description"
+msgstr "indicatore climatico"
+
 #: schemas/static.py:19
+msgid "measure type"
+msgstr "Tipo di misurazione"
+
+#: schemas/static.py:25
+msgid "measure type description"
+msgstr "Tipo di misurazione climatologica"
+
+#: schemas/static.py:31
 msgid "absolute"
 msgstr "Valore assoluto"
 
-#: schemas/static.py:20
+#: schemas/static.py:32
 msgid "anomaly"
 msgstr "Anomalia"
 
-#: schemas/static.py:27
+#: schemas/static.py:39
 msgid "absolute description"
 msgstr "Valore effettivo nel periodo selezionato"
 
-#: schemas/static.py:28
+#: schemas/static.py:40
 msgid "anomaly description"
 msgstr "Variazione nel futuro rispetto al periodo di riferimento"
 
-#: schemas/static.py:46
+#: schemas/static.py:58
+msgid "aggregation period"
+msgstr "Periodo di aggregazione temporale"
+
+#: schemas/static.py:64
+msgid "aggregation period description"
+msgstr "Periodo di aggregazione per i set di dati climatologici"
+
+#: schemas/static.py:70
 msgid "annual"
 msgstr "Annuale"
 
-#: schemas/static.py:47
+#: schemas/static.py:71
 msgid "30yr"
 msgstr "Trentennale"
 
-#: schemas/static.py:54
+#: schemas/static.py:78
 msgid "annual description"
 msgstr "Media sull'anno selezionato"
 
-#: schemas/static.py:55
+#: schemas/static.py:79
 msgid "30yr description"
 msgstr "Media sul trentennio selezionato"

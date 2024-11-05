@@ -690,36 +690,3 @@ def get_forecast_variable_combinations(
             variable_combinations
         ),
     )
-
-
-@router.get(
-    "/historical-variable-combinations",
-    response_model=coverage_schemas.HistoricalVariableCombinationsList,
-)
-def get_historical_variable_combinations(
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-):
-    variable_combinations = operations.get_historical_variable_parameters(db_session)
-    var_combinations = []
-    for var_menu in variable_combinations.values():
-        variable_sort_order = (
-            var_menu[CoreConfParamName.HISTORICAL_VARIABLE.value].sort_order or 0
-        )
-        aggregation_period_sort_order = (
-            var_menu[CoreConfParamName.AGGREGATION_PERIOD.value].sort_order or 0
-        )
-        var_combinations.append(
-            (
-                variable_sort_order,
-                aggregation_period_sort_order,
-                coverage_schemas.HistoricalVariableCombinations.from_items(var_menu),
-            )
-        )
-    var_combinations.sort(key=itemgetter(0, 1))
-    var_combinations = [vc[2] for vc in var_combinations]
-    return coverage_schemas.HistoricalVariableCombinationsList(
-        combinations=var_combinations,
-        translations=coverage_schemas.HistoricalMenuTranslations.from_items(
-            list(variable_combinations.values())
-        ),
-    )

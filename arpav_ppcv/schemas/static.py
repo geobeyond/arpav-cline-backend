@@ -12,7 +12,19 @@ class MeasureType(str, enum.Enum):
     ABSOLUTE = "ABSOLUTE"
     ANOMALY = "ANOMALY"
 
-    def get_display_name(self, locale: babel.Locale) -> str:
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("measure type")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("measure type description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
@@ -20,7 +32,7 @@ class MeasureType(str, enum.Enum):
             self.ANOMALY.name: _("anomaly"),
         }[self.name] or self.name
 
-    def get_description(self, locale: babel.Locale) -> str:
+    def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
@@ -39,7 +51,19 @@ class AggregationPeriod(str, enum.Enum):
     ANNUAL = "ANNUAL"
     THIRTY_YEAR = "THIRTY_YEAR"
 
-    def get_display_name(self, locale: babel.Locale) -> str:
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("aggregation period")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("aggregation period description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
@@ -47,7 +71,7 @@ class AggregationPeriod(str, enum.Enum):
             self.THIRTY_YEAR.name: _("30yr"),
         }[self.name] or self.name
 
-    def get_description(self, locale: babel.Locale) -> str:
+    def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {

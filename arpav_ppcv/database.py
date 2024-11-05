@@ -1718,11 +1718,11 @@ def _replace_conf_param_filters_with_climatic_indicator(
     for possible in possible_values:
         param_name = possible.configuration_parameter.name
         logger.debug(f"{param_name=}")
-        if param_name == base.CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value:
+        if param_name == "climatological_variable":
             raw_name = possible.name
-        elif param_name == base.CoreConfParamName.MEASURE.value:
+        elif param_name == "measure":
             raw_measure_type = possible.name
-        elif param_name == base.CoreConfParamName.AGGREGATION_PERIOD.value:
+        elif param_name == "aggregation_period":
             raw_aggregation_period = {"30yr": "thirty_year"}.get(
                 possible.name, possible.name
             )
