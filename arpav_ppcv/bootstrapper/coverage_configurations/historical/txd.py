@@ -7,17 +7,17 @@ from ....schemas.coverages import (
     ConfigurationParameterPossibleValueCreate,
 )
 
-_DISPLAY_NAME_ENGLISH = "Maximum temperature"
-_DISPLAY_NAME_ITALIAN = "Temperatura massima"
-_DESCRIPTION_ENGLISH = "Average of maximum temperatures"
-_DESCRIPTION_ITALIAN = "Media delle temperature massime"
-_ARCHIVE = "historical"
-# _VARIABLE = "txd"
-_UNIT = "ºC"
-_COLOR_SCALE_MIN = -5
-_COLOR_SCALE_MAX = 20
+# _DISPLAY_NAME_ENGLISH = "Maximum temperature"
+# _DISPLAY_NAME_ITALIAN = "Temperatura massima"
+# _DESCRIPTION_ENGLISH = "Average of maximum temperatures"
+# _DESCRIPTION_ITALIAN = "Media delle temperature massime"
+# # _VARIABLE = "txd"
+# _UNIT = "ºC"
+# _COLOR_SCALE_MIN = -5
+# _COLOR_SCALE_MAX = 20
+# _DATA_PRECISION = 1
 _RELATED_OBSERVATION_VARIABLE_NAME = "TXd"
-_DATA_PRECISION = 1
+_ARCHIVE = "historical"
 
 
 def generate_configurations(
@@ -28,18 +28,18 @@ def generate_configurations(
     return [
         CoverageConfigurationCreate(
             name="txd_30yr",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="{historical_year_period}_avg",
             wms_main_layer_name="{historical_year_period}_avg",
             thredds_url_pattern="cline_30yr/TXd_{climatological_standard_normal}.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tasmax-absolute-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -156,18 +156,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="txd_annual_yearly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="TXd",
             wms_main_layer_name="TXd",
             thredds_url_pattern="cline_yr/TXd_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tasmax-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -205,18 +205,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="txd_annual_seasonal",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="TXd",
             wms_main_layer_name="TXd",
             thredds_url_pattern="cline_yr/TXd_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tasmax-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -269,18 +269,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="txd_annual_monthly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="TXd",
             wms_main_layer_name="TXd",
             thredds_url_pattern="cline_yr/TXd_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tasmax-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(

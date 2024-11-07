@@ -7,17 +7,17 @@ from ....schemas.coverages import (
     ConfigurationParameterPossibleValueCreate,
 )
 
-_DISPLAY_NAME_ENGLISH = "Cooling degree days"
-_DISPLAY_NAME_ITALIAN = "Gradi giorno di raffrescamento"
-_DESCRIPTION_ENGLISH = (
-    "Sum of the average daily temperature minus 21°C if the average daily temperature "
-    "is greater than 24°C"
-)
-_DESCRIPTION_ITALIAN = (
-    "Somma della temperatura media giornaliera meno 21°C se la temperatura media "
-    "giornaliera è maggiore di 24°C"
-)
-_DATA_PRECISION = 0
+# _DISPLAY_NAME_ENGLISH = "Cooling degree days"
+# _DISPLAY_NAME_ITALIAN = "Gradi giorno di raffrescamento"
+# _DESCRIPTION_ENGLISH = (
+#     "Sum of the average daily temperature minus 21°C if the average daily temperature "
+#     "is greater than 24°C"
+# )
+# _DESCRIPTION_ITALIAN = (
+#     "Somma della temperatura media giornaliera meno 21°C se la temperatura media "
+#     "giornaliera è maggiore di 24°C"
+# )
+# _DATA_PRECISION = 0
 
 
 def generate_configurations(

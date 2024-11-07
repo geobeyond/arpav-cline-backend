@@ -7,17 +7,17 @@ from ....schemas.coverages import (
     ConfigurationParameterPossibleValueCreate,
 )
 
-_DISPLAY_NAME_ENGLISH = "Precipitation"
-_DISPLAY_NAME_ITALIAN = "Precipitazione"
-_DESCRIPTION_ENGLISH = "Daily precipitation near the ground"
-_DESCRIPTION_ITALIAN = "Precipitazione giornaliera vicino al suolo"
-_ARCHIVE = "historical"
-# _VARIABLE = "prcptot"
-_UNIT = "mm"
-_COLOR_SCALE_MIN = 300
-_COLOR_SCALE_MAX = 1300
-_DATA_PRECISION = 0
+# _DISPLAY_NAME_ENGLISH = "Precipitation"
+# _DISPLAY_NAME_ITALIAN = "Precipitazione"
+# _DESCRIPTION_ENGLISH = "Daily precipitation near the ground"
+# _DESCRIPTION_ITALIAN = "Precipitazione giornaliera vicino al suolo"
+# # _VARIABLE = "prcptot"
+# _UNIT = "mm"
+# _COLOR_SCALE_MIN = 300
+# _COLOR_SCALE_MAX = 1300
+# _DATA_PRECISION = 0
 _RELATED_OBSERVATION_VARIABLE_NAME = "PRCPTOT"
+_ARCHIVE = "historical"
 
 
 def generate_configurations(
@@ -28,18 +28,18 @@ def generate_configurations(
     return [
         CoverageConfigurationCreate(
             name="prcptot_30yr",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="{historical_year_period}_avg",
             wms_main_layer_name="{historical_year_period}_avg",
             thredds_url_pattern="cline_30yr/PRCPTOT_{climatological_standard_normal}.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["pr-absolute-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -156,18 +156,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="prcptot_annual_yearly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="PRCPTOT",
             wms_main_layer_name="PRCPTOT",
             thredds_url_pattern="cline_yr/PRCPTOT_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -205,18 +205,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="prcptot_annual_seasonal",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="PRCPTOT",
             wms_main_layer_name="PRCPTOT",
             thredds_url_pattern="cline_yr/PRCPTOT_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -269,18 +269,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="prcptot_annual_monthly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="PRCPTOT",
             wms_main_layer_name="PRCPTOT",
             thredds_url_pattern="cline_yr/PRCPTOT_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["pr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(

@@ -7,17 +7,17 @@ from ....schemas.coverages import (
     ConfigurationParameterPossibleValueCreate,
 )
 
-_DISPLAY_NAME_ENGLISH = "Tropical nights"
-_DISPLAY_NAME_ITALIAN = "Notti tropicali"
-_DESCRIPTION_ENGLISH = "Number of days with minimum temperature higher than 20°C"
-_DESCRIPTION_ITALIAN = "Numero di giorni con temperatura minima maggiore di 20°C"
-_ARCHIVE = "historical"
-# _VARIABLE = "tr"
-_UNIT = "gg"
-_COLOR_SCALE_MIN = 0
-_COLOR_SCALE_MAX = 50
+# _DISPLAY_NAME_ENGLISH = "Tropical nights"
+# _DISPLAY_NAME_ITALIAN = "Notti tropicali"
+# _DESCRIPTION_ENGLISH = "Number of days with minimum temperature higher than 20°C"
+# _DESCRIPTION_ITALIAN = "Numero di giorni con temperatura minima maggiore di 20°C"
+# # _VARIABLE = "tr"
+# _UNIT = "gg"
+# _COLOR_SCALE_MIN = 0
+# _COLOR_SCALE_MAX = 50
+# _DATA_PRECISION = 0
 _RELATED_OBSERVATION_VARIABLE_NAME = "TR"
-_DATA_PRECISION = 0
+_ARCHIVE = "historical"
 
 
 def generate_configurations(
@@ -28,18 +28,18 @@ def generate_configurations(
     return [
         CoverageConfigurationCreate(
             name="tr_30yr",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="{historical_year_period}_avg",
             wms_main_layer_name="{historical_year_period}_avg",
             thredds_url_pattern="cline_30yr/TR_{climatological_standard_normal}.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tr-absolute-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -76,18 +76,18 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="tr_annual_yearly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="TR",
             wms_main_layer_name="TR",
             thredds_url_pattern="cline_yr/TR_{historical_year_period}_*.nc",
-            unit_english=_UNIT,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["tr-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(

@@ -7,18 +7,18 @@ from ....schemas.coverages import (
     ConfigurationParameterPossibleValueCreate,
 )
 
-_DISPLAY_NAME_ENGLISH = "Hot days"
-_DISPLAY_NAME_ITALIAN = "Giorni caldi"
-_DESCRIPTION_ENGLISH = "Number of days with maximum temperature above 30°C"
-_DESCRIPTION_ITALIAN = "Numero di giorni con temperatura massima maggiore di 30°C"
-_ARCHIVE = "historical"
-# _VARIABLE = "su30"
-_UNIT_ENGLISH = "days"
-_UNIT_ITALIAN = "gg"
-_COLOR_SCALE_MIN = 0
-_COLOR_SCALE_MAX = 80
+# _DISPLAY_NAME_ENGLISH = "Hot days"
+# _DISPLAY_NAME_ITALIAN = "Giorni caldi"
+# _DESCRIPTION_ENGLISH = "Number of days with maximum temperature above 30°C"
+# _DESCRIPTION_ITALIAN = "Numero di giorni con temperatura massima maggiore di 30°C"
+# # _VARIABLE = "su30"
+# _UNIT_ENGLISH = "days"
+# _UNIT_ITALIAN = "gg"
+# _COLOR_SCALE_MIN = 0
+# _COLOR_SCALE_MAX = 80
+# _DATA_PRECISION = 0
 _RELATED_OBSERVATION_VARIABLE_NAME = "SU30"
-_DATA_PRECISION = 0
+_ARCHIVE = "historical"
 
 
 def generate_configurations(
@@ -29,19 +29,19 @@ def generate_configurations(
     return [
         CoverageConfigurationCreate(
             name="su30_30yr",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="{historical_year_period}_avg",
             wms_main_layer_name="{historical_year_period}_avg",
             thredds_url_pattern="cline_30yr/SU30_{climatological_standard_normal}.nc",
-            unit_english=_UNIT_ENGLISH,
-            unit_italian=_UNIT_ITALIAN,
-            palette="default/seq-YlOrRd",
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT_ENGLISH,
+            # unit_italian=_UNIT_ITALIAN,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["su30-absolute-thirty_year"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
@@ -78,19 +78,19 @@ def generate_configurations(
         ),
         CoverageConfigurationCreate(
             name="su30_annual_yearly",
-            display_name_english=_DISPLAY_NAME_ENGLISH,
-            display_name_italian=_DISPLAY_NAME_ITALIAN,
-            description_english=_DESCRIPTION_ENGLISH,
-            description_italian=_DESCRIPTION_ITALIAN,
+            # display_name_english=_DISPLAY_NAME_ENGLISH,
+            # display_name_italian=_DISPLAY_NAME_ITALIAN,
+            # description_english=_DESCRIPTION_ENGLISH,
+            # description_italian=_DESCRIPTION_ITALIAN,
             netcdf_main_dataset_name="SU30",
             wms_main_layer_name="SU30",
             thredds_url_pattern="cline_yr/SU30_{historical_year_period}_*.nc",
-            palette="default/seq-YlOrRd",
-            unit_english=_UNIT_ENGLISH,
-            unit_italian=_UNIT_ITALIAN,
-            color_scale_min=_COLOR_SCALE_MIN,
-            color_scale_max=_COLOR_SCALE_MAX,
-            data_precision=_DATA_PRECISION,
+            # unit_english=_UNIT_ENGLISH,
+            # unit_italian=_UNIT_ITALIAN,
+            # palette="default/seq-YlOrRd",
+            # color_scale_min=_COLOR_SCALE_MIN,
+            # color_scale_max=_COLOR_SCALE_MAX,
+            # data_precision=_DATA_PRECISION,
             climatic_indicator_id=climatic_indicators["su30-absolute-annual"],
             possible_values=[
                 ConfigurationParameterPossibleValueCreate(
