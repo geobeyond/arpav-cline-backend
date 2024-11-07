@@ -110,15 +110,15 @@ def test_parse_ncss_dataset(
     [
         pytest.param(
             "tas_seasonal_anomaly_model_ensemble",
-            "tas_seasonal_anomaly_model_ensemble-annual-forecast-model_ensemble-tas-anomaly-rcp26-spring",
-            "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp26-lower_bound-spring",
-            "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp26-upper_bound-spring",
+            "tas_seasonal_anomaly_model_ensemble-tas-anomaly-annual-forecast-model_ensemble-rcp26-spring",
+            "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp26-lower_bound-spring",
+            "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp26-upper_bound-spring",
         ),
         pytest.param(
             "tas_annual_absolute_model_ensemble",
-            "tas_annual_absolute_model_ensemble-annual-forecast-model_ensemble-tas-absolute-rcp26-all_year",
-            "tas_annual_absolute_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-lower_bound-all_year",
-            "tas_annual_absolute_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-upper_bound-all_year",
+            "tas_annual_absolute_model_ensemble-tas-absolute-annual-forecast-model_ensemble-rcp26-all_year",
+            "tas_annual_absolute_model_ensemble_lower_uncertainty-tas-absolute-annual-forecast-model_ensemble-rcp26-lower_bound-all_year",
+            "tas_annual_absolute_model_ensemble_upper_uncertainty-tas-absolute-annual-forecast-model_ensemble-rcp26-upper_bound-all_year",
         ),
     ],
 )
@@ -148,13 +148,13 @@ def test_get_related_uncertainty_coverage_configurations(
     [
         pytest.param(
             "tas_seasonal_anomaly_model_ensemble",
-            "tas_seasonal_anomaly_model_ensemble-annual-forecast-model_ensemble-tas-anomaly-rcp26-spring",
+            "tas_seasonal_anomaly_model_ensemble-tas-anomaly-annual-forecast-model_ensemble-rcp26-spring",
             [
-                "tas_seasonal_anomaly_model_ec_earth_cclm4_8_17-annual-forecast-ec_earth_cclm_4_8_17-tas-anomaly-rcp26-spring",
-                "tas_seasonal_anomaly_model_ec_earth_racmo22e-annual-forecast-ec_earth_racmo22e-tas-anomaly-rcp26-spring",
-                "tas_seasonal_anomaly_model_ec_earth_rca4-annual-forecast-ec_earth_rca4-tas-anomaly-rcp26-spring",
-                "tas_seasonal_anomaly_model_hadgem2_es_racmo22e-annual-forecast-hadgem2_racmo22e-tas-anomaly-rcp26-spring",
-                "tas_seasonal_anomaly_model_mpi_esm_lr_remo2009-annual-forecast-mpi_esm_lr_remo2009-tas-anomaly-rcp26-spring",
+                "tas_seasonal_anomaly_model_ec_earth_cclm4_8_17-tas-anomaly-annual-forecast-ec_earth_cclm_4_8_17-rcp26-spring",
+                "tas_seasonal_anomaly_model_ec_earth_racmo22e-tas-anomaly-annual-forecast-ec_earth_racmo22e-rcp26-spring",
+                "tas_seasonal_anomaly_model_ec_earth_rca4-tas-anomaly-annual-forecast-ec_earth_rca4-rcp26-spring",
+                "tas_seasonal_anomaly_model_hadgem2_es_racmo22e-tas-anomaly-annual-forecast-hadgem2_racmo22e-rcp26-spring",
+                "tas_seasonal_anomaly_model_mpi_esm_lr_remo2009-tas-anomaly-annual-forecast-mpi_esm_lr_remo2009-rcp26-spring",
             ],
         )
     ],

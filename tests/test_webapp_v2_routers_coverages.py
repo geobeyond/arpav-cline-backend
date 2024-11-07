@@ -51,9 +51,9 @@ def test_coverage_identifiers_list(
                 "year_period": "winter",
             },
             [
-                "tas_seasonal_absolute_model_ensemble-annual-forecast-model_ensemble-tas-absolute-rcp26-winter",
-                "tas_seasonal_absolute_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-lower_bound-winter",
-                "tas_seasonal_absolute_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-upper_bound-winter",
+                "tas_seasonal_absolute_model_ensemble-tas-absolute-annual-forecast-model_ensemble-rcp26-winter",
+                "tas_seasonal_absolute_model_ensemble_lower_uncertainty-tas-absolute-annual-forecast-model_ensemble-rcp26-lower_bound-winter",
+                "tas_seasonal_absolute_model_ensemble_upper_uncertainty-tas-absolute-annual-forecast-model_ensemble-rcp26-upper_bound-winter",
             ],
         )
     ],
@@ -82,12 +82,13 @@ def test_get_time_series(
     test_client_v2_app: httpx.Client,
     arpav_db_session,
     sample_tas_csv_data: dict[str, str],
+    sample_real_climatic_indicators,
 ):
     db_cov_conf = coverages.CoverageConfiguration(
         name="fake_tas",
         netcdf_main_dataset_name="tas",
         thredds_url_pattern="fake",
-        palette="fake",
+        climatic_indicator_id=sample_real_climatic_indicators[0].id,
     )
     arpav_db_session.add(db_cov_conf)
     arpav_db_session.commit()
@@ -135,7 +136,7 @@ def test_get_time_series(
             False,
             [
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                 },
             ],
@@ -149,11 +150,11 @@ def test_get_time_series(
             False,
             [
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
             ],
@@ -167,30 +168,30 @@ def test_get_time_series(
             False,
             [
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                     ("uncertainty_type", "Limiti inferiori dell'incertezza"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                     ("uncertainty_type", "Limiti inferiori dell'incertezza"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                     ("uncertainty_type", "Limiti superiori dell'incertezza"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                     ("uncertainty_type", "Limiti superiori dell'incertezza"),
                 },
@@ -205,70 +206,70 @@ def test_get_time_series(
             True,
             [
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH RCA4"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH RCA4"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "HadGEM RACMO22E"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "HadGEM RACMO22E"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "Insieme di 5 modelli"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "Insieme di 5 modelli"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH RACMO22E"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH RACMO22E"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "MPI-ESM-LR-REMO2009"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "MPI-ESM-LR-REMO2009"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH CCLM4-8-17"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("climatological_model", "EC-EARTH CCLM4-8-17"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
@@ -283,11 +284,11 @@ def test_get_time_series(
             False,
             [
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "nessuna elaborazione"),
                 },
                 {
-                    ("series_name", "Temperatura media"),
+                    ("series_name", "Temperatura media (TAS)"),
                     ("processing_method", "media mobile centrata a 11 anni"),
                 },
                 {
@@ -323,7 +324,7 @@ def test_real_get_time_series(
     include_coverage_related_data: bool,
     expected_italian_parameter_values: list[set[tuple[str, str]]],
 ):
-    coverage_identifier = "tas_seasonal_absolute_model_ensemble-annual-forecast-model_ensemble-tas-absolute-rcp45-winter"
+    coverage_identifier = "tas_seasonal_absolute_model_ensemble-tas-absolute-annual-forecast-model_ensemble-rcp45-winter"
     tas_thredds_url_pattern = "tas_avg_"
     tas_stddown_thredds_url_pattern = "tas_stddown_.*"
     tas_stdup_thredds_url_pattern = "tas_stdup_.*"

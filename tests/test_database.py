@@ -181,19 +181,18 @@ def test_list_monthly_measurements(
 )
 def test_create_coverage_configuration_simple(
     arpav_db_session,
+    sample_real_climatic_indicators,
     name,
     thredds_url_pattern,
     expected_raise,
 ):
+    some_indicator = sample_real_climatic_indicators[0]
     with expected_raise:
         cov_conf_create = coverages.CoverageConfigurationCreate(
             name=name,
             netcdf_main_dataset_name="fake_ds",
             thredds_url_pattern=thredds_url_pattern,
-            unit_english="fake_unit",
-            palette="fake_palette",
-            color_scale_min=0.0,
-            color_scale_max=1.0,
+            climatic_indicator_id=some_indicator.id,
             possible_values=[],
         )
         created = database.create_coverage_configuration(
@@ -221,8 +220,9 @@ def test_delete_coverage_configuration_works(
 
 
 def test_create_coverage_configuration_with_possible_values(
-    arpav_db_session, sample_configuration_parameters
+    arpav_db_session, sample_real_climatic_indicators, sample_configuration_parameters
 ):
+    some_indicator = sample_real_climatic_indicators[0]
     used_params = random.sample(sample_configuration_parameters, k=3)
     possible_values = []
     for used_param in used_params:
@@ -232,10 +232,7 @@ def test_create_coverage_configuration_with_possible_values(
         name="fake_name",
         netcdf_main_dataset_name="fake_ds",
         thredds_url_pattern="fake_thredds_pattern",
-        unit_english="fake_unit",
-        palette="fake_palette",
-        color_scale_min=0.0,
-        color_scale_max=1.0,
+        climatic_indicator_id=some_indicator.id,
         possible_values=[
             coverages.ConfigurationParameterPossibleValueCreate(
                 configuration_parameter_value_id=p.id
@@ -252,7 +249,7 @@ def test_create_coverage_configuration_with_possible_values(
 
 
 def test_create_coverage_configuration_uses_new_possible_values(
-    arpav_db_session, sample_configuration_parameters
+    arpav_db_session, sample_real_climatic_indicators, sample_configuration_parameters
 ):
     """Ensure that when a new coverage configuration is created it does not
     clear any possible values that may be repeated in other coverage configurations.
@@ -262,16 +259,14 @@ def test_create_coverage_configuration_uses_new_possible_values(
 
     is fixed.
     """
+    some_indicator = sample_real_climatic_indicators[0]
     used_param = sample_configuration_parameters[0]
     possible_value = used_param.allowed_values[0]
     cov_conf_create1 = coverages.CoverageConfigurationCreate(
         name="fake_name1",
         netcdf_main_dataset_name="fake_ds1",
         thredds_url_pattern="fake_thredds_pattern1",
-        unit_english="fake_unit",
-        palette="fake_palette",
-        color_scale_min=0.0,
-        color_scale_max=1.0,
+        climatic_indicator_id=some_indicator.id,
         possible_values=[
             coverages.ConfigurationParameterPossibleValueCreate(
                 configuration_parameter_value_id=possible_value.id
@@ -298,10 +293,7 @@ def test_create_coverage_configuration_uses_new_possible_values(
         name="fake_name2",
         netcdf_main_dataset_name="fake_ds2",
         thredds_url_pattern="fake_thredds_pattern2",
-        unit_english="fake_unit",
-        palette="fake_palette",
-        color_scale_min=0.0,
-        color_scale_max=1.0,
+        climatic_indicator_id=some_indicator.id,
         possible_values=[
             coverages.ConfigurationParameterPossibleValueCreate(
                 configuration_parameter_value_id=possible_value.id

@@ -29,6 +29,9 @@ from arpav_ppcv.webapp.api_v2.app import create_app as create_v2_app
 from arpav_ppcv.bootstrapper.configurationparameters import (
     generate_configuration_parameters as bootstrappable_configuration_parameters,
 )
+from arpav_ppcv.bootstrapper.climaticindicators import (
+    tas as tas_climatic_indicators_bootstrappable_configurations,
+)
 from arpav_ppcv.bootstrapper.coverage_configurations.forecast import (
     tas as tas_forecast_bootstrappable_configurations,
 )
@@ -261,8 +264,9 @@ def sample_configuration_parameters(arpav_db_session):
 
 @pytest.fixture()
 def sample_coverage_configurations(
-    arpav_db_session, sample_configuration_parameters
+    arpav_db_session, sample_real_climatic_indicators, sample_configuration_parameters
 ) -> list[coverages.CoverageConfiguration]:
+    some_climatic_indicator = sample_real_climatic_indicators[0]
     db_cov_confs = []
     for i in range(10):
         params_to_use = random.sample(sample_configuration_parameters, k=2)
@@ -282,7 +286,7 @@ def sample_coverage_configurations(
                     f"{random.choice(param_values_to_use).configuration_parameter_value.configuration_parameter.name}"
                     f"}}"
                 ),
-                palette="fake",
+                climatic_indicator_id=some_climatic_indicator.id,
                 possible_values=param_values_to_use,
             )
         )
@@ -295,15 +299,30 @@ def sample_coverage_configurations(
 
 
 @pytest.fixture()
+def sample_real_climatic_indicators(
+    arpav_db_session,
+):
+    to_create = tas_climatic_indicators_bootstrappable_configurations.generate_climatic_indicators()
+    created = []
+    for clim_ind_to_create in to_create:
+        created.append(
+            database.create_climatic_indicator(arpav_db_session, clim_ind_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
 def sample_real_coverage_configurations(
     arpav_db_session,
     sample_real_configuration_parameters,
+    sample_real_climatic_indicators,
     sample_real_variables,
 ):
     all_vars = database.collect_all_variables(arpav_db_session)
     all_conf_param_values = database.collect_all_configuration_parameter_values(
         arpav_db_session
     )
+    all_climatic_indicators = database.collect_all_climatic_indicators(arpav_db_session)
     cov_confs_to_create = (
         tas_forecast_bootstrappable_configurations.generate_configurations(
             conf_param_values={
@@ -311,6 +330,7 @@ def sample_real_coverage_configurations(
                 for pv in all_conf_param_values
             },
             variables={v.name: v for v in all_vars},
+            climatic_indicators={i.identifier: i.id for i in all_climatic_indicators},
         )
     )
     created_cov_confs = {}
