@@ -1077,6 +1077,7 @@ def create_coverage_configuration(
         palette=coverage_configuration_create.palette,
         color_scale_min=coverage_configuration_create.color_scale_min,
         color_scale_max=coverage_configuration_create.color_scale_max,
+        data_precision=coverage_configuration_create.data_precision,
         observation_variable_id=coverage_configuration_create.observation_variable_id,
         observation_variable_aggregation_type=coverage_configuration_create.observation_variable_aggregation_type,
         uncertainty_lower_bounds_coverage_configuration_id=(

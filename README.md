@@ -213,6 +213,30 @@ dev environment is located at individual devs machine(s). In order to get a work
   order to check which env variables are set and how to further interact with the system
 
 
+##### Building the docker image locally
+
+Build the docker image by running this command:
+
+```shell
+docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend
+```
+
+If you want to build an image for the current branch, such as when you added a new third-party dependency as part of
+an ongoing task, add the branch name to the build image:
+
+```shell
+docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current)
+```
+
+In order to use this custom named image on your local development, set the `CURRENT_GIT_BRANCH` env variable before
+launching the docker compose stack, _i.e._:
+
+```shell
+export CURRENT_GIT_BRANCH=$(git branch --show-current)
+docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+```
+
+
 ##### Staging environment
 
 Deployments to the staging environment are automated and happen whenever a new docker image is published to the
@@ -238,7 +262,23 @@ Relevant places to look for configuration in the staging environment, in additio
 
 ##### Production environment
 
-TBD
+Deployments to the production environment are automated. They are based on git tags and are governed by a two-stage
+workflow, orchestrated via github actions:
+
+- When a new git tag is pushed into the code repository, a new docker image is built and published to the container
+  registry;
+- After the publication of the docker image in the registry, github sends a request to the production environment,
+  notifying it of the availability of this new tagged docker image;
+- The production environment's infrastructure then takes care of downloading the new docker image and restarting its
+  own deployment in such a way as to have the system run with the updated code.
+
+
+###### NOTES
+
+- In order for this strategy to work, there are a couple of sensitive details which must be stored on the code
+  repository. Access to this information should therefore be controlled
+- Since the production deployment is triggered by pushing a new git tag to the repository, this is a privileged action,
+and therefore should only be granted to whomever is responsible for managing production deployments.
 
 
 ### Testing
