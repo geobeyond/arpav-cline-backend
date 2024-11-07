@@ -151,6 +151,8 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
         )
         return cls(
             **instance.model_dump(),
+            display_name_english=instance.climatic_indicator.display_name_english,
+            display_name_italian=instance.climatic_indicator.display_name_italian,
             description_english=instance.climatic_indicator.description_english,
             description_italian=instance.climatic_indicator.description_italian,
             unit_english=instance.climatic_indicator.unit_english,

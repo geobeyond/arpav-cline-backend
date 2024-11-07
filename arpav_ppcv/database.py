@@ -1035,8 +1035,6 @@ def list_coverage_configurations(
 def collect_all_coverage_configurations(
     session: sqlmodel.Session,
     name_filter: Optional[str] = None,
-    english_display_name_filter: Optional[str] = None,
-    italian_display_name_filter: Optional[str] = None,
     configuration_parameter_values_filter: Optional[
         list[coverages.ConfigurationParameterValue]
     ] = None,
@@ -1047,8 +1045,6 @@ def collect_all_coverage_configurations(
         limit=1,
         include_total=True,
         name_filter=name_filter,
-        english_display_name_filter=english_display_name_filter,
-        italian_display_name_filter=italian_display_name_filter,
         configuration_parameter_values_filter=configuration_parameter_values_filter,
         climatic_indicator_filter=climatic_indicator_filter,
     )
@@ -1057,8 +1053,6 @@ def collect_all_coverage_configurations(
         limit=num_total,
         include_total=False,
         name_filter=name_filter,
-        english_display_name_filter=english_display_name_filter,
-        italian_display_name_filter=italian_display_name_filter,
         configuration_parameter_values_filter=configuration_parameter_values_filter,
         climatic_indicator_filter=climatic_indicator_filter,
     )
