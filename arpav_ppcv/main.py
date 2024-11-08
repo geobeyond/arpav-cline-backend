@@ -122,6 +122,7 @@ def run_server(ctx: typer.Context):
         f"--port={settings.bind_port}",
         f"--host={settings.bind_host}",
         "--factory",
+        f"--workers={settings.num_uvicorn_worker_processes}",
         "--access-log",
     ]
     if settings.debug:
