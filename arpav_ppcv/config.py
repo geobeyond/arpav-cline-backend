@@ -129,6 +129,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     allow_cors_credentials: bool = False
     coverage_download_settings: CoverageDownloadSettings = CoverageDownloadSettings()
     variable_stations_db_schema: str = "stations"
+    num_uvicorn_worker_processes: int = 1
 
     @pydantic.model_validator(mode="after")
     def ensure_test_db_dsn(self):
