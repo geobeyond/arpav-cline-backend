@@ -15,13 +15,14 @@ import shapely
 import shapely.ops
 
 from ..schemas import observations
+from ..schemas.climaticindicators import ClimaticIndicator
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_remote_stations(
     client: httpx.Client,
-    variables: Sequence[observations.Variable],
+    climatic_indicators: Sequence[ClimaticIndicator],
     fetch_stations_with_months: bool,
     fetch_stations_with_seasons: bool,
     fetch_stations_with_yearly_measurements: bool,
@@ -29,10 +30,10 @@ def fetch_remote_stations(
     station_url = (
         "https://api.arpa.veneto.it/REST/v1/clima_indicatori/staz_attive_lunghe"
     )
-    for variable in variables:
+    for climatic_indicator in climatic_indicators:
         logger.info(
-            f"Retrieving stations with monthly measurements for variable "
-            f"{variable.name!r}..."
+            f"Retrieving stations with monthly measurements for climatic indicator "
+            f"{climatic_indicator.identifier!r}..."
         )
         if fetch_stations_with_months:
             for month in range(1, 13):
@@ -40,7 +41,7 @@ def fetch_remote_stations(
                 month_response = client.get(
                     station_url,
                     params={
-                        "indicatore": variable.name,
+                        "indicatore": climatic_indicator.name,
                         "tabella": "M",
                         "periodo": str(month),
                     },
@@ -54,7 +55,7 @@ def fetch_remote_stations(
                 season_response = client.get(
                     station_url,
                     params={
-                        "indicatore": variable.name,
+                        "indicatore": climatic_indicator.name,
                         "tabella": "S",
                         "periodo": str(season),
                     },
@@ -67,7 +68,7 @@ def fetch_remote_stations(
             year_response = client.get(
                 station_url,
                 params={
-                    "indicatore": variable.name,
+                    "indicatore": climatic_indicator.name,
                     "tabella": "A",
                     "periodo": "0",
                 },
@@ -114,7 +115,7 @@ def parse_station(
 
 def harvest_stations(
     client: httpx.Client,
-    variables_to_refresh: Sequence[observations.Variable],
+    climatic_indicators_to_refresh: Sequence[ClimaticIndicator],
     fetch_stations_with_months: bool,
     fetch_stations_with_seasons: bool,
     fetch_stations_with_yearly_measurements: bool,
@@ -125,7 +126,7 @@ def harvest_stations(
     stations = set()
     for raw_station in fetch_remote_stations(
         client,
-        variables_to_refresh,
+        climatic_indicators_to_refresh,
         fetch_stations_with_months,
         fetch_stations_with_seasons,
         fetch_stations_with_yearly_measurements,

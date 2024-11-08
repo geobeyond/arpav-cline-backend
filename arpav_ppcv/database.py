@@ -63,113 +63,113 @@ def get_engine(settings: config.ArpavPpcvSettings, use_test_db: Optional[bool] =
     return result
 
 
-def create_variable(
-    session: sqlmodel.Session, variable_create: observations.VariableCreate
-) -> observations.Variable:
-    """Create a new variable."""
-    db_variable = observations.Variable(**variable_create.model_dump())
-    session.add(db_variable)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        session.refresh(db_variable)
-        return db_variable
-
-
-def create_many_variables(
-    session: sqlmodel.Session,
-    variables_to_create: Sequence[observations.VariableCreate],
-) -> list[observations.Variable]:
-    """Create several variables."""
-    db_records = []
-    for variable_create in variables_to_create:
-        db_variable = observations.Variable(**variable_create.model_dump())
-        db_records.append(db_variable)
-        session.add(db_variable)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        for db_record in db_records:
-            session.refresh(db_record)
-        return db_records
-
-
-def get_variable(
-    session: sqlmodel.Session, variable_id: uuid.UUID
-) -> Optional[observations.Variable]:
-    return session.get(observations.Variable, variable_id)
-
-
-def get_variable_by_name(
-    session: sqlmodel.Session, variable_name: str
-) -> Optional[observations.Variable]:
-    """Get a variable by its name.
-
-    Since a variable name is unique, it can be used to uniquely identify a variable.
-    """
-    return session.exec(
-        sqlmodel.select(observations.Variable).where(
-            observations.Variable.name == variable_name
-        )
-    ).first()
-
-
-def update_variable(
-    session: sqlmodel.Session,
-    db_variable: observations.Variable,
-    variable_update: observations.VariableUpdate,
-) -> observations.Variable:
-    """Update a variable."""
-    data_ = variable_update.model_dump(exclude_unset=True)
-    for key, value in data_.items():
-        setattr(db_variable, key, value)
-    session.add(db_variable)
-    session.commit()
-    session.refresh(db_variable)
-    return db_variable
-
-
-def delete_variable(session: sqlmodel.Session, variable_id: uuid.UUID) -> None:
-    """Delete a variable."""
-    db_variable = get_variable(session, variable_id)
-    if db_variable is not None:
-        session.delete(db_variable)
-        session.commit()
-    else:
-        raise RuntimeError("Variable not found")
-
-
-def list_variables(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    include_total: bool = False,
-    name_filter: Optional[str] = None,
-) -> tuple[Sequence[observations.Variable], Optional[int]]:
-    """List existing variables."""
-    statement = sqlmodel.select(observations.Variable).order_by(
-        observations.Variable.name
-    )
-    if name_filter is not None:
-        statement = _add_substring_filter(
-            statement, name_filter, observations.Variable.name
-        )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_variables(
-    session: sqlmodel.Session,
-) -> Sequence[observations.Variable]:
-    _, num_total = list_variables(session, limit=1, include_total=True)
-    result, _ = list_variables(session, limit=num_total, include_total=False)
-    return result
+# def create_variable(
+#     session: sqlmodel.Session, variable_create: observations.VariableCreate
+# ) -> observations.Variable:
+#     """Create a new variable."""
+#     db_variable = observations.Variable(**variable_create.model_dump())
+#     session.add(db_variable)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         session.refresh(db_variable)
+#         return db_variable
+#
+#
+# def create_many_variables(
+#     session: sqlmodel.Session,
+#     variables_to_create: Sequence[observations.VariableCreate],
+# ) -> list[observations.Variable]:
+#     """Create several variables."""
+#     db_records = []
+#     for variable_create in variables_to_create:
+#         db_variable = observations.Variable(**variable_create.model_dump())
+#         db_records.append(db_variable)
+#         session.add(db_variable)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         for db_record in db_records:
+#             session.refresh(db_record)
+#         return db_records
+#
+#
+# def get_variable(
+#     session: sqlmodel.Session, variable_id: uuid.UUID
+# ) -> Optional[observations.Variable]:
+#     return session.get(observations.Variable, variable_id)
+#
+#
+# def get_variable_by_name(
+#     session: sqlmodel.Session, variable_name: str
+# ) -> Optional[observations.Variable]:
+#     """Get a variable by its name.
+#
+#     Since a variable name is unique, it can be used to uniquely identify a variable.
+#     """
+#     return session.exec(
+#         sqlmodel.select(observations.Variable).where(
+#             observations.Variable.name == variable_name
+#         )
+#     ).first()
+#
+#
+# def update_variable(
+#     session: sqlmodel.Session,
+#     db_variable: observations.Variable,
+#     variable_update: observations.VariableUpdate,
+# ) -> observations.Variable:
+#     """Update a variable."""
+#     data_ = variable_update.model_dump(exclude_unset=True)
+#     for key, value in data_.items():
+#         setattr(db_variable, key, value)
+#     session.add(db_variable)
+#     session.commit()
+#     session.refresh(db_variable)
+#     return db_variable
+#
+#
+# def delete_variable(session: sqlmodel.Session, variable_id: uuid.UUID) -> None:
+#     """Delete a variable."""
+#     db_variable = get_variable(session, variable_id)
+#     if db_variable is not None:
+#         session.delete(db_variable)
+#         session.commit()
+#     else:
+#         raise RuntimeError("Variable not found")
+#
+#
+# def list_variables(
+#     session: sqlmodel.Session,
+#     *,
+#     limit: int = 20,
+#     offset: int = 0,
+#     include_total: bool = False,
+#     name_filter: Optional[str] = None,
+# ) -> tuple[Sequence[observations.Variable], Optional[int]]:
+#     """List existing variables."""
+#     statement = sqlmodel.select(observations.Variable).order_by(
+#         observations.Variable.name
+#     )
+#     if name_filter is not None:
+#         statement = _add_substring_filter(
+#             statement, name_filter, observations.Variable.name
+#         )
+#     items = session.exec(statement.offset(offset).limit(limit)).all()
+#     num_items = _get_total_num_records(session, statement) if include_total else None
+#     return items, num_items
+#
+#
+# def collect_all_variables(
+#     session: sqlmodel.Session,
+# ) -> Sequence[observations.Variable]:
+#     _, num_total = list_variables(session, limit=1, include_total=True)
+#     result, _ = list_variables(session, limit=num_total, include_total=False)
+#     return result
 
 
 def create_station(
@@ -417,7 +417,7 @@ def list_monthly_measurements(
     limit: int = 20,
     offset: int = 0,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
     month_filter: Optional[int] = None,
     include_total: bool = False,
 ) -> tuple[Sequence[observations.MonthlyMeasurement], Optional[int]]:
@@ -429,9 +429,10 @@ def list_monthly_measurements(
         statement = statement.where(
             observations.MonthlyMeasurement.station_id == station_id_filter
         )
-    if variable_id_filter is not None:
+    if climatic_indicator_id_filter is not None:
         statement = statement.where(
-            observations.MonthlyMeasurement.variable_id == variable_id_filter
+            observations.MonthlyMeasurement.climatic_indicator_id
+            == climatic_indicator_id_filter
         )
     if month_filter is not None:
         statement = statement.where(
@@ -447,14 +448,14 @@ def collect_all_monthly_measurements(
     session: sqlmodel.Session,
     *,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
     month_filter: Optional[int] = None,
 ) -> Sequence[observations.MonthlyMeasurement]:
     _, num_total = list_monthly_measurements(
         session,
         limit=1,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         month_filter=month_filter,
         include_total=True,
     )
@@ -462,7 +463,7 @@ def collect_all_monthly_measurements(
         session,
         limit=num_total,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         month_filter=month_filter,
         include_total=False,
     )
@@ -531,7 +532,7 @@ def list_seasonal_measurements(
     limit: int = 20,
     offset: int = 0,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
     season_filter: Optional[base.Season] = None,
     include_total: bool = False,
 ) -> tuple[Sequence[observations.SeasonalMeasurement], Optional[int]]:
@@ -543,9 +544,10 @@ def list_seasonal_measurements(
         statement = statement.where(
             observations.SeasonalMeasurement.station_id == station_id_filter
         )
-    if variable_id_filter is not None:
+    if climatic_indicator_id_filter is not None:
         statement = statement.where(
-            observations.SeasonalMeasurement.variable_id == variable_id_filter
+            observations.SeasonalMeasurement.climatic_indicator_id
+            == climatic_indicator_id_filter
         )
     if season_filter is not None:
         statement = statement.where(
@@ -560,14 +562,14 @@ def collect_all_seasonal_measurements(
     session: sqlmodel.Session,
     *,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
     season_filter: Optional[base.Season] = None,
 ) -> Sequence[observations.SeasonalMeasurement]:
     _, num_total = list_seasonal_measurements(
         session,
         limit=1,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         season_filter=season_filter,
         include_total=True,
     )
@@ -575,7 +577,7 @@ def collect_all_seasonal_measurements(
         session,
         limit=num_total,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         season_filter=season_filter,
         include_total=False,
     )
@@ -643,7 +645,7 @@ def list_yearly_measurements(
     limit: int = 20,
     offset: int = 0,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
     include_total: bool = False,
 ) -> tuple[Sequence[observations.YearlyMeasurement], Optional[int]]:
     """List existing yearly measurements."""
@@ -654,9 +656,10 @@ def list_yearly_measurements(
         statement = statement.where(
             observations.YearlyMeasurement.station_id == station_id_filter
         )
-    if variable_id_filter is not None:
+    if climatic_indicator_id_filter is not None:
         statement = statement.where(
-            observations.YearlyMeasurement.variable_id == variable_id_filter
+            observations.YearlyMeasurement.climatic_indicator_id
+            == climatic_indicator_id_filter
         )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
@@ -667,20 +670,20 @@ def collect_all_yearly_measurements(
     session: sqlmodel.Session,
     *,
     station_id_filter: Optional[uuid.UUID] = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
 ) -> Sequence[observations.YearlyMeasurement]:
     _, num_total = list_yearly_measurements(
         session,
         limit=1,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         include_total=True,
     )
     result, _ = list_yearly_measurements(
         session,
         limit=num_total,
         station_id_filter=station_id_filter,
-        variable_id_filter=variable_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
         include_total=False,
     )
     return result

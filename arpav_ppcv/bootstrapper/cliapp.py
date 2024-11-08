@@ -60,7 +60,8 @@ from .climaticindicators import (
     tasmin as tasmin_climatic_indicators,
     tr as tr_climatic_indicators,
 )
-from .variables import generate_variable_configurations
+
+# from .variables import generate_variable_configurations
 from .configurationparameters import generate_configuration_parameters
 
 app = typer.Typer()
@@ -177,24 +178,24 @@ def bootstrap_station_variables(
     print("Done!")
 
 
-@app.command("observation-variables")
-def bootstrap_observation_variables(
-    ctx: typer.Context,
-):
-    """Create initial observation variables."""
-    variables = generate_variable_configurations()
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        for var_create in variables:
-            try:
-                db_variable = database.create_variable(session, var_create)
-                print(f"Created observation variable {db_variable.name!r}")
-            except IntegrityError as err:
-                print(
-                    f"Could not create observation "
-                    f"variable {var_create.name!r}: {err}"
-                )
-                session.rollback()
-    print("Done!")
+# @app.command("observation-variables")
+# def bootstrap_observation_variables(
+#     ctx: typer.Context,
+# ):
+#     """Create initial observation variables."""
+#     variables = generate_variable_configurations()
+#     with sqlmodel.Session(ctx.obj["engine"]) as session:
+#         for var_create in variables:
+#             try:
+#                 db_variable = database.create_variable(session, var_create)
+#                 print(f"Created observation variable {db_variable.name!r}")
+#             except IntegrityError as err:
+#                 print(
+#                     f"Could not create observation "
+#                     f"variable {var_create.name!r}: {err}"
+#                 )
+#                 session.rollback()
+#     print("Done!")
 
 
 @app.command("climatic-indicators")

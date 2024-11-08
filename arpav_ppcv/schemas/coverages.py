@@ -18,7 +18,6 @@ from .. import exceptions
 from . import base
 
 if TYPE_CHECKING:
-    from . import observations
     from . import climaticindicators
 
 logger = logging.getLogger(__name__)
@@ -194,12 +193,12 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
     climatic_indicator_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="climaticindicator.id"
     )
-    observation_variable_id: Optional[uuid.UUID] = sqlmodel.Field(
-        default=None, foreign_key="variable.id"
-    )
-    observation_variable_aggregation_type: Optional[
-        base.ObservationAggregationType
-    ] = None
+    # observation_variable_id: Optional[uuid.UUID] = sqlmodel.Field(
+    #     default=None, foreign_key="variable.id"
+    # )
+    # observation_variable_aggregation_type: Optional[
+    #     base.ObservationAggregationType
+    # ] = None
     uncertainty_lower_bounds_coverage_configuration_id: Optional[
         uuid.UUID
     ] = sqlmodel.Field(default=None, foreign_key="coverageconfiguration.id")
@@ -242,9 +241,9 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
         back_populates="related_coverage_configurations"
     )
 
-    related_observation_variable: "observations.Variable" = sqlmodel.Relationship(
-        back_populates="related_coverage_configurations"
-    )
+    # related_observation_variable: "observations.Variable" = sqlmodel.Relationship(
+    #     back_populates="related_coverage_configurations"
+    # )
 
     uncertainty_lower_bounds_coverage_configuration: Optional[
         "CoverageConfiguration"

@@ -15,7 +15,7 @@ from . import fields
 from . import base
 
 if TYPE_CHECKING:
-    from . import coverages
+    from .climaticindicators import ClimaticIndicator
 
     def get_season(self, value: str):
         if value.lower() in ("djf",):
@@ -66,11 +66,11 @@ class Station(StationBase, table=True):
             "passive_deletes": True,
         },
     )
-    monthly_variables: list["Variable"] = sqlmodel.Relationship(
+    monthly_climatic_indicators: list["ClimaticIndicator"] = sqlmodel.Relationship(
         sa_relationship_kwargs={
             "primaryjoin": (
                 "and_(Station.id == MonthlyMeasurement.station_id, "
-                "Variable.id == MonthlyMeasurement.variable_id)"
+                "ClimaticIndicator.id == MonthlyMeasurement.climatic_indicator_id)"
             ),
             "secondary": "monthlymeasurement",
             "viewonly": True,
@@ -88,11 +88,11 @@ class Station(StationBase, table=True):
             "passive_deletes": True,
         },
     )
-    seasonal_variables: list["Variable"] = sqlmodel.Relationship(
+    seasonal_climatic_indicators: list["ClimaticIndicator"] = sqlmodel.Relationship(
         sa_relationship_kwargs={
             "primaryjoin": (
                 "and_(Station.id == SeasonalMeasurement.station_id, "
-                "Variable.id == SeasonalMeasurement.variable_id)"
+                "ClimaticIndicator.id == SeasonalMeasurement.climatic_indicator_id)"
             ),
             "secondary": "seasonalmeasurement",
             "viewonly": True,
@@ -110,11 +110,11 @@ class Station(StationBase, table=True):
             "passive_deletes": True,
         },
     )
-    yearly_variables: list["Variable"] = sqlmodel.Relationship(
+    yearly_climatic_indicators: list["ClimaticIndicator"] = sqlmodel.Relationship(
         sa_relationship_kwargs={
             "primaryjoin": (
                 "and_(Station.id == YearlyMeasurement.station_id, "
-                "Variable.id == YearlyMeasurement.variable_id)"
+                "ClimaticIndicator.id == YearlyMeasurement.climatic_indicator_id)"
             ),
             "secondary": "yearlymeasurement",
             "viewonly": True,
@@ -164,80 +164,84 @@ class StationUpdate(sqlmodel.SQLModel):
     active_until: Optional[dt.date] = None
 
 
-class VariableBase(sqlmodel.SQLModel):
-    id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = sqlmodel.Field(unique=True)
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    unit_english: Optional[str] = None
-    unit_italian: Optional[str] = None
-
-
-class Variable(VariableBase, table=True):
-    related_coverage_configurations: list[
-        "coverages.CoverageConfiguration"
-    ] = sqlmodel.Relationship(back_populates="related_observation_variable")
-    monthly_measurements: list["MonthlyMeasurement"] = sqlmodel.Relationship(
-        back_populates="variable",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete monthly measurements when their related variable
-            # is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-    seasonal_measurements: list["SeasonalMeasurement"] = sqlmodel.Relationship(
-        back_populates="variable",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete seasonal measurements when their related variable
-            # is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-    yearly_measurements: list["YearlyMeasurement"] = sqlmodel.Relationship(
-        back_populates="variable",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete yearly measurements when their related variable
-            # is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-
-    def __hash__(self):
-        return hash(self.id)
-
-
-class VariableCreate(sqlmodel.SQLModel):
-    name: str
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    unit_english: Optional[str] = None
-    unit_italian: Optional[str] = None
-
-
-class VariableUpdate(sqlmodel.SQLModel):
-    name: Optional[str] = None
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    unit_english: Optional[str] = None
-    unit_italian: Optional[str] = None
+# # # TODO: Replace this with climatic_indicator
+# class VariableBase(sqlmodel.SQLModel):
+#     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
+#     name: str = sqlmodel.Field(unique=True)
+#     display_name_english: Optional[str] = None
+#     display_name_italian: Optional[str] = None
+#     description_english: Optional[str] = None
+#     description_italian: Optional[str] = None
+#     unit_english: Optional[str] = None
+#     unit_italian: Optional[str] = None
+#
+#
+# # # TODO: Replace this with climatic_indicator
+# class Variable(VariableBase, table=True):
+#     related_coverage_configurations: list[
+#         "coverages.CoverageConfiguration"
+#     ] = sqlmodel.Relationship(back_populates="related_observation_variable")
+#     monthly_measurements: list["MonthlyMeasurement"] = sqlmodel.Relationship(
+#         back_populates="variable",
+#         sa_relationship_kwargs={
+#             # ORM relationship config, which explicitly includes the
+#             # `delete` and `delete-orphan` options because we want the ORM
+#             # to try to delete monthly measurements when their related variable
+#             # is deleted
+#             "cascade": "all, delete-orphan",
+#             # expect that the RDBMS handles cascading deletes
+#             "passive_deletes": True,
+#         },
+#     )
+#     seasonal_measurements: list["SeasonalMeasurement"] = sqlmodel.Relationship(
+#         back_populates="variable",
+#         sa_relationship_kwargs={
+#             # ORM relationship config, which explicitly includes the
+#             # `delete` and `delete-orphan` options because we want the ORM
+#             # to try to delete seasonal measurements when their related variable
+#             # is deleted
+#             "cascade": "all, delete-orphan",
+#             # expect that the RDBMS handles cascading deletes
+#             "passive_deletes": True,
+#         },
+#     )
+#     yearly_measurements: list["YearlyMeasurement"] = sqlmodel.Relationship(
+#         back_populates="variable",
+#         sa_relationship_kwargs={
+#             # ORM relationship config, which explicitly includes the
+#             # `delete` and `delete-orphan` options because we want the ORM
+#             # to try to delete yearly measurements when their related variable
+#             # is deleted
+#             "cascade": "all, delete-orphan",
+#             # expect that the RDBMS handles cascading deletes
+#             "passive_deletes": True,
+#         },
+#     )
+#
+#     def __hash__(self):
+#         return hash(self.id)
+#
+#
+# # TODO: Replace this with climatic_indicator
+# class VariableCreate(sqlmodel.SQLModel):
+#     name: str
+#     display_name_english: Optional[str] = None
+#     display_name_italian: Optional[str] = None
+#     description_english: Optional[str] = None
+#     description_italian: Optional[str] = None
+#     unit_english: Optional[str] = None
+#     unit_italian: Optional[str] = None
+#
+#
+# # TODO: Replace this with climatic_indicator
+# class VariableUpdate(sqlmodel.SQLModel):
+#     name: Optional[str] = None
+#     display_name_english: Optional[str] = None
+#     display_name_italian: Optional[str] = None
+#     description_english: Optional[str] = None
+#     description_italian: Optional[str] = None
+#     unit_english: Optional[str] = None
+#     unit_italian: Optional[str] = None
 
 
 class MonthlyMeasurementBase(sqlmodel.SQLModel):
@@ -257,20 +261,31 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
         ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "variable_id",
-            ],
-            [
-                "variable.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
-        ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "variable_id",
+        #     ],
+        #     [
+        #         "variable.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
+        # ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "climatic_indicator_id",
+        #     ],
+        #     [
+        #         "climaticindicator.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
+        # ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    # climatic_indicator_id: int
 
     station: Station = sqlmodel.Relationship(
         back_populates="monthly_measurements",
@@ -281,20 +296,30 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             "lazy": "joined",
         },
     )
-    variable: Variable = sqlmodel.Relationship(
-        back_populates="monthly_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
+    # variable: Variable = sqlmodel.Relationship(
+    #     back_populates="monthly_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
+    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    #     back_populates="monthly_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
 
 
 class MonthlyMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    climatic_indicator_id: int
     value: float
     date: dt.date
 
@@ -316,20 +341,31 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
         ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "variable_id",
-            ],
-            [
-                "variable.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "variable_id",
+        #     ],
+        #     [
+        #         "variable.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
+        # ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "climatic_indicator_id",
+        #     ],
+        #     [
+        #         "climaticindicator.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
+        # ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    # climatic_indicator_id: int
     value: float
     year: int
     season: base.Season
@@ -343,20 +379,30 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    variable: Variable = sqlmodel.Relationship(
-        back_populates="seasonal_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
+    # variable: Variable = sqlmodel.Relationship(
+    #     back_populates="seasonal_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
+    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    #     back_populates="seasonal_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
 
 
 class SeasonalMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    climatic_indicator_id: pydantic.UUID4
     value: float
     year: int
     season: base.Season
@@ -380,20 +426,31 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
         ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "variable_id",
-            ],
-            [
-                "variable.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "variable_id",
+        #     ],
+        #     [
+        #         "variable.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
+        # ),
+        # sqlalchemy.ForeignKeyConstraint(
+        #     [
+        #         "climatic_indicator_id",
+        #     ],
+        #     [
+        #         "climaticindicator.id",
+        #     ],
+        #     onupdate="CASCADE",
+        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
+        # ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    # climatic_indicator_id: int
     value: float
     year: int
 
@@ -406,20 +463,30 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    variable: Variable = sqlmodel.Relationship(
-        back_populates="yearly_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
+    # variable: Variable = sqlmodel.Relationship(
+    #     back_populates="yearly_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
+    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    #     back_populates="yearly_measurements",
+    #     sa_relationship_kwargs={
+    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
+    #         # is instead of the default lazy behavior of only retrieving related
+    #         # records when they are accessed by the ORM
+    #         "lazy": "joined",
+    #     },
+    # )
 
 
 class YearlyMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    variable_id: pydantic.UUID4
+    # variable_id: pydantic.UUID4
+    climatic_indicator_id: int
     value: float
     year: int
 

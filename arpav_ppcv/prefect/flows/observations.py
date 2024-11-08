@@ -1,5 +1,4 @@
 import datetime as dt
-import uuid
 from typing import Sequence
 
 import httpx
@@ -13,10 +12,11 @@ from arpav_ppcv.config import get_settings
 from arpav_ppcv.observations_harvester import operations
 from arpav_ppcv.operations import (
     create_db_schema,
-    refresh_station_variable_database_view,
+    refresh_station_climatic_indicator_database_view,
 )
 from arpav_ppcv.schemas import (
     base,
+    climaticindicators,
     observations,
 )
 
@@ -32,7 +32,7 @@ db_engine = database.get_engine(settings)
 )
 def harvest_stations(
     client: httpx.Client,
-    variable: observations.Variable,
+    climatic_indicator: climaticindicators.ClimaticIndicator,
     fetch_stations_with_months: bool,
     fetch_stations_with_seasons: bool,
     fetch_stations_with_yearly_measurements: bool,
@@ -43,7 +43,7 @@ def harvest_stations(
     stations = set()
     retriever = operations.fetch_remote_stations(
         client=client,
-        variables=[variable],
+        climatic_indicators=[climatic_indicator],
         fetch_stations_with_months=fetch_stations_with_months,
         fetch_stations_with_seasons=fetch_stations_with_seasons,
         fetch_stations_with_yearly_measurements=fetch_stations_with_yearly_measurements,
@@ -93,26 +93,28 @@ def find_new_stations(
     retry_delay_seconds=settings.prefect.flow_retry_delay_seconds,
 )
 def refresh_stations(
-    variable_name: str | None = None,
+    climatic_indicator_identifier: str | None = None,
     refresh_stations_with_monthly_data: bool = True,
     refresh_stations_with_seasonal_data: bool = True,
     refresh_stations_with_yearly_data: bool = True,
 ):
     client = httpx.Client()
     with sqlmodel.Session(db_engine) as db_session:
-        db_variables = _get_variables(db_session, variable_name)
-        if len(db_variables) > 0:
+        db_climatic_indicators = _get_climatic_indicators(
+            db_session, climatic_indicator_identifier
+        )
+        if len(db_climatic_indicators) > 0:
             to_filter_for_new_stations = set()
             to_wait_on = []
-            for variable in db_variables:
+            for climatic_indicator in db_climatic_indicators:
                 print(
                     f"refreshing stations that have values for "
-                    f"variable {variable.name!r}..."
+                    f"climatic indicator {climatic_indicator.identifier!r}..."
                 )
                 if refresh_stations_with_monthly_data:
                     monthly_future = harvest_stations.submit(
                         client,
-                        variable,
+                        climatic_indicator,
                         fetch_stations_with_months=True,
                         fetch_stations_with_seasons=False,
                         fetch_stations_with_yearly_measurements=False,
@@ -121,7 +123,7 @@ def refresh_stations(
                 if refresh_stations_with_seasonal_data:
                     seasonal_future = harvest_stations.submit(
                         client,
-                        variable,
+                        climatic_indicator,
                         fetch_stations_with_months=False,
                         fetch_stations_with_seasons=True,
                         fetch_stations_with_yearly_measurements=False,
@@ -130,7 +132,7 @@ def refresh_stations(
                 if refresh_stations_with_yearly_data:
                     yearly_future = harvest_stations.submit(
                         client,
-                        variable,
+                        climatic_indicator,
                         fetch_stations_with_months=False,
                         fetch_stations_with_seasons=False,
                         fetch_stations_with_yearly_measurements=True,
@@ -169,13 +171,13 @@ def harvest_monthly_measurements(
     client: httpx.Client,
     db_session: sqlmodel.Session,
     station: observations.Station,
-    variable: observations.Variable,
+    climatic_indicator: climaticindicators.ClimaticIndicator,
     month: int,
 ) -> list[observations.MonthlyMeasurementCreate]:
     existing_measurements = database.collect_all_monthly_measurements(
         db_session,
         station_id_filter=station.id,
-        variable_id_filter=variable.id,
+        climatic_indicator_id_filter=climatic_indicator.id,
         month_filter=month,
     )
     existing = {}
@@ -186,7 +188,7 @@ def harvest_monthly_measurements(
         "https://api.arpa.veneto.it/REST/v1/clima_indicatori",
         params={
             "statcd": station.code,
-            "indicatore": variable.name,
+            "indicatore": climatic_indicator.name,
             "tabella": "M",
             "periodo": month,
         },
@@ -196,7 +198,7 @@ def harvest_monthly_measurements(
     for raw_measurement in response.json().get("data", []):
         measurement_create = observations.MonthlyMeasurementCreate(
             station_id=station.id,
-            variable_id=variable.id,
+            climatic_indicator_id=climatic_indicator.id,
             value=raw_measurement["valore"],
             date=dt.date(raw_measurement["anno"], month, 1),
         )
@@ -213,20 +215,29 @@ def harvest_monthly_measurements(
 )
 def refresh_monthly_measurements(
     station_code: str | None = None,
-    variable_name: str | None = None,
+    climatic_indicator_identifier: str | None = None,
     month: int | None = None,
 ):
     client = httpx.Client()
     all_created = []
     with sqlmodel.Session(db_engine) as db_session:
-        if len(db_variables := _get_variables(db_session, variable_name)) > 0:
+        if (
+            len(
+                db_climatic_indicators := _get_climatic_indicators(
+                    db_session, climatic_indicator_identifier
+                )
+            )
+            > 0
+        ):
             if len(db_stations := _get_stations(db_session, station_code)) > 0:
                 for db_station in db_stations:
                     to_create = []
                     to_wait_for = []
                     print(f"Processing station: {db_station.name!r}...")
-                    for db_variable in db_variables:
-                        print(f"Processing variable: {db_variable.name!r}...")
+                    for db_climatic_indicator in db_climatic_indicators:
+                        print(
+                            f"Processing climatic indicator: {db_climatic_indicator.identifier!r}..."
+                        )
                         if len(months := _get_months(month)) > 0:
                             for current_month in months:
                                 print(f"Processing month: {current_month!r}...")
@@ -234,7 +245,7 @@ def refresh_monthly_measurements(
                                     client,
                                     db_session,
                                     db_station,
-                                    db_variable,
+                                    db_climatic_indicator,
                                     current_month,
                                 )
                                 to_wait_for.append(fut)
@@ -266,13 +277,13 @@ def harvest_seasonal_measurements(
     client: httpx.Client,
     db_session: sqlmodel.Session,
     station: observations.Station,
-    variable: observations.Variable,
+    climatic_indicator: climaticindicators.ClimaticIndicator,
     season: base.Season,
 ) -> list[observations.SeasonalMeasurementCreate]:
     existing_measurements = database.collect_all_seasonal_measurements(
         db_session,
         station_id_filter=station.id,
-        variable_id_filter=variable.id,
+        climatic_indicator_id_filter=climatic_indicator.id,
         season_filter=season,
     )
     existing = {}
@@ -290,7 +301,7 @@ def harvest_seasonal_measurements(
         "https://api.arpa.veneto.it/REST/v1/clima_indicatori",
         params={
             "statcd": station.code,
-            "indicatore": variable.name,
+            "indicatore": climatic_indicator.name,
             "tabella": "S",
             "periodo": season_query_param,
         },
@@ -300,7 +311,7 @@ def harvest_seasonal_measurements(
     for raw_measurement in response.json().get("data", []):
         measurement_create = observations.SeasonalMeasurementCreate(
             station_id=station.id,
-            variable_id=variable.id,
+            climatic_indicator_id=climatic_indicator.id,
             value=raw_measurement["valore"],
             year=int(raw_measurement["anno"]),
             season=season,
@@ -318,25 +329,38 @@ def harvest_seasonal_measurements(
 )
 def refresh_seasonal_measurements(
     station_code: str | None = None,
-    variable_name: str | None = None,
+    climatic_indicator_name: str | None = None,
     season_name: str | None = None,
 ):
     client = httpx.Client()
     all_created = []
     with sqlmodel.Session(db_engine) as db_session:
-        if len(db_variables := _get_variables(db_session, variable_name)) > 0:
+        if (
+            len(
+                db_climatic_indicators := _get_climatic_indicators(
+                    db_session, climatic_indicator_name
+                )
+            )
+            > 0
+        ):
             if len(db_stations := _get_stations(db_session, station_code)) > 0:
                 for db_station in db_stations:
                     to_create = []
                     to_wait_for = []
                     print(f"Processing station: {db_station.name!r}...")
-                    for db_variable in db_variables:
-                        print(f"Processing variable: {db_variable.name!r}...")
+                    for db_climatic_indicator in db_climatic_indicators:
+                        print(
+                            f"Processing climatic indicator: {db_climatic_indicator.identifier!r}..."
+                        )
                         if len(seasons := _get_seasons(season_name)) > 0:
                             for season in seasons:
                                 print(f"Processing season: {season!r}...")
                                 fut = harvest_seasonal_measurements.submit(
-                                    client, db_session, db_station, db_variable, season
+                                    client,
+                                    db_session,
+                                    db_station,
+                                    db_climatic_indicator,
+                                    season,
                                 )
                                 to_wait_for.append(fut)
                         else:
@@ -367,13 +391,13 @@ def harvest_yearly_measurements(
     client: httpx.Client,
     db_session: sqlmodel.Session,
     station: observations.Station,
-    variable: observations.Variable,
+    climatic_indicator: climaticindicators.ClimaticIndicator,
 ) -> list[observations.YearlyMeasurementCreate]:
     to_create = []
     existing_measurements = database.collect_all_yearly_measurements(
         db_session,
         station_id_filter=station.id,
-        variable_id_filter=variable.id,
+        climatic_indicator_id_filter=climatic_indicator.id,
     )
     existing = {}
     for db_measurement in existing_measurements:
@@ -383,7 +407,7 @@ def harvest_yearly_measurements(
         "https://api.arpa.veneto.it/REST/v1/clima_indicatori",
         params={
             "statcd": station.code,
-            "indicatore": variable.name,
+            "indicatore": climatic_indicator.name,
             "tabella": "A",
             "periodo": "0",
         },
@@ -392,7 +416,7 @@ def harvest_yearly_measurements(
     for raw_measurement in response.json().get("data", []):
         yearly_measurement_create = observations.YearlyMeasurementCreate(
             station_id=station.id,
-            variable_id=variable.id,
+            climatic_indicator_id=climatic_indicator.id,
             value=raw_measurement["valore"],
             year=int(raw_measurement["anno"]),
         )
@@ -409,21 +433,30 @@ def harvest_yearly_measurements(
 )
 def refresh_yearly_measurements(
     station_code: str | None = None,
-    variable_name: str | None = None,
+    climatic_indicator_identifier: str | None = None,
 ):
     client = httpx.Client()
     all_created = []
     with sqlmodel.Session(db_engine) as db_session:
-        if len(db_variables := _get_variables(db_session, variable_name)) > 0:
+        if (
+            len(
+                db_climatic_indicators := _get_climatic_indicators(
+                    db_session, climatic_indicator_identifier
+                )
+            )
+            > 0
+        ):
             if len(db_stations := _get_stations(db_session, station_code)) > 0:
                 for db_station in db_stations:
                     to_create = []
                     to_wait_for = []
                     print(f"Processing station: {db_station.name!r}...")
-                    for db_variable in db_variables:
-                        print(f"Processing variable: {db_variable.name!r}...")
+                    for db_climatic_indicator in db_climatic_indicators:
+                        print(
+                            f"Processing climatic indicator: {db_climatic_indicator.identifier!r}..."
+                        )
                         fut = harvest_yearly_measurements.submit(
-                            client, db_session, db_station, db_variable
+                            client, db_session, db_station, db_climatic_indicator
                         )
                         to_wait_for.append(fut)
                     for future in to_wait_for:
@@ -455,14 +488,16 @@ def _get_stations(
     return result
 
 
-def _get_variables(
-    db_session: sqlmodel.Session, variable_name: str | None = None
-) -> list[observations.Variable]:
-    if variable_name is not None:
-        variable = database.get_variable_by_name(db_session, variable_name)
-        result = [variable] if variable else []
+def _get_climatic_indicators(
+    db_session: sqlmodel.Session, climatic_indicator_identifier: str | None = None
+) -> list[climaticindicators.ClimaticIndicator]:
+    if climatic_indicator_identifier is not None:
+        climatic_indicator = database.get_climatic_indicator_by_identifier(
+            db_session, climatic_indicator_identifier
+        )
+        result = [climatic_indicator] if climatic_indicator else []
     else:
-        result = database.collect_all_variables(db_session)
+        result = database.collect_all_climatic_indicators(db_session)
     return result
 
 
@@ -499,15 +534,17 @@ def _build_created_measurements_table(
     for measurement in measurements:
         station_identifier = f"{measurement.station.name} ({measurement.station.code})"
         station_items = aggregated_items.setdefault(station_identifier, {})
-        variable_items = station_items.setdefault(measurement.variable.name, [])
-        variable_items.append(measurement)
+        climatic_indicator_items = station_items.setdefault(
+            measurement.climatic_indicator.identifier, []
+        )
+        climatic_indicator_items.append(measurement)
     table_contents = []
     for station_identifier, station_items in aggregated_items.items():
-        for variable_name, measurement_items in station_items.items():
+        for climatic_indicator_identifier, measurement_items in station_items.items():
             table_contents.append(
                 {
                     "station": station_identifier,
-                    "variable": variable_name,
+                    "climatic_indicator": climatic_indicator_identifier,
                     "number of new measurements": len(measurement_items),
                 }
             )
@@ -557,11 +594,15 @@ def build_yearly_measurement_id(
     retries=settings.prefect.num_task_retries,
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
 )
-def refresh_stations_for_variable(variable_id: uuid.UUID, db_schema_name: str):
+def refresh_stations_for_climatic_indicator(
+    climatic_indicator_id: int, db_schema_name: str
+):
     with sqlmodel.Session(db_engine) as db_session:
-        variable = database.get_variable(db_session, variable_id)
-        return refresh_station_variable_database_view(
-            db_session, variable, db_schema_name=db_schema_name
+        climatic_indicator = database.get_climatic_indicator(
+            db_session, climatic_indicator_id
+        )
+        return refresh_station_climatic_indicator_database_view(
+            db_session, climatic_indicator, db_schema_name=db_schema_name
         )
 
 
@@ -571,24 +612,29 @@ def refresh_stations_for_variable(variable_id: uuid.UUID, db_schema_name: str):
     retry_delay_seconds=settings.prefect.flow_retry_delay_seconds,
 )
 def refresh_station_variables(
-    variable_name: str | None = None,
+    climatic_indicator_identifier: str | None = None,
 ):
     with sqlmodel.Session(db_engine) as db_session:
         create_db_schema(db_session, settings.variable_stations_db_schema)
-        variable_ids = [v.id for v in _get_variables(db_session, variable_name)]
-    if len(variable_ids) > 0:
+        climatic_indicator_ids = [
+            ci.id
+            for ci in _get_climatic_indicators(
+                db_session, climatic_indicator_identifier
+            )
+        ]
+    if len(climatic_indicator_ids) > 0:
         to_wait_on = []
-        for variable_id in variable_ids:
+        for climatic_indicator_id in climatic_indicator_ids:
             print(
                 f"refreshing stations that have values for "
-                f"variable {variable_id!r}..."
+                f"climatic indicator with id: {climatic_indicator_id!r}..."
             )
-            var_future = refresh_stations_for_variable.submit(
-                variable_id,
+            var_future = refresh_stations_for_climatic_indicator.submit(
+                climatic_indicator_id,
                 settings.variable_stations_db_schema,
             )
             to_wait_on.append(var_future)
         for future in to_wait_on:
             future.result()
     else:
-        print("There are no variables to process, skipping...")
+        print("There are no climatic indicators to process, skipping...")
