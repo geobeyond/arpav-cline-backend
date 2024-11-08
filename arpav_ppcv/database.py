@@ -1712,7 +1712,6 @@ def _replace_conf_param_filters_with_climatic_indicator(
             )
         else:
             new_possible_values.append(possible)
-    logger.debug(f"{raw_name=} - {raw_measure_type=} - {raw_aggregation_period=}")
     result = (possible_values, None)
     if all((raw_name, raw_measure_type, raw_aggregation_period)):
         climatic_indicator = get_climatic_indicator_by_identifier(
@@ -1720,5 +1719,4 @@ def _replace_conf_param_filters_with_climatic_indicator(
         )
         if climatic_indicator is not None:
             result = (new_possible_values, climatic_indicator)
-    logger.debug(f"{result=}")
     return result
