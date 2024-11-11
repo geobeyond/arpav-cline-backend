@@ -383,6 +383,9 @@ def list_forecast_data_download_links(
     aggregation_period: Annotated[list[str], Query()] = None,
     climatological_model: Annotated[list[str], Query()] = None,
     scenario: Annotated[list[str], Query()] = None,
+    measure: Annotated[list[str], Query()] = None,
+    year_period: Annotated[list[str], Query()] = None,
+    time_window: Annotated[list[str], Query()] = None,
 ) -> coverage_schemas.CoverageDownloadList:
     """Get download links forecast data"""
     valid_variables = []
@@ -445,17 +448,79 @@ def list_forecast_data_download_links(
             valid_scenarios = db.get_configuration_parameter_by_name(
                 db_session, CoreConfParamName.SCENARIO.value
             ).allowed_values
+    valid_measures = []
+    for m in measure or []:
+        if (
+            conf_param_value := db.get_configuration_parameter_value_by_names(
+                db_session, CoreConfParamName.MEASURE.value, m
+            )
+        ) is not None:
+            valid_measures.append(conf_param_value)
+        else:
+            logger.warning(f"Invalid measure: {m!r}, ignoring...")
+    else:
+        if len(valid_measures) == 0:
+            valid_measures = db.get_configuration_parameter_by_name(
+                db_session, CoreConfParamName.MEASURE.value
+            ).allowed_values
+    valid_year_periods = []
+    for yp in year_period or []:
+        if (
+            conf_param_value := db.get_configuration_parameter_value_by_names(
+                db_session, CoreConfParamName.YEAR_PERIOD.value, yp
+            )
+        ) is not None:
+            valid_year_periods.append(conf_param_value)
+        else:
+            logger.warning(f"Invalid year_period: {yp!r}, ignoring...")
+    else:
+        if len(valid_year_periods) == 0:
+            valid_year_periods = db.get_configuration_parameter_by_name(
+                db_session, CoreConfParamName.YEAR_PERIOD.value
+            ).allowed_values
+    valid_time_windows = [
+        None,
+    ]
+    for tw in time_window or []:
+        if (
+            conf_param_value := db.get_configuration_parameter_value_by_names(
+                db_session, "time_window", tw
+            )
+        ) is not None:
+            valid_time_windows.append(conf_param_value)
+        else:
+            logger.warning(f"Invalid time_window: {tw!r}, ignoring...")
+    else:
+        if len(valid_time_windows) == 0:
+            valid_time_windows.extend(
+                db.get_configuration_parameter_by_name(
+                    db_session, "time_window"
+                ).allowed_values
+            )
     coverage_identifiers = []
     for combination in itertools.product(
         valid_variables,
         valid_aggregation_periods,
         valid_climatological_models,
         valid_scenarios,
+        valid_measures,
+        valid_year_periods,
+        valid_time_windows,
     ):
-        variable, aggregation_period, model, scenario = combination
+        (
+            variable,
+            aggregation_period,
+            model,
+            scenario,
+            measure,
+            year_period,
+            time_window,
+        ) = combination
         logger.debug(
             f"getting links for {variable.name!r}, {aggregation_period.name!r}, "
-            f"{model.name!r}, {scenario.name!r}..."
+            f"{model.name!r}, {scenario.name!r}, {measure.name!r}, "
+            f"{year_period.name!r}, "
+            f"{time_window.name if time_window else time_window!r}..."
         )
         param_values_filter = [
             db.get_configuration_parameter_value_by_names(
@@ -465,15 +530,23 @@ def list_forecast_data_download_links(
             aggregation_period,
             model,
             scenario,
+            measure,
+            year_period,
+            time_window,
         ]
+        filter_ = [i for i in param_values_filter if i is not None]
         cov_confs = db.collect_all_coverage_configurations(
-            db_session, configuration_parameter_values_filter=param_values_filter
+            db_session, configuration_parameter_values_filter=filter_
         )
         for cov_conf in cov_confs:
             identifiers = db.generate_coverage_identifiers(
-                cov_conf, configuration_parameter_values_filter=param_values_filter
+                cov_conf, configuration_parameter_values_filter=filter_
             )
             coverage_identifiers.extend(identifiers)
+            if len(coverage_identifiers) > (list_params.offset + list_params.limit):
+                break
+        if len(coverage_identifiers) > (list_params.offset + list_params.limit):
+            break
     return coverage_schemas.CoverageDownloadList.from_items(
         coverage_identifiers=(
             coverage_identifiers[
