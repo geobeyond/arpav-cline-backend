@@ -1,18 +1,11 @@
 import logging
-import typing
 import uuid
 
 import pydantic
 from fastapi import Request
 
-from .... import operations
-from ....config import ArpavPpcvSettings
 from ....schemas import observations
 from ....schemas.base import Season
-from ..schemas.base import (
-    get_meta,
-    get_list_links,
-)
 from .base import WebResourceList
 
 logger = logging.getLogger(__name__)
@@ -71,42 +64,6 @@ class StationReadListItem(observations.StationBase):
                 for v in instance.yearly_variables
             ],
             url=str(url),
-        )
-
-
-class VariableReadListItem(observations.VariableBase):
-    url: pydantic.AnyHttpUrl
-    stations_vector_tile_layer_url_template: str
-
-    @classmethod
-    def from_db_instance(
-        cls,
-        instance: observations.Variable,
-        request: Request,
-        settings: ArpavPpcvSettings,
-    ) -> "VariableReadListItem":
-        return cls(
-            **instance.model_dump(
-                exclude={
-                    "display_name_english",
-                    "display_name_italian",
-                    "unit_italian",
-                }
-            ),
-            display_name_english=instance.display_name_english or instance.name,
-            display_name_italian=instance.display_name_italian or instance.name,
-            unit_italian=instance.unit_italian or instance.unit_english,
-            url=str(request.url_for("get_variable", variable_id=instance.id)),
-            stations_vector_tile_layer_url_template="/".join(
-                (
-                    settings.public_url,
-                    "vector-tiles",
-                    operations.sanitize_observation_variable_name(instance.name),
-                    "{z}",
-                    "{x}",
-                    "{y}",
-                )
-            ),
         )
 
 
@@ -188,39 +145,6 @@ class StationList(WebResourceList):
     items: list[StationReadListItem]
     list_item_type = StationReadListItem
     path_operation_name = "list_stations"
-
-
-class VariableList(WebResourceList):
-    items: list[VariableReadListItem]
-    list_item_type = VariableReadListItem
-    path_operation_name = "list_variables"
-
-    @classmethod
-    def from_items(
-        cls,
-        items: typing.Sequence[observations.Variable],
-        request: Request,
-        settings: ArpavPpcvSettings,
-        *,
-        limit: int,
-        offset: int,
-        filtered_total: int,
-        unfiltered_total: int,
-    ):
-        return cls(
-            meta=get_meta(len(items), unfiltered_total, filtered_total),
-            links=get_list_links(
-                request,
-                cls.path_operation_name,
-                limit,
-                offset,
-                filtered_total,
-                len(items),
-            ),
-            items=[
-                cls.list_item_type.from_db_instance(i, request, settings) for i in items
-            ],
-        )
 
 
 class MonthlyMeasurementList(WebResourceList):

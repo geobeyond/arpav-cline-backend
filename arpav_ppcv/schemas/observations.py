@@ -261,31 +261,20 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
         ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "variable_id",
-        #     ],
-        #     [
-        #         "variable.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
-        # ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "climatic_indicator_id",
-        #     ],
-        #     [
-        #         "climaticindicator.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a monthly measurement if its related station is deleted
-        # ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete a monthly measurement if its related climatic_indicator is deleted
+        ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
-    # climatic_indicator_id: int
+    climatic_indicator_id: int
 
     station: Station = sqlmodel.Relationship(
         back_populates="monthly_measurements",
@@ -296,24 +285,15 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             "lazy": "joined",
         },
     )
-    # variable: Variable = sqlmodel.Relationship(
-    #     back_populates="monthly_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
-    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
-    #     back_populates="monthly_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
+    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+        back_populates="monthly_measurements",
+        sa_relationship_kwargs={
+            # retrieve the related resource immediately, by means of a SQL JOIN - this
+            # is instead of the default lazy behavior of only retrieving related
+            # records when they are accessed by the ORM
+            "lazy": "joined",
+        },
+    )
 
 
 class MonthlyMeasurementCreate(sqlmodel.SQLModel):
@@ -341,31 +321,20 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
         ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "variable_id",
-        #     ],
-        #     [
-        #         "variable.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        # ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "climatic_indicator_id",
-        #     ],
-        #     [
-        #         "climaticindicator.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        # ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete a measurement if its related climatic_indicator is deleted
+        ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
-    # climatic_indicator_id: int
+    climatic_indicator_id: int
     value: float
     year: int
     season: base.Season
@@ -379,29 +348,19 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    # variable: Variable = sqlmodel.Relationship(
-    #     back_populates="seasonal_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
-    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
-    #     back_populates="seasonal_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
+    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+        back_populates="seasonal_measurements",
+        sa_relationship_kwargs={
+            # retrieve the related resource immediately, by means of a SQL JOIN - this
+            # is instead of the default lazy behavior of only retrieving related
+            # records when they are accessed by the ORM
+            "lazy": "joined",
+        },
+    )
 
 
 class SeasonalMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
     climatic_indicator_id: pydantic.UUID4
     value: float
     year: int
@@ -426,31 +385,20 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
         ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "variable_id",
-        #     ],
-        #     [
-        #         "variable.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        # ),
-        # sqlalchemy.ForeignKeyConstraint(
-        #     [
-        #         "climatic_indicator_id",
-        #     ],
-        #     [
-        #         "climaticindicator.id",
-        #     ],
-        #     onupdate="CASCADE",
-        #     ondelete="CASCADE",  # i.e. delete a measurement if its related station is deleted
-        # ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete a measurement if its climatic_indicator station is deleted
+        ),
     )
     id: pydantic.UUID4 = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
-    # climatic_indicator_id: int
+    climatic_indicator_id: int
     value: float
     year: int
 
@@ -463,29 +411,19 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    # variable: Variable = sqlmodel.Relationship(
-    #     back_populates="yearly_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
-    # climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
-    #     back_populates="yearly_measurements",
-    #     sa_relationship_kwargs={
-    #         # retrieve the related resource immediately, by means of a SQL JOIN - this
-    #         # is instead of the default lazy behavior of only retrieving related
-    #         # records when they are accessed by the ORM
-    #         "lazy": "joined",
-    #     },
-    # )
+    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+        back_populates="yearly_measurements",
+        sa_relationship_kwargs={
+            # retrieve the related resource immediately, by means of a SQL JOIN - this
+            # is instead of the default lazy behavior of only retrieving related
+            # records when they are accessed by the ORM
+            "lazy": "joined",
+        },
+    )
 
 
 class YearlyMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
     climatic_indicator_id: int
     value: float
     year: int

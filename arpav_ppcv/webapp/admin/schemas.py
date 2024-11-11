@@ -105,17 +105,6 @@ class CoverageConfigurationReadListItem(sqlmodel.SQLModel):
     name: str
 
 
-class VariableRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-    display_name_english: Optional[str]
-    display_name_italian: Optional[str]
-    description_english: Optional[str]
-    description_italian: Optional[str]
-    unit_english: Optional[str]
-    unit_italian: Optional[str]
-
-
 class StationRead(sqlmodel.SQLModel):
     id: uuid.UUID
     name: str

@@ -15,6 +15,7 @@ from ....config import (
 from ....schemas import (
     base as base_schemas,
     observations as observations_schemas,
+    climaticindicators as climaticindicators_schemas,
     coverages as coverages_schemas,
 )
 from ....schemas.base import (
@@ -83,34 +84,34 @@ class TimeSeries(pydantic.BaseModel):
         cls,
         series: pd.Series,
         station: observations_schemas.Station,
-        variable: observations_schemas.Variable,
+        climatic_indicator: climaticindicators_schemas.ClimaticIndicator,
         smoothing_strategy: base_schemas.ObservationDataSmoothingStrategy,
         extra_info: typing.Optional[dict[str, str | int | float | dict]] = None,
         derived_series: typing.Optional[base_schemas.ObservationDerivedSeries] = None,
     ):
         if derived_series is not None:
             series_elaboration = base_schemas.TimeSeriesElaboration.DERIVED
-            name = "_".join((variable.name, derived_series.value))
+            name = "_".join((climatic_indicator.identifier, derived_series.value))
             translated_name = {
                 LOCALE_EN.language: " - ".join(
                     (
-                        variable.display_name_english,
+                        climatic_indicator.display_name_english,
                         derived_series.get_display_name(LOCALE_EN),
                     )
                 ),
                 LOCALE_IT.language: " - ".join(
                     (
-                        variable.display_name_italian,
+                        climatic_indicator.display_name_italian,
                         derived_series.get_display_name(LOCALE_IT),
                     )
                 ),
             }
         else:
             series_elaboration = base_schemas.TimeSeriesElaboration.ORIGINAL
-            name = variable.name
+            name = climatic_indicator.identifier
             translated_name = {
-                LOCALE_EN.language: variable.display_name_english,
-                LOCALE_IT.language: variable.display_name_italian,
+                LOCALE_EN.language: climatic_indicator.display_name_english,
+                LOCALE_IT.language: climatic_indicator.display_name_italian,
             }
         return cls(
             name=name,
@@ -122,7 +123,7 @@ class TimeSeries(pydantic.BaseModel):
             info={
                 "processing_method": smoothing_strategy.value,
                 "station": station.name,
-                "variable": variable.name,
+                "climatic_indicator": climatic_indicator.identifier,
                 "series_elaboration": series_elaboration.value,
                 "derived_series": (
                     derived_series.value if derived_series is not None else ""
@@ -214,11 +215,9 @@ class TimeSeries(pydantic.BaseModel):
                             LOCALE_IT
                         ),
                     },
-                    "variable": {
-                        LOCALE_EN.language: variable.display_name_english
-                        or variable.name,
-                        LOCALE_IT.language: variable.display_name_italian
-                        or variable.name,
+                    "climatic_indicator": {
+                        LOCALE_EN.language: climatic_indicator.display_name_english,
+                        LOCALE_IT.language: climatic_indicator.display_name_italian,
                     },
                     "station": {
                         LOCALE_EN.language: station.name,

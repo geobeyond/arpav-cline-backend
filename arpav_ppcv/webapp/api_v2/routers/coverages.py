@@ -5,14 +5,12 @@ from xml.etree import ElementTree as et
 from typing import (
     Annotated,
     Optional,
-    Sequence,
 )
 
 import anyio.to_thread
 import httpx
 import pydantic
 import shapely.io
-import sqlmodel
 from fastapi import (
     APIRouter,
     Depends,
@@ -34,16 +32,14 @@ from .... import (
     palette,
 )
 from ....config import ArpavPpcvSettings
+from ....thredds import (
+    crawler as thredds_crawler,
+    utils as thredds_utils,
+)
 from ....schemas.base import (
     CoreConfParamName,
     CoverageDataSmoothingStrategy,
     ObservationDataSmoothingStrategy,
-)
-from ....schemas.coverages import ConfigurationParameterValue
-from ....schemas.climaticindicators import ClimaticIndicator
-from ....thredds import (
-    crawler as thredds_crawler,
-    utils as thredds_utils,
 )
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
@@ -184,12 +180,12 @@ def get_coverage_configuration(
         coverage_configuration=db_coverage_configuration
     )
     palette_colors = palette.parse_palette(
-        db_coverage_configuration.climatic_indicator.palette, settings.palettes_dir
+        db_coverage_configuration.palette, settings.palettes_dir
     )
     applied_colors = []
     if palette_colors is not None:
-        minimum = db_coverage_configuration.climatic_indicator.color_scale_min
-        maximum = db_coverage_configuration.climatic_indicator.color_scale_max
+        minimum = db_coverage_configuration.color_scale_min
+        maximum = db_coverage_configuration.color_scale_max
         if abs(maximum - minimum) > 0.001:
             applied_colors = palette.apply_palette(
                 palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
@@ -201,10 +197,7 @@ def get_coverage_configuration(
                 f"colorscale min and max values"
             )
     else:
-        logger.warning(
-            f"Unable to parse palette "
-            f"{db_coverage_configuration.climatic_indicator.palette!r}"
-        )
+        logger.warning(f"Unable to parse palette {db_coverage_configuration.palette!r}")
     return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
         db_coverage_configuration, allowed_coverage_identifiers, applied_colors, request
     )
@@ -233,19 +226,25 @@ def list_coverage_identifiers(
         Query(),
     ] = None,
 ):
-    conf_param_values_filter, climatic_indicator = _retrieve_climatic_indicator_filter(
-        db_session, possible_value or []
-    )
-    logger.debug(f"{conf_param_values_filter=}")
-    logger.debug(f"{climatic_indicator=}")
+    conf_param_values_filter = []
+    for possible in possible_value or []:
+        param_name, param_value = possible.partition(":")[::2]
+        db_parameter_value = db.get_configuration_parameter_value_by_names(
+            db_session, param_name, param_value
+        )
+        if db_parameter_value is not None:
+            conf_param_values_filter.append(db_parameter_value)
+        else:
+            logger.debug(
+                f"ignoring unknown parameter/value pair {param_name}:{param_value}"
+            )
     cov_internals, filtered_total = db.list_coverage_identifiers(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
-        configuration_parameter_values_filter=conf_param_values_filter,
-        climatic_indicator_filter=climatic_indicator,
+        configuration_parameter_values_filter=conf_param_values_filter or None,
     )
     _, unfiltered_total = db.list_coverage_identifiers(
         db_session, limit=1, offset=0, include_total=True

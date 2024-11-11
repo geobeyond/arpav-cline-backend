@@ -26,7 +26,6 @@ from .... import (
     database as db,
     operations,
 )
-from ....config import ArpavPpcvSettings
 from ...responses import GeoJsonResponse
 from ....schemas import base
 from ... import dependencies
@@ -124,50 +123,6 @@ def get_station(
 ):
     db_station = db.get_station(db_session, station_id)
     return observations.StationReadListItem.from_db_instance(db_station, request)
-
-
-@router.get("/variables", response_model=observations.VariableList)
-def list_variables(
-    request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
-):
-    """List known variables."""
-    variables, filtered_total = db.list_variables(
-        db_session,
-        limit=list_params.limit,
-        offset=list_params.offset,
-        include_total=True,
-    )
-    _, unfiltered_total = db.list_variables(
-        db_session, limit=1, offset=0, include_total=True
-    )
-    return observations.VariableList.from_items(
-        variables,
-        request,
-        settings,
-        limit=list_params.limit,
-        offset=list_params.offset,
-        filtered_total=filtered_total,
-        unfiltered_total=unfiltered_total,
-    )
-
-
-@router.get(
-    "/variables/{variable_id}",
-    response_model=observations.VariableReadListItem,
-)
-def get_variable(
-    request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    variable_id: pydantic.UUID4,
-):
-    db_variable = db.get_variable(db_session, variable_id)
-    return observations.VariableReadListItem.from_db_instance(
-        db_variable, request, settings
-    )
 
 
 @router.get("/monthly-measurements", response_model=observations.MonthlyMeasurementList)

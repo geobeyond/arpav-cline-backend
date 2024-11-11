@@ -71,7 +71,6 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
     admin.add_view(
         coverage_views.CoverageConfigurationView(coverages.CoverageConfiguration)
     )
-    admin.add_view(observations_views.VariableView(observations.Variable))
     admin.add_view(observations_views.StationView(observations.Station))
     admin.add_view(
         DropDown(
