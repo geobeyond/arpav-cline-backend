@@ -278,7 +278,6 @@ class ConfigurationParameterList(base.WebResourceList):
 
 class CoverageDataDownloadListMeta(pydantic.BaseModel):
     returned_records: int
-    total_records: int
 
 
 class CoverageDownloadList(pydantic.BaseModel):
