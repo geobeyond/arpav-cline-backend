@@ -1,9 +1,13 @@
 import datetime as dt
 import functools
 import io
+import itertools
 import logging
 import warnings
-from typing import Optional
+from typing import (
+    Optional,
+    Sequence,
+)
 
 import anyio
 import anyio.to_thread
@@ -1178,3 +1182,143 @@ def refresh_station_variable_database_view(
 
 def sanitize_observation_variable_name(name: str) -> str:
     return name.lower().replace(" ", "_").replace("-", "_")
+
+
+def _filter_configuration_parameter_values(
+    session: sqlmodel.Session,
+    possible_param_values: Sequence[str],
+    param_name: str,
+    return_all_if_filter_empty: bool = True,
+) -> list[coverages.ConfigurationParameterValue]:
+    result = []
+    for v in possible_param_values:
+        if (
+            conf_param_value := database.get_configuration_parameter_value_by_names(
+                session, param_name, v
+            )
+        ) is not None:
+            result.append(conf_param_value)
+        else:
+            logger.warning(f"Invalid {param_name}: {v!r}, ignoring...")
+    else:
+        if len(result) == 0 and return_all_if_filter_empty:
+            result = database.get_configuration_parameter_by_name(
+                session, param_name
+            ).allowed_values[:]
+    return result
+
+
+def list_coverage_identifiers_by_param_values(
+    session: sqlmodel.Session,
+    climatological_variable_filter: Optional[list[str]] = None,
+    aggregation_period_filter: Optional[list[str]] = None,
+    climatological_model_filter: Optional[list[str]] = None,
+    scenario_filter: Optional[list[str]] = None,
+    measure_filter: Optional[list[str]] = None,
+    year_period_filter: Optional[list[str]] = None,
+    time_window_filter: Optional[list[str]] = None,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+) -> list[str]:
+    valid_variables = _filter_configuration_parameter_values(
+        session,
+        climatological_variable_filter or [],
+        CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
+    )
+    valid_climatological_models = _filter_configuration_parameter_values(
+        session,
+        climatological_model_filter or [],
+        CoreConfParamName.CLIMATOLOGICAL_MODEL.value,
+    )
+    valid_aggregation_periods = _filter_configuration_parameter_values(
+        session,
+        aggregation_period_filter or [],
+        CoreConfParamName.AGGREGATION_PERIOD.value,
+    )
+    valid_scenarios = _filter_configuration_parameter_values(
+        session, scenario_filter or [], CoreConfParamName.SCENARIO.value
+    )
+    valid_measures = _filter_configuration_parameter_values(
+        session, measure_filter or [], CoreConfParamName.MEASURE.value
+    )
+    valid_year_periods = _filter_configuration_parameter_values(
+        session, year_period_filter or [], CoreConfParamName.YEAR_PERIOD.value
+    )
+    valid_time_windows = _filter_configuration_parameter_values(
+        session,
+        time_window_filter or [],
+        "time_window",
+        return_all_if_filter_empty=False,
+    )
+    if len(valid_time_windows) == 0:
+        valid_time_windows.insert(0, None)
+    valid_time_window_names = [tw.name for tw in valid_time_windows if tw is not None]
+    coverage_identifiers = set()
+    for combination in itertools.product(
+        valid_variables,
+        valid_aggregation_periods,
+        valid_climatological_models,
+        valid_scenarios,
+        valid_measures,
+        valid_year_periods,
+        valid_time_windows,
+    ):
+        (
+            variable,
+            aggregation_period,
+            model,
+            scenario,
+            measure,
+            year_period,
+            time_window,
+        ) = combination
+        logger.debug(
+            f"getting links for variable: {variable.name!r}, "
+            f"aggregation_period: {aggregation_period.name!r}, "
+            f"model: {model.name!r}, scenario: {scenario.name!r}, "
+            f"measure: {measure.name!r}, "
+            f"year_period: {year_period.name!r}, "
+            f"time_window: {time_window.name if time_window else time_window!r}..."
+        )
+        param_values_filter = [
+            database.get_configuration_parameter_value_by_names(
+                session, CoreConfParamName.ARCHIVE.value, "forecast"
+            ),
+            variable,
+            aggregation_period,
+            model,
+            scenario,
+            measure,
+            year_period,
+            time_window,
+        ]
+        filter_ = [i for i in param_values_filter if i is not None]
+        cov_confs, _ = database.list_coverage_configurations(
+            session,
+            limit=limit,
+            offset=offset,
+            configuration_parameter_values_filter=filter_,
+        )
+        for cov_conf in cov_confs:
+            identifiers = database.generate_coverage_identifiers(
+                cov_conf, configuration_parameter_values_filter=filter_
+            )
+            for cov_id in identifiers:
+                if time_window is None:
+                    used_values = cov_conf.retrieve_configuration_parameters(cov_id)
+                    used_time_window = used_values.get("time_window")
+                    if used_time_window is None:
+                        coverage_identifiers.add(cov_id)
+                    elif (
+                        len(valid_time_window_names) == 0
+                        or used_time_window in valid_time_window_names
+                    ):
+                        coverage_identifiers.add(cov_id)
+                else:
+                    coverage_identifiers.add(cov_id)
+            if len(coverage_identifiers) > (offset + limit):
+                break
+        if len(coverage_identifiers) > (offset + limit):
+            break
+    return sorted(coverage_identifiers)[offset : offset + limit]
