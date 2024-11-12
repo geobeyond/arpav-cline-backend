@@ -59,7 +59,7 @@ services:
     networks:
       - back
     labels:
-      - "traefik.http.routers.arpav-frontend.entrypoints=web"
+      - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
       - "traefik.http.routers.arpav-frontend-router.rule=Host(`arpav.geobeyond.dev`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
       - "exposed.inside=true"
 
@@ -69,7 +69,7 @@ services:
     env_file:
       - *env-file-webapp
     labels:
-      - "traefik.http.routers.arpav-backend.entrypoints=web"
+      - "traefik.http.routers.arpav-backend-router.entrypoints=web"
       - "traefik.http.routers.arpav-backend-router.rule=Host(`arpav.geobeyond.dev`) && PathRegexp(`^/(api|admin)`)"
       - "exposed.inside=true"
     volumes:
@@ -160,7 +160,7 @@ services:
 
   tolgee-app:
     labels:
-      - "traefik.http.routers.arpav-frontend.entrypoints=web"
+      - "traefik.http.routers.tolgee-app-router.entrypoints=web"
       - "exposed.inside=true"
       - "traefik.http.routers.tolgee-app-router.rule=Host(`tolgee.arpav.geobeyond.dev`) && PathPrefix(`/`)"
     networks:
