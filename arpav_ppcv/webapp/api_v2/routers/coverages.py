@@ -419,6 +419,18 @@ async def get_forecast_data(
     datetime: Optional[str] = "../..",
 ):
     if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+        used_values = coverage.configuration.retrieve_configuration_parameters(
+            coverage.identifier
+        )
+        if used_values.get("aggregation_period") == "30yr":
+            # Strip datetime query param if the underlying coverage has the
+            # 30yr aggregation period because the upstream THREDDS NCSS
+            # response is somehow returning an error if these datasets are
+            # requested with a temporal range, even if the underlying NetCDF
+            # temporal range is whithin the requested range.
+            temporal_range = (None, None)
+        else:
+            temporal_range = operations.parse_temporal_range(datetime)
         if coords is not None:
             # FIXME - deal with invalid WKT errors
             geom = shapely.io.from_wkt(coords)
@@ -439,7 +451,6 @@ async def get_forecast_data(
         else:
             fitted_bbox = None
 
-        temporal_range = operations.parse_temporal_range(datetime)
         cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
         response_to_stream = await datadownloads.retrieve_coverage_data(
             settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
