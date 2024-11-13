@@ -52,6 +52,7 @@ services:
     configs:
       - source: traefik-conf
         target: /traefik.toml
+    restart: unless-stopped
 
   frontend:
     env_file:
@@ -62,6 +63,7 @@ services:
       - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
       - "traefik.http.routers.arpav-frontend-router.rule=Host(`arpav.geobeyond.dev`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
       - "exposed.inside=true"
+    restart: unless-stopped
 
   webapp:
     networks:
