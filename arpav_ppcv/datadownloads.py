@@ -45,13 +45,12 @@ async def retrieve_coverage_data(
             )
         )
         logger.debug(f"{ncss_url=}")
-        async for chunk in ncss.async_query_dataset_area(
+        return await ncss.async_query_dataset_area(
             http_client,
             ncss_url,
             bbox=bbox,
             temporal_range=temporal_range,
-        ):
-            yield chunk
+        )
 
 
 def get_cache_key(

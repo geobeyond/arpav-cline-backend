@@ -22,6 +22,7 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
+from starlette.background import BackgroundTask
 
 from .... import (
     database as db,
@@ -409,7 +410,7 @@ def list_forecast_data_download_links(
 
 
 @router.get("/forecast-data/{coverage_identifier}")
-def get_forecast_data(
+async def get_forecast_data(
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -440,16 +441,18 @@ def get_forecast_data(
 
         temporal_range = operations.parse_temporal_range(datetime)
         cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
-        response_streamer = datadownloads.retrieve_coverage_data(
+        response_to_stream = await datadownloads.retrieve_coverage_data(
             settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
         )
         filename = cache_key.rpartition("/")[-1]
         return StreamingResponse(
-            response_streamer,
+            response_to_stream.aiter_bytes(),
+            status_code=response_to_stream.status_code,
             media_type="application/netcdf",
             headers={
                 "Content-Disposition": f'attachment; filename="{filename}"',
             },
+            background=BackgroundTask(response_to_stream.aclose),
         )
     else:
         raise HTTPException(
