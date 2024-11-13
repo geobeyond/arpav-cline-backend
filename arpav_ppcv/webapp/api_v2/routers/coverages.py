@@ -22,6 +22,7 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
+from starlette.background import BackgroundTask
 
 from .... import (
     database as db,
@@ -409,7 +410,7 @@ def list_forecast_data_download_links(
 
 
 @router.get("/forecast-data/{coverage_identifier}")
-def get_forecast_data(
+async def get_forecast_data(
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -418,6 +419,18 @@ def get_forecast_data(
     datetime: Optional[str] = "../..",
 ):
     if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+        used_values = coverage.configuration.retrieve_configuration_parameters(
+            coverage.identifier
+        )
+        if used_values.get("aggregation_period") == "30yr":
+            # Strip datetime query param if the underlying coverage has the
+            # 30yr aggregation period because the upstream THREDDS NCSS
+            # response is somehow returning an error if these datasets are
+            # requested with a temporal range, even if the underlying NetCDF
+            # temporal range is whithin the requested range.
+            temporal_range = (None, None)
+        else:
+            temporal_range = operations.parse_temporal_range(datetime)
         if coords is not None:
             # FIXME - deal with invalid WKT errors
             geom = shapely.io.from_wkt(coords)
@@ -438,18 +451,19 @@ def get_forecast_data(
         else:
             fitted_bbox = None
 
-        temporal_range = operations.parse_temporal_range(datetime)
         cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
-        response_streamer = datadownloads.retrieve_coverage_data(
+        response_to_stream = await datadownloads.retrieve_coverage_data(
             settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
         )
         filename = cache_key.rpartition("/")[-1]
         return StreamingResponse(
-            response_streamer,
+            response_to_stream.aiter_bytes(),
+            status_code=response_to_stream.status_code,
             media_type="application/netcdf",
             headers={
                 "Content-Disposition": f'attachment; filename="{filename}"',
             },
+            background=BackgroundTask(response_to_stream.aclose),
         )
     else:
         raise HTTPException(

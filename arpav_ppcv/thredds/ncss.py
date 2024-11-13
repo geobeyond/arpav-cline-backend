@@ -142,11 +142,8 @@ async def async_query_dataset_area(
         **temporal_parameters,
         **spatial_parameters,
     }
-    async with http_client.stream(
-        "GET", thredds_ncss_url, params=ncss_params
-    ) as response:
-        async for chunk in response.aiter_bytes():
-            yield chunk
+    request = http_client.build_request("GET", thredds_ncss_url, params=ncss_params)
+    return await http_client.send(request, stream=True)
 
 
 async def async_query_dataset(
