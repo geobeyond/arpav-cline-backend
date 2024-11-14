@@ -176,29 +176,13 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
 
     id: uuid.UUID = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = sqlmodel.Field(unique=True, index=True)
-    # display_name_english: Optional[str] = None
-    # display_name_italian: Optional[str] = None
-    # description_english: Optional[str] = None
-    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: str
     thredds_url_pattern: str
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
-    # unit_english: str = ""
-    # unit_italian: Optional[str] = None
-    # palette: str
-    # color_scale_min: float = 0.0
-    # color_scale_max: float = 1.0
-    # data_precision: int = 3
     climatic_indicator_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="climaticindicator.id"
     )
-    # observation_variable_id: Optional[uuid.UUID] = sqlmodel.Field(
-    #     default=None, foreign_key="variable.id"
-    # )
-    # observation_variable_aggregation_type: Optional[
-    #     base.ObservationAggregationType
-    # ] = None
     uncertainty_lower_bounds_coverage_configuration_id: Optional[
         uuid.UUID
     ] = sqlmodel.Field(default=None, foreign_key="coverageconfiguration.id")
@@ -444,28 +428,14 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
             ),
         ),
     ]
-    # display_name_english: Optional[str] = None
-    # display_name_italian: Optional[str] = None
-    # description_english: Optional[str] = None
-    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: str
     # the point in having a wms_main_layer_name and wms_secondary_layer_name is to let
     # the frontend toggle between them
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
     thredds_url_pattern: str
-    # unit_english: str
-    # unit_italian: Optional[str] = None
-    # palette: str
-    # color_scale_min: float
-    # color_scale_max: float
-    # data_precision: int = 3
     possible_values: list["ConfigurationParameterPossibleValueCreate"]
     climatic_indicator_id: int
-    observation_variable_id: Optional[uuid.UUID] = None
-    observation_variable_aggregation_type: Optional[
-        base.ObservationAggregationType
-    ] = None
     uncertainty_lower_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
     uncertainty_upper_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
     secondary_coverage_configurations_ids: Annotated[
@@ -483,25 +453,11 @@ class CoverageConfigurationCreate(sqlmodel.SQLModel):
 
 class CoverageConfigurationUpdate(sqlmodel.SQLModel):
     name: Annotated[Optional[str], pydantic.Field(pattern=_NAME_PATTERN)] = None
-    # display_name_english: Optional[str] = None
-    # display_name_italian: Optional[str] = None
-    # description_english: Optional[str] = None
-    # description_italian: Optional[str] = None
     netcdf_main_dataset_name: Optional[str] = None
     wms_main_layer_name: Optional[str] = None
     wms_secondary_layer_name: Optional[str] = None
     thredds_url_pattern: Optional[str] = None
-    # unit_english: Optional[str] = None
-    # unit_italian: Optional[str] = None
-    # palette: Optional[str] = None
-    # color_scale_min: Optional[float] = None
-    # color_scale_max: Optional[float] = None
-    # data_precision: Optional[int] = None
-    observation_variable_id: Optional[uuid.UUID] = None
     climatic_indicator_id: Optional[int] = None
-    observation_variable_aggregation_type: Optional[
-        base.ObservationAggregationType
-    ] = None
     possible_values: list["ConfigurationParameterPossibleValueUpdate"]
     uncertainty_lower_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
     uncertainty_upper_bounds_coverage_configuration_id: Optional[uuid.UUID] = None

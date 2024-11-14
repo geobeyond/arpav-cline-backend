@@ -285,7 +285,7 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             "lazy": "joined",
         },
     )
-    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="monthly_measurements",
         sa_relationship_kwargs={
             # retrieve the related resource immediately, by means of a SQL JOIN - this
@@ -348,7 +348,7 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="seasonal_measurements",
         sa_relationship_kwargs={
             # retrieve the related resource immediately, by means of a SQL JOIN - this
@@ -411,7 +411,7 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    climatic_indicator: ClimaticIndicator = sqlmodel.Relationship(
+    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="yearly_measurements",
         sa_relationship_kwargs={
             # retrieve the related resource immediately, by means of a SQL JOIN - this

@@ -5,6 +5,7 @@ from xml.etree import ElementTree as et
 from typing import (
     Annotated,
     Optional,
+    Sequence,
 )
 
 import anyio.to_thread
@@ -37,10 +38,11 @@ from ....thredds import (
     utils as thredds_utils,
 )
 from ....schemas.base import (
-    CoreConfParamName,
     CoverageDataSmoothingStrategy,
     ObservationDataSmoothingStrategy,
 )
+from ....schemas.coverages import ConfigurationParameterValue
+from ....schemas.climaticindicators import ClimaticIndicator
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
 from ..schemas.base import (
@@ -685,7 +687,7 @@ def get_forecast_variable_combinations(
 
 
 def _retrieve_climatic_indicator_filter(
-    session: sqlmodel.Session, configuration_parameter_values: Sequence[str]
+    session: Session, configuration_parameter_values: Sequence[str]
 ) -> tuple[Optional[list[ConfigurationParameterValue]], Optional[ClimaticIndicator]]:
     conf_param_values_filter = []
     climatic_indicator_parts = {}
