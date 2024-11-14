@@ -80,10 +80,10 @@ class AdminUserSettings(pydantic.BaseModel):
 
 
 class CoverageDownloadSpatialGrid(pydantic.BaseModel):
-    min_lon: decimal.Decimal = Decimal("10.2")
-    min_lat: decimal.Decimal = Decimal("44.697")
-    max_lon: decimal.Decimal = Decimal("14.2")
-    max_lat: decimal.Decimal = Decimal("47.097")
+    min_lon: decimal.Decimal = Decimal("9.90843")
+    min_lat: decimal.Decimal = Decimal("44.40394")
+    max_lon: decimal.Decimal = Decimal("14.45177")
+    max_lat: decimal.Decimal = Decimal("47.49636")
 
     num_rows: int = 24
     num_cols: int = 37
