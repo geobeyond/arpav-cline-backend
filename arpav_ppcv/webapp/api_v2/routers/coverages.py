@@ -228,25 +228,17 @@ def list_coverage_identifiers(
         Query(),
     ] = None,
 ):
-    conf_param_values_filter = []
-    for possible in possible_value or []:
-        param_name, param_value = possible.partition(":")[::2]
-        db_parameter_value = db.get_configuration_parameter_value_by_names(
-            db_session, param_name, param_value
-        )
-        if db_parameter_value is not None:
-            conf_param_values_filter.append(db_parameter_value)
-        else:
-            logger.debug(
-                f"ignoring unknown parameter/value pair {param_name}:{param_value}"
-            )
+    conf_param_values_filter, climatic_indicator = _retrieve_climatic_indicator_filter(
+        db_session, possible_value or []
+    )
     cov_internals, filtered_total = db.list_coverage_identifiers(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
-        configuration_parameter_values_filter=conf_param_values_filter or None,
+        configuration_parameter_values_filter=conf_param_values_filter,
+        climatic_indicator_filter=climatic_indicator,
     )
     _, unfiltered_total = db.list_coverage_identifiers(
         db_session, limit=1, offset=0, include_total=True

@@ -13,7 +13,7 @@ from arpav_ppcv.schemas import observations
 def test_fetch_remote_stations(
     httpx_mock,
     arpav_db_session,
-    sample_real_variables,
+    sample_real_climatic_indicators,
 ):
     httpx_mock.add_response(
         url=re.compile(r"https://api.arpa.veneto.it/REST/v1/.*"),
@@ -37,7 +37,7 @@ def test_fetch_remote_stations(
         fetched = list(
             operations.fetch_remote_stations(
                 client,
-                sample_real_variables[0:1],
+                climatic_indicators=sample_real_climatic_indicators[0:1],
                 fetch_stations_with_months=True,
                 fetch_stations_with_seasons=False,
                 fetch_stations_with_yearly_measurements=False,

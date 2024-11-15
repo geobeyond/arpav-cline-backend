@@ -23,7 +23,7 @@ import shapely
 import shapely.io
 import sqlmodel
 from anyio.from_thread import start_blocking_portal
-from arpav_ppcv.schemas.base import CoreConfParamName
+
 from dateutil.parser import isoparse
 from geoalchemy2.shape import to_shape
 from pandas.core.indexes.datetimes import DatetimeIndex
@@ -40,6 +40,7 @@ from .schemas import (
     coverages,
     observations,
 )
+from .schemas.base import CoreConfParamName
 from .thredds import (
     crawler,
     ncss,
@@ -1018,26 +1019,20 @@ def list_coverage_identifiers_by_param_values(
     limit: int = 20,
     offset: int = 0,
 ) -> list[str]:
-    valid_variables = _filter_configuration_parameter_values(
+    valid_climatic_indicators = _list_possible_climatic_indicators(
         session,
         climatological_variable_filter or [],
-        CoreConfParamName.CLIMATOLOGICAL_VARIABLE.value,
+        measure_filter or [],
+        aggregation_period_filter or [],
     )
+    logger.debug(f"{locals()=}")
     valid_climatological_models = _filter_configuration_parameter_values(
         session,
         climatological_model_filter or [],
         CoreConfParamName.CLIMATOLOGICAL_MODEL.value,
     )
-    valid_aggregation_periods = _filter_configuration_parameter_values(
-        session,
-        aggregation_period_filter or [],
-        CoreConfParamName.AGGREGATION_PERIOD.value,
-    )
     valid_scenarios = _filter_configuration_parameter_values(
         session, scenario_filter or [], CoreConfParamName.SCENARIO.value
-    )
-    valid_measures = _filter_configuration_parameter_values(
-        session, measure_filter or [], CoreConfParamName.MEASURE.value
     )
     valid_year_periods = _filter_configuration_parameter_values(
         session, year_period_filter or [], CoreConfParamName.YEAR_PERIOD.value
@@ -1053,28 +1048,16 @@ def list_coverage_identifiers_by_param_values(
     valid_time_window_names = [tw.name for tw in valid_time_windows if tw is not None]
     coverage_identifiers = set()
     for combination in itertools.product(
-        valid_variables,
-        valid_aggregation_periods,
+        valid_climatic_indicators,
         valid_climatological_models,
         valid_scenarios,
-        valid_measures,
         valid_year_periods,
         valid_time_windows,
     ):
-        (
-            variable,
-            aggregation_period,
-            model,
-            scenario,
-            measure,
-            year_period,
-            time_window,
-        ) = combination
+        climatic_indicator, model, scenario, year_period, time_window = combination
         logger.debug(
-            f"getting links for variable: {variable.name!r}, "
-            f"aggregation_period: {aggregation_period.name!r}, "
+            f"getting links for climatic_indicator: {climatic_indicator.identifier!r}, "
             f"model: {model.name!r}, scenario: {scenario.name!r}, "
-            f"measure: {measure.name!r}, "
             f"year_period: {year_period.name!r}, "
             f"time_window: {time_window.name if time_window else time_window!r}..."
         )
@@ -1082,11 +1065,8 @@ def list_coverage_identifiers_by_param_values(
             database.get_configuration_parameter_value_by_names(
                 session, CoreConfParamName.ARCHIVE.value, "forecast"
             ),
-            variable,
-            aggregation_period,
             model,
             scenario,
-            measure,
             year_period,
             time_window,
         ]
@@ -1096,6 +1076,7 @@ def list_coverage_identifiers_by_param_values(
             limit=limit,
             offset=offset,
             configuration_parameter_values_filter=filter_,
+            climatic_indicator_filter=climatic_indicator,
         )
         for cov_conf in cov_confs:
             identifiers = database.generate_coverage_identifiers(
@@ -1119,3 +1100,29 @@ def list_coverage_identifiers_by_param_values(
         if len(coverage_identifiers) > (offset + limit):
             break
     return sorted(coverage_identifiers)[offset : offset + limit]
+
+
+def _list_possible_climatic_indicators(
+    session: sqlmodel.Session,
+    variable_names: Sequence[str],
+    measure_types: Sequence[str],
+    aggregation_periods: Sequence[str],
+) -> list[climaticindicators.ClimaticIndicator]:
+    filtered = database.collect_all_climatic_indicators(session)
+    if len(variable_names) > 0:
+        filtered = [i for i in filtered if i.name in variable_names]
+    if len(measure_types) > 0:
+        filtered = [
+            i for i in filtered if i.measure_type.value.lower() in measure_types
+        ]
+    if len(aggregation_periods) > 0:
+        periods = []
+        for p in aggregation_periods:
+            if p == "30yr":
+                periods.append("thirty_year")
+            else:
+                periods.append(p)
+        filtered = [
+            i for i in filtered if i.aggregation_period.value.lower() in periods
+        ]
+    return filtered

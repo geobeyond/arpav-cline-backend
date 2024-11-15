@@ -195,160 +195,80 @@ def test_get_related_coverage_configurations(
     ],
     [
         pytest.param(
+            ["tas"],
+            ["30yr"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
+            ["tw1"],
             [
-                "tas",
-            ],
-            [
-                "30yr",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
-            [
-                "tw1",
-            ],
-            [
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw1-winter"
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw1-winter"
             ],
         ),
         pytest.param(
-            [
-                "tas",
-            ],
-            [
-                "30yr",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
+            ["tas"],
+            ["30yr"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
             None,
             [
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw1-winter",
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw2-winter",
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw1-winter",
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw2-winter",
             ],
         ),
         pytest.param(
-            [
-                "tas",
-            ],
-            [
-                "annual",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
+            ["tas"],
+            ["annual"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
             None,
             [
-                "tas_seasonal_anomaly_model_ensemble-annual-forecast-model_ensemble-tas-anomaly-rcp85-winter",
-                "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp85-lower_bound-winter",
-                "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp85-upper_bound-winter",
+                "tas_seasonal_anomaly_model_ensemble-tas-anomaly-annual-forecast-model_ensemble-rcp85-winter",
+                "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp85-lower_bound-winter",
+                "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp85-upper_bound-winter",
             ],
         ),
         pytest.param(
-            [
-                "tas",
-            ],
-            [
-                "annual",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
-            [
-                "tw1",
-            ],
+            ["tas"],
+            ["annual"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
+            ["tw1"],
             [],
         ),
         pytest.param(
+            ["tas"],
+            ["annual", "30yr"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
+            ["tw1"],
             [
-                "tas",
-            ],
-            [
-                "annual",
-                "30yr",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
-            [
-                "tw1",
-            ],
-            [
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw1-winter",
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw1-winter",
             ],
         ),
         pytest.param(
-            [
-                "tas",
-            ],
-            [
-                "annual",
-                "30yr",
-            ],
-            [
-                "model_ensemble",
-            ],
-            [
-                "rcp85",
-            ],
-            [
-                "anomaly",
-            ],
-            [
-                "winter",
-            ],
+            ["tas"],
+            ["annual", "30yr"],
+            ["model_ensemble"],
+            ["rcp85"],
+            ["anomaly"],
+            ["winter"],
             None,
             [
-                "tas_seasonal_anomaly_model_ensemble-annual-forecast-model_ensemble-tas-anomaly-rcp85-winter",
-                "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp85-lower_bound-winter",
-                "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-anomaly-rcp85-upper_bound-winter",
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw1-winter",
-                "tas_30yr_anomaly_seasonal_agree_model_ensemble-30yr-forecast-model_ensemble-tas-anomaly-rcp85-tw2-winter",
+                "tas_seasonal_anomaly_model_ensemble-tas-anomaly-annual-forecast-model_ensemble-rcp85-winter",
+                "tas_seasonal_anomaly_model_ensemble_lower_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp85-lower_bound-winter",
+                "tas_seasonal_anomaly_model_ensemble_upper_uncertainty-tas-anomaly-annual-forecast-model_ensemble-rcp85-upper_bound-winter",
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw1-winter",
+                "tas_30yr_anomaly_seasonal_agree_model_ensemble-tas-anomaly-thirty_year-forecast-model_ensemble-rcp85-tw2-winter",
             ],
         ),
     ],
@@ -382,3 +302,57 @@ def test_list_coverage_identifiers_by_param_values(
         assert result_item in expected
     for expected_item in expected:
         assert expected_item in result
+
+
+@pytest.mark.parametrize(
+    "variables, measures, aggregation_periods, expected_identifiers",
+    [
+        pytest.param(
+            [],
+            [],
+            [],
+            [
+                "tas-absolute-annual",
+                "tas-absolute-thirty_year",
+                "tas-anomaly-annual",
+                "tas-anomaly-thirty_year",
+            ],
+        ),
+        pytest.param(["fake"], [], [], []),
+        pytest.param(
+            [
+                "tas",
+            ],
+            [
+                "absolute",
+            ],
+            [],
+            ["tas-absolute-annual", "tas-absolute-thirty_year"],
+        ),
+        pytest.param(
+            [],
+            [],
+            ["annual"],
+            [
+                "tas-absolute-annual",
+                "tas-anomaly-annual",
+            ],
+        ),
+        pytest.param(["tas"], ["absolute"], ["annual"], ["tas-absolute-annual"]),
+    ],
+)
+def test_list_possible_climatic_indicators(
+    arpav_db_session,
+    sample_real_climatic_indicators,
+    variables,
+    measures,
+    aggregation_periods,
+    expected_identifiers,
+):
+    result = operations._list_possible_climatic_indicators(
+        arpav_db_session, variables, measures, aggregation_periods
+    )
+    for result_climatic_indicator in result:
+        assert result_climatic_indicator.identifier in expected_identifiers
+    for expected_identifier in expected_identifiers:
+        assert expected_identifier in [i.identifier for i in result]

@@ -71,47 +71,6 @@ def delete_station(
         database.delete_station(session, station_id)
 
 
-@app.command(name="list-variables")
-def list_variables(ctx: typer.Context) -> None:
-    """List variables."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        result = [
-            schemas.VariableRead(**v.model_dump())
-            for v in database.collect_all_variables(session)
-        ]
-        print(pydantic_core.to_json(result, indent=_JSON_INDENTATION).decode("utf-8"))
-
-
-@app.command(name="create-variable")
-def create_variable(
-    ctx: typer.Context,
-    name: str,
-    description: str,
-    unit: Optional[str] = "",
-) -> None:
-    variable_create = schemas.VariableCreate(
-        name=name, description=description, unit=unit
-    )
-    """Create a new variable."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        db_variable = database.create_variable(session, variable_create)
-        print(
-            schemas.VariableRead(**db_variable.model_dump()).model_dump_json(
-                indent=_JSON_INDENTATION
-            )
-        )
-
-
-@app.command(name="delete-variable")
-def delete_variable(
-    ctx: typer.Context,
-    variable_id: uuid.UUID,
-) -> None:
-    """Delete a variable."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        database.delete_variable(session, variable_id)
-
-
 @app.command(name="list-monthly-measurements")
 def list_monthly_measurements(ctx: typer.Context) -> None:
     """List monthly measurements."""

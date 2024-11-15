@@ -1,5 +1,6 @@
 import random
 from contextlib import nullcontext as does_not_raise
+from operator import attrgetter
 
 import pydantic
 import pytest
@@ -121,20 +122,25 @@ def test_generate_coverage_identifiers(
         pytest.param(5, 2, True),
     ],
 )
-def test_list_variables(
-    arpav_db_session, sample_variables, limit, offset, include_total
+def test_list_climatic_indicators(
+    arpav_db_session, sample_real_climatic_indicators, limit, offset, include_total
 ):
-    ordered_variables = sorted(sample_variables, key=lambda variable: variable.name)
-    expected_names = [v.name for v in ordered_variables][offset : offset + limit]
-    db_variables, total = database.list_variables(
+    ordered_indicators = sorted(
+        sample_real_climatic_indicators,
+        key=attrgetter("sort_order", "name", "aggregation_period", "measure_type"),
+    )
+    expected_identifiers = [i.identifier for i in ordered_indicators][
+        offset : offset + limit
+    ]
+    db_climatic_indicators, total = database.list_climatic_indicators(
         arpav_db_session, limit=limit, offset=offset, include_total=include_total
     )
     if include_total:
-        assert total == len(sample_variables)
+        assert total == len(sample_real_climatic_indicators)
     else:
         assert total is None
-    for index, db_variable in enumerate(db_variables):
-        assert db_variable.name == expected_names[index]
+    for index, db_climatic_indicator in enumerate(db_climatic_indicators):
+        assert db_climatic_indicator.identifier == expected_identifiers[index]
 
 
 @pytest.mark.parametrize(

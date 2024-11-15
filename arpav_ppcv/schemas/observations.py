@@ -298,7 +298,6 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
 
 class MonthlyMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    # variable_id: pydantic.UUID4
     climatic_indicator_id: int
     value: float
     date: dt.date
@@ -361,7 +360,7 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
 
 class SeasonalMeasurementCreate(sqlmodel.SQLModel):
     station_id: pydantic.UUID4
-    climatic_indicator_id: pydantic.UUID4
+    climatic_indicator_id: int
     value: float
     year: int
     season: base.Season

@@ -20,6 +20,7 @@ from arpav_ppcv import (
     main,
 )
 from arpav_ppcv.schemas import (
+    climaticindicators,
     coverages,
     observations,
 )
@@ -29,14 +30,11 @@ from arpav_ppcv.webapp.api_v2.app import create_app as create_v2_app
 from arpav_ppcv.bootstrapper.configurationparameters import (
     generate_configuration_parameters as bootstrappable_configuration_parameters,
 )
-from arpav_ppcv.bootstrapper.climaticindicators import (
-    tas as tas_climatic_indicators_bootstrappable_configurations,
+from arpav_ppcv.bootstrapper.climaticindicators.tas import (
+    generate_climatic_indicators as generate_tas_climatic_indicators,
 )
 from arpav_ppcv.bootstrapper.coverage_configurations.forecast import (
     tas as tas_forecast_bootstrappable_configurations,
-)
-from arpav_ppcv.bootstrapper.variables import (
-    generate_variable_configurations as bootstrappable_variables,
 )
 
 
@@ -166,52 +164,42 @@ def sample_stations(arpav_db_session) -> list[observations.Station]:
 
 
 @pytest.fixture()
-def sample_variables(arpav_db_session) -> list[observations.Variable]:
-    db_variables = []
-    for i in range(20):
-        db_variables.append(
-            observations.Variable(
-                name=f"testvariable{i}",
-                description=f"Description for test variable {i}",
-            )
-        )
-    for db_variable in db_variables:
-        arpav_db_session.add(db_variable)
-    arpav_db_session.commit()
-    for db_station in db_variables:
-        arpav_db_session.refresh(db_station)
-    return db_variables
-
-
-@pytest.fixture()
-def sample_real_variables(arpav_db_session) -> list[observations.Variable]:
+def sample_real_climatic_indicators(
+    arpav_db_session,
+) -> list[climaticindicators.ClimaticIndicator]:
     created = []
-    for var_to_create in bootstrappable_variables():
-        created.append(database.create_variable(arpav_db_session, var_to_create))
+    for indicator_to_create in generate_tas_climatic_indicators():
+        created.append(
+            database.create_climatic_indicator(arpav_db_session, indicator_to_create)
+        )
     return created
 
 
 @pytest.fixture()
 def sample_monthly_measurements(
-    arpav_db_session, sample_variables, sample_stations
+    arpav_db_session,
+    sample_real_climatic_indicators,
+    sample_stations,
 ) -> list[observations.MonthlyMeasurement]:
     db_monthly_measurements = []
     unique_measurement_instances = set()
     while len(unique_measurement_instances) < 200:
         sampled_date = dt.date(random.randrange(1920, 2020), random.randrange(1, 13), 1)
         sampled_station_id = random.choice(sample_stations).id
-        sampled_variable_id = random.choice(sample_variables).id
+        sampled_climatic_indicator_id = random.choice(
+            sample_real_climatic_indicators
+        ).id
         unique_measurement_instances.add(
-            (sampled_date, sampled_station_id, sampled_variable_id)
+            (sampled_date, sampled_station_id, sampled_climatic_indicator_id)
         )
 
-    for date_, station_id, variable_id in unique_measurement_instances:
+    for date_, station_id, climatic_indicator_id in unique_measurement_instances:
         db_monthly_measurements.append(
             observations.MonthlyMeasurement(
                 value=random.random() * 20 - 10,
                 date=date_,
                 station_id=station_id,
-                variable_id=variable_id,
+                climatic_indicator_id=climatic_indicator_id,
             )
         )
     for db_monthly_measurement in db_monthly_measurements:
@@ -299,26 +287,11 @@ def sample_coverage_configurations(
 
 
 @pytest.fixture()
-def sample_real_climatic_indicators(
-    arpav_db_session,
-):
-    to_create = tas_climatic_indicators_bootstrappable_configurations.generate_climatic_indicators()
-    created = []
-    for clim_ind_to_create in to_create:
-        created.append(
-            database.create_climatic_indicator(arpav_db_session, clim_ind_to_create)
-        )
-    return created
-
-
-@pytest.fixture()
 def sample_real_coverage_configurations(
     arpav_db_session,
     sample_real_configuration_parameters,
     sample_real_climatic_indicators,
-    sample_real_variables,
 ):
-    all_vars = database.collect_all_variables(arpav_db_session)
     all_conf_param_values = database.collect_all_configuration_parameter_values(
         arpav_db_session
     )
@@ -329,7 +302,6 @@ def sample_real_coverage_configurations(
                 (pv.configuration_parameter.name, pv.name): pv
                 for pv in all_conf_param_values
             },
-            variables={v.name: v for v in all_vars},
             climatic_indicators={i.identifier: i.id for i in all_climatic_indicators},
         )
     )
@@ -463,7 +435,7 @@ def sample_tas_csv_data():
 @pytest.fixture()
 def sample_real_monthly_measurements(
     arpav_db_session,
-    sample_real_variables,
+    sample_real_climatic_indicators,
     sample_real_station,
 ) -> observations.MonthlyMeasurement:
     raw_measurements = io.StringIO(
@@ -918,7 +890,7 @@ def sample_real_monthly_measurements(
     """.strip()
     )
     reader = csv.reader(raw_measurements, delimiter=",")
-    vars = {v.name: v for v in sample_real_variables}
+    indicators = {i.identifier: i.id for i in sample_real_climatic_indicators}
     measurements = []
     for idx, row in enumerate(reader):
         if idx == 0:  # skip the header
@@ -927,7 +899,7 @@ def sample_real_monthly_measurements(
         measurements.append(
             observations.MonthlyMeasurement(
                 station_id=sample_real_station.id,
-                variable_id=vars["TDd"].id,
+                climatic_indicator_id=indicators["tas-absolute-annual"],
                 value=float(value),
                 date=dt.datetime.strptime(raw_date, "%Y-%m-%d"),
             )

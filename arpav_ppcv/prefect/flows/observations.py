@@ -1,5 +1,8 @@
 import datetime as dt
-from typing import Sequence
+from typing import (
+    Sequence,
+    Union,
+)
 
 import httpx
 import sqlmodel
@@ -552,26 +555,28 @@ def _build_created_measurements_table(
 
 
 def build_monthly_measurement_id(
-    measurement: observations.MonthlyMeasurement
-    | observations.MonthlyMeasurementCreate,
+    measurement: Union[
+        observations.MonthlyMeasurement, observations.MonthlyMeasurementCreate
+    ],
 ) -> str:
     return "-".join(
         (
             str(measurement.station_id),
-            str(measurement.variable_id),
+            str(measurement.climatic_indicator_id),
             measurement.date.strftime("%Y%m"),
         )
     )
 
 
 def build_seasonal_measurement_id(
-    measurement: observations.SeasonalMeasurement
-    | observations.SeasonalMeasurementCreate,
+    measurement: Union[
+        observations.SeasonalMeasurement, observations.SeasonalMeasurementCreate
+    ],
 ) -> str:
     return "-".join(
         (
             str(measurement.station_id),
-            str(measurement.variable_id),
+            str(measurement.climatic_indicator_id),
             str(measurement.year),
             measurement.season.value,
         )
@@ -579,12 +584,14 @@ def build_seasonal_measurement_id(
 
 
 def build_yearly_measurement_id(
-    measurement: observations.YearlyMeasurement | observations.YearlyMeasurementCreate,
+    measurement: Union[
+        observations.YearlyMeasurement, observations.YearlyMeasurementCreate
+    ],
 ) -> str:
     return "-".join(
         (
             str(measurement.station_id),
-            str(measurement.variable_id),
+            str(measurement.climatic_indicator_id),
             str(measurement.year),
         )
     )

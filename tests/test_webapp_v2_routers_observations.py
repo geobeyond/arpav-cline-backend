@@ -38,30 +38,6 @@ def test_station_detail(
     assert uuid.UUID(payload["id"]) == target_station.id
 
 
-def test_variable_list(
-    test_client_v2_app: httpx.Client, sample_variables: list[observations.Variable]
-):
-    list_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for("list_variables")
-    )
-    assert list_response.status_code == 200
-    assert len(list_response.json()["items"]) == 20
-
-
-def test_variable_detail(
-    test_client_v2_app: httpx.Client, sample_variables: list[observations.Variable]
-):
-    target_variable = sample_variables[0]
-    detail_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for(
-            "get_variable", variable_id=target_variable.id
-        )
-    )
-    assert detail_response.status_code == 200
-    payload = detail_response.json()
-    assert uuid.UUID(payload["id"]) == target_variable.id
-
-
 def test_monthly_measurement_list(
     test_client_v2_app: httpx.Client,
     sample_monthly_measurements: list[observations.MonthlyMeasurement],
@@ -93,16 +69,18 @@ def test_monthly_measurement_list_filter_by_variable_name(
     test_client_v2_app: httpx.Client,
     sample_monthly_measurements: list[observations.MonthlyMeasurement],
 ):
-    target_variable = sample_monthly_measurements[0].variable
+    target_climatic_indicator = sample_monthly_measurements[0].climatic_indicator
     list_response = test_client_v2_app.get(
         test_client_v2_app.app.url_path_for("list_monthly_measurements"),
-        params={"variable_name": target_variable.name},
+        params={"climatic_indicator_identifier": target_climatic_indicator.identifier},
     )
     assert list_response.status_code == 200
     payload = list_response.json()
     assert len(payload["items"]) > 0
     for returned_item in payload["items"]:
-        assert returned_item["variable_name"] == target_variable.name
+        assert (
+            returned_item["climatic_identifier"] == target_climatic_indicator.identifier
+        )
 
 
 def test_monthly_measurement_detail(

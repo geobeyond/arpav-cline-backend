@@ -69,7 +69,7 @@ class StationReadListItem(observations.StationBase):
 
 class MonthlyMeasurementReadListItem(observations.MonthlyMeasurementBase):
     url: pydantic.AnyHttpUrl
-    variable_name: str
+    climatic_indicator_identifier: str
     station_code: str
 
     @classmethod
@@ -80,7 +80,7 @@ class MonthlyMeasurementReadListItem(observations.MonthlyMeasurementBase):
     ) -> "MonthlyMeasurementReadListItem":
         return cls(
             **instance.model_dump(),
-            variable_name=instance.variable.name,
+            climatic_indicator_identifier=instance.climatic_indicator.identifier,
             station_code=instance.station.code,
             url=str(
                 request.url_for(
@@ -92,7 +92,7 @@ class MonthlyMeasurementReadListItem(observations.MonthlyMeasurementBase):
 
 class SeasonalMeasurementReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
-    variable_name: str
+    climatic_indicator_identifier: str
     station_code: str
     year: int
     season: Season
@@ -106,7 +106,7 @@ class SeasonalMeasurementReadListItem(pydantic.BaseModel):
     ) -> "SeasonalMeasurementReadListItem":
         return cls(
             **instance.model_dump(),
-            variable_name=instance.variable.name,
+            climatic_indicator_identifier=instance.climatic_indicator.identifier,
             station_code=instance.station.code,
             url=str(
                 request.url_for(
@@ -118,7 +118,7 @@ class SeasonalMeasurementReadListItem(pydantic.BaseModel):
 
 class YearlyMeasurementReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
-    variable_name: str
+    climatic_indicator_identifier: str
     station_code: str
     year: int
     value: float
@@ -131,7 +131,7 @@ class YearlyMeasurementReadListItem(pydantic.BaseModel):
     ) -> "YearlyMeasurementReadListItem":
         return cls(
             **instance.model_dump(),
-            variable_name=instance.variable.name,
+            climatic_indicator_identifier=instance.climatic_indicator.identifier,
             station_code=instance.station.code,
             url=str(
                 request.url_for(

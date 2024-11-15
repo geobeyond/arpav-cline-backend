@@ -131,7 +131,7 @@ def list_monthly_measurements(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
     station_code: str | None = None,
-    variable_name: str | None = None,
+    climatic_indicator_identifier: str | None = None,
     month: Annotated[int | None, fastapi.Query(le=1, ge=12)] = None,
 ):
     """List known monthly measurements."""
@@ -143,20 +143,22 @@ def list_monthly_measurements(
             raise ValueError("Invalid station code")
     else:
         station_id = None
-    if variable_name is not None:
-        db_variable = db.get_variable_by_name(db_session, variable_name)
-        if db_variable is not None:
-            variable_id = db_variable.id
+    if climatic_indicator_identifier is not None:
+        db_climatic_indicator = db.get_climatic_indicator_by_identifier(
+            db_session, climatic_indicator_identifier
+        )
+        if db_climatic_indicator is not None:
+            climatic_indicator_id = db_climatic_indicator.id
         else:
-            raise ValueError("Invalid variable name")
+            raise ValueError("Invalid climatic indicator identifier")
     else:
-        variable_id = None
+        climatic_indicator_id = None
     monthly_measurements, filtered_total = db.list_monthly_measurements(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         station_id_filter=station_id,
-        variable_id_filter=variable_id,
+        climatic_indicator_id_filter=climatic_indicator_id,
         month_filter=month,
         include_total=True,
     )
