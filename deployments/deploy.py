@@ -504,10 +504,10 @@ def perform_deployment(
 ):
     logger.info(f"{configuration=}")
     deployment_steps = [
-        _CreateDeploymentReadme(config=configuration),
         _CloneRepo(config=configuration),
         _CopyRelevantRepoFiles(config=configuration),
         _RelaunchDeploymentScript(config=configuration, original_call_args=sys.argv),
+        _CreateDeploymentReadme(config=configuration),
         _StopCompose(config=configuration),
         _GenerateComposeFile(config=configuration),
         _PullImages(config=configuration),
