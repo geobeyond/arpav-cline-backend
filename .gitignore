@@ -129,3 +129,5 @@ celerybeat-schedule
 docker/traefik/basicauth-users.txt
 
 arpav-cache
+
+prod-deployment.cfg

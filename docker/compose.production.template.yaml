@@ -5,7 +5,7 @@
 # - do not mount source code inside any container - keep volume binds to the
 #   minimum, only for relevant configuration file(s) and data collections
 
-name: arpav-cline-production
+name: "${compose_project_name}"
 
 services:
 
@@ -25,6 +25,7 @@ services:
     secrets:
       - tls-cert
       - tls-key
+      - traefik-users-file
     restart: unless-stopped
 
   frontend:
@@ -166,3 +167,6 @@ secrets:
 
   tls-key:
     file: "${tls_cert_key_path}"
+
+  traefik-users-file:
+    file: "${traefik_users_file_path}"
