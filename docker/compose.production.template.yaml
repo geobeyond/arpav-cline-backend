@@ -1,0 +1,172 @@
+# docker compose file template that can be used to create a suitable production deployment file.
+# This template file is meant to be processed via Python - the processor shall replace all
+# template strings, which are denoted like this: ${name} with their respective values.
+#
+# - do not mount source code inside any container - keep volume binds to the
+#   minimum, only for relevant configuration file(s) and data collections
+
+name: "${compose_project_name}"
+
+services:
+
+  reverse-proxy:
+    image: "traefik:${reverse_proxy_image_tag}"
+    command: --configFile /traefik.toml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.router-arpav-backend.entrypoints=webSecure"
+      - "traefik.http.routers.router-arpav-backend.tls=true"
+      - "traefik.http.routers.router-arpav-backend.tls.certificates.certFile=/run/secrets/tls-cert"
+      - "traefik.http.routers.router-arpav-backend.tls.certificates.keyFile=/run/secrets/tls-key"
+      - 'traefik.http.routers.router-arpav-backend.rule=HostRegexp(`^(.+\.)?clima\.arpa\.veneto.it$`)'
+    configs:
+      - source: traefik-conf
+        target: /traefik.toml
+    secrets:
+      - tls-cert
+      - tls-key
+      - traefik-users-file
+    restart: unless-stopped
+
+  frontend:
+    image: "${frontend_image}"
+    labels:
+      - "traefik.http.routers.arpav-frontend.entrypoints=web"
+      - "traefik.http.routers.arpav-frontend-router.rule=Host(`clima.arpa.veneto.it`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+    restart: unless-stopped
+
+  webapp:
+    image: "${backend_image}"
+    environment:
+      ARPAV_PPCV__DEBUG: "${webapp_env_debug}"
+      ARPAV_PPCV__BIND_HOST: "${webapp_env_bind_host}"
+      ARPAV_PPCV__BIND_PORT: "${webapp_env_bind_port}"
+      ARPAV_PPCV__PUBLIC_URL: "${webapp_env_public_url}"
+      ARPAV_PPCV__NUM_UVICORN_WORKER_PROCESSES: "${webapp_env_num_uvicorn_worker_processes}"
+      ARPAV_PPCV__DB_DSN: "${webapp_env_db_dsn}"
+      ARPAV_PPCV__UVICORN_LOG_CONFIG_FILE: "${webapp_env_uvicorn_log_config_file}"
+      ARPAV_PPCV__SESSION_SECRET_KEY: "${webapp_env_session_secret_key}"
+      ARPAV_PPCV__ADMIN_USER__USERNAME: "${webapp_env_admin_user_username}"
+      ARPAV_PPCV__ADMIN_USER__PASSWORD: "${webapp_env_admin_user_password}"
+      ARPAV_PPCV__THREDDS_SERVER__BASE_URL: "${webapp_env_thredds_server_base_url}"
+      ARPAV_PPCV__CORS_ORIGINS: "${webapp_env_cors_origins}"
+      ARPAV_PPCV__CORS_METHODS: "${webapp_env_cors_methods}"
+      ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+    labels:
+      - "traefik.http.routers.arpav-backend.entrypoints=web"
+      - "traefik.http.routers.arpav-backend-router.rule=Host(`clima.arpa.veneto.it`) && PathRegexp(`^/(api|admin)`)"
+    restart: unless-stopped
+
+  db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      POSTGRES_PASSWORD: "${db_password}"
+      POSTGRES_USER: "${db_user}"
+      POSTGRES_DB: "${db_name}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  martin:
+    image: "ghcr.io/maplibre/martin:${martin_image_tag}"
+    environment:
+      DATABASE_URL: "${martin_env_database_url}"
+    configs:
+      - martin-conf
+    labels:
+      - "traefik.http.routers.martin-router.entrypoints=web"
+      - "traefik.http.routers.martin-router.rule=Host(`clima.arpa.veneto.it`) && PathPrefix(`/vector-tiles`)"
+    restart: unless-stopped
+
+  prefect-server:
+    image: "prefecthq/prefect:${prefect_server_image_tag}"
+    labels:
+      - "traefik.http.routers.prefect-router.entrypoints=web"
+      - "traefik.http.routers.prefect-router.rule=Host(`clima.arpa.veneto.it`) && PathPrefix(`/prefect`)"
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: "${prefect_server_env_api_database_connection_url}"
+      PREFECT_API_URL: "${prefect_server_env_api_url}"
+      PREFECT_CLI_PROMPT: "${prefect_server_env_cli_prompt}"
+      PREFECT_DEBUG_MODE: "${prefect_server_env_debug_mode}"
+      PREFECT_HOME: "${prefect_server_env_home}"
+      PREFECT_SERVER_ALLOW_EPHEMERAL_MODE: "${prefect_server_env_allow_ephemeral_mode}"
+      PREFECT_SERVER_API_HOST: "${prefect_server_env_api_host}"
+      PREFECT_SERVER_API_PORT: "${prefect_server_env_api_port}"
+      PREFECT_SERVER_CSRF_PROTECTION_ENABLED: "${prefect_server_env_csrf_protection_enabled}"
+      PREFECT_UI_API_URL: "${prefect_server_env_ui_api_url}"
+      PREFECT_UI_URL: "${prefect_server_env_ui_url}"
+      PREFECT_UI_SERVE_BASE: "${prefect_server_env_serve_base}"
+    restart: unless-stopped
+
+  prefect-static-worker:
+    image: "${backend_image}"
+    environment:
+      ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_debug}"
+      ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_db_dsn}"
+      PREFECT_API_URL: "${prefect_static_worker_env_api_url}"
+      PREFECT_DEBUG_MODE: "${prefect_static_worker_env_debug_mode}"
+    restart: unless-stopped
+
+  prefect-db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      POSTGRES_PASSWORD: "${prefect_db_password}"
+      POSTGRES_USER: "${prefect_db_user}"
+      POSTGRES_DB: "${prefect_db_name}"
+    volumes:
+      - prefect-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  tolgee-app:
+    image: "tolgee/tolgee:${tolgee_app_image_tag}"
+    labels:
+      - "traefik.http.routers.arpav-frontend.entrypoints=web"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`tolgee.clima.arpa.veneto.it`) && PathPrefix(`/`)"
+    environment:
+      SERVER_PORT: "${tolgee_app_env_server_port}"
+      SPRING_DATASOURCE_URL: "${tolgee_app_env_server_spring_datasource_url}"
+      SPRING_DATASOURCE_USERNAME: "${tolgee_app_env_spring_datasource_username}"
+      SPRING_DATASOURCE_PASSWORD: "${tolgee_app_env_spring_datasource_password}"
+      TOLGEE_AUTHENTICATION_CREATE_DEMO_FOR_INITIAL_USER: "${tolgee_app_env_tolgee_authentication_create_demo_for_initial_user}"
+      TOLGEE_AUTHENTICATION_ENABLED: "${tolgee_app_env_tolgee_authentication_enabled}"
+      TOLGEE_AUTHENTICATION_INITIAL_PASSWORD: "${tolgee_app_env_tolgee_authentication_initial_password}"
+      TOLGEE_AUTHENTICATION_JWT_SECRET: "${tolgee_app_env_tolgee_authentication_jwt_secret}"
+      TOLGEE_FILE_STORAGE_FS_DATA_PATH: "${tolgee_app_env_tolgee_file_storage_fs_data_path}"
+      TOLGEE_FRONTEND_URL: "${tolgee_app_env_tolgee_frontend_url}"
+      TOLGEE_POSTGRES_AUTOSTART_ENABLED: "${tolgee_app_env_tolgee_postgres_autostart_enabled}"
+      TOLGEE_TELEMETRY_ENABLED: "${tolgee_app_env_tolgee_telemetry_enabled}"
+    restart: unless-stopped
+
+  tolgee-db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      POSTGRES_PASSWORD: "${tolgee_db_password}"
+      POSTGRES_USER: "${tolgee_db_user}"
+      POSTGRES_DB: "${tolgee_db_name}"
+    volumes:
+      - tolgee-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  prefect-db-data:
+  tolgee-db-data:
+
+
+configs:
+  traefik-conf:
+    file: "${traefik_conf_path}"
+
+  martin-conf:
+    file: "${martin_conf_path}"
+
+
+secrets:
+  tls-cert:
+    file: "${tls_cert_path}"
+
+  tls-key:
+    file: "${tls_cert_key_path}"
+
+  traefik-users-file:
+    file: "${traefik_users_file_path}"
