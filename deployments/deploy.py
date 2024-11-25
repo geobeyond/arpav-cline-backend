@@ -518,12 +518,35 @@ if __name__ == "__main__":
             "in dry-run mode, just showing what steps would be performed"
         ),
     )
+    parser.add_argument(
+        "-b",
+        "--backend-image",
+        help=(
+            "Full name of the docker image to be used for the backend. "
+            "Example: "
+            "'ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:v1.0.0'. "
+            "Defaults to whatever is specified in the configuration file."
+        ),
+    )
+    parser.add_argument(
+        "-f",
+        "--frontend-image",
+        help=(
+            "Full name of the docker image to be used for the frontend. "
+            "Example: 'ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:v1.0.0'. "
+            "Defaults to whatever is specified in the configuration file."
+        ),
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING)
     config_file = args.config_file.resolve()
     logger.debug(f"{config_file=}")
     if config_file.exists():
         deployment_config = get_configuration(config_file)
+        if (backend_image_name := args.backend_image) is not None:
+            deployment_config.backend_image = backend_image_name
+        if (frontend_image_name := args.frontend_image) is not None:
+            deployment_config.frontend_image = frontend_image_name
         deployment_config.ensure_paths_exist()
         logger.debug("Configuration:")
         for k, v in dataclasses.asdict(deployment_config).items():

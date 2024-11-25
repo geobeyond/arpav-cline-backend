@@ -1,7 +1,7 @@
 name: Continuous Integration
 
 on:
-  push:
+  push:  # will run both when pushing a branch and when pushing a tag
 
   pull_request:
 
