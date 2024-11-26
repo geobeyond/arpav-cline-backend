@@ -178,6 +178,7 @@ class DeploymentConfiguration:
             discord_notification_urls=[
                 i.strip()
                 for i in config_parser["main"]["discord_notification_urls"].split(",")
+                if i != ""
             ],
             frontend_image=config_parser["main"]["frontend_image"],
             martin_image_tag=config_parser["main"]["martin_image_tag"],
@@ -211,8 +212,9 @@ class DeploymentConfiguration:
                 "env_admin_user_username"
             ],
             webapp_env_cors_origins=[
-                o.strip()
-                for o in config_parser["webapp"]["env_cors_origins"].split(",")
+                i.strip()
+                for i in config_parser["webapp"]["env_cors_origins"].split(",")
+                if i != ""
             ],
             webapp_env_num_uvicorn_worker_processes=config_parser.getint(
                 "webapp", "env_num_uvicorn_worker_processes"
