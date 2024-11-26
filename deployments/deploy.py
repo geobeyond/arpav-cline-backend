@@ -322,10 +322,7 @@ class _RelaunchDeploymentScript:
     name: str = "Relaunch the updated deployment script"
 
     def handle(self) -> None:
-        call_args = self.original_call_args[:]
-        if (update_flag_index := args.index("--auto-update")) != -1:
-            call_args.pop(update_flag_index)
-        os.execv(sys.executable, call_args)
+        os.execv(sys.executable, self.original_call_args[:])
 
 
 @dataclasses.dataclass
@@ -339,10 +336,11 @@ class _GenerateComposeFile:
         )
         compose_template = Template(compose_teplate_path.read_text())
         rendered = compose_template.substitute(dataclasses.asdict(self.config))
-        target_path = Path(
-            self.config.deployment_root / "docker/compose.production.yaml"
-        )
-        target_path.write_text(rendered)
+        target_path = Path(self.config.deployment_root / "compose.production.yaml")
+        with target_path.open("w") as fh:
+            for line in rendered.splitlines():
+                if not line.startswith("#"):
+                    fh.write(line)
         compose_teplate_path.unlink(missing_ok=True)
 
 
@@ -381,11 +379,13 @@ class _StopCompose(_ComposeCommandExecutor):
 
     def handle(self) -> None:
         print("Stopping docker compose stack...")
-        run_result = self._run_compose_command("down")
-        if run_result.returncode == 14:
-            logger.info("docker compose stack was not running, no need to stop")
-        else:
-            run_result.check_returncode()
+        try:
+            self._run_compose_command("down")
+        except subprocess.CalledProcessError as exc:
+            if exc.returncode == 14:
+                logger.info("docker compose stack was not running, no need to stop")
+            else:
+                raise
 
 
 @dataclasses.dataclass

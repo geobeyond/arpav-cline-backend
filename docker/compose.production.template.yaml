@@ -1,6 +1,14 @@
 # docker compose file template that can be used to create a suitable production deployment file.
 # This template file is meant to be processed via Python - the processor shall replace all
-# template strings, which are denoted like this: ${name} with their respective values.
+# template strings with their respective values. A template string is denoted like this: <DOLLAR>{name}
+# with a dollar sign instead of <DOLLAR> - we are not writing it out here to avoid the processor trying
+# to perform a substitution in these comments.
+#
+# NOTE: BECAUSE THIS FILE IS PREPROCESSED, ALL PLACES WHERE A DOLLAR SIGN IS SIGNIFICANT, LIKE
+# IN TRAEFIK ROUTING RULES, MUST USE DOUBLE DOLLAR SIGNS INSTEAD. Check:
+#
+# https://docs.python.org/3/library/string.html#template-strings
+#
 #
 # - do not mount source code inside any container - keep volume binds to the
 #   minimum, only for relevant configuration file(s) and data collections
@@ -18,7 +26,7 @@ services:
       - "traefik.http.routers.router-arpav-backend.tls=true"
       - "traefik.http.routers.router-arpav-backend.tls.certificates.certFile=/run/secrets/tls-cert"
       - "traefik.http.routers.router-arpav-backend.tls.certificates.keyFile=/run/secrets/tls-key"
-      - 'traefik.http.routers.router-arpav-backend.rule=HostRegexp(`^(.+\.)?clima\.arpa\.veneto.it$`)'
+      - 'traefik.http.routers.router-arpav-backend.rule=HostRegexp(`^(.+\.)?clima\.arpa\.veneto.it$$`)'
     configs:
       - source: traefik-conf
         target: /traefik.toml
@@ -95,16 +103,16 @@ services:
       PREFECT_SERVER_CSRF_PROTECTION_ENABLED: "${prefect_server_env_csrf_protection_enabled}"
       PREFECT_UI_API_URL: "${prefect_server_env_ui_api_url}"
       PREFECT_UI_URL: "${prefect_server_env_ui_url}"
-      PREFECT_UI_SERVE_BASE: "${prefect_server_env_serve_base}"
+      PREFECT_UI_SERVE_BASE: "${prefect_server_env_ui_serve_base}"
     restart: unless-stopped
 
   prefect-static-worker:
     image: "${backend_image}"
     environment:
-      ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_debug}"
-      ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_db_dsn}"
-      PREFECT_API_URL: "${prefect_static_worker_env_api_url}"
-      PREFECT_DEBUG_MODE: "${prefect_static_worker_env_debug_mode}"
+      ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_arpav_ppcv_debug}"
+      ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
+      PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
+      PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
     restart: unless-stopped
 
   prefect-db:
