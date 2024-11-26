@@ -338,7 +338,7 @@ class _GenerateComposeFile:
         rendered = compose_template.substitute(dataclasses.asdict(self.config))
         target_path = Path(self.config.deployment_root / "compose.production.yaml")
         with target_path.open("w") as fh:
-            for line in rendered.splitlines():
+            for line in rendered.splitlines(keepends=True):
                 if not line.startswith("#"):
                     fh.write(line)
         compose_teplate_path.unlink(missing_ok=True)
