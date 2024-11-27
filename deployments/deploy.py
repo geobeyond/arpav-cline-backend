@@ -325,8 +325,10 @@ class _RelaunchDeploymentScript:
 
     def handle(self) -> None:
         call_args = self.original_call_args[:]
-        # prevent infinite loops by ensuring we set the --no-auto-update flag
-        if call_args.index(_DO_NOT_UPDATE_FLAG_NAME) == -1:
+        try:
+            call_args.index(_DO_NOT_UPDATE_FLAG_NAME)
+        except ValueError:
+            # prevent infinite loops by ensuring we set the --no-auto-update flag
             call_args.append(_DO_NOT_UPDATE_FLAG_NAME)
         os.execv(sys.executable, call_args)
 
