@@ -326,7 +326,7 @@ class _RelaunchDeploymentScript:
     def handle(self) -> None:
         call_args = self.original_call_args[:]
         # prevent infinite loops by ensuring we set the --no-auto-update flag
-        if args.index(_DO_NOT_UPDATE_FLAG_NAME) == -1:
+        if call_args.index(_DO_NOT_UPDATE_FLAG_NAME) == -1:
             call_args.append(_DO_NOT_UPDATE_FLAG_NAME)
         os.execv(sys.executable, call_args)
 
@@ -562,15 +562,15 @@ if __name__ == "__main__":
             "Defaults to whatever is specified in the configuration file."
         ),
     )
-    args = parser.parse_args()
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING)
-    config_file = args.config_file.resolve()
+    parsed_args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG if parsed_args.verbose else logging.WARNING)
+    config_file = parsed_args.config_file.resolve()
     logger.debug(f"{config_file=}")
     if config_file.exists():
         deployment_config = get_configuration(config_file)
-        if (backend_image_name := args.backend_image) is not None:
+        if (backend_image_name := parsed_args.backend_image) is not None:
             deployment_config.backend_image = backend_image_name
-        if (frontend_image_name := args.frontend_image) is not None:
+        if (frontend_image_name := parsed_args.frontend_image) is not None:
             deployment_config.frontend_image = frontend_image_name
         deployment_config.ensure_paths_exist()
         logger.debug("Configuration:")
@@ -579,8 +579,8 @@ if __name__ == "__main__":
         try:
             perform_deployment(
                 configuration=deployment_config,
-                auto_update=not args.no_auto_update,
-                confirmed=args.confirm,
+                auto_update=not parsed_args.no_auto_update,
+                confirmed=parsed_args.confirm,
             )
         except RuntimeError as err:
             raise SystemExit(err) from err
