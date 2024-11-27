@@ -25,6 +25,8 @@ from urllib.error import HTTPError
 
 logger = logging.getLogger(__name__)
 
+_DO_NOT_UPDATE_FLAG_NAME = "--no-auto-update"
+
 
 @dataclasses.dataclass
 class DeploymentConfiguration:
@@ -322,7 +324,11 @@ class _RelaunchDeploymentScript:
     name: str = "Relaunch the updated deployment script"
 
     def handle(self) -> None:
-        os.execv(sys.executable, self.original_call_args[:])
+        call_args = self.original_call_args[:]
+        # prevent infinite loops by ensuring we set the --no-auto-update flag
+        if args.index(_DO_NOT_UPDATE_FLAG_NAME) == -1:
+            call_args.append(_DO_NOT_UPDATE_FLAG_NAME)
+        os.execv(sys.executable, call_args)
 
 
 @dataclasses.dataclass
@@ -466,19 +472,27 @@ def get_configuration(config_file: Path) -> DeploymentConfiguration:
 def perform_deployment(
     *,
     configuration: DeploymentConfiguration,
+    auto_update: bool,
     confirmed: bool = False,
 ):
     deployment_steps = [
         _CloneRepo(config=configuration),
         _CopyRelevantRepoFiles(config=configuration),
-        _RelaunchDeploymentScript(config=configuration, original_call_args=sys.argv),
-        _StopCompose(config=configuration),
-        _GenerateComposeFile(config=configuration),
-        _PullImages(config=configuration),
-        _StartCompose(config=configuration),
-        _RunMigrations(config=configuration),
-        _CompileTranslations(config=configuration),
     ]
+    if auto_update:
+        deployment_steps.append(
+            _RelaunchDeploymentScript(config=configuration, original_call_args=sys.argv)
+        )
+    deployment_steps.extend(
+        [
+            _StopCompose(config=configuration),
+            _GenerateComposeFile(config=configuration),
+            _PullImages(config=configuration),
+            _StartCompose(config=configuration),
+            _RunMigrations(config=configuration),
+            _CompileTranslations(config=configuration),
+        ]
+    )
     this_host = socket.gethostname()
     if len(configuration.discord_notification_urls) > 0:
         deployment_steps.append(
@@ -506,6 +520,15 @@ if __name__ == "__main__":
         default=Path.home() / "arpav-cline/production-deployment.cfg",
         help="Path to configuration file",
         type=Path,
+    )
+    parser.add_argument(
+        _DO_NOT_UPDATE_FLAG_NAME,
+        action="store_true",
+        help=(
+            "Whether to avoid auto-updating this deployment script with the current "
+            "version from the repo. The default is to update this script and then "
+            "relaunch, which ensures it runs the most up to date deployer."
+        ),
     )
     parser.add_argument(
         "--verbose",
@@ -556,6 +579,7 @@ if __name__ == "__main__":
         try:
             perform_deployment(
                 configuration=deployment_config,
+                auto_update=not args.no_auto_update,
                 confirmed=args.confirm,
             )
         except RuntimeError as err:
