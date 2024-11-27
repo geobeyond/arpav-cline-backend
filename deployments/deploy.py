@@ -330,6 +330,7 @@ class _RelaunchDeploymentScript:
         except ValueError:
             # prevent infinite loops by ensuring we set the --no-auto-update flag
             call_args.append(_DO_NOT_UPDATE_FLAG_NAME)
+        sys.stdout.flush()
         os.execv(sys.executable, call_args)
 
 
@@ -483,7 +484,9 @@ def perform_deployment(
     ]
     if auto_update:
         deployment_steps.append(
-            _RelaunchDeploymentScript(config=configuration, original_call_args=sys.argv)
+            _RelaunchDeploymentScript(
+                config=configuration, original_call_args=sys.orig_argv
+            )
         )
     deployment_steps.extend(
         [
