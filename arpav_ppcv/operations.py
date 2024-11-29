@@ -33,6 +33,7 @@ from shapely.ops import transform
 from . import (
     config,
     database,
+    palette,
 )
 from .schemas import (
     base,
@@ -102,6 +103,58 @@ def get_climate_barometer_time_series(
             )
             result[(cov, strategy)] = df[smoothed_col].squeeze()
     return result
+
+
+def apply_palette_to_coverage(
+    settings: config.ArpavPpcvSettings,
+    coverage: coverages.CoverageInternal,
+    temporal_instant: Optional[dt.datetime] = None,
+) -> list[tuple[float, str]]:
+    opendap_url = "/".join(
+        (
+            settings.thredds_server.base_url,
+            settings.thredds_server.opendap_service_url_fragment,
+            crawler.get_thredds_url_fragment(
+                coverage, settings.thredds_server.base_url
+            ),
+        )
+    )
+    if temporal_instant is not None:
+        ds = netCDF4.Dataset(opendap_url)
+        netcdf_variable_name = coverage.configuration.get_main_netcdf_variable_name(
+            coverage.identifier
+        )
+        time_var = ds["time"]
+        time_index = cftime.date2index(
+            temporal_instant, time_var, time_var.calendar, select="nearest"
+        )
+        found_instant = cftime.num2pydate(
+            time_index, units=time_var.units, calendar=time_var.calendar
+        )
+        logger.info(f"Found temporal instant {found_instant}")
+        data_max = np.nanmax(ds[netcdf_variable_name][time_index, :, :])
+        data_min = np.nanmin(ds[netcdf_variable_name][time_index, :, :])
+    else:
+        data_max = coverage.configuration.color_scale_max
+        data_min = coverage.configuration.color_scale_min
+    palette_colors = palette.parse_palette(
+        coverage.configuration.palette, settings.palettes_dir
+    )
+    applied_colors = []
+    if palette_colors is not None:
+        if abs(data_max - data_min) > 0.001:
+            applied_colors = palette.apply_palette(
+                palette_colors, data_min, data_max, num_stops=settings.palette_num_stops
+            )
+        else:
+            logger.warning(
+                f"Cannot calculate applied colors for coverage "
+                f"configuration {coverage.configuration.name!r} - check the "
+                f"colorscale min and max values"
+            )
+    else:
+        logger.warning(f"Unable to parse palette {coverage.configuration.palette!r}")
+    return applied_colors
 
 
 def _get_climate_barometer_data(

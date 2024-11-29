@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 import urllib.parse
 from operator import itemgetter
@@ -283,6 +284,34 @@ def get_coverage_identifier(
         )
     else:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+
+
+@router.get(
+    "/wms-legend/{coverage_identifier}",
+    response_model=coverage_schemas.CoverageImageLegend,
+)
+def get_wms_legend(
+    request: Request,
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    coverage_identifier: str,
+    datetime: Optional[dt.datetime] = None,
+):
+    """Get legend for WMS GetMap calls"""
+    if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+        applied_colors = operations.apply_palette_to_coverage(
+            settings, coverage, datetime
+        )
+        return coverage_schemas.CoverageImageLegend(
+            color_entries=[
+                coverage_schemas.ImageLegendColor(value=v, color=c)
+                for v, c in applied_colors
+            ]
+        )
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
 
 
 @router.get("/wms/{coverage_identifier}")
