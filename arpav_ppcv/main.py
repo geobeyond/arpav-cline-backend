@@ -97,14 +97,7 @@ def upgrade_db(ctx: typer.Context, revision_identifier: Optional[str] = None) ->
 
 @app.command()
 def run_server(ctx: typer.Context):
-    """Run the uvicorn server.
-
-    Example (dev) invocation:
-
-    ```
-    bash -c 'set -o allexport; source sample_env.env; set +o allexport; poetry run arpav-ppcv.run-server'
-    ```
-    """
+    """Run the uvicorn server."""
     # NOTE: we explicitly do not use uvicorn's programmatic running abilities here
     # because they do not work correctly when called outside an
     # `if __name__ == __main__` guard and when using its debug features.

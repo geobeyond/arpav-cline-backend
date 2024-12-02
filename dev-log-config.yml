@@ -10,12 +10,12 @@ formatters:
 
   default:
     (): uvicorn.logging.DefaultFormatter
-    fmt: "%(levelprefix)s %(message)s"
+    fmt: "%(levelprefix)s %(asctime)s %(message)s"
     use_colors: null
 
   access:
     (): uvicorn.logging.AccessFormatter
-    fmt: '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
+    fmt: '%(levelprefix)s %(asctime)s %(client_addr)s - "%(request_line)s" %(status_code)s'
 
 handlers:
 
@@ -47,12 +47,6 @@ loggers:
     propagate: false
 
   arpav_ppcv:
-    handlers:
-      - default
-    level: DEBUG
-    propagate: false
-
-  django:
     handlers:
       - default
     level: DEBUG
