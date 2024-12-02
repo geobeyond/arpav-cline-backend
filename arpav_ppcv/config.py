@@ -47,6 +47,7 @@ class ThreddsServerSettings(pydantic.BaseModel):
     base_url: str = "http://localhost:8080/thredds"
     wms_service_url_fragment: str = "wms"
     netcdf_subset_service_url_fragment: str = "ncss/grid"  # noqa
+    netcdf_subset_service_timeout_seconds: int = 30  # noqa
     opendap_service_url_fragment: str = "dodsC"  # noqa
     uncertainty_visualization_scale_range: tuple[float, float] = pydantic.Field(
         default=(0, 9)
