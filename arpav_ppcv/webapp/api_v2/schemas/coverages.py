@@ -135,7 +135,6 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
     allowed_coverage_identifiers: list[str]
     description_english: str | None
     description_italian: str | None
-    legend: CoverageImageLegend
     data_precision: int
 
     @classmethod
@@ -143,7 +142,6 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
         cls,
         instance: app_models.CoverageConfiguration,
         allowed_coverage_identifiers: list[str],
-        legend_colors: list[tuple[float, str]],
         request: Request,
     ) -> "CoverageConfigurationReadDetail":
         url = request.url_for(
@@ -168,11 +166,6 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
                 for pv in instance.possible_values
             ],
             allowed_coverage_identifiers=allowed_coverage_identifiers,
-            legend=CoverageImageLegend(
-                color_entries=[
-                    ImageLegendColor(value=v, color=c) for v, c in legend_colors
-                ]
-            ),
         )
 
 
