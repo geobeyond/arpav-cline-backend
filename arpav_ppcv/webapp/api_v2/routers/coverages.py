@@ -1,4 +1,3 @@
-import datetime as dt
 import logging
 import urllib.parse
 from operator import itemgetter
@@ -30,6 +29,7 @@ from .... import (
     datadownloads,
     exceptions,
     operations,
+    palette,
 )
 from ....config import ArpavPpcvSettings
 from ....thredds import (
@@ -177,6 +177,7 @@ def list_coverage_configurations(
 )
 def get_coverage_configuration(
     request: Request,
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_configuration_id: pydantic.UUID4,
 ):
@@ -186,9 +187,31 @@ def get_coverage_configuration(
     allowed_coverage_identifiers = db.generate_coverage_identifiers(
         coverage_configuration=db_coverage_configuration
     )
-    return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
-        db_coverage_configuration, allowed_coverage_identifiers, request
+    palette_colors = palette.parse_palette(
+        db_coverage_configuration.palette, settings.palettes_dir
     )
+    applied_colors = []
+    if palette_colors is not None:
+        minimum = db_coverage_configuration.color_scale_min
+        maximum = db_coverage_configuration.color_scale_max
+        if abs(maximum - minimum) > 0.001:
+            applied_colors = palette.apply_palette(
+                palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
+            )
+        else:
+            logger.warning(
+                f"Cannot calculate applied colors for coverage "
+                f"configuration {db_coverage_configuration.name!r} - check the "
+                f"colorscale min and max values"
+            )
+    else:
+        logger.warning(f"Unable to parse palette {db_coverage_configuration.palette!r}")
+    return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
+        db_coverage_configuration, allowed_coverage_identifiers, applied_colors, request
+    )
+
+
+# PossibleValue: pydantic.StringConstraints(pattern="^[\w-_]+:[\w-_]+$")
 
 
 @router.get(
@@ -260,34 +283,6 @@ def get_coverage_identifier(
         )
     else:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-
-
-@router.get(
-    "/wms-legend/{coverage_identifier}",
-    response_model=coverage_schemas.CoverageImageLegend,
-)
-def get_wms_legend(
-    request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    coverage_identifier: str,
-    datetime: Optional[dt.datetime] = None,
-):
-    """Get legend for WMS GetMap calls"""
-    if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
-        applied_colors = operations.apply_palette_to_coverage(
-            settings, coverage, datetime
-        )
-        return coverage_schemas.CoverageImageLegend(
-            color_entries=[
-                coverage_schemas.ImageLegendColor(value=v, color=c)
-                for v, c in applied_colors
-            ]
-        )
-    else:
-        raise HTTPException(
-            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-        )
 
 
 @router.get("/wms/{coverage_identifier}")
