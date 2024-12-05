@@ -121,7 +121,7 @@ class DeploymentConfiguration:
         )
         self.prefect_server_env_api_database_connection_url = (
             f"postgresql+asyncpg://{self.prefect_db_user}:{self.prefect_db_password}@"
-            f"prefect_db/{self.prefect_db_name}"
+            f"prefect-db/{self.prefect_db_name}"
         )
         self.prefect_server_env_api_host = "0.0.0.0"
         self.prefect_server_env_api_port = 4200
