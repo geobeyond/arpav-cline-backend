@@ -58,6 +58,7 @@ def tweak_wms_get_map_request(
         num_color_bands = "2"
         query_params["NUMCOLORBANDS"] = num_color_bands
     else:
+        num_color_bands = "250"
         if "uncertainty_group" in layer_name:
             palette = ncwms_palette
         else:
@@ -75,4 +76,7 @@ def tweak_wms_get_map_request(
 
     query_params["styles"] = palette
     query_params["colorscalerange"] = color_scale_range
+    query_params["NUMCOLORBANDS"] = num_color_bands
+    query_params["ABOVEMAXCOLOR"] = "extend"
+    query_params["BELOWMINCOLOR"] = "extend"
     return query_params

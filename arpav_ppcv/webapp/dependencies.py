@@ -29,12 +29,16 @@ def get_db_session(engine=Depends(get_db_engine)):  # noqa: B008
         yield session
 
 
-def get_http_client() -> httpx.AsyncClient:
-    return httpx.AsyncClient()
+def get_http_client(
+    settings: config.ArpavPpcvSettings = Depends(get_settings),
+) -> httpx.AsyncClient:
+    return httpx.AsyncClient(timeout=settings.http_client_timeout_seconds)
 
 
-def get_sync_http_client() -> httpx.Client:
-    return httpx.Client()
+def get_sync_http_client(
+    settings: config.ArpavPpcvSettings = Depends(get_settings),
+) -> httpx.Client:
+    return httpx.Client(timeout=settings.http_client_timeout_seconds)
 
 
 class CommonListFilterParameters(pydantic.BaseModel):  # noqa: D101
