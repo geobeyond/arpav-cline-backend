@@ -452,9 +452,6 @@ async def get_forecast_data(
             fitted_bbox = None
 
         cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
-        http_client.timeout = (
-            settings.thredds_server.netcdf_subset_service_timeout_seconds
-        )
         response_to_stream = await datadownloads.retrieve_coverage_data(
             settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
         )
