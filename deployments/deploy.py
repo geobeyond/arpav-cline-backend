@@ -353,7 +353,10 @@ class _GenerateComposeFile:
         # collections, for example cors origins, which is a list of strings
         for k, v in render_context.items():
             if "_env_" in k:
-                render_kwargs[k] = json.dumps(v)
+                try:
+                    render_kwargs[k] = json.dumps(v)
+                except TypeError:
+                    render_kwargs[k] = json.dumps(str(v))
 
         rendered = compose_template.substitute(render_context, **render_kwargs)
         target_path = Path(self.config.deployment_root / "compose.production.yaml")
