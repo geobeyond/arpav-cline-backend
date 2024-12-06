@@ -344,7 +344,18 @@ class _GenerateComposeFile:
             self.config.deployment_root / "compose.production.template.yaml"
         )
         compose_template = Template(compose_teplate_path.read_text())
-        rendered = compose_template.substitute(dataclasses.asdict(self.config))
+
+        render_context = dataclasses.asdict(self.config)
+        render_kwargs = {}
+        # conf keys that have _env_ in their name are going to be put as env values
+        # inside the container and will be consumed by pydantic, so we dump them as
+        # JSON in order to ensure correct handling of parameters that represent
+        # collections, for example cors origins, which is a list of strings
+        for k, v in render_context.items():
+            if "_env_" in k:
+                render_kwargs[k] = json.dumps(v)
+
+        rendered = compose_template.substitute(render_context, **render_kwargs)
         target_path = Path(self.config.deployment_root / "compose.production.yaml")
         with target_path.open("w") as fh:
             for line in rendered.splitlines(keepends=True):
