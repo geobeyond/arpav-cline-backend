@@ -348,15 +348,13 @@ class _GenerateComposeFile:
         render_context = dataclasses.asdict(self.config)
         render_kwargs = {}
         # conf keys that have _env_ in their name are going to be put as env values
-        # inside the container and will be consumed by pydantic, so we dump them as
-        # JSON in order to ensure correct handling of parameters that represent
-        # collections, for example cors origins, which is a list of strings
+        # inside the container and will be consumed by pydantic. If one of these is
+        # a list we dump it as JSON in order to ensure correct handling of
+        # parameters that represent collections, for example cors origins, which
+        # is a list of strings
         for k, v in render_context.items():
-            if "_env_" in k:
-                try:
-                    render_kwargs[k] = json.dumps(v)
-                except TypeError:
-                    render_kwargs[k] = json.dumps(str(v))
+            if "env_" in k and isinstance(v, list):
+                render_kwargs[k] = json.dumps(v)
 
         rendered = compose_template.substitute(render_context, **render_kwargs)
         target_path = Path(self.config.deployment_root / "compose.production.yaml")
@@ -381,8 +379,9 @@ class _ComposeCommandExecutor:
             self.config.deployment_root / "compose.production.yaml",
         ]
         compose_files_fragment = " ".join(f"-f {p}" for p in compose_files)
+        docker_compose_command = f"docker compose {compose_files_fragment} {suffix}"
         return subprocess.run(
-            shlex.split(f"docker compose {compose_files_fragment} {suffix}"),
+            shlex.split(docker_compose_command),
             cwd=self.config.deployment_root,
             env=self.environment or os.environ,
             check=True,
