@@ -440,7 +440,6 @@ class _RunMigrations:
     name: str = "run DB migrations"
 
     def handle(self) -> None:
-        print("Upgrading database...")
         subprocess.run(
             shlex.split(
                 f"docker exec {self.config.executable_webapp_service_name} poetry run "

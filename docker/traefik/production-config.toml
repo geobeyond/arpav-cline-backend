@@ -20,7 +20,7 @@ insecure = true
 
 [entryPoints.webSecure]
 address = ":443"
-[entryPoints.web.forwardedHeaders]
+[entryPoints.webSecure.forwardedHeaders]
 insecure = true
 
 [providers]
