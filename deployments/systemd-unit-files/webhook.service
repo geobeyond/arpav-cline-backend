@@ -1,0 +1,10 @@
+# systemd service file for the webhook server
+# - Create the `/etc/systemd/system/webhook.service` file with these contents
+# - Run `sudo systemctl daemon-relaod`
+# - Finally run sudo systemctl start webhook.conf
+
+[Service]
+Environment="WEBHOOK_SECRET={CHANGE_ME}"
+ExecStart=/usr/bin/webhook -template -port {CHANGE_ME} -hooks {CHANGE_ME}
+User={CHANGE_ME}
+Group={CHANGE_ME}

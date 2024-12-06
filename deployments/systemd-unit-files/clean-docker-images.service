@@ -1,0 +1,7 @@
+[Unit]
+Description="Clean up docker images"
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker system prune --all --force
+User={CHANGE_ME}
