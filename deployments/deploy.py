@@ -347,7 +347,7 @@ class _GenerateComposeFile:
 
         render_context = dataclasses.asdict(self.config)
         render_kwargs = {}
-        # conf keys that have _env_ in their name are going to be put as env values
+        # conf keys that have 'env_' in their name are going to be put as env values
         # inside the container and will be consumed by pydantic. If one of these is
         # a list we dump it as JSON in order to ensure correct handling of
         # parameters that represent collections, for example cors origins, which

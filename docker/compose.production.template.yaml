@@ -57,8 +57,8 @@ services:
       ARPAV_PPCV__ADMIN_USER__USERNAME: "${webapp_env_admin_user_username}"
       ARPAV_PPCV__ADMIN_USER__PASSWORD: "${webapp_env_admin_user_password}"
       ARPAV_PPCV__THREDDS_SERVER__BASE_URL: "${webapp_env_thredds_server_base_url}"
-      ARPAV_PPCV__CORS_ORIGINS: "${webapp_env_cors_origins}"
-      ARPAV_PPCV__CORS_METHODS: "${webapp_env_cors_methods}"
+      ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
+      ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
     labels:
       - "traefik.http.routers.arpav-backend.entrypoints=web"
