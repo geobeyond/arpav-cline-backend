@@ -57,6 +57,9 @@ services:
     ports:
       - target: 80
         published: 5003
+    environment:
+      ARPAV_BACKEND_API_BASE_URL: http://localhost:8877
+      ARPAV_TOLGEE_BASE_URL: http://localhost:8899
 
   webapp:
     image: *webapp-image
@@ -159,7 +162,7 @@ services:
       - "traefik.http.routers.martin-router.entrypoints=web"
     ports:
       - target: 3000
-        published: 3000
+        published: 4000
     environment:
       DATABASE_URL: postgres://arpav:arpavpassword@db/arpav_ppcv
       RUST_LOG: actix_web=info,martin=debug,tokio_postgres=debug
