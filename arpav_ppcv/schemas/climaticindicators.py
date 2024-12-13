@@ -16,6 +16,8 @@ from ..config import get_translations
 if TYPE_CHECKING:
     from . import coverages
     from .observations import (
+        ObservationMeasurement,
+        ObservationSeriesConfiguration,
         MonthlyMeasurement,
         SeasonalMeasurement,
         YearlyMeasurement,
@@ -49,6 +51,23 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     related_coverage_configurations: list[
         "coverages.CoverageConfiguration"
     ] = sqlmodel.Relationship(back_populates="climatic_indicator")
+
+    observation_series_configurations: list[
+        "ObservationSeriesConfiguration"
+    ] = sqlmodel.Relationship(back_populates="climatic_indicator")
+
+    measurements: list["ObservationMeasurement"] = sqlmodel.Relationship(
+        back_populates="climatic_indicator",
+        sa_relationship_kwargs={
+            # ORM relationship config, which explicitly includes the
+            # `delete` and `delete-orphan` options because we want the ORM
+            # to try to delete monthly measurements when their related
+            # climatic_indicator is deleted
+            "cascade": "all, delete-orphan",
+            # expect that the RDBMS handles cascading deletes
+            "passive_deletes": True,
+        },
+    )
 
     monthly_measurements: list["MonthlyMeasurement"] = sqlmodel.Relationship(
         back_populates="climatic_indicator",

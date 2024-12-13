@@ -84,3 +84,85 @@ class AggregationPeriod(str, enum.Enum):
             self.ANNUAL.name: 0,
             self.THIRTY_YEAR.name: 0,
         }[self.name]
+
+
+class MeasurementAggregationType(str, enum.Enum):
+    MONTHLY = "MONTHLY"
+    SEASONAL = "SEASONAL"
+    YEARLY = "YEARLY"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("measurement aggregation type")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("measurement aggregation description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.MONTHLY.name: _("monthly"),
+            self.SEASONAL.name: _("seasonal"),
+            self.YEARLY.name: _("yearly"),
+        }[self.name] or self.name
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.MONTHLY.name: _("monthly description"),
+            self.SEASONAL.name: _("seasonal description"),
+            self.YEARLY.name: _("yearly description"),
+        }[self.name] or self.name
+
+    def get_sort_order(self) -> int:
+        return {
+            self.MONTHLY.name: 0,
+            self.SEASONAL.name: 0,
+            self.YEARLY.name: 0,
+        }[self.name]
+
+
+class ObservationStationOwner(str, enum.Enum):
+    ARPAV = "ARPAV"
+    ARPAFVG = "ARPAFVG"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station owner")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station owner description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.ARPAV.name: _("ARPAV"),
+            self.ARPAFVG.name: _("ARPAFVG"),
+        }[self.name] or self.name
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.ARPAV.name: _("ARPAV description"),
+            self.ARPAFVG.name: _("ARPAFVG description"),
+        }[self.name] or self.name
+
+    def get_sort_order(self) -> int:
+        return {
+            self.ARPAV.name: 0,
+            self.ARPAFVG.name: 0,
+        }[self.name]

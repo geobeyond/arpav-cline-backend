@@ -172,521 +172,521 @@ def get_engine(settings: config.ArpavPpcvSettings, use_test_db: Optional[bool] =
 #     return result
 
 
-def create_station(
-    session: sqlmodel.Session, station_create: observations.StationCreate
-) -> observations.Station:
-    """Create a new station."""
-    geom = shapely.io.from_geojson(station_create.geom.model_dump_json())
-    wkbelement = from_shape(geom)
-    db_station = observations.Station(
-        **station_create.model_dump(exclude={"geom"}),
-        geom=wkbelement,
-    )
-    session.add(db_station)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        session.refresh(db_station)
-        return db_station
+# def create_station(
+#     session: sqlmodel.Session, station_create: observations.StationCreate
+# ) -> observations.Station:
+#     """Create a new station."""
+#     geom = shapely.io.from_geojson(station_create.geom.model_dump_json())
+#     wkbelement = from_shape(geom)
+#     db_station = observations.Station(
+#         **station_create.model_dump(exclude={"geom"}),
+#         geom=wkbelement,
+#     )
+#     session.add(db_station)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         session.refresh(db_station)
+#         return db_station
+#
+#
+# def create_many_stations(
+#     session: sqlmodel.Session,
+#     stations_to_create: Sequence[observations.StationCreate],
+# ) -> list[observations.Station]:
+#     """Create several stations."""
+#     db_records = []
+#     for station_create in stations_to_create:
+#         geom = shapely.io.from_geojson(station_create.geom.model_dump_json())
+#         wkbelement = from_shape(geom)
+#         db_station = observations.Station(
+#             **station_create.model_dump(exclude={"geom"}),
+#             geom=wkbelement,
+#         )
+#         db_records.append(db_station)
+#         session.add(db_station)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         for db_record in db_records:
+#             session.refresh(db_record)
+#         return db_records
+#
+#
+# def get_station(
+#     session: sqlmodel.Session, station_id: uuid.UUID
+# ) -> Optional[observations.Station]:
+#     return session.get(observations.Station, station_id)
+#
+#
+# def get_station_by_code(
+#     session: sqlmodel.Session, station_code: str
+# ) -> Optional[observations.Station]:
+#     """Get a station by its code.
+#
+#     Since a station code is unique, it can be used to uniquely identify a station.
+#     """
+#     return session.exec(
+#         sqlmodel.select(observations.Station).where(
+#             observations.Station.code == station_code
+#         )
+#     ).first()
+#
+#
+# def update_station(
+#     session: sqlmodel.Session,
+#     db_station: observations.Station,
+#     station_update: observations.StationUpdate,
+# ) -> observations.Station:
+#     """Update a station."""
+#     geom = from_shape(shapely.io.from_geojson(station_update.geom.model_dump_json()))
+#     other_data = station_update.model_dump(exclude={"geom"}, exclude_unset=True)
+#     data = {**other_data, "geom": geom}
+#     for key, value in data.items():
+#         setattr(db_station, key, value)
+#     session.add(db_station)
+#     session.commit()
+#     session.refresh(db_station)
+#     return db_station
+#
+#
+# def delete_station(session: sqlmodel.Session, station_id: uuid.UUID) -> None:
+#     """Delete a station."""
+#     db_station = get_station(session, station_id)
+#     if db_station is not None:
+#         session.delete(db_station)
+#         session.commit()
+#     else:
+#         raise RuntimeError("Station not found")
+#
+#
+# def list_stations(
+#     session: sqlmodel.Session,
+#     *,
+#     limit: int = 20,
+#     offset: int = 0,
+#     include_total: bool = False,
+#     name_filter: Optional[str] = None,
+#     polygon_intersection_filter: shapely.Polygon = None,
+#     variable_id_filter: Optional[uuid.UUID] = None,
+#     variable_aggregation_type: Optional[
+#         base.ObservationAggregationType
+#     ] = base.ObservationAggregationType.SEASONAL,
+# ) -> tuple[Sequence[observations.Station], Optional[int]]:
+#     """List existing stations.
+#
+#     The ``polygon_intersection_filter`` parameter is expected to be a polygon
+#     geometry in the EPSG:4326 CRS.
+#     """
+#     statement = sqlmodel.select(observations.Station).order_by(
+#         observations.Station.code
+#     )
+#     if name_filter is not None:
+#         statement = _add_substring_filter(
+#             statement, name_filter, observations.Station.name
+#         )
+#     if polygon_intersection_filter is not None:
+#         statement = statement.where(
+#             func.ST_Intersects(
+#                 observations.Station.geom,
+#                 func.ST_GeomFromWKB(
+#                     shapely.io.to_wkb(polygon_intersection_filter), 4326
+#                 ),
+#             )
+#         )
+#     if all((variable_id_filter, variable_aggregation_type)):
+#         if variable_aggregation_type == base.ObservationAggregationType.MONTHLY:
+#             instance_class = observations.MonthlyMeasurement
+#         elif variable_aggregation_type == base.ObservationAggregationType.SEASONAL:
+#             instance_class = observations.SeasonalMeasurement
+#         elif variable_aggregation_type == base.ObservationAggregationType.YEARLY:
+#             instance_class = observations.YearlyMeasurement
+#         else:
+#             raise RuntimeError(
+#                 f"variable filtering for {variable_aggregation_type} is not supported"
+#             )
+#         statement = (
+#             statement.join(instance_class)
+#             .join(observations.Variable)
+#             .where(observations.Variable.id == variable_id_filter)
+#             .distinct()
+#         )
+#
+#     else:
+#         logger.warning(
+#             "Did not perform variable filter as not all related parameters have been "
+#             "provided"
+#         )
+#     items = session.exec(statement.offset(offset).limit(limit)).all()
+#     num_items = _get_total_num_records(session, statement) if include_total else None
+#     return items, num_items
+#
+#
+# def collect_all_stations(
+#     session: sqlmodel.Session,
+#     polygon_intersection_filter: shapely.Polygon = None,
+# ) -> Sequence[observations.Station]:
+#     """Collect all stations.
+#
+#     The ``polygon_intersetion_filter`` parameter is expected to be a polygon
+#     geometry in the EPSG:4326 CRS.
+#     """
+#     _, num_total = list_stations(
+#         session,
+#         limit=1,
+#         include_total=True,
+#         polygon_intersection_filter=polygon_intersection_filter,
+#     )
+#     result, _ = list_stations(
+#         session,
+#         limit=num_total,
+#         include_total=False,
+#         polygon_intersection_filter=polygon_intersection_filter,
+#     )
+#     return result
 
 
-def create_many_stations(
-    session: sqlmodel.Session,
-    stations_to_create: Sequence[observations.StationCreate],
-) -> list[observations.Station]:
-    """Create several stations."""
-    db_records = []
-    for station_create in stations_to_create:
-        geom = shapely.io.from_geojson(station_create.geom.model_dump_json())
-        wkbelement = from_shape(geom)
-        db_station = observations.Station(
-            **station_create.model_dump(exclude={"geom"}),
-            geom=wkbelement,
-        )
-        db_records.append(db_station)
-        session.add(db_station)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        for db_record in db_records:
-            session.refresh(db_record)
-        return db_records
-
-
-def get_station(
-    session: sqlmodel.Session, station_id: uuid.UUID
-) -> Optional[observations.Station]:
-    return session.get(observations.Station, station_id)
-
-
-def get_station_by_code(
-    session: sqlmodel.Session, station_code: str
-) -> Optional[observations.Station]:
-    """Get a station by its code.
-
-    Since a station code is unique, it can be used to uniquely identify a station.
-    """
-    return session.exec(
-        sqlmodel.select(observations.Station).where(
-            observations.Station.code == station_code
-        )
-    ).first()
-
-
-def update_station(
-    session: sqlmodel.Session,
-    db_station: observations.Station,
-    station_update: observations.StationUpdate,
-) -> observations.Station:
-    """Update a station."""
-    geom = from_shape(shapely.io.from_geojson(station_update.geom.model_dump_json()))
-    other_data = station_update.model_dump(exclude={"geom"}, exclude_unset=True)
-    data = {**other_data, "geom": geom}
-    for key, value in data.items():
-        setattr(db_station, key, value)
-    session.add(db_station)
-    session.commit()
-    session.refresh(db_station)
-    return db_station
-
-
-def delete_station(session: sqlmodel.Session, station_id: uuid.UUID) -> None:
-    """Delete a station."""
-    db_station = get_station(session, station_id)
-    if db_station is not None:
-        session.delete(db_station)
-        session.commit()
-    else:
-        raise RuntimeError("Station not found")
-
-
-def list_stations(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    include_total: bool = False,
-    name_filter: Optional[str] = None,
-    polygon_intersection_filter: shapely.Polygon = None,
-    variable_id_filter: Optional[uuid.UUID] = None,
-    variable_aggregation_type: Optional[
-        base.ObservationAggregationType
-    ] = base.ObservationAggregationType.SEASONAL,
-) -> tuple[Sequence[observations.Station], Optional[int]]:
-    """List existing stations.
-
-    The ``polygon_intersection_filter`` parameter is expected to be a polygon
-    geometry in the EPSG:4326 CRS.
-    """
-    statement = sqlmodel.select(observations.Station).order_by(
-        observations.Station.code
-    )
-    if name_filter is not None:
-        statement = _add_substring_filter(
-            statement, name_filter, observations.Station.name
-        )
-    if polygon_intersection_filter is not None:
-        statement = statement.where(
-            func.ST_Intersects(
-                observations.Station.geom,
-                func.ST_GeomFromWKB(
-                    shapely.io.to_wkb(polygon_intersection_filter), 4326
-                ),
-            )
-        )
-    if all((variable_id_filter, variable_aggregation_type)):
-        if variable_aggregation_type == base.ObservationAggregationType.MONTHLY:
-            instance_class = observations.MonthlyMeasurement
-        elif variable_aggregation_type == base.ObservationAggregationType.SEASONAL:
-            instance_class = observations.SeasonalMeasurement
-        elif variable_aggregation_type == base.ObservationAggregationType.YEARLY:
-            instance_class = observations.YearlyMeasurement
-        else:
-            raise RuntimeError(
-                f"variable filtering for {variable_aggregation_type} is not supported"
-            )
-        statement = (
-            statement.join(instance_class)
-            .join(observations.Variable)
-            .where(observations.Variable.id == variable_id_filter)
-            .distinct()
-        )
-
-    else:
-        logger.warning(
-            "Did not perform variable filter as not all related parameters have been "
-            "provided"
-        )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_stations(
-    session: sqlmodel.Session,
-    polygon_intersection_filter: shapely.Polygon = None,
-) -> Sequence[observations.Station]:
-    """Collect all stations.
-
-    The ``polygon_intersetion_filter`` parameter is expected to be a polygon
-    geometry in the EPSG:4326 CRS.
-    """
-    _, num_total = list_stations(
-        session,
-        limit=1,
-        include_total=True,
-        polygon_intersection_filter=polygon_intersection_filter,
-    )
-    result, _ = list_stations(
-        session,
-        limit=num_total,
-        include_total=False,
-        polygon_intersection_filter=polygon_intersection_filter,
-    )
-    return result
-
-
-def create_monthly_measurement(
-    session: sqlmodel.Session,
-    monthly_measurement_create: observations.MonthlyMeasurementCreate,
-) -> observations.MonthlyMeasurement:
-    """Create a new monthly measurement."""
-    db_monthly_measurement = observations.MonthlyMeasurement(
-        **monthly_measurement_create.model_dump()
-    )
-    session.add(db_monthly_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        session.refresh(db_monthly_measurement)
-        return db_monthly_measurement
-
-
-def create_many_monthly_measurements(
-    session: sqlmodel.Session,
-    monthly_measurements_to_create: Sequence[observations.MonthlyMeasurementCreate],
-) -> list[observations.MonthlyMeasurement]:
-    """Create several monthly measurements."""
-    db_records = []
-    for monthly_measurement_create in monthly_measurements_to_create:
-        db_monthly_measurement = observations.MonthlyMeasurement(
-            station_id=monthly_measurement_create.station_id,
-            variable_id=monthly_measurement_create.variable_id,
-            value=monthly_measurement_create.value,
-            date=monthly_measurement_create.date,
-        )
-        db_records.append(db_monthly_measurement)
-        session.add(db_monthly_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        for db_record in db_records:
-            session.refresh(db_record)
-        return db_records
-
-
-def get_monthly_measurement(
-    session: sqlmodel.Session, monthly_measurement_id: uuid.UUID
-) -> Optional[observations.MonthlyMeasurement]:
-    return session.get(observations.MonthlyMeasurement, monthly_measurement_id)
-
-
-def delete_monthly_measurement(
-    session: sqlmodel.Session, monthly_measurement_id: uuid.UUID
-) -> None:
-    """Delete a monthly_measurement."""
-    db_monthly_measurement = get_monthly_measurement(session, monthly_measurement_id)
-    if db_monthly_measurement is not None:
-        session.delete(db_monthly_measurement)
-        session.commit()
-    else:
-        raise RuntimeError("Monthly measurement not found")
-
-
-def list_monthly_measurements(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-    month_filter: Optional[int] = None,
-    include_total: bool = False,
-) -> tuple[Sequence[observations.MonthlyMeasurement], Optional[int]]:
-    """List existing monthly measurements."""
-    statement = sqlmodel.select(observations.MonthlyMeasurement).order_by(
-        observations.MonthlyMeasurement.date
-    )
-    if station_id_filter is not None:
-        statement = statement.where(
-            observations.MonthlyMeasurement.station_id == station_id_filter
-        )
-    if climatic_indicator_id_filter is not None:
-        statement = statement.where(
-            observations.MonthlyMeasurement.climatic_indicator_id
-            == climatic_indicator_id_filter
-        )
-    if month_filter is not None:
-        statement = statement.where(
-            sqlmodel.func.extract("MONTH", observations.MonthlyMeasurement.date)
-            == month_filter
-        )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_monthly_measurements(
-    session: sqlmodel.Session,
-    *,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-    month_filter: Optional[int] = None,
-) -> Sequence[observations.MonthlyMeasurement]:
-    _, num_total = list_monthly_measurements(
-        session,
-        limit=1,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        month_filter=month_filter,
-        include_total=True,
-    )
-    result, _ = list_monthly_measurements(
-        session,
-        limit=num_total,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        month_filter=month_filter,
-        include_total=False,
-    )
-    return result
-
-
-def create_seasonal_measurement(
-    session: sqlmodel.Session,
-    measurement_create: observations.SeasonalMeasurementCreate,
-) -> observations.SeasonalMeasurement:
-    """Create a new seasonal measurement."""
-    db_measurement = observations.SeasonalMeasurement(**measurement_create.model_dump())
-    session.add(db_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        session.refresh(db_measurement)
-        return db_measurement
-
-
-def create_many_seasonal_measurements(
-    session: sqlmodel.Session,
-    measurements_to_create: Sequence[observations.SeasonalMeasurementCreate],
-) -> list[observations.SeasonalMeasurement]:
-    """Create several seasonal measurements."""
-    db_records = []
-    for measurement_create in measurements_to_create:
-        db_measurement = observations.SeasonalMeasurement(
-            **measurement_create.model_dump()
-        )
-        db_records.append(db_measurement)
-        session.add(db_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        for db_record in db_records:
-            session.refresh(db_record)
-        return db_records
-
-
-def get_seasonal_measurement(
-    session: sqlmodel.Session, measurement_id: uuid.UUID
-) -> Optional[observations.SeasonalMeasurement]:
-    return session.get(observations.SeasonalMeasurement, measurement_id)
-
-
-def delete_seasonal_measurement(
-    session: sqlmodel.Session, measurement_id: uuid.UUID
-) -> None:
-    """Delete a seasonal measurement."""
-    db_measurement = get_seasonal_measurement(session, measurement_id)
-    if db_measurement is not None:
-        session.delete(db_measurement)
-        session.commit()
-    else:
-        raise RuntimeError("Seasonal measurement not found")
-
-
-def list_seasonal_measurements(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-    season_filter: Optional[base.Season] = None,
-    include_total: bool = False,
-) -> tuple[Sequence[observations.SeasonalMeasurement], Optional[int]]:
-    """List existing seasonal measurements."""
-    statement = sqlmodel.select(observations.SeasonalMeasurement).order_by(
-        observations.SeasonalMeasurement.year
-    )
-    if station_id_filter is not None:
-        statement = statement.where(
-            observations.SeasonalMeasurement.station_id == station_id_filter
-        )
-    if climatic_indicator_id_filter is not None:
-        statement = statement.where(
-            observations.SeasonalMeasurement.climatic_indicator_id
-            == climatic_indicator_id_filter
-        )
-    if season_filter is not None:
-        statement = statement.where(
-            observations.SeasonalMeasurement.season == season_filter
-        )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_seasonal_measurements(
-    session: sqlmodel.Session,
-    *,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-    season_filter: Optional[base.Season] = None,
-) -> Sequence[observations.SeasonalMeasurement]:
-    _, num_total = list_seasonal_measurements(
-        session,
-        limit=1,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        season_filter=season_filter,
-        include_total=True,
-    )
-    result, _ = list_seasonal_measurements(
-        session,
-        limit=num_total,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        season_filter=season_filter,
-        include_total=False,
-    )
-    return result
-
-
-def create_yearly_measurement(
-    session: sqlmodel.Session, measurement_create: observations.YearlyMeasurementCreate
-) -> observations.YearlyMeasurement:
-    """Create a new yearly measurement."""
-    db_measurement = observations.YearlyMeasurement(**measurement_create.model_dump())
-    session.add(db_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        session.refresh(db_measurement)
-        return db_measurement
-
-
-def create_many_yearly_measurements(
-    session: sqlmodel.Session,
-    measurements_to_create: Sequence[observations.YearlyMeasurementCreate],
-) -> list[observations.YearlyMeasurement]:
-    """Create several yearly measurements."""
-    db_records = []
-    for measurement_create in measurements_to_create:
-        db_measurement = observations.YearlyMeasurement(
-            **measurement_create.model_dump()
-        )
-        db_records.append(db_measurement)
-        session.add(db_measurement)
-    try:
-        session.commit()
-    except sqlalchemy.exc.DBAPIError:
-        raise
-    else:
-        for db_record in db_records:
-            session.refresh(db_record)
-        return db_records
-
-
-def get_yearly_measurement(
-    session: sqlmodel.Session, measurement_id: uuid.UUID
-) -> Optional[observations.YearlyMeasurement]:
-    return session.get(observations.YearlyMeasurement, measurement_id)
-
-
-def delete_yearly_measurement(
-    session: sqlmodel.Session, measurement_id: uuid.UUID
-) -> None:
-    """Delete a yearly measurement."""
-    db_measurement = get_yearly_measurement(session, measurement_id)
-    if db_measurement is not None:
-        session.delete(db_measurement)
-        session.commit()
-    else:
-        raise RuntimeError("Yearly measurement not found")
-
-
-def list_yearly_measurements(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-    include_total: bool = False,
-) -> tuple[Sequence[observations.YearlyMeasurement], Optional[int]]:
-    """List existing yearly measurements."""
-    statement = sqlmodel.select(observations.YearlyMeasurement).order_by(
-        observations.YearlyMeasurement.year
-    )
-    if station_id_filter is not None:
-        statement = statement.where(
-            observations.YearlyMeasurement.station_id == station_id_filter
-        )
-    if climatic_indicator_id_filter is not None:
-        statement = statement.where(
-            observations.YearlyMeasurement.climatic_indicator_id
-            == climatic_indicator_id_filter
-        )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_yearly_measurements(
-    session: sqlmodel.Session,
-    *,
-    station_id_filter: Optional[uuid.UUID] = None,
-    climatic_indicator_id_filter: Optional[int] = None,
-) -> Sequence[observations.YearlyMeasurement]:
-    _, num_total = list_yearly_measurements(
-        session,
-        limit=1,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        include_total=True,
-    )
-    result, _ = list_yearly_measurements(
-        session,
-        limit=num_total,
-        station_id_filter=station_id_filter,
-        climatic_indicator_id_filter=climatic_indicator_id_filter,
-        include_total=False,
-    )
-    return result
+# def create_monthly_measurement(
+#     session: sqlmodel.Session,
+#     monthly_measurement_create: observations.MonthlyMeasurementCreate,
+# ) -> observations.MonthlyMeasurement:
+#     """Create a new monthly measurement."""
+#     db_monthly_measurement = observations.MonthlyMeasurement(
+#         **monthly_measurement_create.model_dump()
+#     )
+#     session.add(db_monthly_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         session.refresh(db_monthly_measurement)
+#         return db_monthly_measurement
+#
+#
+# def create_many_monthly_measurements(
+#     session: sqlmodel.Session,
+#     monthly_measurements_to_create: Sequence[observations.MonthlyMeasurementCreate],
+# ) -> list[observations.MonthlyMeasurement]:
+#     """Create several monthly measurements."""
+#     db_records = []
+#     for monthly_measurement_create in monthly_measurements_to_create:
+#         db_monthly_measurement = observations.MonthlyMeasurement(
+#             station_id=monthly_measurement_create.station_id,
+#             variable_id=monthly_measurement_create.variable_id,
+#             value=monthly_measurement_create.value,
+#             date=monthly_measurement_create.date,
+#         )
+#         db_records.append(db_monthly_measurement)
+#         session.add(db_monthly_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         for db_record in db_records:
+#             session.refresh(db_record)
+#         return db_records
+#
+#
+# def get_monthly_measurement(
+#     session: sqlmodel.Session, monthly_measurement_id: uuid.UUID
+# ) -> Optional[observations.MonthlyMeasurement]:
+#     return session.get(observations.MonthlyMeasurement, monthly_measurement_id)
+#
+#
+# def delete_monthly_measurement(
+#     session: sqlmodel.Session, monthly_measurement_id: uuid.UUID
+# ) -> None:
+#     """Delete a monthly_measurement."""
+#     db_monthly_measurement = get_monthly_measurement(session, monthly_measurement_id)
+#     if db_monthly_measurement is not None:
+#         session.delete(db_monthly_measurement)
+#         session.commit()
+#     else:
+#         raise RuntimeError("Monthly measurement not found")
+#
+#
+# def list_monthly_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     limit: int = 20,
+#     offset: int = 0,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+#     month_filter: Optional[int] = None,
+#     include_total: bool = False,
+# ) -> tuple[Sequence[observations.MonthlyMeasurement], Optional[int]]:
+#     """List existing monthly measurements."""
+#     statement = sqlmodel.select(observations.MonthlyMeasurement).order_by(
+#         observations.MonthlyMeasurement.date
+#     )
+#     if station_id_filter is not None:
+#         statement = statement.where(
+#             observations.MonthlyMeasurement.station_id == station_id_filter
+#         )
+#     if climatic_indicator_id_filter is not None:
+#         statement = statement.where(
+#             observations.MonthlyMeasurement.climatic_indicator_id
+#             == climatic_indicator_id_filter
+#         )
+#     if month_filter is not None:
+#         statement = statement.where(
+#             sqlmodel.func.extract("MONTH", observations.MonthlyMeasurement.date)
+#             == month_filter
+#         )
+#     items = session.exec(statement.offset(offset).limit(limit)).all()
+#     num_items = _get_total_num_records(session, statement) if include_total else None
+#     return items, num_items
+#
+#
+# def collect_all_monthly_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+#     month_filter: Optional[int] = None,
+# ) -> Sequence[observations.MonthlyMeasurement]:
+#     _, num_total = list_monthly_measurements(
+#         session,
+#         limit=1,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         month_filter=month_filter,
+#         include_total=True,
+#     )
+#     result, _ = list_monthly_measurements(
+#         session,
+#         limit=num_total,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         month_filter=month_filter,
+#         include_total=False,
+#     )
+#     return result
+#
+#
+# def create_seasonal_measurement(
+#     session: sqlmodel.Session,
+#     measurement_create: observations.SeasonalMeasurementCreate,
+# ) -> observations.SeasonalMeasurement:
+#     """Create a new seasonal measurement."""
+#     db_measurement = observations.SeasonalMeasurement(**measurement_create.model_dump())
+#     session.add(db_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         session.refresh(db_measurement)
+#         return db_measurement
+#
+#
+# def create_many_seasonal_measurements(
+#     session: sqlmodel.Session,
+#     measurements_to_create: Sequence[observations.SeasonalMeasurementCreate],
+# ) -> list[observations.SeasonalMeasurement]:
+#     """Create several seasonal measurements."""
+#     db_records = []
+#     for measurement_create in measurements_to_create:
+#         db_measurement = observations.SeasonalMeasurement(
+#             **measurement_create.model_dump()
+#         )
+#         db_records.append(db_measurement)
+#         session.add(db_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         for db_record in db_records:
+#             session.refresh(db_record)
+#         return db_records
+#
+#
+# def get_seasonal_measurement(
+#     session: sqlmodel.Session, measurement_id: uuid.UUID
+# ) -> Optional[observations.SeasonalMeasurement]:
+#     return session.get(observations.SeasonalMeasurement, measurement_id)
+#
+#
+# def delete_seasonal_measurement(
+#     session: sqlmodel.Session, measurement_id: uuid.UUID
+# ) -> None:
+#     """Delete a seasonal measurement."""
+#     db_measurement = get_seasonal_measurement(session, measurement_id)
+#     if db_measurement is not None:
+#         session.delete(db_measurement)
+#         session.commit()
+#     else:
+#         raise RuntimeError("Seasonal measurement not found")
+#
+#
+# def list_seasonal_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     limit: int = 20,
+#     offset: int = 0,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+#     season_filter: Optional[base.Season] = None,
+#     include_total: bool = False,
+# ) -> tuple[Sequence[observations.SeasonalMeasurement], Optional[int]]:
+#     """List existing seasonal measurements."""
+#     statement = sqlmodel.select(observations.SeasonalMeasurement).order_by(
+#         observations.SeasonalMeasurement.year
+#     )
+#     if station_id_filter is not None:
+#         statement = statement.where(
+#             observations.SeasonalMeasurement.station_id == station_id_filter
+#         )
+#     if climatic_indicator_id_filter is not None:
+#         statement = statement.where(
+#             observations.SeasonalMeasurement.climatic_indicator_id
+#             == climatic_indicator_id_filter
+#         )
+#     if season_filter is not None:
+#         statement = statement.where(
+#             observations.SeasonalMeasurement.season == season_filter
+#         )
+#     items = session.exec(statement.offset(offset).limit(limit)).all()
+#     num_items = _get_total_num_records(session, statement) if include_total else None
+#     return items, num_items
+#
+#
+# def collect_all_seasonal_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+#     season_filter: Optional[base.Season] = None,
+# ) -> Sequence[observations.SeasonalMeasurement]:
+#     _, num_total = list_seasonal_measurements(
+#         session,
+#         limit=1,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         season_filter=season_filter,
+#         include_total=True,
+#     )
+#     result, _ = list_seasonal_measurements(
+#         session,
+#         limit=num_total,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         season_filter=season_filter,
+#         include_total=False,
+#     )
+#     return result
+#
+#
+# def create_yearly_measurement(
+#     session: sqlmodel.Session, measurement_create: observations.YearlyMeasurementCreate
+# ) -> observations.YearlyMeasurement:
+#     """Create a new yearly measurement."""
+#     db_measurement = observations.YearlyMeasurement(**measurement_create.model_dump())
+#     session.add(db_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         session.refresh(db_measurement)
+#         return db_measurement
+#
+#
+# def create_many_yearly_measurements(
+#     session: sqlmodel.Session,
+#     measurements_to_create: Sequence[observations.YearlyMeasurementCreate],
+# ) -> list[observations.YearlyMeasurement]:
+#     """Create several yearly measurements."""
+#     db_records = []
+#     for measurement_create in measurements_to_create:
+#         db_measurement = observations.YearlyMeasurement(
+#             **measurement_create.model_dump()
+#         )
+#         db_records.append(db_measurement)
+#         session.add(db_measurement)
+#     try:
+#         session.commit()
+#     except sqlalchemy.exc.DBAPIError:
+#         raise
+#     else:
+#         for db_record in db_records:
+#             session.refresh(db_record)
+#         return db_records
+#
+#
+# def get_yearly_measurement(
+#     session: sqlmodel.Session, measurement_id: uuid.UUID
+# ) -> Optional[observations.YearlyMeasurement]:
+#     return session.get(observations.YearlyMeasurement, measurement_id)
+#
+#
+# def delete_yearly_measurement(
+#     session: sqlmodel.Session, measurement_id: uuid.UUID
+# ) -> None:
+#     """Delete a yearly measurement."""
+#     db_measurement = get_yearly_measurement(session, measurement_id)
+#     if db_measurement is not None:
+#         session.delete(db_measurement)
+#         session.commit()
+#     else:
+#         raise RuntimeError("Yearly measurement not found")
+#
+#
+# def list_yearly_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     limit: int = 20,
+#     offset: int = 0,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+#     include_total: bool = False,
+# ) -> tuple[Sequence[observations.YearlyMeasurement], Optional[int]]:
+#     """List existing yearly measurements."""
+#     statement = sqlmodel.select(observations.YearlyMeasurement).order_by(
+#         observations.YearlyMeasurement.year
+#     )
+#     if station_id_filter is not None:
+#         statement = statement.where(
+#             observations.YearlyMeasurement.station_id == station_id_filter
+#         )
+#     if climatic_indicator_id_filter is not None:
+#         statement = statement.where(
+#             observations.YearlyMeasurement.climatic_indicator_id
+#             == climatic_indicator_id_filter
+#         )
+#     items = session.exec(statement.offset(offset).limit(limit)).all()
+#     num_items = _get_total_num_records(session, statement) if include_total else None
+#     return items, num_items
+#
+#
+# def collect_all_yearly_measurements(
+#     session: sqlmodel.Session,
+#     *,
+#     station_id_filter: Optional[uuid.UUID] = None,
+#     climatic_indicator_id_filter: Optional[int] = None,
+# ) -> Sequence[observations.YearlyMeasurement]:
+#     _, num_total = list_yearly_measurements(
+#         session,
+#         limit=1,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         include_total=True,
+#     )
+#     result, _ = list_yearly_measurements(
+#         session,
+#         limit=num_total,
+#         station_id_filter=station_id_filter,
+#         climatic_indicator_id_filter=climatic_indicator_id_filter,
+#         include_total=False,
+#     )
+#     return result
 
 
 def get_configuration_parameter_value(
@@ -1709,3 +1709,397 @@ def _replace_conf_param_filters_with_climatic_indicator(
         if climatic_indicator is not None:
             result = (new_possible_values, climatic_indicator)
     return result
+
+
+def get_observation_station(
+    session: sqlmodel.Session, observation_station_id: int
+) -> Optional[observations.ObservationStation]:
+    return session.get(observations.ObservationStation, observation_station_id)
+
+
+def get_observation_station_by_code(
+    session: sqlmodel.Session, observation_station_code: str
+) -> Optional[observations.ObservationStation]:
+    """Get an observation station by its code.
+
+    Since a station code is unique, it can be used to uniquely identify a station.
+    """
+    return session.exec(
+        sqlmodel.select(observations.ObservationStation).where(
+            observations.ObservationStation.code == observation_station_code
+        )
+    ).first()
+
+
+def list_observation_stations(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    name_filter: Optional[str] = None,
+    polygon_intersection_filter: shapely.Polygon = None,
+) -> tuple[Sequence[observations.Station], Optional[int]]:
+    """List existing observation stations.
+
+    The ``polygon_intersection_filter`` parameter is expected to be a polygon
+    geometry in the EPSG:4326 CRS.
+    """
+    statement = sqlmodel.select(observations.ObservationStation).order_by(
+        observations.ObservationStation.code
+    )
+    if name_filter is not None:
+        statement = _add_substring_filter(
+            statement, name_filter, observations.ObservationStation.name
+        )
+    if polygon_intersection_filter is not None:
+        statement = statement.where(
+            func.ST_Intersects(
+                observations.ObservationStation.geom,
+                func.ST_GeomFromWKB(
+                    shapely.io.to_wkb(polygon_intersection_filter), 4326
+                ),
+            )
+        )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_observation_stations(
+    session: sqlmodel.Session,
+    polygon_intersection_filter: shapely.Polygon = None,
+) -> Sequence[observations.Station]:
+    """Collect all observation stations.
+
+    The ``polygon_intersetion_filter`` parameter is expected to be a polygon
+    geometry in the EPSG:4326 CRS.
+    """
+    _, num_total = list_observation_stations(
+        session,
+        limit=1,
+        include_total=True,
+        polygon_intersection_filter=polygon_intersection_filter,
+    )
+    result, _ = list_observation_stations(
+        session,
+        limit=num_total,
+        include_total=False,
+        polygon_intersection_filter=polygon_intersection_filter,
+    )
+    return result
+
+
+def create_observation_station(
+    session: sqlmodel.Session,
+    observation_station_create: observations.ObservationStationCreate,
+) -> observations.ObservationStation:
+    """Create a new observation station."""
+    geom = shapely.io.from_geojson(observation_station_create.geom.model_dump_json())
+    wkbelement = from_shape(geom)
+    db_item = observations.ObservationStation(
+        **observation_station_create.model_dump(exclude={"geom"}),
+        geom=wkbelement,
+    )
+    session.add(db_item)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_item)
+        return db_item
+
+
+def create_many_observation_stations(
+    session: sqlmodel.Session,
+    stations_to_create: Sequence[observations.ObservationStationCreate],
+) -> list[observations.ObservationStation]:
+    """Create several observation stations."""
+    db_records = []
+    for item_create in stations_to_create:
+        geom = shapely.io.from_geojson(item_create.geom.model_dump_json())
+        wkbelement = from_shape(geom)
+        db_item = observations.ObservationStation(
+            **item_create.model_dump(exclude={"geom"}),
+            geom=wkbelement,
+        )
+        db_records.append(db_item)
+        session.add(db_item)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        for db_record in db_records:
+            session.refresh(db_record)
+        return db_records
+
+
+def update_observation_station(
+    session: sqlmodel.Session,
+    db_observation_station: observations.ObservationStation,
+    observation_station_update: observations.ObservationStationUpdate,
+) -> observations.ObservationStation:
+    """Update an observation station."""
+    geom = from_shape(
+        shapely.io.from_geojson(observation_station_update.geom.model_dump_json())
+    )
+    other_data = observation_station_update.model_dump(
+        exclude={"geom"}, exclude_unset=True
+    )
+    data = {**other_data, "geom": geom}
+    for key, value in data.items():
+        setattr(db_observation_station, key, value)
+    session.add(db_observation_station)
+    session.commit()
+    session.refresh(db_observation_station)
+    return db_observation_station
+
+
+def delete_observation_station(
+    session: sqlmodel.Session, observation_station_id: int
+) -> None:
+    """Delete an observation station."""
+    db_item = get_observation_station(session, observation_station_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Observation station not found")
+
+
+def get_observation_measurement(
+    session: sqlmodel.Session, observation_measurement_id: int
+) -> Optional[observations.ObservationMeasurement]:
+    return session.get(observations.ObservationMeasurement, observation_measurement_id)
+
+
+def list_observation_measurements(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    observation_station_id_filter: Optional[int] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
+    include_total: bool = False,
+) -> tuple[Sequence[observations.ObservationMeasurement], Optional[int]]:
+    """List existing observation measurements."""
+    statement = sqlmodel.select(observations.ObservationMeasurement).order_by(
+        observations.ObservationMeasurement.date
+    )
+    if observation_station_id_filter is not None:
+        statement = statement.where(
+            observations.ObservationMeasurement.observation_station_id
+            == observation_station_id_filter
+        )
+    if climatic_indicator_id_filter is not None:
+        statement = statement.where(
+            observations.ObservationMeasurement.climatic_indicator_id
+            == climatic_indicator_id_filter
+        )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_observation_measurements(
+    session: sqlmodel.Session,
+    *,
+    observation_station_id_filter: Optional[int] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
+) -> Sequence[observations.ObservationMeasurement]:
+    _, num_total = list_observation_measurements(
+        session,
+        limit=1,
+        observation_station_id_filter=observation_station_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
+        include_total=True,
+    )
+    result, _ = list_observation_measurements(
+        session,
+        limit=num_total,
+        observation_station_id_filter=observation_station_id_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
+        include_total=False,
+    )
+    return result
+
+
+def create_observation_measurement(
+    session: sqlmodel.Session,
+    observation_measurement_create: observations.ObservationMeasurementUpdate,
+) -> observations.ObservationMeasurement:
+    """Create a new observation measurement."""
+    db_measurement = observations.ObservationMeasurement(
+        **observation_measurement_create.model_dump()
+    )
+    session.add(db_measurement)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_measurement)
+        return db_measurement
+
+
+def create_many_observation_measurements(
+    session: sqlmodel.Session,
+    observation_measurements_to_create: Sequence[
+        observations.ObservationMeasurementCreate
+    ],
+) -> list[observations.ObservationMeasurement]:
+    """Create several observation measurements."""
+    db_records = []
+    for measurement_create in observation_measurements_to_create:
+        db_measurement = observations.ObservationMeasurement(
+            observation_station_id=measurement_create.observation_station_id,
+            climatic_indicator_id=measurement_create.climatic_indicator_id,
+            value=measurement_create.value,
+            date=measurement_create.date,
+            measurement_aggregation_type=measurement_create.measurement_aggregation_type,
+        )
+        db_records.append(db_measurement)
+        session.add(db_measurement)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        for db_record in db_records:
+            session.refresh(db_record)
+        return db_records
+
+
+def delete_observation_measurement(
+    session: sqlmodel.Session, observation_measurement_id: int
+) -> None:
+    """Delete an observation measurement."""
+    if (
+        db_measurement := get_observation_measurement(
+            session, observation_measurement_id
+        )
+    ) is not None:
+        session.delete(db_measurement)
+        session.commit()
+    else:
+        raise RuntimeError("Observation measurement not found")
+
+
+def get_observation_series_configuration(
+    session: sqlmodel.Session, observation_series_configuration_id: int
+) -> Optional[observations.ObservationSeriesConfiguration]:
+    return session.get(
+        observations.ObservationSeriesConfiguration, observation_series_configuration_id
+    )
+
+
+def get_observation_series_configuration_by_identifier(
+    session: sqlmodel.Session, identifier: str
+) -> Optional[observations.ObservationSeriesConfiguration]:
+    try:
+        (
+            climatic_indicator_identifier,
+            raw_owners,
+            raw_measurement_aggregation,
+        ) = identifier.split("_")
+        climatic_indicator = get_climatic_indicator_by_identifier(
+            session, climatic_indicator_identifier
+        )
+        measurement_aggregation_type = static.MeasurementAggregationType(
+            raw_measurement_aggregation.upper()
+        )
+        station_owners = [
+            static.ObservationStationOwner(i.upper()) for i in raw_owners.split("-")
+        ]
+    except ValueError:
+        raise exceptions.InvalidObservationSeriesConfigurationIdentifierError()
+    else:
+        statement = sqlmodel.select(observations.ObservationSeriesConfiguration).where(
+            observations.ObservationSeriesConfiguration.climatic_indicator_id
+            == climatic_indicator.id,
+            observations.ObservationSeriesConfiguration.measurement_aggregation_type
+            == measurement_aggregation_type,
+            observations.ObservationSeriesConfiguration.station_owners
+            == station_owners,
+        )
+        return session.exec(statement).first()
+
+
+def list_observation_series_configurations(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+) -> tuple[Sequence[observations.ObservationSeriesConfiguration], Optional[int]]:
+    """List existing observation series configurations."""
+    statement = sqlmodel.select(observations.ObservationSeriesConfiguration).order_by(
+        observations.ObservationSeriesConfiguration.id
+    )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_observation_series_configurations(
+    session: sqlmodel.Session,
+) -> Sequence[observations.ObservationSeriesConfiguration]:
+    """Collect all observation series configurations."""
+    _, num_total = list_observation_series_configurations(
+        session,
+        limit=1,
+        include_total=True,
+    )
+    result, _ = list_observation_series_configurations(
+        session,
+        limit=num_total,
+        include_total=False,
+    )
+    return result
+
+
+def create_observation_series_configuration(
+    session: sqlmodel.Session,
+    observation_series_configuration_create: observations.ObservationSeriesConfigurationCreate,
+) -> observations.ObservationSeriesConfiguration:
+    """Create a new observation series configuration."""
+    db_series_conf = observations.ObservationSeriesConfiguration(
+        **observation_series_configuration_create.model_dump(),
+    )
+    session.add(db_series_conf)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_series_conf)
+        return db_series_conf
+
+
+def update_observation_series_configuration(
+    session: sqlmodel.Session,
+    db_observation_series_configuration: observations.ObservationSeriesConfiguration,
+    observation_series_configuration_update: observations.ObservationSeriesConfigurationUpdate,
+) -> observations.ObservationSeriesConfiguration:
+    """Update an observation series configuration."""
+    data = observation_series_configuration_update.model_dump(exclude_unset=True)
+    for key, value in data.items():
+        setattr(db_observation_series_configuration, key, value)
+    session.add(db_observation_series_configuration)
+    session.commit()
+    session.refresh(db_observation_series_configuration)
+    return db_observation_series_configuration
+
+
+def delete_observation_series_configuration(
+    session: sqlmodel.Session, observation_series_configuration_id: int
+) -> None:
+    """Delete an observation series configuration."""
+    db_item = get_observation_station(session, observation_series_configuration_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Observation series configuration not found")

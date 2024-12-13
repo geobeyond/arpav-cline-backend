@@ -1,11 +1,7 @@
 import datetime as dt
 import uuid
-from typing import (
-    Annotated,
-    Optional,
-)
+from typing import Optional
 
-import geojson_pydantic
 import pydantic_core
 import sqlmodel
 import typer
@@ -17,58 +13,18 @@ from ..schemas import (
     observations,
 )
 from . import schemas
+from .climaticindicators import app as climatic_indicators_app
+from .observations import (
+    series_configurations_app,
+    stations_app,
+)
 
 app = typer.Typer()
+app.add_typer(climatic_indicators_app, name="climatic-indicators")
+app.add_typer(stations_app, name="observation-stations")
+app.add_typer(series_configurations_app, name="observation-series-configurations")
 
 _JSON_INDENTATION = 2
-
-
-@app.command(name="list-stations")
-def list_stations(ctx: typer.Context) -> None:
-    """List stations."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        result = [
-            schemas.StationRead(**s.model_dump())
-            for s in database.collect_all_stations(session)
-        ]
-        print(pydantic_core.to_json(result, indent=_JSON_INDENTATION).decode("utf-8"))
-
-
-@app.command(name="create-station", context_settings={"ignore_unknown_options": True})
-def create_station(
-    ctx: typer.Context,
-    code: str,
-    longitude: Annotated[float, typer.Argument(min=-180, max=180)],
-    latitude: Annotated[float, typer.Argument(min=-90, max=90)],
-    altitude: Annotated[float, typer.Option(min=-50, max=10_000)] = None,
-    name: Annotated[str, typer.Option(help="Station name")] = "",
-    type: Annotated[str, typer.Option(help="Station type")] = "",
-) -> None:
-    station_create = schemas.StationCreate(
-        geom=geojson_pydantic.Point(type="Point", coordinates=(longitude, latitude)),
-        code=code,
-        altitude_m=altitude,
-        name=name,
-        type_=type.lower().replace(" ", "_"),
-    )
-    """Create a new station."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        db_station = database.create_station(session, station_create)
-        print(
-            schemas.StationRead(**db_station.model_dump()).model_dump_json(
-                indent=_JSON_INDENTATION
-            )
-        )
-
-
-@app.command(name="delete-station")
-def delete_station(
-    ctx: typer.Context,
-    station_id: uuid.UUID,
-) -> None:
-    """Delete a station."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        database.delete_station(session, station_id)
 
 
 @app.command(name="list-monthly-measurements")

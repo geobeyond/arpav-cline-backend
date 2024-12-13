@@ -6,7 +6,6 @@ from .....schemas import (
     observations,
     fields,
 )
-from ..observations import VariableReadEmbeddedInStationRead
 from .base import ArpavFeatureCollection
 
 
@@ -21,7 +20,7 @@ class StationFeatureCollectionItem(geojson_pydantic.Feature):
     @classmethod
     def from_db_instance(
         cls,
-        instance: observations.Station,
+        instance: observations.ObservationStation,
         request: Request,
     ) -> "StationFeatureCollectionItem":
         url = request.url_for("get_station", **{"station_id": instance.id})
@@ -35,18 +34,6 @@ class StationFeatureCollectionItem(geojson_pydantic.Feature):
                         "geom",
                     }
                 ),
-                "monthly_variables": [
-                    VariableReadEmbeddedInStationRead(**v.model_dump())
-                    for v in instance.monthly_variables
-                ],
-                "seasonal_variables": [
-                    VariableReadEmbeddedInStationRead(**v.model_dump())
-                    for v in instance.seasonal_variables
-                ],
-                "yearly_variables": [
-                    VariableReadEmbeddedInStationRead(**v.model_dump())
-                    for v in instance.yearly_variables
-                ],
             },
             links=[str(url)],
         )

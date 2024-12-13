@@ -35,21 +35,15 @@ db_engine = database.get_engine(settings)
 )
 def harvest_stations(
     client: httpx.Client,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
-    fetch_stations_with_months: bool,
-    fetch_stations_with_seasons: bool,
-    fetch_stations_with_yearly_measurements: bool,
-) -> set[observations.StationCreate]:
+    series_configuration: observations.ObservationSeriesConfiguration,
+) -> set[observations.ObservationStationCreate]:
     coord_converter = pyproj.Transformer.from_crs(
         pyproj.CRS("epsg:4258"), pyproj.CRS("epsg:4326"), always_xy=True
     ).transform
     stations = set()
     retriever = operations.fetch_remote_stations(
         client=client,
-        climatic_indicators=[climatic_indicator],
-        fetch_stations_with_months=fetch_stations_with_months,
-        fetch_stations_with_seasons=fetch_stations_with_seasons,
-        fetch_stations_with_yearly_measurements=fetch_stations_with_yearly_measurements,
+        series_configurations=[series_configuration],
     )
     for raw_station in retriever:
         stations.add(operations.parse_station(raw_station, coord_converter))
@@ -61,9 +55,9 @@ def harvest_stations(
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
 )
 def find_new_stations(
-    db_stations: Sequence[observations.Station],
-    new_stations: Sequence[observations.StationCreate],
-) -> list[observations.StationCreate]:
+    db_stations: Sequence[observations.ObservationStation],
+    new_stations: Sequence[observations.ObservationStationCreate],
+) -> list[observations.ObservationStationCreate]:
     possibly_new_stations = {s.code: s for s in new_stations}
     existing_stations = {s.code: s for s in db_stations}
     to_create = []
@@ -95,63 +89,35 @@ def find_new_stations(
     retries=settings.prefect.num_flow_retries,
     retry_delay_seconds=settings.prefect.flow_retry_delay_seconds,
 )
-def refresh_stations(
-    climatic_indicator_identifier: str | None = None,
-    refresh_stations_with_monthly_data: bool = True,
-    refresh_stations_with_seasonal_data: bool = True,
-    refresh_stations_with_yearly_data: bool = True,
-):
+def refresh_stations(observation_series_configuration_identifier: str | None = None):
     client = httpx.Client()
     with sqlmodel.Session(db_engine) as db_session:
-        db_climatic_indicators = _get_climatic_indicators(
-            db_session, climatic_indicator_identifier
+        db_series_configurations = _get_observation_series_configurations(
+            db_session, observation_series_configuration_identifier
         )
-        if len(db_climatic_indicators) > 0:
+        if len(db_series_configurations) > 0:
             to_filter_for_new_stations = set()
             to_wait_on = []
-            for climatic_indicator in db_climatic_indicators:
+            for series_conf in db_series_configurations:
                 print(
-                    f"refreshing stations that have values for "
-                    f"climatic indicator {climatic_indicator.identifier!r}..."
+                    f"refreshing stations that are part of series "
+                    f"{series_conf.identifier!r}..."
                 )
-                if refresh_stations_with_monthly_data:
-                    monthly_future = harvest_stations.submit(
-                        client,
-                        climatic_indicator,
-                        fetch_stations_with_months=True,
-                        fetch_stations_with_seasons=False,
-                        fetch_stations_with_yearly_measurements=False,
-                    )
-                    to_wait_on.append(monthly_future)
-                if refresh_stations_with_seasonal_data:
-                    seasonal_future = harvest_stations.submit(
-                        client,
-                        climatic_indicator,
-                        fetch_stations_with_months=False,
-                        fetch_stations_with_seasons=True,
-                        fetch_stations_with_yearly_measurements=False,
-                    )
-                    to_wait_on.append(seasonal_future)
-                if refresh_stations_with_yearly_data:
-                    yearly_future = harvest_stations.submit(
-                        client,
-                        climatic_indicator,
-                        fetch_stations_with_months=False,
-                        fetch_stations_with_seasons=False,
-                        fetch_stations_with_yearly_measurements=True,
-                    )
-                    to_wait_on.append(yearly_future)
+                fut = harvest_stations.submit(client, series_conf)
+                to_wait_on.append(fut)
             for future in to_wait_on:
                 to_filter_for_new_stations.update(future.result())
             to_create = find_new_stations(
-                database.collect_all_stations(db_session),
+                database.collect_all_observation_stations(db_session),
                 list(to_filter_for_new_stations),
             )
             if len(to_create) > 0:
                 print(f"Found {len(to_create)} new stations. Creating them now...")
                 for s in to_create:
                     print(f"- ({s.code}) {s.name}")
-                created = database.create_many_stations(db_session, to_create)
+                created = database.create_many_observation_stations(
+                    db_session, to_create
+                )
             else:
                 created = []
                 print("No new stations found.")
@@ -488,6 +454,20 @@ def _get_stations(
         result = [station] if station else []
     else:
         result = database.collect_all_stations(db_session)
+    return result
+
+
+def _get_observation_series_configurations(
+    db_session: sqlmodel.Session,
+    observation_series_configuration_identifier: str | None = None,
+) -> list[observations.ObservationSeriesConfiguration]:
+    if observation_series_configuration_identifier is not None:
+        series_conf = database.get_observation_series_configuration_by_identifier(
+            db_session, observation_series_configuration_identifier
+        )
+        result = [series_conf] if series_conf else []
+    else:
+        result = database.collect_all_observation_series_configurations(db_session)
     return result
 
 

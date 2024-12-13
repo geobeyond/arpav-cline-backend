@@ -16,3 +16,7 @@ class InvalidClimaticIndicatorIdError(ArpavError):
 
 class InvalidClimaticIndicatorIdentifierError(ArpavError):
     ...
+
+
+class InvalidObservationSeriesConfigurationIdentifierError(ArpavError):
+    ...

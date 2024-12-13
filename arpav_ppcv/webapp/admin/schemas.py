@@ -10,7 +10,9 @@ from ...schemas.base import (
 )
 from ...schemas.static import (
     AggregationPeriod,
+    ObservationStationOwner,
     MeasureType,
+    MeasurementAggregationType,
 )
 
 
@@ -115,6 +117,27 @@ class StationRead(sqlmodel.SQLModel):
     active_since: Optional[dt.date]
     active_until: Optional[dt.date]
     altitude_m: Optional[float]
+
+
+class ObservationStationRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    owner: ObservationStationOwner
+    longitude: float
+    latitude: float
+    code: str
+    altitude_m: Optional[float]
+    active_since: Optional[dt.date]
+    active_until: Optional[dt.date]
+
+
+class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
+    id: int
+    identifier: str
+    indicator_internal_name: str
+    measurement_aggregation_type: MeasurementAggregationType
+    station_owners: list[ObservationStationOwner]
+    climatic_indicator: int
 
 
 class MonthlyMeasurementRead(sqlmodel.SQLModel):

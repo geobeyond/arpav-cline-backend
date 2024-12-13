@@ -4,7 +4,10 @@ import uuid
 import pydantic
 from fastapi import Request
 
-from ....schemas import observations
+from ....schemas import (
+    observations,
+    static,
+)
 from ....schemas.base import Season
 from .base import WebResourceList
 
@@ -64,6 +67,22 @@ class StationReadListItem(observations.StationBase):
                 for v in instance.yearly_variables
             ],
             url=str(url),
+        )
+
+
+class ObservationStationReadListItem(pydantic.BaseModel):
+    url: pydantic.AnyHttpUrl
+    identifier: str
+    name: str
+    owner: static.ObservationStationOwner
+
+    @classmethod
+    def from_db_instance(
+        cls, instance: observations.ObservationStation, request: Request
+    ) -> "ObservationStationReadListItem":
+        return cls(
+            **instance.model_dump(),
+            url=request.url_for("get_station", **{"station_id": instance.id}),
         )
 
 
@@ -141,9 +160,15 @@ class YearlyMeasurementReadListItem(pydantic.BaseModel):
         )
 
 
-class StationList(WebResourceList):
-    items: list[StationReadListItem]
-    list_item_type = StationReadListItem
+# class StationList(WebResourceList):
+#     items: list[StationReadListItem]
+#     list_item_type = StationReadListItem
+#     path_operation_name = "list_stations"
+
+
+class ObservationStationList(WebResourceList):
+    items: list[ObservationStationReadListItem]
+    list_item_type = ObservationStationReadListItem
     path_operation_name = "list_stations"
 
 

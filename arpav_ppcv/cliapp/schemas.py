@@ -1,15 +1,56 @@
-from ..schemas import observations
+import pydantic
+
+from ..schemas import (
+    observations,
+    static,
+)
 
 
-class StationRead(observations.StationBase):
+class ClimaticIndicatorItem(pydantic.BaseModel):
+    identifier: str
+
+
+class ClimaticIndicatorDetail(pydantic.BaseModel):
+    identifier: str
+    name: str
+    measure_type: static.MeasureType
+    aggregation_period: static.AggregationPeriod
+    display_name_english: str
+    description_english: str
+    unit_english: str
+    palette: str
+    color_scale_min: float
+    color_scale_max: float
+    data_precision: float
+
+
+class ObservationStationItem(pydantic.BaseModel):
+    code: str
+    name: str
+
+
+class ObservationStationDetail(observations.StationBase):
+    code: str
+    name: str
+
+
+class ObservationSeriesConfigurationItem(pydantic.BaseModel):
+    identifier: str
+
+
+class ObservationSeriesConfigurationDetail(pydantic.BaseModel):
+    identifier: str
+    climatic_indicator: ClimaticIndicatorItem
+    indicator_internal_name: str
+    measurement_aggregation_type: static.MeasurementAggregationType
+    station_owners: list[static.ObservationStationOwner]
+
+
+class ObservationStationCreate(observations.StationCreate):
     ...
 
 
-class StationCreate(observations.StationCreate):
-    ...
-
-
-class StationUpdate(observations.StationUpdate):
+class ObservationStationUpdate(observations.StationUpdate):
     ...
 
 

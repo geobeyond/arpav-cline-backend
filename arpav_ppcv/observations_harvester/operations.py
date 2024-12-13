@@ -14,34 +14,39 @@ import pyproj
 import shapely
 import shapely.ops
 
-from ..schemas import observations
+from ..schemas import (
+    observations,
+)
 from ..schemas.climaticindicators import ClimaticIndicator
+from ..schemas.static import (
+    MeasurementAggregationType,
+    ObservationStationOwner,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_remote_stations(
     client: httpx.Client,
-    climatic_indicators: Sequence[ClimaticIndicator],
-    fetch_stations_with_months: bool,
-    fetch_stations_with_seasons: bool,
-    fetch_stations_with_yearly_measurements: bool,
+    series_configurations: Sequence[observations.ObservationSeriesConfiguration],
 ) -> Generator[dict, None, None]:
     station_url = (
         "https://api.arpa.veneto.it/REST/v1/clima_indicatori/staz_attive_lunghe"
     )
-    for climatic_indicator in climatic_indicators:
+    for series_conf in series_configurations:
         logger.info(
-            f"Retrieving stations with monthly measurements for climatic indicator "
-            f"{climatic_indicator.identifier!r}..."
+            f"Retrieving stations belonging to series {series_conf.identifier!r}..."
         )
-        if fetch_stations_with_months:
+        if (
+            series_conf.measurement_aggregation_type
+            == MeasurementAggregationType.MONTHLY
+        ):
             for month in range(1, 13):
                 logger.info(f"Processing month {month}...")
                 month_response = client.get(
                     station_url,
                     params={
-                        "indicatore": climatic_indicator.name,
+                        "indicatore": series_conf.indicator_internal_name,
                         "tabella": "M",
                         "periodo": str(month),
                     },
@@ -49,13 +54,16 @@ def fetch_remote_stations(
                 month_response.raise_for_status()
                 for raw_station in month_response.json().get("data", []):
                     yield raw_station
-        if fetch_stations_with_seasons:
+        elif (
+            series_conf.measurement_aggregation_type
+            == MeasurementAggregationType.SEASONAL
+        ):
             for season in range(1, 5):
                 logger.info(f"Processing season {season}...")
                 season_response = client.get(
                     station_url,
                     params={
-                        "indicatore": climatic_indicator.name,
+                        "indicatore": series_conf.indicator_internal_name,
                         "tabella": "S",
                         "periodo": str(season),
                     },
@@ -63,12 +71,15 @@ def fetch_remote_stations(
                 season_response.raise_for_status()
                 for raw_station in season_response.json().get("data", []):
                     yield raw_station
-        if fetch_stations_with_yearly_measurements:
-            logger.info("Processing year...")
+        elif (
+            series_conf.measurement_aggregation_type
+            == MeasurementAggregationType.YEARLY
+        ):
+            logger.info("Processing years...")
             year_response = client.get(
                 station_url,
                 params={
-                    "indicatore": climatic_indicator.name,
+                    "indicatore": series_conf.indicator_internal_name,
                     "tabella": "A",
                     "periodo": "0",
                 },
@@ -76,11 +87,15 @@ def fetch_remote_stations(
             year_response.raise_for_status()
             for raw_station in year_response.json().get("data", []):
                 yield raw_station
+        else:
+            raise NotImplementedError(
+                f"{series_conf.measurement_aggregation_type} not implemented"
+            )
 
 
 def parse_station(
     raw_station: dict, coord_converter: Callable
-) -> observations.StationCreate:
+) -> observations.ObservationStationCreate:
     station_code = str(raw_station["statcd"])
     if raw_start := raw_station.get("iniziovalidita"):
         try:
@@ -102,12 +117,12 @@ def parse_station(
         active_until = None
     pt_4258 = shapely.Point(raw_station["EPSG4258_LON"], raw_station["EPSG4258_LAT"])
     pt_4326 = shapely.ops.transform(coord_converter, pt_4258)
-    return observations.StationCreate(
+    return observations.ObservationStationCreate(
         code=station_code,
         geom=geojson_pydantic.Point(type="Point", coordinates=(pt_4326.x, pt_4326.y)),
+        owner=ObservationStationOwner.ARPAV,
         altitude_m=raw_station["altitude"],
         name=raw_station["statnm"],
-        type_=raw_station.get("stattype", "").lower().replace(" ", "_"),
         active_since=active_since,
         active_until=active_until,
     )
