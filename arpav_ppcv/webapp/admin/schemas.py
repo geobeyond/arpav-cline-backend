@@ -10,10 +10,15 @@ from ...schemas.base import (
 )
 from ...schemas.static import (
     AggregationPeriod,
-    ObservationStationOwner,
+    ObservationStationManager,
     MeasureType,
     MeasurementAggregationType,
 )
+
+
+class ClimaticIndicatorObservationNameRead(sqlmodel.SQLModel):
+    station_manager: ObservationStationManager
+    indicator_observation_name: str
 
 
 class ClimaticIndicatorRead(sqlmodel.SQLModel):
@@ -33,6 +38,7 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     color_scale_max: float
     data_precision: int
     sort_order: int
+    observation_names: list[ClimaticIndicatorObservationNameRead]
 
 
 class ConfigurationParameterValueRead(sqlmodel.SQLModel):
@@ -122,7 +128,7 @@ class StationRead(sqlmodel.SQLModel):
 class ObservationStationRead(sqlmodel.SQLModel):
     id: int
     name: str
-    owner: ObservationStationOwner
+    owner: ObservationStationManager
     longitude: float
     latitude: float
     code: str
@@ -136,7 +142,7 @@ class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
     identifier: str
     indicator_internal_name: str
     measurement_aggregation_type: MeasurementAggregationType
-    station_owners: list[ObservationStationOwner]
+    station_owners: list[ObservationStationManager]
     climatic_indicator: int
 
 

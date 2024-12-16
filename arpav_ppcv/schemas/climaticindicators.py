@@ -16,6 +16,7 @@ from ..config import get_translations
 if TYPE_CHECKING:
     from . import coverages
     from .observations import (
+        ClimaticIndicatorObservationName,
         ObservationMeasurement,
         ObservationSeriesConfiguration,
         MonthlyMeasurement,
@@ -55,6 +56,14 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     observation_series_configurations: list[
         "ObservationSeriesConfiguration"
     ] = sqlmodel.Relationship(back_populates="climatic_indicator")
+
+    observation_names: list["ClimaticIndicatorObservationName"] = sqlmodel.Relationship(
+        back_populates="climatic_indicator",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
 
     measurements: list["ObservationMeasurement"] = sqlmodel.Relationship(
         back_populates="climatic_indicator",
@@ -139,6 +148,16 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
         return _("climatic indicator description")
 
 
+class ClimaticIndicatorObservationNameCreate(sqlmodel.SQLModel):
+    observation_station_manager: static.ObservationStationManager
+    indicator_observation_name: str
+
+
+class ClimaticIndicatorObservationNameUpdate(sqlmodel.SQLModel):
+    observation_station_manager: static.ObservationStationManager
+    indicator_observation_name: str
+
+
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     name: Annotated[
         str,
@@ -157,6 +176,7 @@ class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     color_scale_max: float = 0.0
     data_precision: int = sqlmodel.Field(default=0)
     sort_order: int = sqlmodel.Field(default=0)
+    observation_names: list["ClimaticIndicatorObservationNameCreate"]
 
 
 class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
@@ -177,3 +197,4 @@ class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
     color_scale_max: Optional[float] = None
     data_precision: Optional[int] = None
     sort_order: Optional[int] = None
+    observation_names: list["ClimaticIndicatorObservationNameUpdate"]

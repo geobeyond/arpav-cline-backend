@@ -29,14 +29,8 @@ class PrefectSettings(pydantic.BaseModel):
     observation_stations_refresher_flow_cron_schedule: str = (
         "0 1 * * 1"  # run once every week, at 01:00 on monday
     )
-    observation_monthly_measurements_refresher_flow_cron_schedule: str = (
+    observation_measurements_refresher_flow_cron_schedule: str = (
         "0 2 * * 1"  # run once every week, at 02:00 on monday
-    )
-    observation_seasonal_measurements_refresher_flow_cron_schedule: str = (
-        "0 3 * * 1"  # run once every week, at 03:00 on monday
-    )
-    observation_yearly_measurements_refresher_flow_cron_schedule: str = (
-        "0 4 * * 1"  # run once every week, at 04:00 on monday
     )
     station_variables_refresher_flow_cron_schedule: str = (
         "0 5 * * 1"  # run once every week, at 05:00 on monday
@@ -133,6 +127,9 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     variable_stations_db_schema: str = "stations"
     num_uvicorn_worker_processes: int = 1
     http_client_timeout_seconds: float = 30.0
+    arpav_observations_base_url: str = "https://api.arpa.veneto.it/REST/v1"
+    arpafvg_observations_base_url: str = "https://api.meteo.fvg.it"
+    arpafvg_auth_token: str = "changeme"
 
     @pydantic.model_validator(mode="after")
     def ensure_test_db_dsn(self):

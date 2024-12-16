@@ -457,7 +457,7 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
 
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str = ""
-    owner: static.ObservationStationOwner
+    managed_by: static.ObservationStationManager
     geom: fields.WkbElement = sqlmodel.Field(
         sa_column=sqlalchemy.Column(
             geoalchemy2.Geometry(
@@ -495,10 +495,15 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
         }
     )
 
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        return self.identifier_pattern.format(owner=self.managed_by, code=self.code)
+
 
 class ObservationStationCreate(sqlmodel.SQLModel):
     name: Optional[str] = ""
-    owner: static.ObservationStationOwner
+    managed_by: static.ObservationStationManager
     geom: geojson_pydantic.Point
     code: str
     altitude_m: Optional[float] = None
@@ -510,7 +515,7 @@ class ObservationStationCreate(sqlmodel.SQLModel):
             "".join(
                 (
                     self.name,
-                    self.owner,
+                    self.managed_by,
                     self.geom.model_dump_json(),
                     self.code,
                     str(self.altitude_m) or "",
@@ -527,7 +532,7 @@ class ObservationStationCreate(sqlmodel.SQLModel):
 
 class ObservationStationUpdate(sqlmodel.SQLModel):
     name: Optional[str] = None
-    owner: Optional[static.ObservationStationOwner] = None
+    managed_by: Optional[static.ObservationStationManager] = None
     geom: Optional[geojson_pydantic.Point] = None
     code: Optional[str] = None
     altitude_m: Optional[float] = None
@@ -614,7 +619,7 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     )
     indicator_internal_name: str
     measurement_aggregation_type: static.MeasurementAggregationType
-    station_owners: list[static.ObservationStationOwner] = sqlmodel.Field(
+    station_managers: list[static.ObservationStationManager] = sqlmodel.Field(
         default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
     )
 
@@ -627,7 +632,7 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     def identifier(self) -> str:
         return self.identifier_pattern.format(
             climatic_indicator=self.climatic_indicator.identifier,
-            station_owners="-".join(self.station_owners),
+            station_managers="-".join(self.station_managers),
             measurement_aggregation_type=self.measurement_aggregation_type,
         )
 
@@ -661,11 +666,40 @@ class ObservationSeriesConfigurationCreate(sqlmodel.SQLModel):
     climatic_indicator_id: int
     indicator_internal_name: str
     measurement_aggregation_type: static.MeasurementAggregationType
-    station_owners: list[static.ObservationStationOwner]
+    station_managers: list[static.ObservationStationManager]
 
 
 class ObservationSeriesConfigurationUpdate(sqlmodel.SQLModel):
     climatic_indicator_id: Optional[int] = None
     indicator_internal_name: Optional[str] = None
     measurement_aggregation_type: Optional[static.MeasurementAggregationType] = None
-    station_owners: Optional[list[static.ObservationStationOwner]] = None
+    station_managers: Optional[list[static.ObservationStationManager]] = None
+
+
+class ClimaticIndicatorObservationName(sqlmodel.SQLModel, table=True):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all names if the related climatic_indicator gets deleted
+        ),
+    )
+
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        default=None,
+        primary_key=True,
+    )
+    station_manager: static.ObservationStationManager = sqlmodel.Field(
+        default=None,
+        primary_key=True,
+    )
+    indicator_observation_name: str
+
+    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="observation_names"
+    )

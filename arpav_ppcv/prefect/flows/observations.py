@@ -22,6 +22,7 @@ from arpav_ppcv.schemas import (
     climaticindicators,
     observations,
 )
+from arpav_ppcv.schemas.static import ObservationStationManager
 
 # this is a module global because we need to configure the prefect flow and
 # task with values from it
@@ -41,12 +42,33 @@ def harvest_stations(
         pyproj.CRS("epsg:4258"), pyproj.CRS("epsg:4326"), always_xy=True
     ).transform
     stations = set()
-    retriever = operations.fetch_remote_stations(
-        client=client,
-        series_configurations=[series_configuration],
-    )
-    for raw_station in retriever:
-        stations.add(operations.parse_station(raw_station, coord_converter))
+    for station_manager in series_configuration.station_managers:
+        if station_manager == ObservationStationManager.ARPAV:
+            retriever = operations.fetch_remote_arpav_stations(
+                client,
+                series_configuration,
+                arpav_observations_base_url=settings.arpav_observations_base_url,
+            )
+            for raw_station in retriever:
+                stations.add(
+                    operations.parse_arpav_station(raw_station, coord_converter)
+                )
+        elif station_manager == ObservationStationManager.ARPAFVG:
+            retriever = operations.fetch_remote_arpafvg_stations(
+                client,
+                series_configuration,
+                arpafvg_observations_base_url=settings.arpafvg_observations_base_url,
+                auth_token=settings.arpafvg_auth_token,
+            )
+            for raw_station in retriever:
+                stations.add(
+                    operations.parse_arpafvg_station(raw_station, coord_converter)
+                )
+        else:
+            raise NotImplementedError(
+                f"Observation stations managed by {station_manager} are not "
+                f"implemented."
+            )
     return stations
 
 
@@ -58,25 +80,34 @@ def find_new_stations(
     db_stations: Sequence[observations.ObservationStation],
     new_stations: Sequence[observations.ObservationStationCreate],
 ) -> list[observations.ObservationStationCreate]:
-    possibly_new_stations = {s.code: s for s in new_stations}
-    existing_stations = {s.code: s for s in db_stations}
+    possibly_new_stations = {(s.owner, s.code): s for s in new_stations}
+    existing_stations = {(s.owner, s.code): s for s in db_stations}
     to_create = []
     for possibly_new_station in possibly_new_stations.values():
-        if existing_stations.get(possibly_new_station.code) is None:
+        if (
+            existing_stations.get(
+                (possibly_new_station.owner, possibly_new_station.code)
+            )
+            is None
+        ):
             print(
-                f"About to create station {possibly_new_station.code} - "
-                f"{possibly_new_station.name}..."
+                f"About to create station {possibly_new_station.owner} "
+                f"{possibly_new_station.code} - {possibly_new_station.name}..."
             )
             to_create.append(possibly_new_station)
         else:
             print(
-                f"Station {possibly_new_station.code} - {possibly_new_station.name} "
+                f"Station {possibly_new_station.owner} "
+                f"{possibly_new_station.code} - {possibly_new_station.name} "
                 f"is already known"
             )
     for existing_station in existing_stations.values():
-        if possibly_new_stations.get(existing_station.code) is None:
+        if (
+            possibly_new_stations.get((existing_station.owner, existing_station.code))
+            is None
+        ):
             print(
-                f"Station {existing_station.code} - {existing_station.name} is not "
+                f"Station {existing_station.identifier} is not "
                 f"found on the remote. Maybe it can be deleted? The system does not "
                 f"delete stations so please check manually if this should be deleted "
                 f"or not"
@@ -175,6 +206,18 @@ def harvest_monthly_measurements(
         if measurement_id not in existing:
             to_create.append(measurement_create)
     return to_create
+
+
+@prefect.flow(
+    log_prints=True,
+    retries=settings.prefect.num_flow_retries,
+    retry_delay_seconds=settings.prefect.flow_retry_delay_seconds,
+)
+def refresh_measurements(
+    station_code: str | None = None,
+    observation_series_configuration_identifier: str | None = None,
+):
+    pass
 
 
 @prefect.flow(

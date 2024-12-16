@@ -129,7 +129,7 @@ class MeasurementAggregationType(str, enum.Enum):
         }[self.name]
 
 
-class ObservationStationOwner(str, enum.Enum):
+class ObservationStationManager(str, enum.Enum):
     ARPAV = "ARPAV"
     ARPAFVG = "ARPAFVG"
 
@@ -137,13 +137,13 @@ class ObservationStationOwner(str, enum.Enum):
     def get_param_display_name(locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
-        return _("observation station owner")
+        return _("observation station manager")
 
     @staticmethod
     def get_param_description(locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
-        return _("observation station owner description")
+        return _("observation station manager description")
 
     def get_value_display_name(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)

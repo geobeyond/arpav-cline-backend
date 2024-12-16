@@ -458,7 +458,7 @@ class ObservationSeriesConfigurationView(ModelView):
     icon = "fa fa-blog"
     pk_attr = "id"
     fields = (
-        fields.UuidField("id"),
+        starlette_admin.IntegerField("id"),
         starlette_admin.StringField("identifier", read_only=True),
         starlette_admin.StringField("indicator_internal_name", required=True),
         starlette_admin.EnumField(
@@ -473,7 +473,7 @@ class ObservationSeriesConfigurationView(ModelView):
         ),
         starlette_admin.ListField(
             starlette_admin.EnumField(
-                "station_owners", enum=static.ObservationStationOwner
+                "station_managers", enum=static.ObservationStationManager
             )
         ),
     )

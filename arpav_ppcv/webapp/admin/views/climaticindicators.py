@@ -16,11 +16,9 @@ from .... import database
 from ....schemas.static import (
     AggregationPeriod,
     MeasureType,
+    ObservationStationManager,
 )
-from ....schemas.climaticindicators import (
-    ClimaticIndicatorCreate,
-    ClimaticIndicatorUpdate,
-)
+from ....schemas import climaticindicators
 from .. import schemas as read_schemas
 
 logger = logging.getLogger(__name__)
@@ -44,8 +42,11 @@ class ClimaticIndicatorView(ModelView):
         "color_scale_min",
         "color_scale_max",
         "data_precision",
+        "observation_names",
     )
     exclude_fields_from_detail = ("id",)
+    exclude_fields_from_edit = ("identifier",)
+    exclude_fields_from_create = ("identifier",)
 
     fields = (
         starlette_admin.IntegerField("id"),
@@ -71,6 +72,7 @@ class ClimaticIndicatorView(ModelView):
         ),
         starlette_admin.FloatField("color_scale_min", required=True),
         starlette_admin.FloatField("color_scale_max", required=True),
+        starlette_admin.StringField("sort_order"),
         starlette_admin.IntegerField(
             "data_precision",
             required=True,
@@ -78,18 +80,43 @@ class ClimaticIndicatorView(ModelView):
                 "Number of decimal places to be used when displaying data values"
             ),
         ),
-        starlette_admin.StringField("sort_order"),
+        starlette_admin.ListField(
+            starlette_admin.CollectionField(
+                name="observation_names",
+                fields=[
+                    starlette_admin.EnumField(
+                        "station_manager", enum=ObservationStationManager, required=True
+                    ),
+                    starlette_admin.StringField(
+                        "indicator_observation_name", required=True
+                    ),
+                ],
+            ),
+        ),
     )
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.icon = "fa-solid fa-cloud-sun-rain"
 
+    @staticmethod
+    def _serialize_instance(instance: climaticindicators.ClimaticIndicator):
+        return read_schemas.ClimaticIndicatorRead(
+            **instance.model_dump(),
+            observation_names=[
+                read_schemas.ClimaticIndicatorObservationNameRead(
+                    station_manager=obs_name.station_manager,
+                    indicator_observation_name=obs_name.indicator_observation_name,
+                )
+                for obs_name in instance.observation_names
+            ],
+        )
+
     async def create(self, request: Request, data: dict[str, Any]) -> Any:
         try:
             data = await self._arrange_data(request, data)
             await self.validate(request, data)
-            climatic_indicator_create = ClimaticIndicatorCreate(
+            climatic_indicator_create = climaticindicators.ClimaticIndicatorCreate(
                 name=data["name"],
                 measure_type=data["measure_type"],
                 aggregation_period=data["aggregation_period"],
@@ -104,16 +131,22 @@ class ClimaticIndicatorView(ModelView):
                 color_scale_max=data["color_scale_max"],
                 data_precision=data["data_precision"],
                 sort_order=data.get("sort_order"),
+                observation_names=[
+                    climaticindicators.ClimaticIndicatorObservationNameCreate(
+                        observation_station_manager=obs_name["station_manager"],
+                        indicator_observation_name=obs_name[
+                            "indicator_observation_name"
+                        ],
+                    )
+                    for obs_name in data.get("observation_names", [])
+                ],
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(
                 database.create_climatic_indicator,
                 request.state.session,
                 climatic_indicator_create,
             )
-            climatic_indicator = read_schemas.ClimaticIndicatorRead(
-                **db_climatic_indicator.model_dump(),
-            )
-            return climatic_indicator
+            return self._serialize_instance(db_climatic_indicator)
         except Exception as e:
             return self.handle_exception(e)
 
@@ -121,7 +154,7 @@ class ClimaticIndicatorView(ModelView):
         try:
             data = await self._arrange_data(request, data, True)
             await self.validate(request, data)
-            climatic_indicator_update = ClimaticIndicatorUpdate(
+            climatic_indicator_update = climaticindicators.ClimaticIndicatorUpdate(
                 name=data["name"],
                 measure_type=data["measure_type"],
                 aggregation_period=data["aggregation_period"],
@@ -136,6 +169,15 @@ class ClimaticIndicatorView(ModelView):
                 color_scale_max=data["color_scale_max"],
                 data_precision=data["data_precision"],
                 sort_order=data.get("sort_order"),
+                observation_names=[
+                    climaticindicators.ClimaticIndicatorObservationNameUpdate(
+                        observation_station_manager=obs_name["station_manager"],
+                        indicator_observation_name=obs_name[
+                            "indicator_observation_name"
+                        ],
+                    )
+                    for obs_name in data.get("observation_names", [])
+                ],
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(
                 database.get_climatic_indicator, request.state.session, pk
@@ -146,10 +188,7 @@ class ClimaticIndicatorView(ModelView):
                 db_climatic_indicator,
                 climatic_indicator_update,
             )
-            climatic_indicator = read_schemas.ClimaticIndicatorRead(
-                **db_climatic_indicator.model_dump(),
-            )
-            return climatic_indicator
+            return self._serialize_instance(db_climatic_indicator)
         except Exception as e:
             self.handle_exception(e)
 
@@ -159,7 +198,7 @@ class ClimaticIndicatorView(ModelView):
         db_climatic_indicator = await anyio.to_thread.run_sync(
             database.get_climatic_indicator, request.state.session, pk
         )
-        return read_schemas.ClimaticIndicatorRead(**db_climatic_indicator.model_dump())
+        return self._serialize_instance(db_climatic_indicator)
 
     async def find_all(
         self,
@@ -179,7 +218,4 @@ class ClimaticIndicatorView(ModelView):
         db_climatic_indicators, _ = await anyio.to_thread.run_sync(
             list_params, request.state.session
         )
-        return [
-            read_schemas.ClimaticIndicatorRead(**ind.model_dump())
-            for ind in db_climatic_indicators
-        ]
+        return [self._serialize_instance(ind) for ind in db_climatic_indicators]

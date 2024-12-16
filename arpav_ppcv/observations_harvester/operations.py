@@ -1,99 +1,138 @@
 import datetime as dt
 import logging
-from collections.abc import (
-    Generator,
-    Sequence,
-)
+from collections.abc import Generator
 from typing import (
     Callable,
 )
 
 import geojson_pydantic
 import httpx
-import pyproj
 import shapely
 import shapely.ops
 
 from ..schemas import (
     observations,
 )
-from ..schemas.climaticindicators import ClimaticIndicator
 from ..schemas.static import (
     MeasurementAggregationType,
-    ObservationStationOwner,
+    ObservationStationManager,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_remote_stations(
+def fetch_remote_arpafvg_stations(
     client: httpx.Client,
-    series_configurations: Sequence[observations.ObservationSeriesConfiguration],
+    series_configuration: observations.ObservationSeriesConfiguration,
+    arpafvg_observations_base_url: str,
+    auth_token: str,
 ) -> Generator[dict, None, None]:
-    station_url = (
-        "https://api.arpa.veneto.it/REST/v1/clima_indicatori/staz_attive_lunghe"
+    # periodo:
+    # - 0 means yearly data
+    # - 1, 2, 3, 4 means winter, spring, summer, autumn
+    if (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.YEARLY
+    ):
+        period = 0
+    elif (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.SEASONAL
+    ):
+        period = 1  # any season works
+    else:
+        raise NotImplementedError()
+    response = client.get(
+        f"{arpafvg_observations_base_url}/clima/indicatori/localita",
+        headers={
+            "authorization": f"Bearer {auth_token}",
+        },
+        params={
+            "indicatore": series_configuration.indicator_internal_name,
+            "periodo": period,
+        },
     )
-    for series_conf in series_configurations:
-        logger.info(
-            f"Retrieving stations belonging to series {series_conf.identifier!r}..."
-        )
-        if (
-            series_conf.measurement_aggregation_type
-            == MeasurementAggregationType.MONTHLY
-        ):
-            for month in range(1, 13):
-                logger.info(f"Processing month {month}...")
-                month_response = client.get(
-                    station_url,
-                    params={
-                        "indicatore": series_conf.indicator_internal_name,
-                        "tabella": "M",
-                        "periodo": str(month),
-                    },
-                )
-                month_response.raise_for_status()
-                for raw_station in month_response.json().get("data", []):
-                    yield raw_station
-        elif (
-            series_conf.measurement_aggregation_type
-            == MeasurementAggregationType.SEASONAL
-        ):
-            for season in range(1, 5):
-                logger.info(f"Processing season {season}...")
-                season_response = client.get(
-                    station_url,
-                    params={
-                        "indicatore": series_conf.indicator_internal_name,
-                        "tabella": "S",
-                        "periodo": str(season),
-                    },
-                )
-                season_response.raise_for_status()
-                for raw_station in season_response.json().get("data", []):
-                    yield raw_station
-        elif (
-            series_conf.measurement_aggregation_type
-            == MeasurementAggregationType.YEARLY
-        ):
-            logger.info("Processing years...")
-            year_response = client.get(
+    response.raise_for_status()
+    for raw_station in response.json().get("data", []):
+        yield raw_station
+
+
+def fetch_remote_arpav_stations(
+    client: httpx.Client,
+    series_configuration: observations.ObservationSeriesConfiguration,
+    arpav_observations_base_url: str,
+) -> Generator[dict, None, None]:
+    station_url = f"{arpav_observations_base_url}/clima_indicatori/staz_attive_lunghe"
+    if (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.MONTHLY
+    ):
+        for month in range(1, 13):
+            logger.info(f"Processing month {month}...")
+            month_response = client.get(
                 station_url,
                 params={
-                    "indicatore": series_conf.indicator_internal_name,
-                    "tabella": "A",
-                    "periodo": "0",
+                    "indicatore": series_configuration.indicator_internal_name,
+                    "tabella": "M",
+                    "periodo": str(month),
                 },
             )
-            year_response.raise_for_status()
-            for raw_station in year_response.json().get("data", []):
+            month_response.raise_for_status()
+            for raw_station in month_response.json().get("data", []):
                 yield raw_station
-        else:
-            raise NotImplementedError(
-                f"{series_conf.measurement_aggregation_type} not implemented"
+    elif (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.SEASONAL
+    ):
+        for season in range(1, 5):
+            logger.info(f"Processing season {season}...")
+            season_response = client.get(
+                station_url,
+                params={
+                    "indicatore": series_configuration.indicator_internal_name,
+                    "tabella": "S",
+                    "periodo": str(season),
+                },
             )
+            season_response.raise_for_status()
+            for raw_station in season_response.json().get("data", []):
+                yield raw_station
+    elif (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.YEARLY
+    ):
+        logger.info("Processing years...")
+        year_response = client.get(
+            station_url,
+            params={
+                "indicatore": series_configuration.indicator_internal_name,
+                "tabella": "A",
+                "periodo": "0",
+            },
+        )
+        year_response.raise_for_status()
+        for raw_station in year_response.json().get("data", []):
+            yield raw_station
+    else:
+        raise NotImplementedError(
+            f"{series_configuration.measurement_aggregation_type} not implemented"
+        )
 
 
-def parse_station(
+def parse_arpafvg_station(
+    raw_station: dict, coord_converter: Callable
+) -> observations.ObservationStationCreate:
+    pt_4326 = shapely.Point(raw_station["longitude"], raw_station["latitude"])
+    return observations.ObservationStationCreate(
+        code=str(raw_station["statid"]),
+        geom=geojson_pydantic.Point(type="Point", coordinates=(pt_4326.x, pt_4326.y)),
+        managed_by=ObservationStationManager.ARPAFVG,
+        altitude_m=raw_station["altitude"],
+        name=raw_station["statnm"],
+    )
+
+
+def parse_arpav_station(
     raw_station: dict, coord_converter: Callable
 ) -> observations.ObservationStationCreate:
     station_code = str(raw_station["statcd"])
@@ -120,7 +159,7 @@ def parse_station(
     return observations.ObservationStationCreate(
         code=station_code,
         geom=geojson_pydantic.Point(type="Point", coordinates=(pt_4326.x, pt_4326.y)),
-        owner=ObservationStationOwner.ARPAV,
+        managed_by=ObservationStationManager.ARPAV,
         altitude_m=raw_station["altitude"],
         name=raw_station["statnm"],
         active_since=active_since,
@@ -128,23 +167,23 @@ def parse_station(
     )
 
 
-def harvest_stations(
-    client: httpx.Client,
-    climatic_indicators_to_refresh: Sequence[ClimaticIndicator],
-    fetch_stations_with_months: bool,
-    fetch_stations_with_seasons: bool,
-    fetch_stations_with_yearly_measurements: bool,
-) -> set[observations.StationCreate]:
-    coord_converter = pyproj.Transformer.from_crs(
-        pyproj.CRS("epsg:4258"), pyproj.CRS("epsg:4326"), always_xy=True
-    ).transform
-    stations = set()
-    for raw_station in fetch_remote_stations(
-        client,
-        climatic_indicators_to_refresh,
-        fetch_stations_with_months,
-        fetch_stations_with_seasons,
-        fetch_stations_with_yearly_measurements,
-    ):
-        stations.add(parse_station(raw_station, coord_converter))
-    return stations
+# def harvest_stations(
+#     client: httpx.Client,
+#     climatic_indicators_to_refresh: Sequence[ClimaticIndicator],
+#     fetch_stations_with_months: bool,
+#     fetch_stations_with_seasons: bool,
+#     fetch_stations_with_yearly_measurements: bool,
+# ) -> set[observations.StationCreate]:
+#     coord_converter = pyproj.Transformer.from_crs(
+#         pyproj.CRS("epsg:4258"), pyproj.CRS("epsg:4326"), always_xy=True
+#     ).transform
+#     stations = set()
+#     for raw_station in fetch_remote_stations(
+#         client,
+#         climatic_indicators_to_refresh,
+#         fetch_stations_with_months,
+#         fetch_stations_with_seasons,
+#         fetch_stations_with_yearly_measurements,
+#     ):
+#         stations.add(parse_station(raw_station, coord_converter))
+#     return stations

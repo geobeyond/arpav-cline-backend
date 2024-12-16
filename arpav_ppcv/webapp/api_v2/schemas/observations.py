@@ -74,7 +74,7 @@ class ObservationStationReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
     identifier: str
     name: str
-    owner: static.ObservationStationOwner
+    managed_by: static.ObservationStationManager
 
     @classmethod
     def from_db_instance(

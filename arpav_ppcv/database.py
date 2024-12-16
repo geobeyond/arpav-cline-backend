@@ -1609,16 +1609,26 @@ def create_climatic_indicator(
     climatic_indicator_create: climaticindicators.ClimaticIndicatorCreate,
 ) -> climaticindicators.ClimaticIndicator:
     """Create a new climatic indicator."""
+    to_refresh = []
     db_climatic_indicator = climaticindicators.ClimaticIndicator(
-        **climatic_indicator_create.model_dump(),
+        **climatic_indicator_create.model_dump(exclude={"observation_names"}),
     )
+    to_refresh.append(db_climatic_indicator)
+    for obs_name in climatic_indicator_create.observation_names:
+        db_obs_name = observations.ClimaticIndicatorObservationName(
+            station_manager=obs_name.observation_station_manager,
+            indicator_observation_name=obs_name.indicator_observation_name,
+        )
+        db_climatic_indicator.observation_names.append(db_obs_name)
+        to_refresh.append(db_obs_name)
     session.add(db_climatic_indicator)
     try:
         session.commit()
     except sqlalchemy.exc.DBAPIError:
         raise
     else:
-        session.refresh(db_climatic_indicator)
+        for item in to_refresh:
+            session.refresh(item)
         return db_climatic_indicator
 
 
@@ -1628,12 +1638,46 @@ def update_climatic_indicator(
     climatic_indicator_update: climaticindicators.ClimaticIndicatorUpdate,
 ) -> climaticindicators.ClimaticIndicator:
     """Update a climatic indicator."""
-    data_ = climatic_indicator_update.model_dump(exclude_unset=True)
+    to_refresh = []
+    requested_obs_names = {
+        "-".join(
+            (str(db_climatic_indicator.id), ron.observation_station_manager.value)
+        ): ron
+        for ron in climatic_indicator_update.observation_names
+    }
+    existing_obs_names = {
+        "-".join((str(db_climatic_indicator.id), ron.station_manager.value)): ron
+        for ron in db_climatic_indicator.observation_names
+    }
+    for existing_key, existing_obs_name in existing_obs_names.items():
+        has_been_requested_to_remove = existing_key not in requested_obs_names
+        if has_been_requested_to_remove:
+            session.delete(existing_obs_name)
+    for requested_key, requested_obs_name in requested_obs_names.items():
+        if requested_key not in existing_obs_names:  # need to create this one
+            db_observation_name = observations.ClimaticIndicatorObservationName(
+                station_manager=requested_obs_name.observation_station_manager,
+                indicator_observation_name=requested_obs_name.indicator_observation_name,
+            )
+            db_climatic_indicator.observation_names.append(db_observation_name)
+        else:  # already exists, just update
+            existing_db_observation_name = existing_obs_names[requested_key]
+            existing_db_observation_name.indicator_observation_name = (
+                requested_obs_name.indicator_observation_name
+            )
+            session.add(existing_db_observation_name)
+            to_refresh.append(existing_db_observation_name)
+    data_ = climatic_indicator_update.model_dump(
+        exclude_unset=True,
+        exclude={"observation_names"},
+    )
     for key, value in data_.items():
         setattr(db_climatic_indicator, key, value)
     session.add(db_climatic_indicator)
+    to_refresh.append(db_climatic_indicator)
     session.commit()
-    session.refresh(db_climatic_indicator)
+    for item in to_refresh:
+        session.refresh(item)
     return db_climatic_indicator
 
 
@@ -1739,7 +1783,7 @@ def list_observation_stations(
     include_total: bool = False,
     name_filter: Optional[str] = None,
     polygon_intersection_filter: shapely.Polygon = None,
-) -> tuple[Sequence[observations.Station], Optional[int]]:
+) -> tuple[Sequence[observations.ObservationStation], Optional[int]]:
     """List existing observation stations.
 
     The ``polygon_intersection_filter`` parameter is expected to be a polygon
@@ -1769,7 +1813,7 @@ def list_observation_stations(
 def collect_all_observation_stations(
     session: sqlmodel.Session,
     polygon_intersection_filter: shapely.Polygon = None,
-) -> Sequence[observations.Station]:
+) -> Sequence[observations.ObservationStation]:
     """Collect all observation stations.
 
     The ``polygon_intersetion_filter`` parameter is expected to be a polygon
@@ -2010,8 +2054,8 @@ def get_observation_series_configuration_by_identifier(
         measurement_aggregation_type = static.MeasurementAggregationType(
             raw_measurement_aggregation.upper()
         )
-        station_owners = [
-            static.ObservationStationOwner(i.upper()) for i in raw_owners.split("-")
+        station_managers = [
+            static.ObservationStationManager(i.upper()) for i in raw_owners.split("-")
         ]
     except ValueError:
         raise exceptions.InvalidObservationSeriesConfigurationIdentifierError()
@@ -2021,8 +2065,8 @@ def get_observation_series_configuration_by_identifier(
             == climatic_indicator.id,
             observations.ObservationSeriesConfiguration.measurement_aggregation_type
             == measurement_aggregation_type,
-            observations.ObservationSeriesConfiguration.station_owners
-            == station_owners,
+            observations.ObservationSeriesConfiguration.station_managers
+            == station_managers,
         )
         return session.exec(statement).first()
 
