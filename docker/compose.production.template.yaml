@@ -41,6 +41,9 @@ services:
     labels:
       - "traefik.http.routers.arpav-frontend.entrypoints=web"
       - "traefik.http.routers.arpav-frontend-router.rule=Host(`clima.arpa.veneto.it`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+    environment:
+      ARPAV_BACKEND_API_BASE_URL: "${frontend_env_arpav_backend_api_base_url}"
+      ARPAV_TOLGEE_BASE_URL: "${frontend_env_arpav_tolgee_base_url}"
     restart: unless-stopped
 
   webapp:

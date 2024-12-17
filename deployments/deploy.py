@@ -41,6 +41,8 @@ class DeploymentConfiguration:
     discord_notification_urls: list[str]
     executable_webapp_service_name: str = dataclasses.field(init=False)
     frontend_image: str
+    frontend_env_arpav_backend_api_base_url: str = dataclasses.field(init=False)
+    frontend_env_arpav_tolgee_base_url: str = dataclasses.field(init=False)
     git_repo_clone_destination: Path = dataclasses.field(init=False)
     martin_conf_path: Path = dataclasses.field(
         init=False
@@ -113,6 +115,10 @@ class DeploymentConfiguration:
         _debug = False
         self.compose_project_name = "arpav-cline"
         self.executable_webapp_service_name = "arpav-cline-webapp-1"
+        self.frontend_env_arpav_backend_api_base_url = self.webapp_env_public_url
+        self.frontend_env_arpav_tolgee_base_url = (
+            self.tolgee_app_env_tolgee_frontend_url
+        )
         self.git_repo_clone_destination = Path("/tmp/arpav-cline")
         self.martin_conf_path = self.deployment_root / "martin-config.yaml"
         self.traefik_conf_path = self.deployment_root / "traefik-config.toml"
