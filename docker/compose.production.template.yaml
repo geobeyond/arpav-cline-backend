@@ -26,7 +26,7 @@ services:
       - "traefik.http.routers.router-arpav-backend.tls=true"
       - "traefik.http.routers.router-arpav-backend.tls.certificates.certFile=/run/secrets/tls-cert"
       - "traefik.http.routers.router-arpav-backend.tls.certificates.keyFile=/run/secrets/tls-key"
-      - 'traefik.http.routers.router-arpav-backend.rule=HostRegexp(`^(.+\.)?clima\.arpa\.veneto.it$$`)'
+      - 'traefik.http.routers.router-arpav-backend.rule=HostRegexp(`^(.+\.)?clima(-tolgee)?\.arpa\.veneto.it$$`)'
     configs:
       - source: traefik-conf
         target: /traefik.toml
@@ -34,6 +34,11 @@ services:
       - tls-cert
       - tls-key
       - traefik-users-file
+    ports:
+      - target: 80
+        published: 80
+      - target: 443
+        published: 443
     restart: unless-stopped
 
   frontend:
@@ -132,7 +137,7 @@ services:
     image: "tolgee/tolgee:${tolgee_app_image_tag}"
     labels:
       - "traefik.http.routers.arpav-frontend.entrypoints=web"
-      - "traefik.http.routers.tolgee-app-router.rule=Host(`tolgee.clima.arpa.veneto.it`) && PathPrefix(`/`)"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`clima-tolgee.arpa.veneto.it`) && PathPrefix(`/`)"
     environment:
       SERVER_PORT: "${tolgee_app_env_server_port}"
       SPRING_DATASOURCE_URL: "${tolgee_app_env_server_spring_datasource_url}"
