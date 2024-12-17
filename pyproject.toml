@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arpav-ppcv-backend"
-version = "2.0.0-rc1"
+version = "v2.0.0-dev"
 description = "Backend component of the ARPAV-PPCV platform"
 authors = ["Geobeyond <info@geobeyond.it>"]
 license = "MIT"
