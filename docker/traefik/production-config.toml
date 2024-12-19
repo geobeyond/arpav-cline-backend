@@ -15,6 +15,7 @@
 
 [entryPoints.web]
 address = ":80"
+
 [entryPoints.web.forwardedHeaders]
 insecure = true
 
@@ -25,5 +26,9 @@ insecure = true
 
 [providers]
 
+[providers.file]
+filename = "/traefik-file-provider.toml"
+
 [providers.docker]
+endpoint = "unix:///var/run/docker.sock"
 exposedByDefault = false

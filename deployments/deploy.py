@@ -95,6 +95,9 @@ class DeploymentConfiguration:
     traefik_conf_path: Path = dataclasses.field(
         init=False
     )  # is copied to inside the deployment_root dir
+    traefik_file_provider_conf_path: Path = dataclasses.field(
+        init=False
+    )  # is copied to inside the deployment root dir
     traefik_users_file_path: Path
     webapp_env_admin_user_password: str
     webapp_env_admin_user_username: str
@@ -122,6 +125,9 @@ class DeploymentConfiguration:
         self.git_repo_clone_destination = Path("/tmp/arpav-cline")
         self.martin_conf_path = self.deployment_root / "martin-config.yaml"
         self.traefik_conf_path = self.deployment_root / "traefik-config.toml"
+        self.traefik_file_provider_conf_path = (
+            self.deployment_root / "traefik-file-provider-config.toml"
+        )
         self.martin_env_database_url = (
             f"postgresql://{self.db_user}:{self.db_password}@db:5432/{self.db_name}"
         )
@@ -287,11 +293,13 @@ class _CopyRelevantRepoFiles:
     )
     deployment_related_files = (
         "deployments/deploy.py",
-        "docker/compose.yaml",
         "docker/compose.production.template.yaml",
     )
     martin_conf_file = "docker/martin/config.yaml"
     traefik_conf_file = "docker/traefik/production-config.toml"
+    traefik_file_provider_conf_file = (
+        "docker/traefik/production-file-provider-config.toml"
+    )
 
     def handle(self) -> None:
         to_copy_martin_conf_file_path = (
@@ -299,6 +307,10 @@ class _CopyRelevantRepoFiles:
         )
         to_copy_traefik_conf_file_path = (
             self.config.git_repo_clone_destination / self.traefik_conf_file
+        )
+        to_copy_traefik_file_provider_conf_file_path = (
+            self.config.git_repo_clone_destination
+            / self.traefik_file_provider_conf_file
         )
         to_copy_deployment_related_file_paths = [
             self.config.git_repo_clone_destination / i
@@ -308,6 +320,7 @@ class _CopyRelevantRepoFiles:
             *to_copy_deployment_related_file_paths,
             to_copy_martin_conf_file_path,
             to_copy_traefik_conf_file_path,
+            to_copy_traefik_file_provider_conf_file_path,
         )
         for to_copy_path in all_files_to_copy:
             if not to_copy_path.exists():
@@ -321,6 +334,10 @@ class _CopyRelevantRepoFiles:
             )
         shutil.copyfile(to_copy_martin_conf_file_path, self.config.martin_conf_path)
         shutil.copyfile(to_copy_traefik_conf_file_path, self.config.traefik_conf_path)
+        shutil.copyfile(
+            to_copy_traefik_file_provider_conf_file_path,
+            self.config.traefik_file_provider_conf_path,
+        )
 
 
 @dataclasses.dataclass
@@ -380,12 +397,8 @@ class _ComposeCommandExecutor:
         raise NotImplementedError
 
     def _run_compose_command(self, suffix: str) -> subprocess.CompletedProcess:
-        compose_files = [
-            self.config.deployment_root / "compose.yaml",
-            self.config.deployment_root / "compose.production.yaml",
-        ]
-        compose_files_fragment = " ".join(f"-f {p}" for p in compose_files)
-        docker_compose_command = f"docker compose {compose_files_fragment} {suffix}"
+        compose_file_path = self.config.deployment_root / "compose.production.yaml"
+        docker_compose_command = f"docker compose -f {compose_file_path} {suffix}"
         return subprocess.run(
             shlex.split(docker_compose_command),
             cwd=self.config.deployment_root,
