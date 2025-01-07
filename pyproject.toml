@@ -43,6 +43,7 @@ babel = "^2.15.0"
 pyloess = "^0.1.0"
 prefect = {version = "^3.0.0rc14", allow-prereleases = true}
 matplotlib = "^3.9.2"
+numpy = "<2"
 
 
 [tool.poetry.group.dev]
