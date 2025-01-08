@@ -69,7 +69,7 @@ services:
     image: "${frontend_image}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.arpav-frontend-router.rule=Host(`clima.arpa.veneto.it`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+      - "traefik.http.routers.arpav-frontend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
       - "traefik.http.routers.arpav-frontend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-frontend-router.tls=true"
       - "traefik.http.services.arpav-frontend-service.loadbalancer.server.port=80"
@@ -82,7 +82,7 @@ services:
     image: "${backend_image}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.arpav-backend-router.rule=Host(`clima.arpa.veneto.it`) && PathRegexp(`^/(api|admin)`)"
+      - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
       - "traefik.http.routers.arpav-backend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-backend-router.tls=true"
       - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
@@ -127,7 +127,7 @@ services:
       - martin-conf
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.martin-router.rule=Host(`clima.arpa.veneto.it`) && PathPrefix(`/vector-tiles`)"
+      - "traefik.http.routers.martin-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/vector-tiles`)"
       - "traefik.http.routers.martin-router.entrypoints=webSecure"
       - "traefik.http.routers.martin-router.tls=true"
       - "traefik.http.middlewares.strip-martin-prefix-middleware.stripprefix.prefixes=/vector-tiles"
@@ -147,7 +147,7 @@ services:
       - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.regex=/prefect/api"
       - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.replacement=/api"
       - "traefik.http.middlewares.middleware-chain.chain.middlewares=prefect-auth,replace-prefect-path-middleware"
-      - "traefik.http.routers.prefect-router.rule=Host(`clima.arpa.veneto.it`) && PathPrefix(`/prefect`)"
+      - "traefik.http.routers.prefect-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/prefect`)"
       - "traefik.http.routers.prefect-router.entrypoints=webSecure"
       - "traefik.http.routers.prefect-router.tls=true"
       - "traefik.http.routers.prefect-router.middlewares=middleware-chain"
@@ -207,7 +207,7 @@ services:
     image: "tolgee/tolgee:${tolgee_app_image_tag}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tolgee-app-router.rule=Host(`clima-tolgee.arpa.veneto.it`) && PathPrefix(`/`)"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`${reverse_proxy_tolgee_domain_name}`) && PathPrefix(`/`)"
       - "traefik.http.routers.tolgee-app-router.entrypoints=webSecure"
       - "traefik.http.routers.tolgee-app-router.tls=true"
       - "traefik.http.services.tolgee-app-service.loadbalancer.server.port=8080"
