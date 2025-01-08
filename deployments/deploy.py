@@ -38,13 +38,13 @@ class DeploymentConfiguration:
     db_password: str
     db_user: str
     deployment_files_repo: str
+    deployment_files_repo_clone_destination: Path
     deployment_root: Path
     discord_notification_urls: list[str]
     executable_webapp_service_name: str = dataclasses.field(init=False)
     frontend_image: str
     frontend_env_arpav_backend_api_base_url: str = dataclasses.field(init=False)
     frontend_env_arpav_tolgee_base_url: str = dataclasses.field(init=False)
-    git_repo_clone_destination: Path = dataclasses.field(init=False)
     martin_config_source: str
     martin_conf_path: Path = dataclasses.field(
         init=False
@@ -126,7 +126,6 @@ class DeploymentConfiguration:
         self.frontend_env_arpav_tolgee_base_url = (
             self.tolgee_app_env_tolgee_frontend_url
         )
-        self.git_repo_clone_destination = Path("/tmp/arpav-cline")
         self.martin_conf_path = self.deployment_root / "martin-config.yaml"
         self.traefik_conf_path = self.deployment_root / "traefik-config.toml"
         self.traefik_file_provider_conf_path = (
@@ -193,6 +192,9 @@ class DeploymentConfiguration:
             db_password=config_parser["db"]["password"],
             db_user=config_parser["db"]["user"],
             deployment_files_repo=config_parser["main"]["deployment_files_repo"],
+            deployment_files_repo_clone_destination=Path(
+                config_parser["main"]["deployment_files_repo_clone_destination"]
+            ),
             deployment_root=Path(config_parser["main"]["deployment_root"]),
             discord_notification_urls=[
                 i.strip()
@@ -285,12 +287,12 @@ class _CloneRepo:
 
     def handle(self) -> None:
         print("Cloning repo...")
-        if self.config.git_repo_clone_destination.exists():
-            shutil.rmtree(self.config.git_repo_clone_destination)
+        if self.config.deployment_files_repo_clone_destination.exists():
+            shutil.rmtree(self.config.deployment_files_repo_clone_destination)
         subprocess.run(
             shlex.split(
                 f"git clone {self.config.deployment_files_repo} "
-                f"{self.config.git_repo_clone_destination}"
+                f"{self.config.deployment_files_repo_clone_destination}"
             ),
             check=True,
         )
@@ -305,7 +307,7 @@ class _CopyRelevantRepoFiles:
     )
 
     def handle(self) -> None:
-        _base = self.config.git_repo_clone_destination
+        _base = self.config.deployment_files_repo_clone_destination
         to_copy_martin_conf_file_path = _base / self.config.martin_config_source
         to_copy_traefik_conf_file_path = _base / self.config.traefik_config_source
         to_copy_traefik_file_provider_conf_file_path = (
