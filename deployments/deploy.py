@@ -72,6 +72,8 @@ class DeploymentConfiguration:
     prefect_static_worker_env_prefect_api_url: str = dataclasses.field(init=False)
     prefect_static_worker_env_prefect_debug_mode: bool = dataclasses.field(init=False)
     reverse_proxy_image_tag: str
+    reverse_proxy_main_domain_name: str
+    reverse_proxy_tolgee_domain_name: str
     tls_cert_path: Path | None
     tls_cert_key_path: Path | None
     tolgee_app_env_server_port: int = dataclasses.field(init=False)
@@ -211,6 +213,12 @@ class DeploymentConfiguration:
             prefect_db_user=config_parser["prefect_db"]["user"],
             prefect_server_image_tag=config_parser["main"]["prefect_server_image_tag"],
             reverse_proxy_image_tag=config_parser["reverse_proxy"]["image_tag"],
+            reverse_proxy_main_domain_name=config_parser["reverse_proxy"][
+                "main_domain_name"
+            ],
+            reverse_proxy_tolgee_domain_name=config_parser["reverse_proxy"][
+                "tolgee_domain_name"
+            ],
             tls_cert_path=Path(tls_cert_path) if tls_cert_path is not None else None,
             tls_cert_key_path=Path(tls_cert_key_path)
             if tls_cert_key_path is not None

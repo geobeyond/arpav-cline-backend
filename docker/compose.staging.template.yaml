@@ -44,9 +44,6 @@ name: "${compose_project_name}"
 
 services:
 
-  # NOTE: this traefik instance does not deal with TLS at all, as we assume there
-  # is another proxy running on top of this one, provided
-  # by the staging env
   reverse-proxy:
     image: "traefik:${reverse_proxy_image_tag}"
     command: --configFile /traefik.toml
@@ -68,9 +65,10 @@ services:
     image: "${frontend_image}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.arpav-frontend-router.rule=Host(`arpav.geobeyond.dev`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+      - "traefik.http.routers.arpav-frontend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
       - "traefik.http.routers.arpav-frontend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-frontend-router.tls=true"
+      - "traefik.http.routers.arpav-frontend-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.arpav-frontend-service.loadbalancer.server.port=80"
     environment:
       ARPAV_BACKEND_API_BASE_URL: "${frontend_env_arpav_backend_api_base_url}"
@@ -81,9 +79,10 @@ services:
     image: "${backend_image}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.arpav-backend-router.rule=Host(`arpav.geobeyond.dev`) && PathRegexp(`^/(api|admin)`)"
+      - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
       - "traefik.http.routers.arpav-backend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-backend-router.tls=true"
+      - "traefik.http.routers.arpav-backend-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
     environment:
       ARPAV_PPCV__DEBUG: "${webapp_env_debug}"
@@ -126,9 +125,10 @@ services:
       - martin-conf
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.martin-router.rule=Host(`arpav.geobeyond.dev`) && PathPrefix(`/vector-tiles`)"
+      - "traefik.http.routers.martin-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/vector-tiles`)"
       - "traefik.http.routers.martin-router.entrypoints=webSecure"
       - "traefik.http.routers.martin-router.tls=true"
+      - "traefik.http.routers.martin-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.middlewares.strip-martin-prefix-middleware.stripprefix.prefixes=/vector-tiles"
       - "traefik.http.routers.martin-router.middlewares=strip-martin-prefix-middleware@docker"
       - "traefik.http.services.martin-service.loadbalancer.server.port=3000"
@@ -146,9 +146,10 @@ services:
       - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.regex=/prefect/api"
       - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.replacement=/api"
       - "traefik.http.middlewares.middleware-chain.chain.middlewares=prefect-auth,replace-prefect-path-middleware"
-      - "traefik.http.routers.prefect-router.rule=Host(`clima.arpa.veneto.it`) && PathPrefix(`/prefect`)"
+      - "traefik.http.routers.prefect-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/prefect`)"
       - "traefik.http.routers.prefect-router.entrypoints=webSecure"
       - "traefik.http.routers.prefect-router.tls=true"
+      - "traefik.http.routers.prefect-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.routers.prefect-router.middlewares=middleware-chain"
       - "traefik.http.services.prefect-service.loadbalancer.server.port=4200"
     environment:
@@ -206,9 +207,10 @@ services:
     image: "tolgee/tolgee:${tolgee_app_image_tag}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tolgee-app-router.rule=Host(`tolgee.arpav.geobeyond.dev`) && PathPrefix(`/`)"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`${reverse_proxy_tolgee_domain_name}`) && PathPrefix(`/`)"
       - "traefik.http.routers.tolgee-app-router.entrypoints=webSecure"
       - "traefik.http.routers.tolgee-app-router.tls=true"
+      - "traefik.http.routers.tolgee-app-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.tolgee-app-service.loadbalancer.server.port=8080"
     environment:
       SERVER_PORT: "${tolgee_app_env_server_port}"
