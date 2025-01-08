@@ -57,11 +57,7 @@ services:
     configs:
       - source: traefik-conf
         target: /traefik.toml
-      - source: traefik-file-provider-conf
-        target: /traefik-file-provider.toml
     secrets:
-      - tls-cert
-      - tls-key
       - traefik-users-file
     ports:
       - target: 443
@@ -254,19 +250,10 @@ configs:
   traefik-conf:
     file: "${traefik_conf_path}"
 
-  traefik-file-provider-conf:
-    file: "${traefik_file_provider_conf_path}"
-
   martin-conf:
     file: "${martin_conf_path}"
 
 
 secrets:
-  tls-cert:
-    file: "${tls_cert_path}"
-
-  tls-key:
-    file: "${tls_cert_key_path}"
-
   traefik-users-file:
     file: "${traefik_users_file_path}"
