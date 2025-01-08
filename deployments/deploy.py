@@ -95,7 +95,7 @@ class DeploymentConfiguration:
     tolgee_db_password: str
     tolgee_db_user: str
     traefik_config_source: str
-    traefik_file_provider_source: str
+    traefik_file_provider_source: str | None
     traefik_conf_path: Path = dataclasses.field(
         init=False
     )  # is copied to inside the deployment_root dir
@@ -231,9 +231,9 @@ class DeploymentConfiguration:
             traefik_config_source=config_parser["reverse_proxy"][
                 "traefik_config_source"
             ],
-            traefik_file_provider_source=config_parser["reverse_proxy"][
+            traefik_file_provider_source=config_parser["reverse_proxy"].get(
                 "traefik_file_provider_source"
-            ],
+            ),
             traefik_users_file_path=Path(
                 config_parser["reverse_proxy"]["traefik_users_file_path"]
             ),
@@ -316,6 +316,8 @@ class _CopyRelevantRepoFiles:
         to_copy_traefik_conf_file_path = _base / self.config.traefik_config_source
         to_copy_traefik_file_provider_conf_file_path = (
             _base / self.config.traefik_file_provider_source
+            if self.config.traefik_file_provider_source is not None
+            else None
         )
         deployment_related_file_paths = (
             _base / "deployments/deploy.py",
@@ -327,7 +329,7 @@ class _CopyRelevantRepoFiles:
             to_copy_traefik_conf_file_path,
             to_copy_traefik_file_provider_conf_file_path,
         )
-        for to_copy_path in all_files_to_copy:
+        for to_copy_path in (f for f in all_files_to_copy if f is not None):
             if not to_copy_path.exists():
                 raise RuntimeError(
                     f"Could not find expected file in the previously cloned "
@@ -339,10 +341,11 @@ class _CopyRelevantRepoFiles:
             )
         shutil.copyfile(to_copy_martin_conf_file_path, self.config.martin_conf_path)
         shutil.copyfile(to_copy_traefik_conf_file_path, self.config.traefik_conf_path)
-        shutil.copyfile(
-            to_copy_traefik_file_provider_conf_file_path,
-            self.config.traefik_file_provider_conf_path,
-        )
+        if to_copy_traefik_file_provider_conf_file_path is not None:
+            shutil.copyfile(
+                to_copy_traefik_file_provider_conf_file_path,
+                self.config.traefik_file_provider_conf_path,
+            )
 
 
 @dataclasses.dataclass
