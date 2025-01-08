@@ -72,8 +72,8 @@ class DeploymentConfiguration:
     prefect_static_worker_env_prefect_api_url: str = dataclasses.field(init=False)
     prefect_static_worker_env_prefect_debug_mode: bool = dataclasses.field(init=False)
     reverse_proxy_image_tag: str
-    tls_cert_path: Path
-    tls_cert_key_path: Path
+    tls_cert_path: Path | None
+    tls_cert_key_path: Path | None
     tolgee_app_env_server_port: int = dataclasses.field(init=False)
     tolgee_app_env_server_spring_datasource_url: str = dataclasses.field(init=False)
     tolgee_app_env_spring_datasource_password: str = dataclasses.field(init=False)
@@ -184,6 +184,8 @@ class DeploymentConfiguration:
 
     @classmethod
     def from_config_parser(cls, config_parser: configparser.ConfigParser):
+        tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
+        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_path")
         return cls(
             backend_image=config_parser["main"]["backend_image"],
             compose_template=config_parser["main"]["compose_template"],
@@ -209,8 +211,10 @@ class DeploymentConfiguration:
             prefect_db_user=config_parser["prefect_db"]["user"],
             prefect_server_image_tag=config_parser["main"]["prefect_server_image_tag"],
             reverse_proxy_image_tag=config_parser["reverse_proxy"]["image_tag"],
-            tls_cert_path=Path(config_parser["reverse_proxy"]["tls_cert_path"]),
-            tls_cert_key_path=Path(config_parser["reverse_proxy"]["tls_cert_key_path"]),
+            tls_cert_path=Path(tls_cert_path) if tls_cert_path is not None else None,
+            tls_cert_key_path=Path(tls_cert_key_path)
+            if tls_cert_key_path is not None
+            else None,
             tolgee_app_env_tolgee_authentication_initial_password=config_parser[
                 "tolgee_app"
             ]["env_tolgee_authentication_initial_password"],
@@ -265,7 +269,7 @@ class DeploymentConfiguration:
             self.tls_cert_path,
             self.tls_cert_key_path,
         )
-        for path in paths_to_test:
+        for path in (p for p in paths_to_test if p is not None):
             if not path.exists():
                 raise RuntimeError(
                     f"Could not find referenced configuration file {path!r}"
