@@ -60,6 +60,9 @@ from .climaticindicators import (
     tasmin as tasmin_climatic_indicators,
     tr as tr_climatic_indicators,
 )
+from .observation_series_configurations import (
+    generate_observation_series_configurations,
+)
 
 from .configurationparameters import generate_configuration_parameters
 
@@ -248,6 +251,28 @@ def bootstrap_climatic_indicators(
                         f"): {err}"
                     )
                     session.rollback()
+
+
+@app.command("observation-series-configurations")
+def bootstrap_observation_series_configurations(ctx: typer.Context):
+    """Create initial observation series configurations."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        to_generate = generate_observation_series_configurations(
+            {ind.identifier: ind for ind in all_climatic_indicators}
+        )
+        for obs_series_create in to_generate:
+            try:
+                db_series_conf = database.create_observation_series_configuration(
+                    session, obs_series_create
+                )
+                print(
+                    f"Created observation series "
+                    f"configuration {db_series_conf.identifier!r}"
+                )
+            except IntegrityError as err:
+                print(f"Could not create observation series {to_generate!r}: {err}")
+                session.rollback()
 
 
 @app.command("coverage-configuration-parameters")

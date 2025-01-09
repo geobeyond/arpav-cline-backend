@@ -236,14 +236,20 @@ dev environment is located at individual devs machine(s). In order to get a work
 Build the docker image by running this command:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend
+docker build \
+    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend \
+    --file docker/Dockerfile \
+    .
 ```
 
 If you want to build an image for the current branch, such as when you added a new third-party dependency as part of
 an ongoing task, add the branch name to the build image:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current)
+docker build
+    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current) \
+    --file docker/Dockerfile \
+    .
 ```
 
 In order to use this custom named image on your local development, set the `CURRENT_GIT_BRANCH` env variable before
@@ -251,7 +257,7 @@ launching the docker compose stack, _i.e._:
 
 ```shell
 export CURRENT_GIT_BRANCH=$(git branch --show-current)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d --force-recreate
 ```
 
 

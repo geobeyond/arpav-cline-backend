@@ -140,9 +140,8 @@ class ObservationStationRead(sqlmodel.SQLModel):
 class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
     id: int
     identifier: str
-    indicator_internal_name: str
     measurement_aggregation_type: MeasurementAggregationType
-    station_owners: list[ObservationStationManager]
+    station_managers: list[ObservationStationManager]
     climatic_indicator: int
 
 

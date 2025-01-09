@@ -611,13 +611,12 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
 
     identifier_pattern: ClassVar[
         str
-    ] = "{climatic_indicator}_{station_owners}_{measurement_aggregation_type}"
+    ] = "{climatic_indicator}_{station_managers}_{measurement_aggregation_type}"
 
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     climatic_indicator_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="climaticindicator.id"
     )
-    indicator_internal_name: str
     measurement_aggregation_type: static.MeasurementAggregationType
     station_managers: list[static.ObservationStationManager] = sqlmodel.Field(
         default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
@@ -664,14 +663,12 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
 
 class ObservationSeriesConfigurationCreate(sqlmodel.SQLModel):
     climatic_indicator_id: int
-    indicator_internal_name: str
     measurement_aggregation_type: static.MeasurementAggregationType
     station_managers: list[static.ObservationStationManager]
 
 
 class ObservationSeriesConfigurationUpdate(sqlmodel.SQLModel):
     climatic_indicator_id: Optional[int] = None
-    indicator_internal_name: Optional[str] = None
     measurement_aggregation_type: Optional[static.MeasurementAggregationType] = None
     station_managers: Optional[list[static.ObservationStationManager]] = None
 

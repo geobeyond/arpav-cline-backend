@@ -176,7 +176,9 @@ class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     color_scale_max: float = 0.0
     data_precision: int = sqlmodel.Field(default=0)
     sort_order: int = sqlmodel.Field(default=0)
-    observation_names: list["ClimaticIndicatorObservationNameCreate"]
+    observation_names: list["ClimaticIndicatorObservationNameCreate"] = sqlmodel.Field(
+        default_factory=list
+    )
 
 
 class ClimaticIndicatorUpdate(sqlmodel.SQLModel):

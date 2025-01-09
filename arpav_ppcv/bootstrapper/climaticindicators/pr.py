@@ -1,8 +1,12 @@
 from ...schemas.static import (
     AggregationPeriod,
     MeasureType,
+    ObservationStationManager,
 )
-from ...schemas.climaticindicators import ClimaticIndicatorCreate
+from ...schemas.climaticindicators import (
+    ClimaticIndicatorCreate,
+    ClimaticIndicatorObservationNameCreate,
+)
 
 
 def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
@@ -54,6 +58,12 @@ def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
             color_scale_max=800,
             data_precision=0,
             sort_order=9,
+            observation_names=[
+                ClimaticIndicatorObservationNameCreate(
+                    observation_station_manager=ObservationStationManager.ARPAV,
+                    indicator_observation_name="PRCPTOT",
+                )
+            ],
         ),
         ClimaticIndicatorCreate(
             name="pr",

@@ -460,7 +460,6 @@ class ObservationSeriesConfigurationView(ModelView):
     fields = (
         starlette_admin.IntegerField("id"),
         starlette_admin.StringField("identifier", read_only=True),
-        starlette_admin.StringField("indicator_internal_name", required=True),
         starlette_admin.EnumField(
             "measurement_aggregation_type",
             enum=static.MeasurementAggregationType,
@@ -484,7 +483,11 @@ class ObservationSeriesConfigurationView(ModelView):
         "climatic_indicator",
         "station_owners",
     )
-    exclude_fields_from_edit = ("identifier",)
+    exclude_fields_from_detail = ("id",)
+    exclude_fields_from_edit = (
+        "id",
+        "identifier",
+    )
     exclude_fields_from_create = ("identifier",)
 
     def __init__(self, *args, **kwargs) -> None:
