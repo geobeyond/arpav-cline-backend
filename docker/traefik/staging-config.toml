@@ -18,9 +18,23 @@ address = ":80"
 [entryPoints.web.forwardedHeaders]
 insecure = true
 
+[entryPoints.webSecure]
+address = ":443"
+
+[entryPoints.webSecure.forwardedHeaders]
+insecure = true
+
 [providers]
 
 [providers.docker]
 exposedByDefault = false
-network = "back"
-constraints = "Label(`exposed.inside`, `true`)"
+
+[certificateResolvers.letsEncryptResolver.acme]
+email = "francesco.bartoli@geobeyond.it"
+storage = "/opt/traefik/certs/acme.json"
+
+# Default: "https://acme-v02.api.letsencrypt.org/directory"
+# the default is the production lets encrypt server
+# caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+[certificatesResolvers.letsEncryptResolver.acme.tlsChallenge]

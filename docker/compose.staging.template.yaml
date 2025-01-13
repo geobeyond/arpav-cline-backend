@@ -1,4 +1,4 @@
-# docker compose file template that can be used to create a suitable production deployment file.
+# docker compose file template that can be used to create a suitable staging deployment file.
 # This template file is meant to be processed via Python - the processor shall replace all
 # template strings with their respective values. A template string is denoted like this: <DOLLAR>{name}
 # with a dollar sign instead of <DOLLAR> - we are not writing it out here to avoid the processor trying
@@ -54,11 +54,7 @@ services:
     configs:
       - source: traefik-conf
         target: /traefik.toml
-      - source: traefik-file-provider-conf
-        target: /traefik-file-provider.toml
     secrets:
-      - tls-cert
-      - tls-key
       - traefik-users-file
     ports:
       - target: 443
@@ -72,6 +68,7 @@ services:
       - "traefik.http.routers.arpav-frontend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
       - "traefik.http.routers.arpav-frontend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-frontend-router.tls=true"
+      - "traefik.http.routers.arpav-frontend-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.arpav-frontend-service.loadbalancer.server.port=80"
     environment:
       ARPAV_BACKEND_API_BASE_URL: "${frontend_env_arpav_backend_api_base_url}"
@@ -85,6 +82,7 @@ services:
       - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
       - "traefik.http.routers.arpav-backend-router.entrypoints=webSecure"
       - "traefik.http.routers.arpav-backend-router.tls=true"
+      - "traefik.http.routers.arpav-backend-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
     environment:
       ARPAV_PPCV__DEBUG: "${webapp_env_debug}"
@@ -130,6 +128,7 @@ services:
       - "traefik.http.routers.martin-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/vector-tiles`)"
       - "traefik.http.routers.martin-router.entrypoints=webSecure"
       - "traefik.http.routers.martin-router.tls=true"
+      - "traefik.http.routers.martin-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.middlewares.strip-martin-prefix-middleware.stripprefix.prefixes=/vector-tiles"
       - "traefik.http.routers.martin-router.middlewares=strip-martin-prefix-middleware@docker"
       - "traefik.http.services.martin-service.loadbalancer.server.port=3000"
@@ -150,6 +149,7 @@ services:
       - "traefik.http.routers.prefect-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/prefect`)"
       - "traefik.http.routers.prefect-router.entrypoints=webSecure"
       - "traefik.http.routers.prefect-router.tls=true"
+      - "traefik.http.routers.prefect-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.routers.prefect-router.middlewares=middleware-chain"
       - "traefik.http.services.prefect-service.loadbalancer.server.port=4200"
     environment:
@@ -210,6 +210,7 @@ services:
       - "traefik.http.routers.tolgee-app-router.rule=Host(`${reverse_proxy_tolgee_domain_name}`) && PathPrefix(`/`)"
       - "traefik.http.routers.tolgee-app-router.entrypoints=webSecure"
       - "traefik.http.routers.tolgee-app-router.tls=true"
+      - "traefik.http.routers.tolgee-app-router.tls.certResolver=letsEncryptResolver"
       - "traefik.http.services.tolgee-app-service.loadbalancer.server.port=8080"
     environment:
       SERVER_PORT: "${tolgee_app_env_server_port}"
@@ -251,19 +252,10 @@ configs:
   traefik-conf:
     file: "${traefik_conf_path}"
 
-  traefik-file-provider-conf:
-    file: "${traefik_file_provider_conf_path}"
-
   martin-conf:
     file: "${martin_conf_path}"
 
 
 secrets:
-  tls-cert:
-    file: "${tls_cert_path}"
-
-  tls-key:
-    file: "${tls_cert_key_path}"
-
   traefik-users-file:
     file: "${traefik_users_file_path}"

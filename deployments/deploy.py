@@ -32,18 +32,20 @@ _DO_NOT_UPDATE_FLAG_NAME = "--no-auto-update"
 class DeploymentConfiguration:
     backend_image: str
     compose_project_name: str = dataclasses.field(init=False)
+    compose_template: str
     db_image_tag: str
     db_name: str
     db_password: str
     db_user: str
     deployment_files_repo: str
+    deployment_files_repo_clone_destination: Path
     deployment_root: Path
     discord_notification_urls: list[str]
     executable_webapp_service_name: str = dataclasses.field(init=False)
     frontend_image: str
     frontend_env_arpav_backend_api_base_url: str = dataclasses.field(init=False)
     frontend_env_arpav_tolgee_base_url: str = dataclasses.field(init=False)
-    git_repo_clone_destination: Path = dataclasses.field(init=False)
+    martin_config_source: str
     martin_conf_path: Path = dataclasses.field(
         init=False
     )  # is copied to inside the deployment_root dir
@@ -70,8 +72,10 @@ class DeploymentConfiguration:
     prefect_static_worker_env_prefect_api_url: str = dataclasses.field(init=False)
     prefect_static_worker_env_prefect_debug_mode: bool = dataclasses.field(init=False)
     reverse_proxy_image_tag: str
-    tls_cert_path: Path
-    tls_cert_key_path: Path
+    reverse_proxy_main_domain_name: str
+    reverse_proxy_tolgee_domain_name: str
+    tls_cert_path: Path | None
+    tls_cert_key_path: Path | None
     tolgee_app_env_server_port: int = dataclasses.field(init=False)
     tolgee_app_env_server_spring_datasource_url: str = dataclasses.field(init=False)
     tolgee_app_env_spring_datasource_password: str = dataclasses.field(init=False)
@@ -92,9 +96,14 @@ class DeploymentConfiguration:
     tolgee_db_name: str
     tolgee_db_password: str
     tolgee_db_user: str
+    traefik_config_source: str
+    traefik_file_provider_source: str | None
     traefik_conf_path: Path = dataclasses.field(
         init=False
     )  # is copied to inside the deployment_root dir
+    traefik_file_provider_conf_path: Path = dataclasses.field(
+        init=False
+    )  # is copied to inside the deployment root dir
     traefik_users_file_path: Path
     webapp_env_admin_user_password: str
     webapp_env_admin_user_username: str
@@ -119,9 +128,11 @@ class DeploymentConfiguration:
         self.frontend_env_arpav_tolgee_base_url = (
             self.tolgee_app_env_tolgee_frontend_url
         )
-        self.git_repo_clone_destination = Path("/tmp/arpav-cline")
         self.martin_conf_path = self.deployment_root / "martin-config.yaml"
         self.traefik_conf_path = self.deployment_root / "traefik-config.toml"
+        self.traefik_file_provider_conf_path = (
+            self.deployment_root / "traefik-file-provider-config.toml"
+        )
         self.martin_env_database_url = (
             f"postgresql://{self.db_user}:{self.db_password}@db:5432/{self.db_name}"
         )
@@ -175,13 +186,19 @@ class DeploymentConfiguration:
 
     @classmethod
     def from_config_parser(cls, config_parser: configparser.ConfigParser):
+        tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
+        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_path")
         return cls(
             backend_image=config_parser["main"]["backend_image"],
+            compose_template=config_parser["main"]["compose_template"],
             db_image_tag=config_parser["main"]["db_image_tag"],
             db_name=config_parser["db"]["name"],
             db_password=config_parser["db"]["password"],
             db_user=config_parser["db"]["user"],
             deployment_files_repo=config_parser["main"]["deployment_files_repo"],
+            deployment_files_repo_clone_destination=Path(
+                config_parser["main"]["deployment_files_repo_clone_destination"]
+            ),
             deployment_root=Path(config_parser["main"]["deployment_root"]),
             discord_notification_urls=[
                 i.strip()
@@ -189,14 +206,23 @@ class DeploymentConfiguration:
                 if i != ""
             ],
             frontend_image=config_parser["main"]["frontend_image"],
-            martin_image_tag=config_parser["main"]["martin_image_tag"],
+            martin_image_tag=config_parser["martin"]["image_tag"],
+            martin_config_source=config_parser["martin"]["config_source"],
             prefect_db_name=config_parser["prefect_db"]["name"],
             prefect_db_password=config_parser["prefect_db"]["password"],
             prefect_db_user=config_parser["prefect_db"]["user"],
             prefect_server_image_tag=config_parser["main"]["prefect_server_image_tag"],
             reverse_proxy_image_tag=config_parser["reverse_proxy"]["image_tag"],
-            tls_cert_path=Path(config_parser["reverse_proxy"]["tls_cert_path"]),
-            tls_cert_key_path=Path(config_parser["reverse_proxy"]["tls_cert_key_path"]),
+            reverse_proxy_main_domain_name=config_parser["reverse_proxy"][
+                "main_domain_name"
+            ],
+            reverse_proxy_tolgee_domain_name=config_parser["reverse_proxy"][
+                "tolgee_domain_name"
+            ],
+            tls_cert_path=Path(tls_cert_path) if tls_cert_path is not None else None,
+            tls_cert_key_path=Path(tls_cert_key_path)
+            if tls_cert_key_path is not None
+            else None,
             tolgee_app_env_tolgee_authentication_initial_password=config_parser[
                 "tolgee_app"
             ]["env_tolgee_authentication_initial_password"],
@@ -210,6 +236,12 @@ class DeploymentConfiguration:
             tolgee_db_name=config_parser["tolgee_db"]["name"],
             tolgee_db_password=config_parser["tolgee_db"]["password"],
             tolgee_db_user=config_parser["tolgee_db"]["user"],
+            traefik_config_source=config_parser["reverse_proxy"][
+                "traefik_config_source"
+            ],
+            traefik_file_provider_source=config_parser["reverse_proxy"].get(
+                "traefik_file_provider_source"
+            ),
             traefik_users_file_path=Path(
                 config_parser["reverse_proxy"]["traefik_users_file_path"]
             ),
@@ -245,7 +277,7 @@ class DeploymentConfiguration:
             self.tls_cert_path,
             self.tls_cert_key_path,
         )
-        for path in paths_to_test:
+        for path in (p for p in paths_to_test if p is not None):
             if not path.exists():
                 raise RuntimeError(
                     f"Could not find referenced configuration file {path!r}"
@@ -267,12 +299,12 @@ class _CloneRepo:
 
     def handle(self) -> None:
         print("Cloning repo...")
-        if self.config.git_repo_clone_destination.exists():
-            shutil.rmtree(self.config.git_repo_clone_destination)
+        if self.config.deployment_files_repo_clone_destination.exists():
+            shutil.rmtree(self.config.deployment_files_repo_clone_destination)
         subprocess.run(
             shlex.split(
                 f"git clone {self.config.deployment_files_repo} "
-                f"{self.config.git_repo_clone_destination}"
+                f"{self.config.deployment_files_repo_clone_destination}"
             ),
             check=True,
         )
@@ -285,42 +317,43 @@ class _CopyRelevantRepoFiles:
         "Copy files relevant to the deployment from temporary git clone "
         "to target location"
     )
-    deployment_related_files = (
-        "deployments/deploy.py",
-        "docker/compose.yaml",
-        "docker/compose.production.template.yaml",
-    )
-    martin_conf_file = "docker/martin/config.yaml"
-    traefik_conf_file = "docker/traefik/production-config.toml"
 
     def handle(self) -> None:
-        to_copy_martin_conf_file_path = (
-            self.config.git_repo_clone_destination / self.martin_conf_file
+        _base = self.config.deployment_files_repo_clone_destination
+        to_copy_martin_conf_file_path = _base / self.config.martin_config_source
+        to_copy_traefik_conf_file_path = _base / self.config.traefik_config_source
+        to_copy_traefik_file_provider_conf_file_path = (
+            _base / self.config.traefik_file_provider_source
+            if self.config.traefik_file_provider_source is not None
+            else None
         )
-        to_copy_traefik_conf_file_path = (
-            self.config.git_repo_clone_destination / self.traefik_conf_file
+        deployment_related_file_paths = (
+            _base / "deployments/deploy.py",
+            _base / self.config.compose_template,
         )
-        to_copy_deployment_related_file_paths = [
-            self.config.git_repo_clone_destination / i
-            for i in self.deployment_related_files
-        ]
         all_files_to_copy = (
-            *to_copy_deployment_related_file_paths,
+            *deployment_related_file_paths,
             to_copy_martin_conf_file_path,
             to_copy_traefik_conf_file_path,
+            to_copy_traefik_file_provider_conf_file_path,
         )
-        for to_copy_path in all_files_to_copy:
+        for to_copy_path in (f for f in all_files_to_copy if f is not None):
             if not to_copy_path.exists():
                 raise RuntimeError(
                     f"Could not find expected file in the previously cloned "
                     f"git repo: {to_copy_path!r}"
                 )
-        for to_copy_path in to_copy_deployment_related_file_paths:
+        for to_copy_path in deployment_related_file_paths:
             shutil.copyfile(
                 to_copy_path, self.config.deployment_root / to_copy_path.name
             )
         shutil.copyfile(to_copy_martin_conf_file_path, self.config.martin_conf_path)
         shutil.copyfile(to_copy_traefik_conf_file_path, self.config.traefik_conf_path)
+        if to_copy_traefik_file_provider_conf_file_path is not None:
+            shutil.copyfile(
+                to_copy_traefik_file_provider_conf_file_path,
+                self.config.traefik_file_provider_conf_path,
+            )
 
 
 @dataclasses.dataclass
@@ -346,10 +379,10 @@ class _GenerateComposeFile:
     name: str = "generate docker compose file"
 
     def handle(self) -> None:
-        compose_teplate_path = (
-            self.config.deployment_root / "compose.production.template.yaml"
+        compose_template_path = (
+            self.config.deployment_root / self.config.compose_template
         )
-        compose_template = Template(compose_teplate_path.read_text())
+        compose_template = Template(compose_template_path.read_text())
 
         render_context = dataclasses.asdict(self.config)
         render_kwargs = {}
@@ -358,17 +391,17 @@ class _GenerateComposeFile:
         # a list we dump it as JSON in order to ensure correct handling of
         # parameters that represent collections, for example cors origins, which
         # is a list of strings
-        for k, v in render_context.items():
-            if "env_" in k and isinstance(v, list):
-                render_kwargs[k] = json.dumps(v)
+        for key, value in render_context.items():
+            if "env_" in key and isinstance(value, list):
+                render_kwargs[key] = json.dumps(value)
 
         rendered = compose_template.substitute(render_context, **render_kwargs)
-        target_path = Path(self.config.deployment_root / "compose.production.yaml")
+        target_path = Path(self.config.deployment_root / "compose.yaml")
         with target_path.open("w") as fh:
             for line in rendered.splitlines(keepends=True):
                 if not line.startswith("#"):
                     fh.write(line)
-        compose_teplate_path.unlink(missing_ok=True)
+        compose_template_path.unlink(missing_ok=True)
 
 
 @dataclasses.dataclass
@@ -380,12 +413,8 @@ class _ComposeCommandExecutor:
         raise NotImplementedError
 
     def _run_compose_command(self, suffix: str) -> subprocess.CompletedProcess:
-        compose_files = [
-            self.config.deployment_root / "compose.yaml",
-            self.config.deployment_root / "compose.production.yaml",
-        ]
-        compose_files_fragment = " ".join(f"-f {p}" for p in compose_files)
-        docker_compose_command = f"docker compose {compose_files_fragment} {suffix}"
+        compose_file_path = self.config.deployment_root / "compose.yaml"
+        docker_compose_command = f"docker compose -f {compose_file_path} {suffix}"
         return subprocess.run(
             shlex.split(docker_compose_command),
             cwd=self.config.deployment_root,
@@ -540,7 +569,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--config-file",
-        default=Path.home() / "arpav-cline/production-deployment.cfg",
+        default=Path.home() / "arpav-cline/deployment.cfg",
         help="Path to configuration file",
         type=Path,
     )
