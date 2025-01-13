@@ -2147,3 +2147,291 @@ def delete_observation_series_configuration(
         session.commit()
     else:
         raise RuntimeError("Observation series configuration not found")
+
+
+def list_spatial_regions(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+) -> tuple[Sequence[base.SpatialRegion], Optional[int]]:
+    statement = sqlmodel.select(base.SpatialRegion).order_by(base.SpatialRegion.name)
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_spatial_regions(
+    session: sqlmodel.Session,
+) -> Sequence[base.SpatialRegion]:
+    _, num_total = list_spatial_regions(
+        session,
+        limit=1,
+        include_total=True,
+    )
+    result, _ = list_spatial_regions(
+        session,
+        limit=num_total,
+        include_total=False,
+    )
+    return result
+
+
+def get_spatial_region(
+    session: sqlmodel.Session, spatial_region_id: int
+) -> Optional[base.SpatialRegion]:
+    return session.get(base.SpatialRegion, spatial_region_id)
+
+
+def create_spatial_region(
+    session: sqlmodel.Session,
+    spatial_region_create: base.SpatialRegionCreate,
+):
+    """Create a new spatial region."""
+    geom = shapely.io.from_geojson(spatial_region_create.geom.model_dump_json())
+    wkbelement = from_shape(geom)
+    db_item = base.SpatialRegion(
+        **spatial_region_create.model_dump(exclude={"geom"}),
+        geom=wkbelement,
+    )
+    session.add(db_item)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_item)
+        return db_item
+
+
+def update_spatial_region(
+    session: sqlmodel.Session,
+    db_spatial_region: base.SpatialRegion,
+    spatial_region_update: base.SpatialRegionUpdate,
+) -> base.SpatialRegion:
+    """Update a spatial region."""
+    geom = from_shape(
+        shapely.io.from_geojson(spatial_region_update.geom.model_dump_json())
+    )
+    other_data = spatial_region_update.model_dump(exclude={"geom"}, exclude_unset=True)
+    data = {**other_data, "geom": geom}
+    for key, value in data.items():
+        setattr(db_spatial_region, key, value)
+    session.add(db_spatial_region)
+    session.commit()
+    session.refresh(db_spatial_region)
+    return db_spatial_region
+
+
+def delete_spatial_region(session: sqlmodel.Session, spatial_region_id: int) -> None:
+    """Delete a spatial region."""
+    db_item = get_spatial_region(session, spatial_region_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Spatial region not found")
+
+
+def list_forecast_coverage_configurations(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
+) -> tuple[Sequence[coverages.ForecastCoverageConfiguration], Optional[int]]:
+    """List existing forecast coverage configurations."""
+    statement = sqlmodel.select(coverages.ForecastCoverageConfiguration).order_by(
+        coverages.ForecastCoverageConfiguration.id
+    )
+    if climatic_indicator_filter is not None:
+        statement = statement.where(
+            coverages.ForecastCoverageConfiguration.climatic_indicator_id
+            == climatic_indicator_filter.id
+        )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_forecast_coverage_configurations(
+    session: sqlmodel.Session,
+    climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
+) -> Sequence[coverages.ForecastCoverageConfiguration]:
+    _, num_total = list_forecast_coverage_configurations(
+        session,
+        limit=1,
+        include_total=True,
+        climatic_indicator_filter=climatic_indicator_filter,
+    )
+    result, _ = list_forecast_coverage_configurations(
+        session,
+        limit=num_total,
+        include_total=False,
+        climatic_indicator_filter=climatic_indicator_filter,
+    )
+    return result
+
+
+def get_forecast_coverage_configuration(
+    session: sqlmodel.Session,
+    forecast_coverage_configuration_id: int,
+) -> Optional[coverages.ForecastCoverageConfiguration]:
+    return session.get(
+        coverages.ForecastCoverageConfiguration, forecast_coverage_configuration_id
+    )
+
+
+def create_forecast_coverage_configuration(
+    session: sqlmodel.Session,
+    forecast_coverage_configuration_create: coverages.ForecastCoverageConfigurationCreate,
+) -> coverages.ForecastCoverageConfiguration:
+    raise NotImplementedError
+
+
+def update_forecast_coverage_configuration(
+    session: sqlmodel.Session,
+    forecast_coverage_configuration_update: coverages.ForecastCoverageConfigurationUpdate,
+) -> coverages.ForecastCoverageConfiguration:
+    raise NotImplementedError
+
+
+def delete_forecast_coverage_configuration(
+    session: sqlmodel.Session, forecast_coverage_configuration_id: int
+) -> None:
+    db_item = get_forecast_coverage_configuration(
+        session, forecast_coverage_configuration_id
+    )
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Forecast coverage configuration not found")
+
+
+def list_forecast_models(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+) -> tuple[Sequence[coverages.ForecastModel], Optional[int]]:
+    """List existing forecast models."""
+    statement = sqlmodel.select(coverages.ForecastModel).order_by(
+        coverages.ForecastModel.internal_value
+    )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_forecast_models(
+    session: sqlmodel.Session,
+) -> Sequence[coverages.ForecastModel]:
+    _, num_total = list_forecast_models(
+        session,
+        limit=1,
+        include_total=True,
+    )
+    result, _ = list_forecast_models(
+        session,
+        limit=num_total,
+        include_total=False,
+    )
+    return result
+
+
+def get_forecast_model(
+    session: sqlmodel.Session,
+    forecast_model_id: int,
+) -> Optional[coverages.ForecastModel]:
+    return session.get(coverages.ForecastModel, forecast_model_id)
+
+
+def create_forecast_model(
+    session: sqlmodel.Session,
+    forecast_model_create: coverages.ForecastModelCreate,
+) -> coverages.ForecastModel:
+    raise NotImplementedError
+
+
+def update_forecast_model(
+    session: sqlmodel.Session,
+    forecast_model_update: coverages.ForecastModelUpdate,
+) -> coverages.ForecastModel:
+    raise NotImplementedError
+
+
+def delete_forecast_model(session: sqlmodel.Session, forecast_model_id: int) -> None:
+    db_item = get_forecast_model(session, forecast_model_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Forecast model not found")
+
+
+def list_forecast_time_windows(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+) -> tuple[Sequence[coverages.ForecastTimeWindow], Optional[int]]:
+    """List existing forecast time windows."""
+    statement = sqlmodel.select(coverages.ForecastTimeWindow).order_by(
+        coverages.ForecastTimeWindow.internal_value
+    )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = _get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_forecast_time_windows(
+    session: sqlmodel.Session,
+) -> Sequence[coverages.ForecastTimeWindow]:
+    _, num_total = list_forecast_time_windows(
+        session,
+        limit=1,
+        include_total=True,
+    )
+    result, _ = list_forecast_time_windows(
+        session,
+        limit=num_total,
+        include_total=False,
+    )
+    return result
+
+
+def get_forecast_time_window(
+    session: sqlmodel.Session,
+    forecast_time_window_id: int,
+) -> Optional[coverages.ForecastTimeWindow]:
+    return session.get(coverages.ForecastTimeWindow, forecast_time_window_id)
+
+
+def create_forecast_time_window(
+    session: sqlmodel.Session,
+    forecast_time_window_create: coverages.ForecastTimeWindowCreate,
+) -> coverages.ForecastTimeWindow:
+    raise NotImplementedError
+
+
+def update_forecast_time_window(
+    session: sqlmodel.Session,
+    forecast_time_window_update: coverages.ForecastTimeWindowUpdate,
+) -> coverages.ForecastTimeWindow:
+    raise NotImplementedError
+
+
+def delete_forecast_time_window(
+    session: sqlmodel.Session, forecast_time_window_id: int
+) -> None:
+    db_item = get_forecast_time_window(session, forecast_time_window_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Forecast time window not found")

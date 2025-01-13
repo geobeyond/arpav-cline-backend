@@ -54,6 +54,78 @@ class PossibleConfigurationParameterValuesField(starlette_admin.EnumField):
         return self._get_label(value, request)
 
 
+class RelatedForecastModelField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedForecastModelField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_forecast_model = database.get_forecast_model(session, value)
+        return db_forecast_model.name
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_forecast_models = database.collect_all_forecast_models(
+            request.state.session
+        )
+        return [(fm.id, fm.name) for fm in all_forecast_models]
+
+
+class RelatedForecastTimeWindowField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedForecastTimeWindowField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_forecast_time_window = database.get_forecast_time_window(session, value)
+        return db_forecast_time_window.name
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_forecast_time_windows = database.collect_all_forecast_time_windows(
+            request.state.session
+        )
+        return [(tw.id, tw.name) for tw in all_forecast_time_windows]
+
+
+class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedObservationSeriesConfigurationField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_forecast_time_window = database.get_forecast_time_window(session, value)
+        return db_forecast_time_window.name
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_obs_series_confs = database.collect_all_observation_series_configurations(
+            request.state.session
+        )
+        return [(osc.id, osc.identifier) for osc in all_obs_series_confs]
+
+
+class RelatedSpatialRegionField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedSpatialRegionField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        spatial_region = database.get_spatial_region(session, value)
+        return spatial_region.name
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_spatial_regions = database.collect_all_spatial_regions(
+            request.state.session
+        )
+        return [(sr.id, sr.name) for sr in all_spatial_regions]
+
+
 class RelatedClimaticIndicatorField(starlette_admin.EnumField):
     """Custom field to show a 1:m relationship.
 

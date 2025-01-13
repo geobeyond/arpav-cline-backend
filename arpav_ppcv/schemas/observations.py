@@ -20,6 +20,7 @@ from . import (
 
 if TYPE_CHECKING:
     from .climaticindicators import ClimaticIndicator
+    from . import coverages
 
     def get_season(self, value: str):
         if value.lower() in ("djf",):
@@ -625,6 +626,10 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="observation_series_configurations"
     )
+
+    forecast_coverage_configuration_links: list[
+        "coverages.ForecastCoverageConfigurationObservationSeriesConfigurationLink"
+    ] = sqlmodel.Relationship(back_populates="observation_series_configuration")
 
     @pydantic.computed_field
     @property

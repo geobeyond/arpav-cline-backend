@@ -5,23 +5,141 @@ import uuid
 from typing import (
     Annotated,
     Optional,
+    ClassVar,
     Final,
     TYPE_CHECKING,
     TypedDict,
 )
 
+import babel
 import pydantic
 import sqlalchemy
 import sqlmodel
 
 from .. import exceptions
-from . import base
+from ..config import get_translations
+from . import (
+    base,
+    static,
+)
 
 if TYPE_CHECKING:
-    from . import climaticindicators
+    from . import (
+        base,
+        climaticindicators,
+        observations,
+    )
 
 logger = logging.getLogger(__name__)
 _NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
+
+_name_description_text: Final[str] = (
+    "Only alphanumeric characters and the underscore are allowed. "
+    "Example: my_indicator"
+)
+
+
+class ForecastTimeWindow(sqlmodel.SQLModel, table=True):
+    id: int | None = sqlmodel.Field(default=None, primary_key=True)
+    name: str
+    internal_value: str
+    display_name_english: str = sqlmodel.Field(default="")
+    display_name_italian: str = sqlmodel.Field(default="")
+    description_english: str = sqlmodel.Field(default="")
+    description_italian: str = sqlmodel.Field(default="")
+    sort_order: int = sqlmodel.Field(default=0)
+
+    forecast_coverage_configuration_links: list[
+        "ForecastCoverageConfigurationForecastTimeWindowLink"
+    ] = sqlmodel.Relationship(back_populates="forecast_time_window")
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("time window")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("time window description")
+
+
+class ForecastTimeWindowCreate(sqlmodel.SQLModel):
+    name: str
+    internal_value: str
+    display_name_english: str = sqlmodel.Field(default="")
+    display_name_italian: str = sqlmodel.Field(default="")
+    description_english: str = sqlmodel.Field(default="")
+    description_italian: str = sqlmodel.Field(default="")
+    sort_order: int = sqlmodel.Field(default=0)
+
+
+class ForecastTimeWindowUpdate(sqlmodel.SQLModel):
+    name: str | None = None
+    internal_value: str | None = None
+    display_name_english: str | None = None
+    display_name_italian: str | None = None
+    description_english: str | None = None
+    description_italian: str | None = None
+    sort_order: int | None = None
+
+
+class ForecastModel(sqlmodel.SQLModel, table=True):
+    id: int | None = sqlmodel.Field(default=None, primary_key=True)
+    name: str
+    internal_value: str
+    coverage_base_path: str
+    display_name_english: str = sqlmodel.Field(default="")
+    display_name_italian: str = sqlmodel.Field(default="")
+    description_english: str = sqlmodel.Field(default="")
+    description_italian: str = sqlmodel.Field(default="")
+    sort_order: int = sqlmodel.Field(default=0)
+
+    forecast_coverage_configurations_links: list[
+        "ForecastCoverageConfigurationForecastModelLink"
+    ] = sqlmodel.Relationship(back_populates="forecast_model")
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast model")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast model description")
+
+
+class ForecastModelCreate(sqlmodel.SQLModel):
+    name: Annotated[
+        str,
+        pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
+    ]
+    internal_value: str
+    coverage_base_path: str
+    display_name_english: str = sqlmodel.Field(default="")
+    display_name_italian: str = sqlmodel.Field(default="")
+    description_english: str = sqlmodel.Field(default="")
+    description_italian: str = sqlmodel.Field(default="")
+    sort_order: int = sqlmodel.Field(default=0)
+
+
+class ForecastModelUpdate(sqlmodel.SQLModel):
+    name: Annotated[
+        str,
+        pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
+    ] = None
+    internal_value: str | None = None
+    coverage_base_path: str | None = None
+    display_name_english: str | None = None
+    display_name_italian: str | None = None
+    description_english: str | None = None
+    description_italian: str | None = None
+    sort_order: int | None = None
 
 
 class ConfigurationParameterValue(sqlmodel.SQLModel, table=True):
@@ -578,3 +696,222 @@ class HistoricalVariableMenuTree(TypedDict):
     historical_variable: ConfigurationParameterValue
     aggregation_period: ConfigurationParameterValue
     combinations: dict[str, VariableMenuTreeCombination]
+
+
+class BaseCoverageConfiguration(sqlmodel.SQLModel):
+    id: int | None = sqlmodel.Field(default=None, primary_key=True)
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    wms_main_layer_name: str
+    wms_secondary_layer_name: Optional[str] = None
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="climaticindicator.id"
+    )
+    spatial_region_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="spatialregion.id"
+    )
+
+
+class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=True):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_coverage_configuration_id",
+            ],
+            [
+                "forecastcoverageconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_model_id",
+            ],
+            [
+                "forecastmodel.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model gets deleted
+        ),
+    )
+    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    forecast_model_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+
+    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+        sqlmodel.Relationship(back_populates="forecast_model_links")
+    )
+    forecast_model: ForecastModel = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration_linkss"
+    )
+
+
+class ForecastCoverageConfigurationForecastTimeWindowLink(
+    sqlmodel.SQLModel, table=True
+):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_coverage_configuration_id",
+            ],
+            [
+                "forecastcoverageconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_time_window_id",
+            ],
+            [
+                "forecasttimewindow.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related time window gets deleted
+        ),
+    )
+    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    forecast_time_window_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+
+    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+        sqlmodel.Relationship(back_populates="time_window_links")
+    )
+    forecast_time_window: ForecastTimeWindow = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration_links"
+    )
+
+
+class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
+    sqlmodel.SQLModel, table=True
+):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_coverage_configuration_id",
+            ],
+            [
+                "forecastcoverageconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "observation_series_configuration_id",
+            ],
+            [
+                "observationseriesconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related observation series configuration gets deleted
+        ),
+    )
+    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    observation_series_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+
+    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+        sqlmodel.Relationship(back_populates="observation_series_configuration_links")
+    )
+    observation_series_configuration: "observations.ObservationSeriesConfiguration" = (
+        sqlmodel.Relationship(back_populates="forecast_coverage_configuration_links")
+    )
+
+
+class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    identifier_pattern: ClassVar[str] = "forecast-{climatic_indicator}-{spatial_region}"
+
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    scenarios: list[static.ForecastScenario] = sqlmodel.Field(
+        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+    )
+    year_periods: list[static.ForecastYearPeriod] = sqlmodel.Field(
+        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+    )
+
+    spatial_region: base.SpatialRegion = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configurations"
+    )
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configurations"
+    )
+
+    forecast_model_links: list[
+        ForecastCoverageConfigurationForecastModelLink
+    ] = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration",
+    )
+    time_window_links: list[
+        ForecastCoverageConfigurationForecastTimeWindowLink
+    ] = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration",
+    )
+    observation_series_configuration_links: list[
+        ForecastCoverageConfigurationObservationSeriesConfigurationLink
+    ] = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration",
+    )
+
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        return self.identifier_pattern.format(
+            climatic_indicator=self.climatic_indicator.identifier,
+            spatial_region=self.spatial_region.name,
+        )
+
+
+class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    identifier_pattern: ClassVar[
+        str
+    ] = "historical-{climatic_indicator}-{spatial_region}"
+
+    year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
+        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+    )
+
+    spatial_region: base.SpatialRegion = sqlmodel.Relationship(
+        back_populates="historical_coverage_configurations"
+    )
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="historical_coverage_configurations"
+    )
+
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        return self.identifier_pattern.format(
+            climatic_indicator=self.climatic_indicator.identifier,
+            spatial_region=self.spatial_region.name,
+        )

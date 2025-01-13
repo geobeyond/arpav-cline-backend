@@ -8,16 +8,11 @@ from ...schemas.base import (
     ObservationAggregationType,
     Season,
 )
-from ...schemas.static import (
-    AggregationPeriod,
-    ObservationStationManager,
-    MeasureType,
-    MeasurementAggregationType,
-)
+from ...schemas import static
 
 
 class ClimaticIndicatorObservationNameRead(sqlmodel.SQLModel):
-    station_manager: ObservationStationManager
+    station_manager: static.ObservationStationManager
     indicator_observation_name: str
 
 
@@ -25,8 +20,8 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     identifier: str
     id: int
     name: str
-    measure_type: MeasureType
-    aggregation_period: AggregationPeriod
+    measure_type: static.MeasureType
+    aggregation_period: static.AggregationPeriod
     display_name_english: str
     display_name_italian: str
     description_english: str
@@ -128,7 +123,7 @@ class StationRead(sqlmodel.SQLModel):
 class ObservationStationRead(sqlmodel.SQLModel):
     id: int
     name: str
-    owner: ObservationStationManager
+    owner: static.ObservationStationManager
     longitude: float
     latitude: float
     code: str
@@ -140,8 +135,8 @@ class ObservationStationRead(sqlmodel.SQLModel):
 class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
     id: int
     identifier: str
-    measurement_aggregation_type: MeasurementAggregationType
-    station_managers: list[ObservationStationManager]
+    measurement_aggregation_type: static.MeasurementAggregationType
+    station_managers: list[static.ObservationStationManager]
     climatic_indicator: int
 
 
@@ -165,3 +160,20 @@ class YearlyMeasurementRead(sqlmodel.SQLModel):
     variable: str
     year: int
     value: float
+
+
+class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
+    id: int
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    wms_main_layer_name: str
+    wms_secondary_layer_name: Optional[str]
+    climatic_indicator: Optional[int]
+    spatial_region: Optional[int]
+    lower_uncertainty_thredds_url_pattern: Optional[str]
+    upper_uncertainty_thredds_url_pattern: Optional[str]
+    scenarios: list[static.ForecastScenario]
+    year_periods: list[static.ForecastYearPeriod]
+    forecast_models: list[int]
+    time_windows: list[int]
+    observation_series_configurations: list[int]

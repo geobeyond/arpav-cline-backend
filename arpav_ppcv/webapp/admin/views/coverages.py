@@ -28,6 +28,7 @@ from .... import database
 from ....schemas import (
     coverages,
     base,
+    static,
 )
 from .. import (
     fields,
@@ -744,3 +745,149 @@ class CoverageConfigurationView(ModelView):
             return self._serialize_instance(db_coverage_configuration)
         except Exception as e:
             self.handle_exception(e)
+
+
+class ForecastCoverageConfiguration(ModelView):
+    identity = "forecast_coverage_configurations"
+    name = "Forecast Coverage Configuration"
+    label = "Forecast Coverage Configurations"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "netcdf_main_dataset_name",
+        "thredds_url_pattern",
+        "wms_main_layer_name",
+        "wms_secondary_layer_name",
+        "lower_uncertainty_thredds_url_pattern",
+        "upper_uncertainty_thredds_url_pattern",
+        "scenarios",
+        "year_periods",
+        "forecast_models",
+        "time_windows",
+        "observation_series_configurations",
+    )
+    exclude_fields_from_detail = ("id",)
+    exclude_fields_from_edit = ("identifier",)
+    exclude_fields_from_create = ("identifier",)
+
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("identifier", read_only=True),
+        starlette_admin.StringField(
+            "netcdf_main_dataset_name",
+            required=True,
+            help_text=(
+                "Name of the main variable inside this dataset's NetCDF file. This can "
+                "be a templated value, such as '{historical_year_period}_avg'."
+            ),
+        ),
+        starlette_admin.StringField(
+            "thredds_url_pattern",
+            required=True,
+            help_text=(
+                "Path pattern to the dataset's URL in THREDDS. This can be "
+                "templated with the name of any configuration parameter that belongs "
+                "to the coverage. This can also be given a shell-like pattern, which "
+                "can be useful when the dataset filename differs by additional "
+                "characters than just those that are used for configuration parameters. "
+                "Example: 'cline_yr/TDd_{historical_year_period}_1992-202[34]_py85.nc' "
+                "- this example features the '{historical_year_period}' template, which "
+                "gets replaced by the concrete value of the parameter, and it also "
+                "features the shell-like style expressed in '202[34]', which means "
+                "to look for files that have either '2023' or '2024' in that "
+                "part of their name."
+            ),
+        ),
+        starlette_admin.StringField("wms_main_layer_name", required=True),
+        starlette_admin.StringField("wms_secondary_layer_name", required=False),
+        fields.RelatedClimaticIndicatorField(
+            "climatic_indicator",
+            help_text="climatic indicator",
+            required=True,
+        ),
+        fields.RelatedSpatialRegionField(
+            "spatial_region",
+            required=True,
+        ),
+        starlette_admin.StringField(
+            "lower_uncertainty_thredds_url_pattern", required=False
+        ),
+        starlette_admin.StringField(
+            "upper_uncertainty_thredds_url_pattern", required=False
+        ),
+        starlette_admin.EnumField(
+            "scenarios", multiple=True, enum=static.ForecastScenario, required=True
+        ),
+        starlette_admin.EnumField(
+            "year_periods",
+            multiple=True,
+            enum=static.ForecastYearPeriod,
+            required=True,
+        ),
+        starlette_admin.ListField(
+            field=fields.RelatedForecastModelField(
+                "forecast_models",
+                multiple=True,
+                required=True,
+            )
+        ),
+        starlette_admin.ListField(
+            field=fields.RelatedForecastTimeWindowField(
+                "time_windows",
+                multiple=True,
+                required=True,
+            )
+        ),
+        starlette_admin.ListField(
+            field=fields.RelatedObservationSeriesConfigurationField(
+                "observation_series_configurations",
+                multiple=True,
+                required=True,
+            )
+        ),
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.icon = "fa-solid fa-map"
+
+    @staticmethod
+    def _serialize_instance(instance: coverages.ForecastCoverageConfiguration):
+        return read_schemas.ForecastCoverageConfigurationRead(
+            **instance.model_dump(),
+            forecast_models=[],
+            time_windows=[],
+            observation_series_configurations=[],
+        )
+
+    async def create(self, request: Request, data: dict[str, Any]) -> Any:
+        raise NotImplementedError
+
+    async def edit(self, request: Request, pk: Any, data: dict[str, Any]) -> Any:
+        raise NotImplementedError
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.ForecastCoverageConfigurationRead:
+        db_item = await anyio.to_thread.run_sync(
+            database.get_forecast_coverage_configuration, request.state.session, pk
+        )
+        return self._serialize_instance(db_item)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.ClimaticIndicatorRead]:
+        list_params = functools.partial(
+            database.list_forecast_coverage_configurations,
+            limit=limit,
+            offset=skip,
+            include_total=False,
+        )
+        db_items, _ = await anyio.to_thread.run_sync(list_params, request.state.session)
+        return [self._serialize_instance(ind) for ind in db_items]
