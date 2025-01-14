@@ -35,6 +35,9 @@ class ClimaticIndicatorView(ModelView):
 
     exclude_fields_from_list = (
         "id",
+        "name",
+        "measure_type",
+        "aggregation_period",
         "display_name_english",
         "display_name_italian",
         "description_english",
@@ -46,6 +49,7 @@ class ClimaticIndicatorView(ModelView):
         "color_scale_max",
         "data_precision",
         "observation_names",
+        "forecast_model_base_paths",
     )
     exclude_fields_from_detail = ("id",)
     exclude_fields_from_edit = ("identifier",)
@@ -125,6 +129,13 @@ class ClimaticIndicatorView(ModelView):
                 )
                 for obs_name in instance.observation_names
             ],
+            forecast_model_base_paths=[
+                read_schemas.ClimaticIndicatorForecastModelBasePathRead(
+                    forecast_model=fm.forecast_model_id,
+                    thredds_url_base_path=fm.thredds_url_base_path,
+                )
+                for fm in instance.forecast_model_links
+            ],
         )
 
     async def create(self, request: Request, data: dict[str, Any]) -> Any:
@@ -146,6 +157,13 @@ class ClimaticIndicatorView(ModelView):
                 color_scale_max=data["color_scale_max"],
                 data_precision=data["data_precision"],
                 sort_order=data.get("sort_order"),
+                forecast_models=[
+                    climaticindicators.ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                        forecast_model_id=fm["forecast_model"],
+                        thredds_url_base_path=fm["thredds_url_base_path"],
+                    )
+                    for fm in data.get("forecast_model_base_paths", [])
+                ],
                 observation_names=[
                     climaticindicators.ClimaticIndicatorObservationNameCreate(
                         observation_station_manager=obs_name["station_manager"],

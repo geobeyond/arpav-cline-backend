@@ -99,6 +99,9 @@ class ForecastModel(sqlmodel.SQLModel, table=True):
     climatic_indicator_links: list[
         "ForecastModelClimaticIndicatorLink"
     ] = sqlmodel.Relationship(back_populates="forecast_model")
+    forecast_coverage_configuration_links: list[
+        "ForecastCoverageConfigurationForecastModelLink"
+    ] = sqlmodel.Relationship(back_populates="forecast_model")
 
     @staticmethod
     def get_display_name(locale: babel.Locale) -> str:
@@ -754,16 +757,48 @@ class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
     )
 
 
-class ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator(
-    sqlmodel.SQLModel
-):
+class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=True):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_coverage_configuration_id",
+            ],
+            [
+                "forecastcoverageconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "forecast_model_id",
+            ],
+            [
+                "forecastmodel.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model gets deleted
+        ),
+    )
+    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
     forecast_model_id: Optional[int] = sqlmodel.Field(
         # NOTE: foreign key already defined in __table_args__ in order to be able to
         # specify the ondelete behavior
         default=None,
         primary_key=True,
     )
-    thredds_url_base_path: str
+
+    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+        sqlmodel.Relationship(back_populates="forecast_model_links")
+    )
+    forecast_model: ForecastModel = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configuration_links"
+    )
 
 
 class ForecastCoverageConfigurationForecastTimeWindowLink(
@@ -805,7 +840,7 @@ class ForecastCoverageConfigurationForecastTimeWindowLink(
     )
 
     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-        sqlmodel.Relationship(back_populates="time_window_links")
+        sqlmodel.Relationship(back_populates="forecast_time_window_links")
     )
     forecast_time_window: ForecastTimeWindow = sqlmodel.Relationship(
         back_populates="forecast_coverage_configuration_links"
@@ -877,7 +912,11 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
         back_populates="forecast_coverage_configurations"
     )
 
-    time_window_links: list[
+    forecast_model_links: list[
+        ForecastCoverageConfigurationForecastModelLink
+    ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
+
+    forecast_time_window_links: list[
         ForecastCoverageConfigurationForecastTimeWindowLink
     ] = sqlmodel.Relationship(
         back_populates="forecast_coverage_configuration",
@@ -908,7 +947,8 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
     scenarios: list[static.ForecastScenario]
     year_periods: list[static.ForecastYearPeriod]
-    time_windows: list[int]
+    forecast_models: list[int]
+    forecast_time_windows: list[int]
     observation_series_configurations: list[int]
 
 
@@ -923,7 +963,8 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
     scenarios: Optional[list[static.ForecastScenario]] = None
     year_periods: Optional[list[static.ForecastYearPeriod]] = None
-    time_windows: Optional[list[int]] = None
+    forecast_models: Optional[list[int]] = None
+    forecast_time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
 
 

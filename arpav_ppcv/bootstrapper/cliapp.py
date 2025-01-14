@@ -195,46 +195,48 @@ def bootstrap_climatic_indicators(
     ctx: typer.Context, name_filter: Optional[str] = None
 ):
     """Create initial climatic indicators."""
-    climatic_indicators_to_generate = (
-        cdd_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        cdds_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        fd_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        hdds_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        hwdi_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        pr_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        r95ptot_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        snwdays_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        su30_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        tas_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        tasmax_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        tasmin_climatic_indicators.generate_climatic_indicators()
-    )
-    climatic_indicators_to_generate.extend(
-        tr_climatic_indicators.generate_climatic_indicators()
-    )
     with sqlmodel.Session(ctx.obj["engine"]) as session:
+        all_forecast_models = database.collect_all_forecast_models(session)
+        forecast_model_ids = {fm.name: fm.id for fm in all_forecast_models}
+        climatic_indicators_to_generate = (
+            cdd_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            cdds_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            fd_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            hdds_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            hwdi_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            pr_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            r95ptot_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            snwdays_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            su30_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            tas_climatic_indicators.generate_climatic_indicators(forecast_model_ids)
+        )
+        climatic_indicators_to_generate.extend(
+            tasmax_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            tasmin_climatic_indicators.generate_climatic_indicators()
+        )
+        climatic_indicators_to_generate.extend(
+            tr_climatic_indicators.generate_climatic_indicators()
+        )
         for climatic_indicator_create in climatic_indicators_to_generate:
             if name_filter is None or name_filter in climatic_indicator_create.name:
                 try:

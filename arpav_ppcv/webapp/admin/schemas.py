@@ -170,6 +170,7 @@ class YearlyMeasurementRead(sqlmodel.SQLModel):
 
 class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     id: int
+    identifier: str
     netcdf_main_dataset_name: str
     thredds_url_pattern: str
     wms_main_layer_name: str
@@ -181,7 +182,7 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     scenarios: list[static.ForecastScenario]
     year_periods: list[static.ForecastYearPeriod]
     forecast_models: list[int]
-    time_windows: list[int]
+    forecast_time_windows: list[int]
     observation_series_configurations: list[int]
 
 

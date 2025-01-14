@@ -65,21 +65,34 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             climaticindicators.ClimaticIndicator
         )
     )
-    admin.add_view(
-        coverage_views.ConfigurationParameterView(coverages.ConfigurationParameter)
-    )
-    admin.add_view(
-        coverage_views.CoverageConfigurationView(coverages.CoverageConfiguration)
-    )
     admin.add_view(coverage_views.ForecastModelView(coverages.ForecastModel))
     admin.add_view(coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow))
-    admin.add_view(observations_views.StationView(observations.Station))
+    admin.add_view(
+        coverage_views.ForecastCoverageConfigurationView(
+            coverages.ForecastCoverageConfiguration
+        )
+    )
     admin.add_view(
         observations_views.ObservationStationView(observations.ObservationStation)
     )
     admin.add_view(
         observations_views.ObservationSeriesConfigurationView(
             observations.ObservationSeriesConfiguration
+        )
+    )
+    admin.add_view(
+        DropDown(
+            "Legacy",
+            icon="fa-solid fa-vials",
+            views=[
+                coverage_views.ConfigurationParameterView(
+                    coverages.ConfigurationParameter
+                ),
+                coverage_views.CoverageConfigurationView(
+                    coverages.CoverageConfiguration
+                ),
+                observations_views.StationView(observations.Station),
+            ],
         )
     )
     admin.add_view(

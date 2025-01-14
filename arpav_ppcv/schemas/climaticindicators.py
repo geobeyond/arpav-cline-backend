@@ -169,6 +169,18 @@ class ClimaticIndicatorObservationNameUpdate(sqlmodel.SQLModel):
     indicator_observation_name: str
 
 
+class ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+    sqlmodel.SQLModel
+):
+    forecast_model_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    thredds_url_base_path: str
+
+
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     name: Annotated[
         str,
@@ -191,7 +203,7 @@ class ClimaticIndicatorCreate(sqlmodel.SQLModel):
         default_factory=list
     )
     forecast_models: list[
-        "coverages.ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator"
+        ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator
     ] = sqlmodel.Field(default_factory=list)
 
 
@@ -214,6 +226,6 @@ class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
     data_precision: Optional[int] = None
     sort_order: Optional[int] = None
     observation_names: list["ClimaticIndicatorObservationNameUpdate"]
-    forecast_models: list[
-        "coverages.ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator"
-    ]
+    forecast_models: Optional[
+        list[ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator]
+    ] = None

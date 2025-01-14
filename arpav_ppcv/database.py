@@ -1627,11 +1627,10 @@ def create_climatic_indicator(
         db_climatic_indicator.observation_names.append(db_obs_name)
         to_refresh.append(db_obs_name)
     for forecast_model_info in climatic_indicator_create.forecast_models:
-        forecast_model = get_forecast_model(forecast_model_info.forecast_model_id)
         db_forecast_model_climatic_indicator_link = (
             coverages.ForecastModelClimaticIndicatorLink(
                 forecast_model_id=forecast_model_info.forecast_model_id,
-                thredds_url_base_path=forecast_model.thredds_url_base_path,
+                thredds_url_base_path=forecast_model_info.thredds_url_base_path,
             )
         )
         db_climatic_indicator.forecast_model_links.append(
@@ -2345,12 +2344,24 @@ def create_forecast_coverage_configuration(
         )
     )
     session.add(db_forecast_coverage_configuration)
-    for forecast_time_window_id in forecast_coverage_configuration_create.time_windows:
+    for forecast_model_id in forecast_coverage_configuration_create.forecast_models:
+        db_forecast_model = get_forecast_model(session, forecast_model_id)
+        if db_forecast_model is not None:
+            db_forecast_coverage_configuration.forecast_model_links.append(
+                coverages.ForecastCoverageConfigurationForecastModelLink(
+                    forecast_model_id=forecast_model_id,
+                )
+            )
+        else:
+            raise ValueError(f"Forecast model {forecast_model_id!r} not found")
+    for (
+        forecast_time_window_id
+    ) in forecast_coverage_configuration_create.forecast_time_windows:
         db_forecast_time_window = get_forecast_time_window(
             session, forecast_time_window_id
         )
         if db_forecast_time_window is not None:
-            db_forecast_coverage_configuration.time_window_links.append(
+            db_forecast_coverage_configuration.forecast_time_window_links.append(
                 coverages.ForecastCoverageConfigurationForecastTimeWindowLink(
                     forecast_time_window=db_forecast_time_window
                 )
@@ -2382,9 +2393,130 @@ def create_forecast_coverage_configuration(
 
 def update_forecast_coverage_configuration(
     session: sqlmodel.Session,
+    db_forecast_coverage_configuration: coverages.ForecastCoverageConfiguration,
     forecast_coverage_configuration_update: coverages.ForecastCoverageConfigurationUpdate,
 ) -> coverages.ForecastCoverageConfiguration:
-    raise NotImplementedError
+    """Update a forecast coverage configuration."""
+    existing_forecast_model_links_to_keep = []
+    existing_forecast_model_links_discard = []
+    for (
+        existing_forecast_model_link
+    ) in db_forecast_coverage_configuration.forecast_model_links:
+        has_been_requested_to_remove = (
+            existing_forecast_model_link.forecast_model_id
+            not in [
+                fm_id
+                for fm_id in forecast_coverage_configuration_update.forecast_models
+            ]
+        )
+        if not has_been_requested_to_remove:
+            existing_forecast_model_links_to_keep.append(existing_forecast_model_link)
+        else:
+            existing_forecast_model_links_discard.append(existing_forecast_model_link)
+    db_forecast_coverage_configuration.forecast_model_links = (
+        existing_forecast_model_links_to_keep
+    )
+    for to_discard in existing_forecast_model_links_discard:
+        session.delete(to_discard)
+    existing_time_window_links_to_keep = []
+    existing_time_window_links_discard = []
+    for (
+        existing_time_window_link
+    ) in db_forecast_coverage_configuration.forecast_time_window_links:
+        has_been_requested_to_remove = (
+            existing_time_window_link.forecast_time_window_id
+            not in [
+                tw_id
+                for tw_id in forecast_coverage_configuration_update.forecast_time_windows
+            ]
+        )
+        if not has_been_requested_to_remove:
+            existing_time_window_links_to_keep.append(existing_time_window_link)
+        else:
+            existing_time_window_links_discard.append(existing_time_window_link)
+    db_forecast_coverage_configuration.forecast_time_window_links = (
+        existing_time_window_links_to_keep
+    )
+    for to_discard in existing_time_window_links_discard:
+        session.delete(to_discard)
+    existing_obs_series_conf_links_to_keep = []
+    existing_obs_series_conf_links_discard = []
+    for (
+        existing_obs_series_conf_link
+    ) in db_forecast_coverage_configuration.observation_series_configuration_links:
+        has_been_requested_to_remove = (
+            existing_obs_series_conf_link.observation_series_configuration_id
+            not in [
+                osc_id
+                for osc_id in forecast_coverage_configuration_update.observation_series_configurations
+            ]
+        )
+        if not has_been_requested_to_remove:
+            existing_obs_series_conf_links_to_keep.append(existing_obs_series_conf_link)
+        else:
+            existing_obs_series_conf_links_discard.append(existing_obs_series_conf_link)
+    db_forecast_coverage_configuration.observation_series_configuration_links = (
+        existing_obs_series_conf_links_to_keep
+    )
+    for to_discard in existing_obs_series_conf_links_discard:
+        session.delete(to_discard)
+
+    for forecast_model_id in forecast_coverage_configuration_update.forecast_models:
+        already_there = forecast_model_id in (
+            fml.forecast_model_id
+            for fml in db_forecast_coverage_configuration.forecast_model_links
+        )
+        if not already_there:
+            db_forecast_model_link = (
+                coverages.ForecastCoverageConfigurationForecastModelLink(
+                    forecast_model_id=forecast_model_id,
+                )
+            )
+            db_forecast_coverage_configuration.forecast_model_links.append(
+                db_forecast_model_link
+            )
+    for time_window_id in forecast_coverage_configuration_update.forecast_time_windows:
+        already_there = time_window_id in (
+            twl.forecast_time_window_id
+            for twl in db_forecast_coverage_configuration.forecast_time_window_links
+        )
+        if not already_there:
+            db_time_window_link = (
+                coverages.ForecastCoverageConfigurationForecastTimeWindowLink(
+                    forecast_time_window_id=time_window_id
+                )
+            )
+            db_forecast_coverage_configuration.forecast_time_window_links.append(
+                db_time_window_link
+            )
+    for (
+        obs_series_conf_id
+    ) in forecast_coverage_configuration_update.observation_series_configurations:
+        already_there = obs_series_conf_id in (
+            oscl.observation_series_configuration_id
+            for oscl in db_forecast_coverage_configuration.observation_series_configuration_links
+        )
+        if not already_there:
+            db_obs_series_conf_link = coverages.ForecastCoverageConfigurationObservationSeriesConfigurationLink(
+                observation_series_configuration_id=obs_series_conf_id
+            )
+            db_forecast_coverage_configuration.observation_series_configuration_links.append(
+                db_obs_series_conf_link
+            )
+    data_ = forecast_coverage_configuration_update.model_dump(
+        exclude={
+            "time_windows",
+            "observation_series_configurations",
+        },
+        exclude_unset=True,
+        exclude_none=True,
+    )
+    for key, value in data_.items():
+        setattr(db_forecast_coverage_configuration, key, value)
+    session.add(db_forecast_coverage_configuration)
+    session.commit()
+    session.refresh(db_forecast_coverage_configuration)
+    return db_forecast_coverage_configuration
 
 
 def delete_forecast_coverage_configuration(

@@ -6,10 +6,13 @@ from ...schemas.static import (
 from ...schemas.climaticindicators import (
     ClimaticIndicatorCreate,
     ClimaticIndicatorObservationNameCreate,
+    ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator,
 )
 
 
-def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
+def generate_climatic_indicators(
+    forecast_model_ids: dict[str, int],
+) -> list[ClimaticIndicatorCreate]:
     return [
         ClimaticIndicatorCreate(
             name="tas",
@@ -30,7 +33,33 @@ def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
                 ClimaticIndicatorObservationNameCreate(
                     observation_station_manager=ObservationStationManager.ARPAV,
                     indicator_observation_name="TDd",
-                )
+                ),
+            ],
+            forecast_models=[
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["model_ensemble"],
+                    thredds_url_base_path="ensymbc/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
+                    thredds_url_base_path="EC-EARTH_CCLM4-8-17ymbc/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_racmo22e"],
+                    thredds_url_base_path="EC-EARTH_RACMO22Eymbc/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_rca4"],
+                    thredds_url_base_path="EC-EARTH_RCA4ymbc",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["hadgem2_racmo22e"],
+                    thredds_url_base_path="HadGEM2-ES_RACMO22Eymbc/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["mpi_esm_lr_remo2009"],
+                    thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped",
+                ),
             ],
         ),
         ClimaticIndicatorCreate(

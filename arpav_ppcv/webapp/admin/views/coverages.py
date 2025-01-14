@@ -1053,17 +1053,105 @@ class ForecastCoverageConfigurationView(ModelView):
     @staticmethod
     def _serialize_instance(instance: coverages.ForecastCoverageConfiguration):
         return read_schemas.ForecastCoverageConfigurationRead(
-            **instance.model_dump(),
-            forecast_models=[],
-            time_windows=[],
-            observation_series_configurations=[],
+            **instance.model_dump(
+                exclude={
+                    "forecast_models",
+                    "time_windows",
+                    "observation_series_configurations",
+                }
+            ),
+            forecast_models=[
+                fml.forecast_model_id for fml in instance.forecast_model_links
+            ],
+            forecast_time_windows=[
+                twl.forecast_time_window_id
+                for twl in instance.forecast_time_window_links
+            ],
+            observation_series_configurations=[
+                oscl.observation_series_configuration_id
+                for oscl in instance.observation_series_configuration_links
+            ],
         )
 
     async def create(self, request: Request, data: dict[str, Any]) -> Any:
-        raise NotImplementedError
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            forecast_coverage_configuration_create = (
+                coverages.ForecastCoverageConfigurationCreate(
+                    netcdf_main_dataset_name=data["netcdf_main_dataset_name"],
+                    thredds_url_pattern=data["thredds_url_pattern"],
+                    wms_main_layer_name=data["wms_main_layer_name"],
+                    wms_secondary_layer_name=data.get(
+                        "wms_secondary_layer_name", data["wms_main_layer_name"]
+                    ),
+                    climatic_indicator_id=data["climatic_indicator"],
+                    spatial_region_id=data["spatial_region"],
+                    lower_uncertainty_thredds_url_pattern=data.get(
+                        "lower_uncertainty_thredds_url_pattern"
+                    ),
+                    upper_uncertainty_thredds_url_pattern=data.get(
+                        "upper_uncertainty_thredds_url_pattern"
+                    ),
+                    scenarios=data.get("scenarios", []),
+                    year_periods=data.get("year_periods", []),
+                    forecast_models=data["forecast_models"],
+                    forecast_time_windows=data["forecast_time_windows"],
+                    observation_series_configurations=data[
+                        "observation_series_configurations"
+                    ],
+                )
+            )
+            db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
+                database.create_forecast_coverage_configuration,
+                request.state.session,
+                forecast_coverage_configuration_create,
+            )
+            return self._serialize_instance(db_forecast_coverage_configuration)
+        except Exception as e:
+            return self.handle_exception(e)
 
     async def edit(self, request: Request, pk: Any, data: dict[str, Any]) -> Any:
-        raise NotImplementedError
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            forecast_coverage_configuration_create = (
+                coverages.ForecastCoverageConfigurationUpdate(
+                    netcdf_main_dataset_name=data["netcdf_main_dataset_name"],
+                    thredds_url_pattern=data["thredds_url_pattern"],
+                    wms_main_layer_name=data["wms_main_layer_name"],
+                    wms_secondary_layer_name=data.get(
+                        "wms_secondary_layer_name", data["wms_main_layer_name"]
+                    ),
+                    climatic_indicator_id=data["climatic_indicator"],
+                    spatial_region_id=data["spatial_region"],
+                    lower_uncertainty_thredds_url_pattern=data.get(
+                        "lower_uncertainty_thredds_url_pattern"
+                    ),
+                    upper_uncertainty_thredds_url_pattern=data.get(
+                        "upper_uncertainty_thredds_url_pattern"
+                    ),
+                    scenarios=data.get("scenarios", []),
+                    year_periods=data.get("year_periods", []),
+                    forecast_models=data["forecast_models"],
+                    forecast_time_windows=data["forecast_time_windows"],
+                    observation_series_configurations=data[
+                        "observation_series_configurations"
+                    ],
+                )
+            )
+            db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
+                database.get_forecast_coverage_configuration, request.state.session, pk
+            )
+            db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
+                database.update_forecast_coverage_configuration,
+                request.state.session,
+                db_forecast_coverage_configuration,
+                forecast_coverage_configuration_create,
+            )
+            return self._serialize_instance(db_forecast_coverage_configuration)
+        except Exception as e:
+            return self.handle_exception(e)
 
     async def find_by_pk(
         self, request: Request, pk: Any
@@ -1080,7 +1168,7 @@ class ForecastCoverageConfigurationView(ModelView):
         limit: int = 100,
         where: Union[dict[str, Any], str, None] = None,
         order_by: Optional[list[str]] = None,
-    ) -> Sequence[read_schemas.ClimaticIndicatorRead]:
+    ) -> Sequence[read_schemas.ForecastCoverageConfigurationRead]:
         list_params = functools.partial(
             database.list_forecast_coverage_configurations,
             limit=limit,
