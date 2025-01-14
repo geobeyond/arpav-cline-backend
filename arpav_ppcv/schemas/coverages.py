@@ -90,15 +90,14 @@ class ForecastModel(sqlmodel.SQLModel, table=True):
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str
     internal_value: str
-    coverage_base_path: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
     description_english: str = sqlmodel.Field(default="")
     description_italian: str = sqlmodel.Field(default="")
     sort_order: int = sqlmodel.Field(default=0)
 
-    forecast_coverage_configurations_links: list[
-        "ForecastCoverageConfigurationForecastModelLink"
+    climatic_indicator_links: list[
+        "ForecastModelClimaticIndicatorLink"
     ] = sqlmodel.Relationship(back_populates="forecast_model")
 
     @staticmethod
@@ -120,7 +119,6 @@ class ForecastModelCreate(sqlmodel.SQLModel):
         pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
     ]
     internal_value: str
-    coverage_base_path: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
     description_english: str = sqlmodel.Field(default="")
@@ -134,7 +132,6 @@ class ForecastModelUpdate(sqlmodel.SQLModel):
         pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
     ] = None
     internal_value: str | None = None
-    coverage_base_path: str | None = None
     display_name_english: str | None = None
     display_name_italian: str | None = None
     description_english: str | None = None
@@ -712,18 +709,8 @@ class BaseCoverageConfiguration(sqlmodel.SQLModel):
     )
 
 
-class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=True):
+class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
     __table_args__ = (
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "forecast_coverage_configuration_id",
-            ],
-            [
-                "forecastcoverageconfiguration.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-        ),
         sqlalchemy.ForeignKeyConstraint(
             [
                 "forecast_model_id",
@@ -734,12 +721,16 @@ class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=Tr
             onupdate="CASCADE",
             ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model gets deleted
         ),
-    )
-    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related climatic indicator gets deleted
+        ),
     )
     forecast_model_id: Optional[int] = sqlmodel.Field(
         # NOTE: foreign key already defined in __table_args__ in order to be able to
@@ -747,13 +738,32 @@ class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=Tr
         default=None,
         primary_key=True,
     )
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    thredds_url_base_path: str
 
-    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-        sqlmodel.Relationship(back_populates="forecast_model_links")
+    forecast_model: "ForecastModel" = sqlmodel.Relationship(
+        back_populates="climatic_indicator_links"
     )
-    forecast_model: ForecastModel = sqlmodel.Relationship(
-        back_populates="forecast_coverage_configuration_linkss"
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="forecast_model_links"
     )
+
+
+class ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator(
+    sqlmodel.SQLModel
+):
+    forecast_model_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    thredds_url_base_path: str
 
 
 class ForecastCoverageConfigurationForecastTimeWindowLink(
@@ -867,11 +877,6 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
         back_populates="forecast_coverage_configurations"
     )
 
-    forecast_model_links: list[
-        ForecastCoverageConfigurationForecastModelLink
-    ] = sqlmodel.Relationship(
-        back_populates="forecast_coverage_configuration",
-    )
     time_window_links: list[
         ForecastCoverageConfigurationForecastTimeWindowLink
     ] = sqlmodel.Relationship(
@@ -890,6 +895,36 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
             climatic_indicator=self.climatic_indicator.identifier,
             spatial_region=self.spatial_region.name,
         )
+
+
+class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    wms_main_layer_name: str
+    wms_secondary_layer_name: Optional[str] = None
+    climatic_indicator_id: int
+    spatial_region_id: int
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    scenarios: list[static.ForecastScenario]
+    year_periods: list[static.ForecastYearPeriod]
+    time_windows: list[int]
+    observation_series_configurations: list[int]
+
+
+class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: Optional[str] = None
+    thredds_url_pattern: Optional[str] = None
+    wms_main_layer_name: Optional[str] = None
+    wms_secondary_layer_name: Optional[str] = None
+    climatic_indicator_id: Optional[int] = None
+    spatial_region_id: Optional[int] = None
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    scenarios: Optional[list[static.ForecastScenario]] = None
+    year_periods: Optional[list[static.ForecastYearPeriod]] = None
+    time_windows: Optional[list[int]] = None
+    observation_series_configurations: Optional[list[int]] = None
 
 
 class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):

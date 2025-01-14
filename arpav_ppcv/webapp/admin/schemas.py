@@ -16,6 +16,11 @@ class ClimaticIndicatorObservationNameRead(sqlmodel.SQLModel):
     indicator_observation_name: str
 
 
+class ClimaticIndicatorForecastModelBasePathRead(sqlmodel.SQLModel):
+    forecast_model: int
+    thredds_url_base_path: str
+
+
 class ClimaticIndicatorRead(sqlmodel.SQLModel):
     identifier: str
     id: int
@@ -34,6 +39,7 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     data_precision: int
     sort_order: int
     observation_names: list[ClimaticIndicatorObservationNameRead]
+    forecast_model_base_paths: list[ClimaticIndicatorForecastModelBasePathRead]
 
 
 class ConfigurationParameterValueRead(sqlmodel.SQLModel):
@@ -177,3 +183,25 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     forecast_models: list[int]
     time_windows: list[int]
     observation_series_configurations: list[int]
+
+
+class ForecastModelRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    internal_value: str
+    display_name_english: str
+    display_name_italian: str
+    description_english: str
+    description_italian: str
+    sort_order: int
+
+
+class ForecastTimeWindowRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    internal_value: str
+    display_name_english: str
+    display_name_italian: str
+    description_english: str
+    description_italian: str
+    sort_order: int

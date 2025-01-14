@@ -60,6 +60,8 @@ from .climaticindicators import (
     tasmin as tasmin_climatic_indicators,
     tr as tr_climatic_indicators,
 )
+from .forecastmodels import generate_forecast_models
+from .forecasttimewindows import generate_forecast_time_windows
 from .observation_series_configurations import (
     generate_observation_series_configurations,
 )
@@ -485,3 +487,53 @@ def bootstrap_coverage_configurations(
             main_cov_conf,
             cov_update,
         )
+
+
+@app.command("forecast-models")
+def bootstrap_forecast_models(ctx: typer.Context):
+    """Create initial forecast models."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        existing = database.collect_all_forecast_models(session)
+        for forecast_model_create in generate_forecast_models():
+            if forecast_model_create.name not in (db_fm.name for db_fm in existing):
+                try:
+                    db_forecast_model = database.create_forecast_model(
+                        session, forecast_model_create
+                    )
+                    print(f"Created forecast model {db_forecast_model.name!r}")
+                except IntegrityError as err:
+                    print(
+                        f"Could not create forecast model {forecast_model_create!r}: {err}"
+                    )
+                    session.rollback()
+            else:
+                print(
+                    f"Forecast model {forecast_model_create.name!r} already "
+                    f"exists - skipping",
+                )
+
+
+@app.command("forecast-time-windows")
+def bootstrap_forecast_time_windows(ctx: typer.Context):
+    """Create initial forecast time windows."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        existing = database.collect_all_forecast_time_windows(session)
+        for forecast_time_window_create in generate_forecast_time_windows():
+            if forecast_time_window_create.name not in (tw.name for tw in existing):
+                try:
+                    db_forecast_time_window = database.create_forecast_time_window(
+                        session, forecast_time_window_create
+                    )
+                    print(
+                        f"Created forecast time window {db_forecast_time_window.name!r}"
+                    )
+                except IntegrityError as err:
+                    print(
+                        f"Could not create forecast time "
+                        f"window {forecast_time_window_create!r}: {err}"
+                    )
+                    session.rollback()
+            else:
+                print(
+                    f"Forecast time window {forecast_time_window_create.name!r} already exists"
+                )

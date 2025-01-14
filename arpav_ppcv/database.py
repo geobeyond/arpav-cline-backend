@@ -1611,7 +1611,12 @@ def create_climatic_indicator(
     """Create a new climatic indicator."""
     to_refresh = []
     db_climatic_indicator = climaticindicators.ClimaticIndicator(
-        **climatic_indicator_create.model_dump(exclude={"observation_names"}),
+        **climatic_indicator_create.model_dump(
+            exclude={
+                "observation_names",
+                "forecast_models",
+            }
+        ),
     )
     to_refresh.append(db_climatic_indicator)
     for obs_name in climatic_indicator_create.observation_names:
@@ -1621,6 +1626,18 @@ def create_climatic_indicator(
         )
         db_climatic_indicator.observation_names.append(db_obs_name)
         to_refresh.append(db_obs_name)
+    for forecast_model_info in climatic_indicator_create.forecast_models:
+        forecast_model = get_forecast_model(forecast_model_info.forecast_model_id)
+        db_forecast_model_climatic_indicator_link = (
+            coverages.ForecastModelClimaticIndicatorLink(
+                forecast_model_id=forecast_model_info.forecast_model_id,
+                thredds_url_base_path=forecast_model.thredds_url_base_path,
+            )
+        )
+        db_climatic_indicator.forecast_model_links.append(
+            db_forecast_model_climatic_indicator_link
+        )
+        to_refresh.append(db_forecast_model_climatic_indicator_link)
     session.add(db_climatic_indicator)
     try:
         session.commit()
@@ -1667,9 +1684,40 @@ def update_climatic_indicator(
             )
             session.add(existing_db_observation_name)
             to_refresh.append(existing_db_observation_name)
+    requested_forecast_model_links = {
+        fm.forecast_model_id: fm for fm in climatic_indicator_update.forecast_models
+    }
+    existing_forecast_model_links = {
+        db_fm.forecast_model_id: db_fm
+        for db_fm in db_climatic_indicator.forecast_model_links
+    }
+    for existing_fm_id, existing_fm_link in existing_forecast_model_links.items():
+        has_been_requested_to_remove = (
+            existing_fm_id not in requested_forecast_model_links
+        )
+        if has_been_requested_to_remove:
+            session.delete(existing_fm_link)
+    for requested_fm_id, requested_fm in requested_forecast_model_links:
+        if (
+            requested_fm_id not in existing_forecast_model_links
+        ):  # need to create this one
+            db_fm_link = coverages.ForecastModelClimaticIndicatorLink(
+                forecast_model_id=requested_fm_id,
+                climatic_indicator_id=db_climatic_indicator.id,
+                thredds_url_base_path=requested_fm.thredds_url_base_path,
+            )
+            db_climatic_indicator.forecast_model_links.append(db_fm_link)
+        else:  # already exists, just update
+            existing_fm_link = existing_forecast_model_links[requested_fm_id]
+            existing_fm_link.thredds_url_base_path = requested_fm.thredds_url_base_path
+            session.add(existing_fm_link)
+            to_refresh.append(existing_fm_link)
     data_ = climatic_indicator_update.model_dump(
         exclude_unset=True,
-        exclude={"observation_names"},
+        exclude={
+            "observation_names",
+            "forecast_models",
+        },
     )
     for key, value in data_.items():
         setattr(db_climatic_indicator, key, value)
@@ -2288,7 +2336,48 @@ def create_forecast_coverage_configuration(
     session: sqlmodel.Session,
     forecast_coverage_configuration_create: coverages.ForecastCoverageConfigurationCreate,
 ) -> coverages.ForecastCoverageConfiguration:
-    raise NotImplementedError
+    db_forecast_coverage_configuration = coverages.ForecastCoverageConfiguration(
+        **forecast_coverage_configuration_create.model_dump(
+            exclude={
+                "time_windows",
+                "observation_series_configurations",
+            }
+        )
+    )
+    session.add(db_forecast_coverage_configuration)
+    for forecast_time_window_id in forecast_coverage_configuration_create.time_windows:
+        db_forecast_time_window = get_forecast_time_window(
+            session, forecast_time_window_id
+        )
+        if db_forecast_time_window is not None:
+            db_forecast_coverage_configuration.time_window_links.append(
+                coverages.ForecastCoverageConfigurationForecastTimeWindowLink(
+                    forecast_time_window=db_forecast_time_window
+                )
+            )
+        else:
+            raise ValueError(
+                f"Forecast time window {forecast_time_window_id!r} not found"
+            )
+    for (
+        obs_series_conf_id
+    ) in forecast_coverage_configuration_create.observation_series_configurations:
+        db_obs_series_conf = get_observation_series_configuration(
+            session, obs_series_conf_id
+        )
+        if db_obs_series_conf is not None:
+            db_forecast_coverage_configuration.observation_series_configuration_links.append(
+                coverages.ForecastCoverageConfigurationObservationSeriesConfigurationLink(
+                    observation_series_configuration=db_obs_series_conf
+                )
+            )
+        else:
+            raise ValueError(
+                f"observation series configuration {obs_series_conf_id!r} not found"
+            )
+    session.commit()
+    session.refresh(db_forecast_coverage_configuration)
+    return db_forecast_coverage_configuration
 
 
 def update_forecast_coverage_configuration(
@@ -2316,12 +2405,17 @@ def list_forecast_models(
     *,
     limit: int = 20,
     offset: int = 0,
+    name_filter: str | None = None,
     include_total: bool = False,
 ) -> tuple[Sequence[coverages.ForecastModel], Optional[int]]:
     """List existing forecast models."""
     statement = sqlmodel.select(coverages.ForecastModel).order_by(
-        coverages.ForecastModel.internal_value
+        coverages.ForecastModel.sort_order
     )
+    if name_filter is not None:
+        statement = _add_substring_filter(
+            statement, name_filter, coverages.ForecastModel.internal_value
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2329,15 +2423,18 @@ def list_forecast_models(
 
 def collect_all_forecast_models(
     session: sqlmodel.Session,
+    name_filter: str | None = None,
 ) -> Sequence[coverages.ForecastModel]:
     _, num_total = list_forecast_models(
         session,
         limit=1,
+        name_filter=name_filter,
         include_total=True,
     )
     result, _ = list_forecast_models(
         session,
         limit=num_total,
+        name_filter=name_filter,
         include_total=False,
     )
     return result
@@ -2354,14 +2451,32 @@ def create_forecast_model(
     session: sqlmodel.Session,
     forecast_model_create: coverages.ForecastModelCreate,
 ) -> coverages.ForecastModel:
-    raise NotImplementedError
+    """Create a new forecast model."""
+    db_forecast_model = coverages.ForecastModel(
+        **forecast_model_create.model_dump(),
+    )
+    session.add(db_forecast_model)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_forecast_model)
+    return db_forecast_model
 
 
 def update_forecast_model(
     session: sqlmodel.Session,
+    db_forecast_model: coverages.ForecastModel,
     forecast_model_update: coverages.ForecastModelUpdate,
 ) -> coverages.ForecastModel:
-    raise NotImplementedError
+    """Update a forecast model."""
+    for key, value in forecast_model_update.model_dump().items():
+        setattr(db_forecast_model, key, value)
+    session.add(db_forecast_model)
+    session.commit()
+    session.refresh(db_forecast_model)
+    return db_forecast_model
 
 
 def delete_forecast_model(session: sqlmodel.Session, forecast_model_id: int) -> None:
@@ -2378,12 +2493,17 @@ def list_forecast_time_windows(
     *,
     limit: int = 20,
     offset: int = 0,
+    name_filter: str | None = None,
     include_total: bool = False,
 ) -> tuple[Sequence[coverages.ForecastTimeWindow], Optional[int]]:
     """List existing forecast time windows."""
     statement = sqlmodel.select(coverages.ForecastTimeWindow).order_by(
-        coverages.ForecastTimeWindow.internal_value
+        coverages.ForecastTimeWindow.sort_order
     )
+    if name_filter is not None:
+        statement = _add_substring_filter(
+            statement, name_filter, coverages.ForecastModel.internal_value
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2391,15 +2511,18 @@ def list_forecast_time_windows(
 
 def collect_all_forecast_time_windows(
     session: sqlmodel.Session,
+    name_filter: str | None = None,
 ) -> Sequence[coverages.ForecastTimeWindow]:
     _, num_total = list_forecast_time_windows(
         session,
         limit=1,
+        name_filter=name_filter,
         include_total=True,
     )
     result, _ = list_forecast_time_windows(
         session,
         limit=num_total,
+        name_filter=name_filter,
         include_total=False,
     )
     return result
@@ -2416,14 +2539,32 @@ def create_forecast_time_window(
     session: sqlmodel.Session,
     forecast_time_window_create: coverages.ForecastTimeWindowCreate,
 ) -> coverages.ForecastTimeWindow:
-    raise NotImplementedError
+    """Create a new forecast time window."""
+    db_tw = coverages.ForecastTimeWindow(
+        **forecast_time_window_create.model_dump(),
+    )
+    session.add(db_tw)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_tw)
+        return db_tw
 
 
 def update_forecast_time_window(
     session: sqlmodel.Session,
+    db_forecast_time_window: coverages.ForecastTimeWindow,
     forecast_time_window_update: coverages.ForecastTimeWindowUpdate,
 ) -> coverages.ForecastTimeWindow:
-    raise NotImplementedError
+    """Update an forecast time window."""
+    for key, value in forecast_time_window_update.model_dump().items():
+        setattr(db_forecast_time_window, key, value)
+    session.add(db_forecast_time_window)
+    session.commit()
+    session.refresh(db_forecast_time_window)
+    return db_forecast_time_window
 
 
 def delete_forecast_time_window(

@@ -70,6 +70,11 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
             "passive_deletes": True,
         },
     )
+    forecast_model_links: list[
+        "coverages.ForecastModelClimaticIndicatorLink"
+    ] = sqlmodel.Relationship(
+        back_populates="climatic_indicator",
+    )
 
     measurements: list["ObservationMeasurement"] = sqlmodel.Relationship(
         back_populates="climatic_indicator",
@@ -185,6 +190,9 @@ class ClimaticIndicatorCreate(sqlmodel.SQLModel):
     observation_names: list["ClimaticIndicatorObservationNameCreate"] = sqlmodel.Field(
         default_factory=list
     )
+    forecast_models: list[
+        "coverages.ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator"
+    ] = sqlmodel.Field(default_factory=list)
 
 
 class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
@@ -206,3 +214,6 @@ class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
     data_precision: Optional[int] = None
     sort_order: Optional[int] = None
     observation_names: list["ClimaticIndicatorObservationNameUpdate"]
+    forecast_models: list[
+        "coverages.ForecastModelClimaticIndicatorLinkCreateEmbeddedInClimaticIndicator"
+    ]

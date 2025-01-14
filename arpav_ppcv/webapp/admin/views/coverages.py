@@ -747,7 +747,205 @@ class CoverageConfigurationView(ModelView):
             self.handle_exception(e)
 
 
-class ForecastCoverageConfiguration(ModelView):
+class ForecastTimeWindowView(ModelView):
+    identity = "forecast_time_windows"
+    name = "Forecast Time Window"
+    label = "Forecast Time Windows"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "internal_value",
+        "display_name_english",
+        "display_name_italian",
+        "description_english",
+        "description_italian",
+    )
+    exclude_fields_from_detail = ("id",)
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("name", required=True),
+        starlette_admin.StringField("internal_value", required=True),
+        starlette_admin.StringField("display_name_english", required=True),
+        starlette_admin.StringField("display_name_italian", required=True),
+        starlette_admin.StringField("description_english"),
+        starlette_admin.StringField("description_italian"),
+        starlette_admin.StringField("sort_order"),
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.icon = "fa-solid fa-map"
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.ForecastTimeWindow,
+    ) -> read_schemas.ForecastTimeWindowRead:
+        return read_schemas.ForecastTimeWindowRead(**instance.model_dump())
+
+    async def create(self, request: Request, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            forecast_time_window_create = coverages.ForecastTimeWindowCreate(**data)
+            db_forecast_time_window = await anyio.to_thread.run_sync(
+                database.create_forecast_time_window,
+                request.state.session,
+                forecast_time_window_create,
+            )
+            return self._serialize_instance(db_forecast_time_window)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            forecast_time_window_update = coverages.ForecastTimeWindowUpdate(**data)
+            db_forecast_time_window = await anyio.to_thread.run_sync(
+                database.get_forecast_time_window,
+                request.state.session,
+                pk,
+            )
+            db_forecast_time_window = await anyio.to_thread.run_sync(
+                database.update_forecast_time_window,
+                request.state.session,
+                db_forecast_time_window,
+                forecast_time_window_update,
+            )
+            return self._serialize_instance(db_forecast_time_window)
+        except Exception as e:
+            self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.ForecastTimeWindowRead:
+        db_forecast_time_window = await anyio.to_thread.run_sync(
+            database.get_forecast_time_window, request.state.session, pk
+        )
+        return self._serialize_instance(db_forecast_time_window)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.ForecastTimeWindowRead]:
+        list_params = functools.partial(
+            database.list_forecast_time_windows,
+            limit=limit,
+            offset=skip,
+            name_filter=str(where) if where not in (None, "") else None,
+            include_total=False,
+        )
+        db_forecast_time_windows, _ = await anyio.to_thread.run_sync(
+            list_params, request.state.session
+        )
+        return [self._serialize_instance(fm) for fm in db_forecast_time_windows]
+
+
+class ForecastModelView(ModelView):
+    identity = "forecast_models"
+    name = "Forecast Model"
+    label = "Forecast Models"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "internal_value",
+        "display_name_english",
+        "display_name_italian",
+        "description_english",
+        "description_italian",
+    )
+    exclude_fields_from_detail = ("id",)
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("name", required=True),
+        starlette_admin.StringField("internal_value", required=True),
+        starlette_admin.StringField("display_name_english", required=True),
+        starlette_admin.StringField("display_name_italian", required=True),
+        starlette_admin.StringField("description_english"),
+        starlette_admin.StringField("description_italian"),
+        starlette_admin.StringField("sort_order"),
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.icon = "fa-solid fa-map"
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.ForecastModel,
+    ) -> read_schemas.ForecastModelRead:
+        return read_schemas.ForecastModelRead(**instance.model_dump())
+
+    async def create(self, request: Request, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            forecast_model_create = coverages.ForecastModelCreate(**data)
+            db_forecast_model = await anyio.to_thread.run_sync(
+                database.create_forecast_model,
+                request.state.session,
+                forecast_model_create,
+            )
+            return self._serialize_instance(db_forecast_model)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            forecast_model_update = coverages.ForecastModelUpdate(**data)
+            db_forecast_model = await anyio.to_thread.run_sync(
+                database.get_forecast_model,
+                request.state.session,
+                pk,
+            )
+            db_forecast_model = await anyio.to_thread.run_sync(
+                database.update_forecast_model,
+                request.state.session,
+                db_forecast_model,
+                forecast_model_update,
+            )
+            return self._serialize_instance(db_forecast_model)
+        except Exception as e:
+            self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.ForecastModelRead:
+        db_forecast_model = await anyio.to_thread.run_sync(
+            database.get_forecast_model, request.state.session, pk
+        )
+        return self._serialize_instance(db_forecast_model)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.ForecastModelRead]:
+        list_params = functools.partial(
+            database.list_forecast_models,
+            limit=limit,
+            offset=skip,
+            name_filter=str(where) if where not in (None, "") else None,
+            include_total=False,
+        )
+        db_forecast_models, _ = await anyio.to_thread.run_sync(
+            list_params, request.state.session
+        )
+        return [self._serialize_instance(fm) for fm in db_forecast_models]
+
+
+class ForecastCoverageConfigurationView(ModelView):
     identity = "forecast_coverage_configurations"
     name = "Forecast Coverage Configuration"
     label = "Forecast Coverage Configurations"

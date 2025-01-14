@@ -19,7 +19,10 @@ from ....schemas.static import (
     ObservationStationManager,
 )
 from ....schemas import climaticindicators
-from .. import schemas as read_schemas
+from .. import (
+    fields,
+    schemas as read_schemas,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +93,18 @@ class ClimaticIndicatorView(ModelView):
                     starlette_admin.StringField(
                         "indicator_observation_name", required=True
                     ),
+                ],
+            ),
+        ),
+        starlette_admin.ListField(
+            starlette_admin.CollectionField(
+                name="forecast_model_base_paths",
+                fields=[
+                    fields.RelatedForecastModelField(
+                        "forecast_model",
+                        required=True,
+                    ),
+                    starlette_admin.StringField("thredds_url_base_path", required=True),
                 ],
             ),
         ),
