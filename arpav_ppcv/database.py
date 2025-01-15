@@ -2354,9 +2354,9 @@ def create_forecast_coverage_configuration(
             )
         else:
             raise ValueError(f"Forecast model {forecast_model_id!r} not found")
-    for (
-        forecast_time_window_id
-    ) in forecast_coverage_configuration_create.forecast_time_windows:
+    for forecast_time_window_id in (
+        forecast_coverage_configuration_create.forecast_time_windows or []
+    ):
         db_forecast_time_window = get_forecast_time_window(
             session, forecast_time_window_id
         )

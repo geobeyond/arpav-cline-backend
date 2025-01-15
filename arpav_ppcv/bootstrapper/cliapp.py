@@ -19,6 +19,9 @@ from ..schemas.coverages import (
     CoverageConfigurationUpdate,
 )
 
+from .forecast_coverage_configurations import (
+    tas as tas_forecast_coverage_configurations,
+)
 from .coverage_configurations.forecast import (
     cdd as cdd_forecast,
     cdds as cdds_forecast,
@@ -490,6 +493,47 @@ def bootstrap_coverage_configurations(
             main_cov_conf,
             cov_update,
         )
+
+
+@app.command("forecast-coverage-configurations")
+def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
+    """Create initial forecast coverage configurations."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_spatial_regions = database.collect_all_spatial_regions(session)
+        all_forecast_models = database.collect_all_forecast_models(session)
+        all_forecast_time_windows = database.collect_all_forecast_time_windows(session)
+        all_observation_series_configurations = (
+            database.collect_all_observation_series_configurations(session)
+        )
+        to_create = tas_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+            climatic_indicator_ids={
+                ind.identifier: ind.id for ind in all_climatic_indicators
+            },
+            spatial_region_ids={sr.name: sr.id for sr in all_spatial_regions},
+            forecast_model_ids={fm.name: fm.id for fm in all_forecast_models},
+            forecast_time_window_ids={
+                tw.name: tw.id for tw in all_forecast_time_windows
+            },
+            observation_series_configuration_ids={
+                osc.identifier: osc.id for osc in all_observation_series_configurations
+            },
+        )
+        for forecast_coverage_configuration_create in to_create:
+            try:
+                db_forecast_cov_conf = database.create_forecast_coverage_configuration(
+                    session, forecast_coverage_configuration_create
+                )
+                print(
+                    f"Created forecast coverage "
+                    f"configuration {db_forecast_cov_conf.identifier!r}"
+                )
+            except IntegrityError as err:
+                print(
+                    f"Could not create forecast coverage configuration "
+                    f"{forecast_coverage_configuration_create.name!r}: {err}"
+                )
+                session.rollback()
 
 
 @app.command("spatial-regions")

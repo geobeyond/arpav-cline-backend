@@ -748,6 +748,7 @@ class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
         primary_key=True,
     )
     thredds_url_base_path: str
+    thredds_url_uncertainties_base_path: Optional[str]
 
     forecast_model: "ForecastModel" = sqlmodel.Relationship(
         back_populates="climatic_indicator_links"
@@ -948,7 +949,7 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     scenarios: list[static.ForecastScenario]
     year_periods: list[static.ForecastYearPeriod]
     forecast_models: list[int]
-    forecast_time_windows: list[int]
+    forecast_time_windows: Optional[list[int]] = None
     observation_series_configurations: list[int]
 
 

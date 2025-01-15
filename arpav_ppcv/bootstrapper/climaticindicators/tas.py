@@ -39,6 +39,7 @@ def generate_climatic_indicators(
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["model_ensemble"],
                     thredds_url_base_path="ensymbc/clipped",
+                    thredds_url_uncertainties_base_path="ensymbc/std/clipped",
                 ),
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
@@ -50,7 +51,7 @@ def generate_climatic_indicators(
                 ),
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["ec_earth_rca4"],
-                    thredds_url_base_path="EC-EARTH_RCA4ymbc",
+                    thredds_url_base_path="EC-EARTH_RCA4ymbc/clipped",
                 ),
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["hadgem2_racmo22e"],
@@ -61,22 +62,6 @@ def generate_climatic_indicators(
                     thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped",
                 ),
             ],
-        ),
-        ClimaticIndicatorCreate(
-            name="tas",
-            measure_type=MeasureType.ABSOLUTE,
-            aggregation_period=AggregationPeriod.THIRTY_YEAR,
-            display_name_english="Average temperature (TAS)",
-            display_name_italian="Temperatura media (TAS)",
-            description_english="Daily mean air temperature close to the ground",
-            description_italian="Temperatura media giornaliera dell'aria vicino al suolo",
-            unit_english="ºC",
-            unit_italian="ºC",
-            palette="default/seq-YlOrRd",
-            color_scale_min=-5,
-            color_scale_max=20,
-            data_precision=1,
-            sort_order=0,
         ),
         ClimaticIndicatorCreate(
             name="tas",
@@ -93,6 +78,33 @@ def generate_climatic_indicators(
             color_scale_max=6,
             data_precision=1,
             sort_order=0,
+            forecast_models=[
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["model_ensemble"],
+                    thredds_url_base_path="ens5ym/clipped",
+                    thredds_url_uncertainties_base_path="ens5ym/std/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
+                    thredds_url_base_path="EC-EARTH_CCLM4-8-17ym/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_racmo22e"],
+                    thredds_url_base_path="EC-EARTH_RACMO22Eym/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_rca4"],
+                    thredds_url_base_path="EC-EARTH_RCA4ym/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["hadgem2_racmo22e"],
+                    thredds_url_base_path="HadGEM2-ES_RACMO22Eym/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["mpi_esm_lr_remo2009"],
+                    thredds_url_base_path="MPI-ESM-LR_REMO2009ym/clipped",
+                ),
+            ],
         ),
         ClimaticIndicatorCreate(
             name="tas",
@@ -109,5 +121,31 @@ def generate_climatic_indicators(
             color_scale_max=6,
             data_precision=1,
             sort_order=0,
+            forecast_models=[
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["model_ensemble"],
+                    thredds_url_base_path="ensembletwbc/std/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
+                    thredds_url_base_path="taspr5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_racmo22e"],
+                    thredds_url_base_path="taspr5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_rca4"],
+                    thredds_url_base_path="taspr5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["hadgem2_racmo22e"],
+                    thredds_url_base_path="taspr5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["mpi_esm_lr_remo2009"],
+                    thredds_url_base_path="taspr5rcm/clipped",
+                ),
+            ],
         ),
     ]

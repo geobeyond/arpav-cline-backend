@@ -179,6 +179,7 @@ class ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
         primary_key=True,
     )
     thredds_url_base_path: str
+    thredds_url_uncertainties_base_path: Optional[str] = None
 
 
 class ClimaticIndicatorCreate(sqlmodel.SQLModel):
