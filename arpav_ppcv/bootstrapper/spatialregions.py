@@ -2,39 +2,90 @@ import json
 from pathlib import Path
 
 import geojson_pydantic
+import shapely.geometry
+import shapely.io
+import shapely.ops
 
 from ..schemas.base import SpatialRegionCreate
-
-
-def _load_geojson_bounds(geojson_file: Path) -> geojson_pydantic.MultiPolygon:
-    with geojson_file.open(mode="r") as fh:
-        bounds = json.load(fh)
-        return geojson_pydantic.MultiPolygon(
-            type="MultiPolygon", coordinates=bounds["geometry"]["coordinates"]
-        )
 
 
 def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]:
     return [
         SpatialRegionCreate(
-            name="arpafvg",
+            name="arpa-fvg",
             display_name_english="ARPA Friuli Venezia Giulia",
             display_name_italian="ARPA Friuli Venezia Giulia",
             sort_order=0,
-            geom=_load_geojson_bounds(geoms_base_path / "arpafvg.geojson"),
+            geom=_geom_to_pydantic(
+                _load_geojson_bounds(geoms_base_path / "arpafvg.geojson")
+            ),
         ),
         SpatialRegionCreate(
-            name="arpataa",
+            name="arpa-taa",
             display_name_english="ARPA Trentino-Alto Adige",
             display_name_italian="ARPA Trentino-Alto Adige",
             sort_order=1,
-            geom=_load_geojson_bounds(geoms_base_path / "arpataa.geojson"),
+            geom=_geom_to_pydantic(
+                _load_geojson_bounds(geoms_base_path / "arpataa.geojson")
+            ),
         ),
         SpatialRegionCreate(
-            name="arpav",
+            name="arpa-v",
             display_name_english="ARPA Veneto",
             display_name_italian="ARPA Veneto",
             sort_order=2,
-            geom=_load_geojson_bounds(geoms_base_path / "arpav.geojson"),
+            geom=_geom_to_pydantic(
+                _load_geojson_bounds(geoms_base_path / "arpav.geojson")
+            ),
+        ),
+        SpatialRegionCreate(
+            name="arpa-vfvg",
+            display_name_english="Combined ARPA Veneto and ARPA Friuli Venezia Giulia",
+            display_name_italian="Combinato ARPA Veneto e ARPA Friuli Venezia Giulia",
+            sort_order=2,
+            geom=_geom_to_pydantic(
+                _combine_geoms(
+                    _load_geojson_bounds(geoms_base_path / "arpav.geojson"),
+                    _load_geojson_bounds(geoms_base_path / "arpafvg.geojson"),
+                )
+            ),
+        ),
+        SpatialRegionCreate(
+            name="arpa-vfvgtaa",
+            display_name_english=(
+                "Combined ARPA Veneto, ARPA Friuli Venezia Giulia and ARPA "
+                "Trentino-Alto Adige"
+            ),
+            display_name_italian=(
+                "Combinato ARPA Veneto, ARPA Friuli Venezia Giulia e "
+                "ARPA Trentino-Alto Adige"
+            ),
+            sort_order=2,
+            geom=_geom_to_pydantic(
+                _combine_geoms(
+                    _load_geojson_bounds(geoms_base_path / "arpav.geojson"),
+                    _load_geojson_bounds(geoms_base_path / "arpafvg.geojson"),
+                    _load_geojson_bounds(geoms_base_path / "arpataa.geojson"),
+                )
+            ),
         ),
     ]
+
+
+def _load_geojson_bounds(geojson_file: Path) -> shapely.geometry.MultiPolygon:
+    return shapely.io.from_geojson(geojson_file.read_bytes())
+
+
+def _geom_to_pydantic(
+    geom: shapely.geometry.MultiPolygon,
+) -> geojson_pydantic.MultiPolygon:
+    return geojson_pydantic.MultiPolygon(
+        type="MultiPolygon",
+        coordinates=json.loads(shapely.io.to_geojson(geom))["coordinates"],
+    )
+
+
+def _combine_geoms(
+    *geoms: shapely.geometry.MultiPolygon,
+) -> shapely.geometry.MultiPolygon:
+    return shapely.ops.unary_union(geoms)
