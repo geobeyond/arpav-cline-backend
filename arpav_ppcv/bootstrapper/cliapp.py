@@ -65,6 +65,7 @@ from .forecasttimewindows import generate_forecast_time_windows
 from .observation_series_configurations import (
     generate_observation_series_configurations,
 )
+from .spatialregions import generate_spatial_regions
 
 from .configurationparameters import generate_configuration_parameters
 
@@ -489,6 +490,48 @@ def bootstrap_coverage_configurations(
             main_cov_conf,
             cov_update,
         )
+
+
+@app.command("spatial-regions")
+def bootstrap_spatial_regions(
+    ctx: typer.Context,
+    region_bounds_base_directory: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+            help=(
+                "Path to the directory that holds geoJSON files with the "
+                "spatial boundaries of spatial regions. Example: "
+                "/home/appuser/app/data/spatial-regions"
+            ),
+        ),
+    ],
+):
+    """Create initial spatial regions."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        existing = database.collect_all_spatial_regions(session)
+        for spatial_region_create in generate_spatial_regions(
+            region_bounds_base_directory
+        ):
+            if spatial_region_create.name not in (sr.name for sr in existing):
+                try:
+                    db_spatial_region = database.create_spatial_region(
+                        session, spatial_region_create
+                    )
+                    print(f"Created spatial region {db_spatial_region.name!r}")
+                except IntegrityError as err:
+                    print(
+                        f"Could not create spatial region {spatial_region_create.name!r}: {err}"
+                    )
+                    session.rollback()
+            else:
+                print(
+                    f"Spatial region {spatial_region_create.name!r} already "
+                    f"exists - skipping",
+                )
 
 
 @app.command("forecast-models")
