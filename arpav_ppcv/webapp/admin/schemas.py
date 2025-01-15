@@ -2,6 +2,7 @@ import datetime as dt
 from typing import Optional
 import uuid
 
+import pydantic
 import sqlmodel
 
 from ...schemas.base import (
@@ -206,3 +207,12 @@ class ForecastTimeWindowRead(sqlmodel.SQLModel):
     description_english: str
     description_italian: str
     sort_order: int
+
+
+class SpatialRegionRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    display_name_english: str
+    display_name_italian: str
+    sort_order: int
+    geom: pydantic.Json

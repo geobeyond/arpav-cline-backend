@@ -15,6 +15,7 @@ from ... import (
     database,
 )
 from ...schemas import (
+    base,
     climaticindicators,
     coverages,
     observations,
@@ -22,6 +23,7 @@ from ...schemas import (
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
 from .views import (
+    base as base_views,
     climaticindicators as climaticindicators_views,
     coverages as coverage_views,
     observations as observations_views,
@@ -65,6 +67,7 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             climaticindicators.ClimaticIndicator
         )
     )
+    admin.add_view(base_views.SpatialRegionView(base.SpatialRegion))
     admin.add_view(coverage_views.ForecastModelView(coverages.ForecastModel))
     admin.add_view(coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow))
     admin.add_view(

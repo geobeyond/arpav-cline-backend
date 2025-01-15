@@ -124,7 +124,7 @@ class ConfigurationParameterView(ModelView):
                     starlette_admin.StringField("display_name_italian", required=True),
                     starlette_admin.StringField("description_english"),
                     starlette_admin.StringField("description_italian"),
-                    starlette_admin.StringField("sort_order"),
+                    starlette_admin.IntegerField("sort_order"),
                 ),
             )
         ),
@@ -770,7 +770,7 @@ class ForecastTimeWindowView(ModelView):
         starlette_admin.StringField("display_name_italian", required=True),
         starlette_admin.StringField("description_english"),
         starlette_admin.StringField("description_italian"),
-        starlette_admin.StringField("sort_order"),
+        starlette_admin.IntegerField("sort_order"),
     )
 
     def __init__(self, *args, **kwargs) -> None:
@@ -869,7 +869,7 @@ class ForecastModelView(ModelView):
         starlette_admin.StringField("display_name_italian", required=True),
         starlette_admin.StringField("description_english"),
         starlette_admin.StringField("description_italian"),
-        starlette_admin.StringField("sort_order"),
+        starlette_admin.IntegerField("sort_order"),
     )
 
     def __init__(self, *args, **kwargs) -> None:
