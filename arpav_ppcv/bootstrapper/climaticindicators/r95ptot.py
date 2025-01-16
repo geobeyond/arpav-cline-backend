@@ -2,10 +2,15 @@ from ...schemas.static import (
     AggregationPeriod,
     MeasureType,
 )
-from ...schemas.climaticindicators import ClimaticIndicatorCreate
+from ...schemas.climaticindicators import (
+    ClimaticIndicatorCreate,
+    ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator,
+)
 
 
-def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
+def generate_climatic_indicators(
+    forecast_model_ids: dict[str, int],
+) -> list[ClimaticIndicatorCreate]:
     return [
         ClimaticIndicatorCreate(
             name="r95ptot",
@@ -28,5 +33,31 @@ def generate_climatic_indicators() -> list[ClimaticIndicatorCreate]:
             color_scale_max=160,
             data_precision=0,
             sort_order=10,
+            forecast_models=[
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["model_ensemble"],
+                    thredds_url_base_path="ensembletwbc/std/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
+                    thredds_url_base_path="indici5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_racmo22e"],
+                    thredds_url_base_path="indici5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["ec_earth_rca4"],
+                    thredds_url_base_path="indici5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["hadgem2_racmo22e"],
+                    thredds_url_base_path="indici5rcm/clipped",
+                ),
+                ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
+                    forecast_model_id=forecast_model_ids["mpi_esm_lr_remo2009"],
+                    thredds_url_base_path="indici5rcm/clipped",
+                ),
+            ],
         ),
     ]
