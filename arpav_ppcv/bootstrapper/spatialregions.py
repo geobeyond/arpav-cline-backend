@@ -12,7 +12,7 @@ from ..schemas.base import SpatialRegionCreate
 def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]:
     return [
         SpatialRegionCreate(
-            name="arpa-fvg",
+            name="arpa_fvg",
             display_name_english="ARPA Friuli Venezia Giulia",
             display_name_italian="ARPA Friuli Venezia Giulia",
             sort_order=0,
@@ -21,7 +21,7 @@ def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]
             ),
         ),
         SpatialRegionCreate(
-            name="arpa-taa",
+            name="arpa_taa",
             display_name_english="ARPA Trentino-Alto Adige",
             display_name_italian="ARPA Trentino-Alto Adige",
             sort_order=1,
@@ -30,7 +30,7 @@ def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]
             ),
         ),
         SpatialRegionCreate(
-            name="arpa-v",
+            name="arpa_v",
             display_name_english="ARPA Veneto",
             display_name_italian="ARPA Veneto",
             sort_order=2,
@@ -39,7 +39,7 @@ def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]
             ),
         ),
         SpatialRegionCreate(
-            name="arpa-vfvg",
+            name="arpa_vfvg",
             display_name_english="Combined ARPA Veneto and ARPA Friuli Venezia Giulia",
             display_name_italian="Combinato ARPA Veneto e ARPA Friuli Venezia Giulia",
             sort_order=2,
@@ -51,7 +51,7 @@ def generate_spatial_regions(geoms_base_path: Path) -> list[SpatialRegionCreate]
             ),
         ),
         SpatialRegionCreate(
-            name="arpa-vfvgtaa",
+            name="arpa_vfvgtaa",
             display_name_english=(
                 "Combined ARPA Veneto, ARPA Friuli Venezia Giulia and ARPA "
                 "Trentino-Alto Adige"

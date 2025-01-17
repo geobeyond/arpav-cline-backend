@@ -72,6 +72,16 @@ def db_app_callback() -> None:
     """Manage ARPAV-PPCV database."""
 
 
+@db_app.command(name="check-for-changes")
+def check_for_changes(ctx: typer.Context):
+    """Look for changes in the DB schema.
+
+    This command checks if there are changes to the schema that warrant the
+    generation of new migration files.
+    """
+    alembic.command.check(ctx.obj["alembic_config"])
+
+
 @db_app.command(name="generate-migration")
 def generate_migration(ctx: typer.Context, migration_message: str):
     """Generate migration files with any new database schema changes.

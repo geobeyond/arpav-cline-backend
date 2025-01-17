@@ -6,12 +6,13 @@ import babel
 from ..config import get_translations
 
 NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
+FORECAST_MODEL_NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
 
 
 class ForecastScenario(str, enum.Enum):
-    RCP26 = "RCP26"
-    RCP45 = "RCP45"
-    RCP85 = "RCP85"
+    RCP26 = "rcp26"
+    RCP45 = "rcp45"
+    RCP85 = "rcp85"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -59,8 +60,8 @@ class ForecastScenario(str, enum.Enum):
 
 
 class MeasureType(str, enum.Enum):
-    ABSOLUTE = "ABSOLUTE"
-    ANOMALY = "ANOMALY"
+    ABSOLUTE = "absolute"
+    ANOMALY = "anomaly"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -98,8 +99,8 @@ class MeasureType(str, enum.Enum):
 
 
 class AggregationPeriod(str, enum.Enum):
-    ANNUAL = "ANNUAL"
-    THIRTY_YEAR = "THIRTY_YEAR"
+    ANNUAL = "annual"
+    THIRTY_YEAR = "thirty_year"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -137,23 +138,23 @@ class AggregationPeriod(str, enum.Enum):
 
 
 class HistoricalYearPeriod(str, enum.Enum):
-    ALL_YEAR = "ALL_YEAR"
-    WINTER = "WINTER"
-    SPRING = "SPRING"
-    SUMMER = "SUMMER"
-    AUTUMN = "AUTUMN"
-    JANUARY = "JANUARY"
-    FEBRUARY = "FEBRUARY"
-    MARCH = "MARCH"
-    APRIL = "APRIL"
-    MAY = "MAY"
-    JUNE = "JUNE"
-    JULY = "JULY"
-    AUGUST = "AUGUST"
-    SEPTEMBER = "SEPTEMBER"
-    OCTOBER = "OCTOBER"
-    NOVEMBER = "NOVEMBER"
-    DECEMBER = "DECEMBER"
+    ALL_YEAR = "all_year"
+    WINTER = "winter"
+    SPRING = "spring"
+    SUMMER = "summer"
+    AUTUMN = "autumn"
+    JANUARY = "january"
+    FEBRUARY = "february"
+    MARCH = "march"
+    APRIL = "april"
+    MAY = "may"
+    JUNE = "june"
+    JULY = "july"
+    AUGUST = "august"
+    SEPTEMBER = "september"
+    OCTOBER = "october"
+    NOVEMBER = "november"
+    DECEMBER = "december"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -257,11 +258,11 @@ class HistoricalYearPeriod(str, enum.Enum):
 
 
 class ForecastYearPeriod(str, enum.Enum):
-    ALL_YEAR = "ALL_YEAR"
-    WINTER = "WINTER"
-    SPRING = "SPRING"
-    SUMMER = "SUMMER"
-    AUTUMN = "AUTUMN"
+    ALL_YEAR = "all_year"
+    WINTER = "winter"
+    SPRING = "spring"
+    SUMMER = "summer"
+    AUTUMN = "autumn"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -316,9 +317,9 @@ class ForecastYearPeriod(str, enum.Enum):
 
 
 class MeasurementAggregationType(str, enum.Enum):
-    MONTHLY = "MONTHLY"
-    SEASONAL = "SEASONAL"
-    YEARLY = "YEARLY"
+    MONTHLY = "monthly"
+    SEASONAL = "seasonal"
+    YEARLY = "yearly"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -359,8 +360,8 @@ class MeasurementAggregationType(str, enum.Enum):
 
 
 class ObservationStationManager(str, enum.Enum):
-    ARPAV = "ARPAV"
-    ARPAFVG = "ARPAFVG"
+    ARPAV = "arpa_v"
+    ARPAFVG = "arpa_fvg"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:

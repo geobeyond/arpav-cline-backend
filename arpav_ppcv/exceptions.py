@@ -20,3 +20,31 @@ class InvalidClimaticIndicatorIdentifierError(ArpavError):
 
 class InvalidObservationSeriesConfigurationIdentifierError(ArpavError):
     ...
+
+
+class InvalidForecastCoverageConfigurationIdentifierError(ArpavError):
+    ...
+
+
+class InvalidForecastCoverageIdentifierError(ArpavError):
+    ...
+
+
+class InvalidSpatialRegionNameError(ArpavError):
+    ...
+
+
+class InvalidForecastYearPeriodError(ArpavError):
+    ...
+
+
+class InvalidForecastModelError(ArpavError):
+    ...
+
+
+class InvalidForecastTimeWindowError(ArpavError):
+    ...
+
+
+class InvalidForecastScenarioError(ArpavError):
+    ...

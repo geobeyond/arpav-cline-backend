@@ -610,10 +610,6 @@ class ObservationMeasurementUpdate(sqlmodel.SQLModel):
 class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     """Configuration for observation series."""
 
-    identifier_pattern: ClassVar[
-        str
-    ] = "{climatic_indicator}_{station_managers}_{measurement_aggregation_type}"
-
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     climatic_indicator_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="climaticindicator.id"
@@ -634,9 +630,9 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        return self.identifier_pattern.format(
+        return "{climatic_indicator}-{station_managers}-{measurement_aggregation_type}".format(
             climatic_indicator=self.climatic_indicator.identifier,
-            station_managers="-".join(self.station_managers),
+            station_managers="_".join(self.station_managers),
             measurement_aggregation_type=self.measurement_aggregation_type,
         )
 

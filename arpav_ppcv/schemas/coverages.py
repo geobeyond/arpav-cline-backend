@@ -41,7 +41,7 @@ _name_description_text: Final[str] = (
 
 class ForecastTimeWindow(sqlmodel.SQLModel, table=True):
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
-    name: str
+    name: str = sqlmodel.Field(nullable=False, unique=True)
     internal_value: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
@@ -67,7 +67,10 @@ class ForecastTimeWindow(sqlmodel.SQLModel, table=True):
 
 
 class ForecastTimeWindowCreate(sqlmodel.SQLModel):
-    name: str
+    name: Annotated[
+        str,
+        pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
+    ]
     internal_value: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
@@ -88,7 +91,7 @@ class ForecastTimeWindowUpdate(sqlmodel.SQLModel):
 
 class ForecastModel(sqlmodel.SQLModel, table=True):
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
-    name: str
+    name: str = sqlmodel.Field(nullable=False, unique=True)
     internal_value: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
@@ -895,15 +898,22 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
 
 
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
-    identifier_pattern: ClassVar[str] = "forecast-{climatic_indicator}-{spatial_region}"
-
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    # scenarios: list[static.ForecastScenario] = sqlmodel.Field(
+    #     default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+    # )
     scenarios: list[static.ForecastScenario] = sqlmodel.Field(
-        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastScenario))
+        ),
     )
     year_periods: list[static.ForecastYearPeriod] = sqlmodel.Field(
-        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastYearPeriod))
+        ),
     )
 
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
@@ -931,9 +941,22 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        return self.identifier_pattern.format(
-            climatic_indicator=self.climatic_indicator.identifier,
-            spatial_region=self.spatial_region.name,
+        identifier_extra_parts = []
+        if len(self.forecast_model_links) == 1:
+            identifier_extra_parts.append(
+                self.forecast_model_links[0].forecast_model.name
+            )
+        if len(self.year_periods) == 1:
+            identifier_extra_parts.append(self.year_periods[0].value)
+        extra_parts_fragment = ""
+        if len(identifier_extra_parts) > 0:
+            extra_parts_fragment = f"_{'-'.join(identifier_extra_parts)}"
+        return (
+            "forecast-{climatic_indicator_identifier}-{spatial_region}{extra}".format(
+                climatic_indicator_identifier=self.climatic_indicator.identifier,
+                spatial_region=self.spatial_region.name,
+                extra=extra_parts_fragment,
+            )
         )
 
 
@@ -950,7 +973,7 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     year_periods: list[static.ForecastYearPeriod]
     forecast_models: list[int]
     forecast_time_windows: Optional[list[int]] = None
-    observation_series_configurations: list[int]
+    observation_series_configurations: Optional[list[int]] = None
 
 
 class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
@@ -992,3 +1015,61 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
             climatic_indicator=self.climatic_indicator.identifier,
             spatial_region=self.spatial_region.name,
         )
+
+
+@dataclasses.dataclass(frozen=True)
+class ForecastCoverageInternal:
+    configuration: ForecastCoverageConfiguration
+    scenario: static.ForecastScenario
+    forecast_model: ForecastModel
+    forecast_year_period: static.ForecastYearPeriod
+    forecast_time_window: Optional[ForecastTimeWindow] = None
+
+    def __post_init__(self):
+        error_message = (
+            "{param} {value} is not part of the forecast coverage configuration"
+        )
+        if self.scenario not in self.configuration.scenarios:
+            raise exceptions.InvalidForecastScenarioError(
+                error_message.format(param="scenario", value=self.scenario.value)
+            )
+        if self.forecast_model.id not in (
+            fml.forecast_model_id for fml in self.configuration.forecast_model_links
+        ):
+            raise exceptions.InvalidForecastModelError(
+                error_message.format(
+                    param="forecast model", value=self.forecast_model.name
+                )
+            )
+        if self.forecast_year_period not in self.configuration.year_periods:
+            raise exceptions.InvalidForecastYearPeriodError(
+                error_message.format(
+                    param="forecast year period", value=self.forecast_year_period.value
+                )
+            )
+        if self.forecast_time_window is not None:
+            if self.forecast_time_window.id not in (
+                twl.forecast_time_window_id
+                for twl in self.configuration.forecast_time_window_links
+            ):
+                raise exceptions.InvalidForecastTimeWindowError(
+                    error_message.format(
+                        param="forecast time window",
+                        value=self.forecast_time_window.name,
+                    )
+                )
+
+    @property
+    def identifier(self) -> str:
+        pattern_parts = [self.configuration.identifier]
+        if len(self.configuration.forecast_model_links) > 1:
+            pattern_parts.append(self.forecast_model.name)
+        pattern_parts.append(self.scenario.value)
+        if len(self.configuration.year_periods) > 1:
+            pattern_parts.append(self.forecast_year_period.value)
+        if self.forecast_time_window is not None:
+            pattern_parts.append(self.forecast_time_window.name)
+        return "-".join(pattern_parts)
+
+    def __hash__(self):
+        return hash(self.identifier)

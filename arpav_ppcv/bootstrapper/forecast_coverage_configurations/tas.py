@@ -4,6 +4,13 @@ from ...schemas.static import (
     ForecastYearPeriod,
 )
 
+# below are configurations for:
+# - tas absolute annual (4 seasons)
+# - tas absolute annual (all year)
+# - tas absolute anomaly (4 seasons)
+# - tas 30 year anomaly (model ensemble)
+# - tas 30 year anomaly (other forecast models)
+
 
 def generate_forecast_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
@@ -15,12 +22,21 @@ def generate_forecast_coverage_configurations(
     return [
         ForecastCoverageConfigurationCreate(
             netcdf_main_dataset_name="tas",
-            thredds_url_pattern="{forecast_model_base_path}/{climatic_indicator}_avg_{scenario}_ts19762100_ls_{spatial_region}.nc",
+            thredds_url_pattern=(
+                "{forecast_model_base_path}/{climatic_indicator}_avg_{scenario}_"
+                "{year_period}_ts19762100_ls_{spatial_region}.nc"
+            ),
             wms_main_layer_name="tas",
             climatic_indicator_id=climatic_indicator_ids["tas-absolute-annual"],
-            spatial_region_id=spatial_region_ids["arpa-vfvg"],
-            lower_uncertainty_thredds_url_pattern="{forecast_model_uncertainties_base_path}/{climatic_indicator}_stddown_{scenario}_ts19762100_ls_{spatial_region}.nc ",
-            upper_uncertainty_thredds_url_pattern="{forecast_model_uncertainties_base_path}/{climatic_indicator}_stdup_{scenario}_ts19762100_ls_{spatial_region}.nc ",
+            spatial_region_id=spatial_region_ids["arpa_vfvg"],
+            lower_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
+                "stddown_{scenario}_{year_period}_ts19762100_ls_{spatial_region}.nc"
+            ),
+            upper_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
+                "stdup_{scenario}_{year_period}_ts19762100_ls_{spatial_region}.nc"
+            ),
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,
@@ -42,18 +58,66 @@ def generate_forecast_coverage_configurations(
             ],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual_ARPAV_SEASONAL"
+                    "tas-absolute-annual-arpa_v-seasonal"
                 ],
             ],
         ),
         ForecastCoverageConfigurationCreate(
             netcdf_main_dataset_name="tas",
-            thredds_url_pattern="{forecast_model_base_path}/{climatic_indicator}_avg_{scenario}_ts19762100_ls_{spatial_region}.nc",
+            thredds_url_pattern=(
+                "{forecast_model_base_path}/{climatic_indicator}_avg_{scenario}_"
+                "ts19762100_ls_{spatial_region}.nc"
+            ),
             wms_main_layer_name="tas",
-            climatic_indicator_id=climatic_indicator_ids["tas-absolute-thirty_year"],
-            spatial_region_id=spatial_region_ids["arpa-vfvg"],
-            lower_uncertainty_thredds_url_pattern="{forecast_model_uncertainties_base_path}/{climatic_indicator}_stddown_{scenario}_ts19762100_ls_{spatial_region}.nc ",
-            upper_uncertainty_thredds_url_pattern="{forecast_model_uncertainties_base_path}/{climatic_indicator}_stdup_{scenario}_ts19762100_ls_{spatial_region}.nc ",
+            climatic_indicator_id=climatic_indicator_ids["tas-absolute-annual"],
+            spatial_region_id=spatial_region_ids["arpa_vfvg"],
+            lower_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
+                "stddown_{scenario}_ts19762100_ls_{spatial_region}.nc"
+            ),
+            upper_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
+                "stdup_{scenario}_ts19762100_ls_{spatial_region}.nc"
+            ),
+            scenarios=[
+                ForecastScenario.RCP26,
+                ForecastScenario.RCP45,
+                ForecastScenario.RCP85,
+            ],
+            year_periods=[
+                ForecastYearPeriod.ALL_YEAR,
+            ],
+            forecast_models=[
+                forecast_model_ids["model_ensemble"],
+                forecast_model_ids["ec_earth_cclm_4_8_17"],
+                forecast_model_ids["ec_earth_racmo22e"],
+                forecast_model_ids["ec_earth_rca4"],
+                forecast_model_ids["hadgem2_racmo22e"],
+                forecast_model_ids["mpi_esm_lr_remo2009"],
+            ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "tas-absolute-annual-arpa_v-yearly"
+                ],
+            ],
+        ),
+        ForecastCoverageConfigurationCreate(
+            netcdf_main_dataset_name="tas",
+            thredds_url_pattern=(
+                "{forecast_model_base_path}/{climatic_indicator}_anom_pp_ts_"
+                "{scenario}_{year_period}_{spatial_region}.nc"
+            ),
+            wms_main_layer_name="tas",
+            climatic_indicator_id=climatic_indicator_ids["tas-anomaly-annual"],
+            spatial_region_id=spatial_region_ids["arpa_vfvgtaa"],
+            lower_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_anom_"
+                "stddown_pp_ts_{scenario}_{year_period}_{spatial_region}.nc"
+            ),
+            upper_uncertainty_thredds_url_pattern=(
+                "{forecast_model_uncertainties_base_path}/{climatic_indicator}_anom_"
+                "stdup_pp_ts_{scenario}_{year_period}_{spatial_region}.nc"
+            ),
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,
@@ -73,10 +137,66 @@ def generate_forecast_coverage_configurations(
                 forecast_model_ids["hadgem2_racmo22e"],
                 forecast_model_ids["mpi_esm_lr_remo2009"],
             ],
-            observation_series_configurations=[
-                observation_series_configuration_ids[
-                    "tas-absolute-annual_ARPAV_SEASONAL"
-                ],
+        ),
+        ForecastCoverageConfigurationCreate(
+            netcdf_main_dataset_name="tas",
+            thredds_url_pattern=(
+                "{forecast_model_base_path}/{climatic_indicator}_avgagree_anom_"
+                "{time_window}_{scenario}_{year_period}_{spatial_region}.nc"
+            ),
+            wms_main_layer_name="tas",
+            climatic_indicator_id=climatic_indicator_ids["tas-anomaly-thirty_year"],
+            spatial_region_id=spatial_region_ids["arpa_vfvgtaa"],
+            scenarios=[
+                ForecastScenario.RCP26,
+                ForecastScenario.RCP45,
+                ForecastScenario.RCP85,
+            ],
+            year_periods=[
+                ForecastYearPeriod.WINTER,
+                ForecastYearPeriod.SPRING,
+                ForecastYearPeriod.SUMMER,
+                ForecastYearPeriod.AUTUMN,
+            ],
+            forecast_time_windows=[
+                forecast_time_window_ids["tw1"],
+                forecast_time_window_ids["tw2"],
+            ],
+            forecast_models=[
+                forecast_model_ids["model_ensemble"],
+            ],
+        ),
+        ForecastCoverageConfigurationCreate(
+            netcdf_main_dataset_name="tas",
+            thredds_url_pattern=(
+                "{forecast_model_base_path}/{climatic_indicator}_{forecast_model}_"
+                "{scenario}_{scenario}_seas_{time_window}{year_period}_"
+                "{spatial_region}.nc"
+            ),
+            wms_main_layer_name="tas",
+            climatic_indicator_id=climatic_indicator_ids["tas-anomaly-thirty_year"],
+            spatial_region_id=spatial_region_ids["arpa_vfvgtaa"],
+            scenarios=[
+                ForecastScenario.RCP26,
+                ForecastScenario.RCP45,
+                ForecastScenario.RCP85,
+            ],
+            year_periods=[
+                ForecastYearPeriod.WINTER,
+                ForecastYearPeriod.SPRING,
+                ForecastYearPeriod.SUMMER,
+                ForecastYearPeriod.AUTUMN,
+            ],
+            forecast_time_windows=[
+                forecast_time_window_ids["tw1"],
+                forecast_time_window_ids["tw2"],
+            ],
+            forecast_models=[
+                forecast_model_ids["ec_earth_cclm_4_8_17"],
+                forecast_model_ids["ec_earth_racmo22e"],
+                forecast_model_ids["ec_earth_rca4"],
+                forecast_model_ids["hadgem2_racmo22e"],
+                forecast_model_ids["mpi_esm_lr_remo2009"],
             ],
         ),
     ]

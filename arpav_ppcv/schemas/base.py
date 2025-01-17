@@ -183,7 +183,7 @@ class SpatialRegion(sqlmodel.SQLModel, table=True):
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
-    name: str
+    name: str = sqlmodel.Field(nullable=False, unique=True)
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
     sort_order: int = sqlmodel.Field(default=0)
