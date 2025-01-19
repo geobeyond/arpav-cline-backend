@@ -934,29 +934,36 @@ def get_forecast_coverage(
     parts = identifier.split("-")
     # first try to find a longer forecast coverage configuration identifier
     long_forecast_cov_conf_identifier = "-".join(parts[:6])
-    forecast_cov_conf = get_forecast_coverage_configuration_by_identifier(
-        session, long_forecast_cov_conf_identifier
-    )
+    try:
+        forecast_cov_conf = get_forecast_coverage_configuration_by_identifier(
+            session, long_forecast_cov_conf_identifier
+        )
+    except exceptions.InvalidForecastCoverageConfigurationIdentifierError:
+        forecast_cov_conf = None
     time_window_name = None
+    logger.debug(f"{forecast_cov_conf.identifier if forecast_cov_conf is not None else None=}")
     if forecast_cov_conf is not None:
         remaining_parts = parts[6:]
-        logger.debug(f"{long_forecast_cov_conf_identifier=}")
-        logger.debug(f"{forecast_cov_conf.identifier=}")
         logger.debug(f"{remaining_parts=}")
         if len(forecast_cov_conf.forecast_model_links) == 1:
-            forecast_model_name, scenario_value, year_period_value = remaining_parts[:3]
+            forecast_model_name = (
+                forecast_cov_conf.forecast_model_links[0].forecast_model.name)
+            scenario_value, year_period_value = remaining_parts[:2]
         else:
-            year_period_value, forecast_model_name, scenario_value = remaining_parts[:3]
-        if len(remaining_parts) > 3:
-            time_window_name = remaining_parts[3]
+            year_period_value = forecast_cov_conf.year_periods[0].value
+            forecast_model_name, scenario_value = remaining_parts[:2]
+        if len(remaining_parts) > 2:
+            time_window_name = remaining_parts[2]
     else:
         # then try a shorter forecast coverage configuration identifier
         short_forecast_cov_conf_identifier = "-".join(parts[:5])
         forecast_cov_conf = get_forecast_coverage_configuration_by_identifier(
             session, short_forecast_cov_conf_identifier
         )
+        logger.debug(f"{forecast_cov_conf.identifier if forecast_cov_conf is not None else None=}")
         if forecast_cov_conf is not None:
             remaining_parts = parts[5:]
+            logger.debug(f"{remaining_parts=}")
             forecast_model_name, scenario_value, year_period_value = remaining_parts[:3]
             if len(remaining_parts) > 3:
                 time_window_name = remaining_parts[3]
@@ -1621,8 +1628,11 @@ def get_climatic_indicator_by_identifier(
         )
         measure_type = static.MeasureType(raw_measure)
         aggregation_period = static.AggregationPeriod(raw_aggregation_period)
-    except ValueError:
-        raise exceptions.InvalidClimaticIndicatorIdentifierError()
+    except ValueError as err:
+        raise exceptions.InvalidClimaticIndicatorIdentifierError(
+            f"Invalid measure type ({raw_measure!r}) or "
+            f"aggregation period ({raw_aggregation_period!r})"
+        ) from err
     else:
         statement = sqlmodel.select(climaticindicators.ClimaticIndicator).where(
             climaticindicators.ClimaticIndicator.name == name,
@@ -2436,6 +2446,8 @@ def get_forecast_coverage_configuration_by_identifier(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[coverages.ForecastCoverageConfiguration]:
     parts = identifier.split("-")
+    logger.debug(f"{identifier=}")
+    logger.debug(f"{parts=}")
     if len(parts) >= 5 and parts[0] == "forecast":
         climatic_indicator_identifier = "-".join(parts[1:4])
         climatic_indicator = get_climatic_indicator_by_identifier(
@@ -2454,14 +2466,15 @@ def get_forecast_coverage_configuration_by_identifier(
             )
         # forecast coverage configuration identifier can either have just the
         # climatic_indicator and spatial_region...
-        statement = sqlmodel.select(coverages.ForecastCoverageConfiguration).where(
-            coverages.ForecastCoverageConfiguration.climatic_indicator_id
-            == climatic_indicator.id,
-            coverages.ForecastCoverageConfiguration.spatial_region_id
-            == spatial_region.id,
+        statement = (
+            sqlmodel.select(coverages.ForecastCoverageConfiguration)
+            .where(
+                coverages.ForecastCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,
+                coverages.ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,
+            )
         )
         if len(parts) > 5:
-            #  ...or it can have an additional part with the forecast_model
+            #  ...or it can have an additional part with either the forecast_model
             #  or the year_period
             forecast_model_name = parts[5]
             forecast_model = get_forecast_model_by_name(session, forecast_model_name)
@@ -2483,7 +2496,12 @@ def get_forecast_coverage_configuration_by_identifier(
                 if len(query_result) == 0:
                     result = None
                 elif len(query_result) == 1:
-                    result = query_result[0]
+                    possible_result: coverages.ForecastCoverageConfiguration = (
+                        query_result[0])
+                    result = (
+                        possible_result
+                        if possible_result.identifier == identifier else None
+                    )
                 else:
                     for forecast_cov_conf in query_result:
                         logger.debug(f"processing {forecast_cov_conf.identifier!r}...")
@@ -2498,16 +2516,16 @@ def get_forecast_coverage_configuration_by_identifier(
                             f"of {forecast_model_name!r}"
                         )
             else:
-                year_period_name = parts[5]
+                year_period_value = parts[5]
                 try:
-                    year_period = static.ForecastYearPeriod(year_period_name)
+                    year_period = static.ForecastYearPeriod(year_period_value)
                 except ValueError:
                     raise exceptions.InvalidForecastYearPeriodError(
-                        f"{year_period_name!r} is not a valid forecast year period"
+                        f"{year_period_value!r} is not a valid forecast year period"
                     )
                 else:
                     statement = statement.where(
-                        year_period.value
+                        year_period.name
                         == sqlalchemy.any_(
                             coverages.ForecastCoverageConfiguration.year_periods
                         )
@@ -2515,10 +2533,16 @@ def get_forecast_coverage_configuration_by_identifier(
                     query_result: Sequence[
                         coverages.ForecastCoverageConfiguration
                     ] = session.exec(statement).all()
+                    logger.debug(f"{[i.identifier for i in query_result]=}")
                     if len(query_result) == 0:
                         result = None
                     elif len(query_result) == 1:
-                        result = query_result[0]
+                        possible_result: coverages.ForecastCoverageConfiguration = (
+                            query_result[0])
+                        result = (
+                            possible_result
+                            if possible_result.identifier == identifier else None
+                        )
                     else:
                         for forecast_cov_conf in query_result:
                             if len(forecast_cov_conf.year_periods) == 1:
@@ -2528,9 +2552,21 @@ def get_forecast_coverage_configuration_by_identifier(
                             raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
                                 f"Could not find a suitable coverage configuration "
                                 f"identifier with a particular forecast year period "
-                                f"of {year_period_name!r}"
+                                f"of {year_period.name!r}"
                             )
-            return result
+        else:
+            query_result = session.exec(statement).all()
+            logger.debug(f"{[fcc.identifier for fcc in query_result]=}")
+            # choose the shorter identifier of those forecast coverage configurations
+            # found in the DB
+            result = None
+            for fcc in query_result:
+                fcc: coverages.ForecastCoverageConfiguration
+                if result is None:
+                    result = fcc
+                else:
+                    result = result if len(result.identifier) < len(fcc.identifier) else fcc
+        return result
     else:
         raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
             f"{identifier!r} is not a valid forecast coverage configuration "
@@ -2891,7 +2927,7 @@ def get_forecast_time_window_by_name(
     """Get a forecast time window by its name."""
     return session.exec(
         sqlmodel.select(coverages.ForecastTimeWindow).where(
-            coverages.ForecasTimeWindow.name == name
+            coverages.ForecastTimeWindow.name == name
         )
     ).first()
 

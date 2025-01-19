@@ -7,9 +7,9 @@ from ...schemas.static import (
 # below are configurations for:
 # - tas absolute annual (4 seasons)
 # - tas absolute annual (all year)
-# - tas absolute anomaly (4 seasons)
-# - tas 30 year anomaly (model ensemble)
-# - tas 30 year anomaly (other forecast models)
+# - tas anomaly annual (4 seasons)
+# - tas anomaly 30 year (model ensemble)
+# - tas anomaly 30 year (other forecast models)
 
 
 def generate_forecast_coverage_configurations(

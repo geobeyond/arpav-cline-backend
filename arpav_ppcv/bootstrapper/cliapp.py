@@ -626,3 +626,54 @@ def bootstrap_forecast_time_windows(ctx: typer.Context):
                 print(
                     f"Forecast time window {forecast_time_window_create.name!r} already exists"
                 )
+
+
+@app.command("all")
+def perform_full_bootstrap(
+    ctx: typer.Context,
+    region_bounds_base_directory: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+            help=(
+                    "Path to the directory that holds geoJSON files with the "
+                    "spatial boundaries of spatial regions. Example: "
+                    "/home/appuser/app/data/spatial-regions"
+            ),
+        ),
+    ],
+    municipalities_dataset: Annotated[
+        Path,
+        typer.Argument(
+            help=(
+                    "Path to the municipalities geoJSON dataset. Example: "
+                    "/home/appuser/app/data/municipalities-istat-2021.geojson"
+            )
+        ),
+    ],
+):
+    """Create all initial entities.
+
+    This command will populate the system database with all bootstrappable
+    entities.
+    """
+    ctx.invoke(
+        bootstrap_spatial_regions,
+        ctx=ctx,
+        region_bounds_base_directory=region_bounds_base_directory
+    )
+    ctx.invoke(
+        bootstrap_municipalities,
+        ctx=ctx,
+        municipalities_dataset=municipalities_dataset,
+        force=True
+    )
+    ctx.invoke(bootstrap_forecast_models, ctx=ctx)
+    ctx.invoke(bootstrap_forecast_time_windows, ctx=ctx)
+    ctx.invoke(bootstrap_climatic_indicators, ctx=ctx)
+    ctx.invoke(bootstrap_observation_series_configurations, ctx=ctx)
+    ctx.invoke(bootstrap_forecast_coverage_configurations, ctx=ctx)
+    print("All done!")

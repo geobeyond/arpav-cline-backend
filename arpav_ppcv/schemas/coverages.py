@@ -900,9 +900,6 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
-    # scenarios: list[static.ForecastScenario] = sqlmodel.Field(
-    #     default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
-    # )
     scenarios: list[static.ForecastScenario] = sqlmodel.Field(
         default=list,
         sa_column=sqlalchemy.Column(
@@ -950,7 +947,7 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
             identifier_extra_parts.append(self.year_periods[0].value)
         extra_parts_fragment = ""
         if len(identifier_extra_parts) > 0:
-            extra_parts_fragment = f"_{'-'.join(identifier_extra_parts)}"
+            extra_parts_fragment = f"-{'-'.join(identifier_extra_parts)}"
         return (
             "forecast-{climatic_indicator_identifier}-{spatial_region}{extra}".format(
                 climatic_indicator_identifier=self.climatic_indicator.identifier,
@@ -1027,24 +1024,32 @@ class ForecastCoverageInternal:
 
     def __post_init__(self):
         error_message = (
-            "{param} {value} is not part of the forecast coverage configuration"
+            "{param} {value!r} is not part of the forecast coverage configuration {conf!r}"
         )
         if self.scenario not in self.configuration.scenarios:
             raise exceptions.InvalidForecastScenarioError(
-                error_message.format(param="scenario", value=self.scenario.value)
+                error_message.format(
+                    param="scenario",
+                    value=self.scenario.value,
+                    conf=self.configuration.identifier
+                )
             )
         if self.forecast_model.id not in (
             fml.forecast_model_id for fml in self.configuration.forecast_model_links
         ):
             raise exceptions.InvalidForecastModelError(
                 error_message.format(
-                    param="forecast model", value=self.forecast_model.name
+                    param="forecast model",
+                    value=self.forecast_model.name,
+                    conf=self.configuration.identifier
                 )
             )
         if self.forecast_year_period not in self.configuration.year_periods:
             raise exceptions.InvalidForecastYearPeriodError(
                 error_message.format(
-                    param="forecast year period", value=self.forecast_year_period.value
+                    param="forecast year period",
+                    value=self.forecast_year_period.value,
+                    conf=self.configuration.identifier
                 )
             )
         if self.forecast_time_window is not None:
@@ -1056,6 +1061,7 @@ class ForecastCoverageInternal:
                     error_message.format(
                         param="forecast time window",
                         value=self.forecast_time_window.name,
+                        conf=self.configuration.identifier
                     )
                 )
 
@@ -1070,6 +1076,69 @@ class ForecastCoverageInternal:
         if self.forecast_time_window is not None:
             pattern_parts.append(self.forecast_time_window.name)
         return "-".join(pattern_parts)
+
+    def get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
+        result = None
+        for fml in self.configuration.climatic_indicator.forecast_model_links:
+            if fml.forecast_model_id == self.forecast_model.id:
+                result = fml.thredds_url_base_path
+                break
+        return result
+
+    def get_forecast_model_thredds_url_uncertainties_base_path(self) -> Optional[str]:
+        result = None
+        for fml in self.configuration.climatic_indicator.forecast_model_links:
+            if fml.forecast_model_id == self.forecast_model.id:
+                result = fml.thredds_url_uncertainties_base_path
+                break
+        return result
+
+    def get_netcdf_main_dataset_name(self) -> str:
+        return self._render_templated_value(
+            self.configuration.netcdf_main_dataset_name)
+
+    def get_thredds_url(self) -> str:
+        return self._render_templated_value(
+            self.configuration.thredds_url_pattern)
+
+    def get_lower_uncertainty_thredds_url(self) -> Optional[str]:
+        return self._render_templated_value(
+            self.configuration.lower_uncertainty_thredds_url_pattern)
+
+    def get_upper_uncertainty_thredds_url(self) -> Optional[str]:
+        return self._render_templated_value(
+            self.configuration.upper_uncertainty_thredds_url_pattern)
+
+    def get_wms_main_layer_name(self) -> str:
+        return self._render_templated_value(
+            self.configuration.wms_main_layer_name)
+
+    def get_wms_secondary_layer_name(self) -> Optional[str]:
+        return self._render_templated_value(
+            self.configuration.wms_secondary_layer_name)
+
+    def _render_templated_value(self, value: str) -> str:
+        forecast_model_base_path = self.get_forecast_model_thredds_url_base_path()
+        forecast_model_uncertainties_base_path = self.get_forecast_model_thredds_url_uncertainties_base_path()
+        return value.format(
+            forecast_model_base_path=(
+                forecast_model_base_path
+                if forecast_model_base_path is not None else ""
+            ),
+            forecast_model_uncertainties_base_path=(
+                forecast_model_uncertainties_base_path
+                if forecast_model_uncertainties_base_path is not None else ""
+            ),
+            forecast_model=self.forecast_model.internal_value,
+            climatic_indicator=self.configuration.climatic_indicator.name,
+            time_window=(
+                self.forecast_time_window.internal_value
+                if self.forecast_time_window is not None else ""
+            ),
+            scenario=self.scenario.get_internal_value(),
+            year_period=self.forecast_year_period.get_internal_value(),
+            spatial_region=self.configuration.spatial_region.name
+        )
 
     def __hash__(self):
         return hash(self.identifier)

@@ -246,7 +246,7 @@ If you want to build an image for the current branch, such as when you added a n
 an ongoing task, add the branch name to the build image:
 
 ```shell
-docker build
+docker build \
     --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current) \
     --file docker/Dockerfile \
     .
@@ -256,8 +256,11 @@ In order to use this custom named image on your local development, set the `CURR
 launching the docker compose stack, _i.e._:
 
 ```shell
-export CURRENT_GIT_BRANCH=$(git branch --show-current)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d --force-recreate
+CURRENT_GIT_BRANCH=$(git branch --show-current) \
+    docker compose \
+    -f docker/compose.yaml \
+    -f docker/compose.dev.yaml \
+    up -d --force-recreate
 ```
 
 
