@@ -20,7 +20,19 @@ from ..schemas.coverages import (
 )
 
 from .forecast_coverage_configurations import (
+    cdd as cdd_forecast_coverage_configurations,
+    cdds as cdds_forecast_coverage_configurations,
+    fd as fd_forecast_coverage_configurations,
+    hdds as hdds_forecast_coverage_configurations,
+    hwdi as hwdi_forecast_coverage_configurations,
+    pr as pr_forecast_coverage_configurations,
+    r95ptot as r95ptot_forecast_coverage_configurations,
+    snwdays as snwdays_forecast_coverage_configurations,
+    su30 as su30_forecast_coverage_configurations,
     tas as tas_forecast_coverage_configurations,
+    tasmax as tasmax_forecast_coverage_configurations,
+    tasmin as tasmin_forecast_coverage_configurations,
+    tr as tr_forecast_coverage_configurations,
 )
 from .coverage_configurations.forecast import (
     cdd as cdd_forecast,
@@ -506,18 +518,128 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
         all_observation_series_configurations = (
             database.collect_all_observation_series_configurations(session)
         )
-        to_create = tas_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-            climatic_indicator_ids={
-                ind.identifier: ind.id for ind in all_climatic_indicators
-            },
-            spatial_region_ids={sr.name: sr.id for sr in all_spatial_regions},
-            forecast_model_ids={fm.name: fm.id for fm in all_forecast_models},
-            forecast_time_window_ids={
-                tw.name: tw.id for tw in all_forecast_time_windows
-            },
-            observation_series_configuration_ids={
-                osc.identifier: osc.id for osc in all_observation_series_configurations
-            },
+        clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
+        region_ids = {sr.name: sr.id for sr in all_spatial_regions}
+        forecast_model_ids = {fm.name: fm.id for fm in all_forecast_models}
+        time_window_ids = {tw.name: tw.id for tw in all_forecast_time_windows}
+        observation_series_configuration_ids = {
+            osc.identifier: osc.id for osc in all_observation_series_configurations
+        }
+
+        to_create = cdd_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+            climatic_indicator_ids=clim_ind_ids,
+            spatial_region_ids=region_ids,
+            forecast_model_ids=forecast_model_ids,
+            forecast_time_window_ids=time_window_ids,
+            observation_series_configuration_ids=observation_series_configuration_ids,
+        )
+        to_create.extend(
+            cdds_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            fd_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            hdds_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            hwdi_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            pr_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            r95ptot_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            snwdays_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            su30_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            tas_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            tasmax_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            tasmin_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
+        )
+        to_create.extend(
+            tr_forecast_coverage_configurations.generate_forecast_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+                forecast_model_ids=forecast_model_ids,
+                forecast_time_window_ids=time_window_ids,
+                observation_series_configuration_ids=observation_series_configuration_ids,
+            )
         )
         for forecast_coverage_configuration_create in to_create:
             try:
@@ -531,7 +653,7 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
             except IntegrityError as err:
                 print(
                     f"Could not create forecast coverage configuration "
-                    f"{forecast_coverage_configuration_create.name!r}: {err}"
+                    f"{forecast_coverage_configuration_create!r}: {err}"
                 )
                 session.rollback()
 
