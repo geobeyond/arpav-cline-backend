@@ -52,7 +52,11 @@ def list_observation_series_configurations(ctx: typer.Context) -> None:
         )
         for db_series_configuration in all_series_configurations:
             item = schemas.ObservationSeriesConfigurationItem(
-                **db_series_configuration.model_dump(),
+                **db_series_configuration.model_dump(
+                    exclude={
+                        "climatic_indicator",
+                    }
+                ),
                 climatic_indicator=db_series_configuration.climatic_indicator.identifier,
             )
             confs_table.add_row(

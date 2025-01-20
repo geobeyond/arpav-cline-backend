@@ -616,7 +616,10 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     )
     measurement_aggregation_type: static.MeasurementAggregationType
     station_managers: list[static.ObservationStationManager] = sqlmodel.Field(
-        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.ObservationStationManager))
+        ),
     )
 
     climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
@@ -632,7 +635,9 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     def identifier(self) -> str:
         return "{climatic_indicator}-{station_managers}-{measurement_aggregation_type}".format(
             climatic_indicator=self.climatic_indicator.identifier,
-            station_managers="_".join(self.station_managers),
+            station_managers="_".join(
+                manager.value for manager in self.station_managers
+            ),
             measurement_aggregation_type=self.measurement_aggregation_type,
         )
 

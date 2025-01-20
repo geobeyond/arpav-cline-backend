@@ -37,7 +37,7 @@ class ObservationStationDetail(observations.StationBase):
 
 class ObservationSeriesConfigurationItem(pydantic.BaseModel):
     climatic_indicator: str
-    station_owners: list[str]
+    station_managers: list[str]
     measurement_aggregation_type: static.MeasurementAggregationType
     identifier: str
     indicator_internal_name: str
