@@ -40,13 +40,11 @@ class ObservationSeriesConfigurationItem(pydantic.BaseModel):
     station_managers: list[str]
     measurement_aggregation_type: static.MeasurementAggregationType
     identifier: str
-    indicator_internal_name: str
 
 
 class ObservationSeriesConfigurationDetail(pydantic.BaseModel):
     identifier: str
     climatic_indicator: ClimaticIndicatorItem
-    indicator_internal_name: str
     measurement_aggregation_type: static.MeasurementAggregationType
     station_managers: list[static.ObservationStationManager]
 

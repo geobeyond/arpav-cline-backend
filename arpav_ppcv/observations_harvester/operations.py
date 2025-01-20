@@ -63,6 +63,11 @@ def fetch_remote_arpav_stations(
     arpav_observations_base_url: str,
 ) -> Generator[dict, None, None]:
     station_url = f"{arpav_observations_base_url}/clima_indicatori/staz_attive_lunghe"
+    indicator_internal_name = [
+        obs_name.indicator_observation_name
+        for obs_name in series_configuration.climatic_indicator.observation_names
+        if obs_name.station_manager == ObservationStationManager.ARPAV
+    ][0]
     if (
         series_configuration.measurement_aggregation_type
         == MeasurementAggregationType.MONTHLY
@@ -72,7 +77,7 @@ def fetch_remote_arpav_stations(
             month_response = client.get(
                 station_url,
                 params={
-                    "indicatore": series_configuration.indicator_internal_name,
+                    "indicatore": indicator_internal_name,
                     "tabella": "M",
                     "periodo": str(month),
                 },
@@ -89,7 +94,7 @@ def fetch_remote_arpav_stations(
             season_response = client.get(
                 station_url,
                 params={
-                    "indicatore": series_configuration.indicator_internal_name,
+                    "indicatore": indicator_internal_name,
                     "tabella": "S",
                     "periodo": str(season),
                 },
@@ -105,7 +110,7 @@ def fetch_remote_arpav_stations(
         year_response = client.get(
             station_url,
             params={
-                "indicatore": series_configuration.indicator_internal_name,
+                "indicatore": indicator_internal_name,
                 "tabella": "A",
                 "periodo": "0",
             },

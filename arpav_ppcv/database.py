@@ -2275,33 +2275,30 @@ def get_observation_series_configuration(
 def get_observation_series_configuration_by_identifier(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[observations.ObservationSeriesConfiguration]:
-    try:
-        (
-            climatic_indicator_identifier,
-            raw_owners,
-            raw_measurement_aggregation,
-        ) = identifier.split("_")
-        climatic_indicator = get_climatic_indicator_by_identifier(
-            session, climatic_indicator_identifier
+    parts = identifier.split("-")
+    climatic_indicator_identifier = "-".join(parts[:3])
+    climatic_indicator = get_climatic_indicator_by_identifier(
+        session, climatic_indicator_identifier
+    )
+    if climatic_indicator is None:
+        raise exceptions.InvalidObservationSeriesConfigurationIdentifierError(
+            f"climatic indicator {climatic_indicator_identifier} does not exist"
         )
-        measurement_aggregation_type = static.MeasurementAggregationType(
-            raw_measurement_aggregation.upper()
-        )
-        station_managers = [
-            static.ObservationStationManager(i.upper()) for i in raw_owners.split("-")
-        ]
-    except ValueError:
-        raise exceptions.InvalidObservationSeriesConfigurationIdentifierError()
-    else:
-        statement = sqlmodel.select(observations.ObservationSeriesConfiguration).where(
-            observations.ObservationSeriesConfiguration.climatic_indicator_id
-            == climatic_indicator.id,
-            observations.ObservationSeriesConfiguration.measurement_aggregation_type
-            == measurement_aggregation_type,
-            observations.ObservationSeriesConfiguration.station_managers
-            == station_managers,
-        )
-        return session.exec(statement).first()
+    raw_station_managers, raw_measurement_aggregation = parts[3:5]
+    managers = [
+        static.ObservationStationManager(m) for m in raw_station_managers.split(":")
+    ]
+    measurement_aggregation_type = static.MeasurementAggregationType(
+        raw_measurement_aggregation
+    )
+    statement = sqlmodel.select(observations.ObservationSeriesConfiguration).where(
+        observations.ObservationSeriesConfiguration.climatic_indicator_id
+        == climatic_indicator.id,
+        observations.ObservationSeriesConfiguration.measurement_aggregation_type
+        == measurement_aggregation_type,
+        observations.ObservationSeriesConfiguration.station_managers == managers,
+    )
+    return session.exec(statement).first()
 
 
 def list_observation_series_configurations(

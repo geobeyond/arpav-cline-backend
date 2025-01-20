@@ -45,7 +45,6 @@ def list_observation_series_configurations(ctx: typer.Context) -> None:
     confs_table.add_column("climatic_indicator", justify="left")
     confs_table.add_column("station_managers", justify="left")
     confs_table.add_column("measurement_aggregation_type", justify="left")
-    confs_table.add_column("indicator_internal_name", justify="left")
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_series_configurations = list(
             database.collect_all_observation_series_configurations(session)
@@ -64,7 +63,6 @@ def list_observation_series_configurations(ctx: typer.Context) -> None:
                 item.climatic_indicator,
                 ", ".join(i for i in db_series_configuration.station_managers),
                 item.measurement_aggregation_type,
-                item.indicator_internal_name,
             )
     print(confs_table)
 

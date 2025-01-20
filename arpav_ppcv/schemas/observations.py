@@ -635,7 +635,7 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     def identifier(self) -> str:
         return "{climatic_indicator}-{station_managers}-{measurement_aggregation_type}".format(
             climatic_indicator=self.climatic_indicator.identifier,
-            station_managers="_".join(
+            station_managers=":".join(
                 manager.value for manager in self.station_managers
             ),
             measurement_aggregation_type=self.measurement_aggregation_type,
