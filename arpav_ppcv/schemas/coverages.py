@@ -1119,15 +1119,15 @@ class ForecastCoverageInternal:
 
     def _render_templated_value(self, value: str) -> str:
         forecast_model_base_path = self.get_forecast_model_thredds_url_base_path()
-        forecast_model_uncertainties_base_path = self.get_forecast_model_thredds_url_uncertainties_base_path()
+        uncertainties_base_path = self.get_forecast_model_thredds_url_uncertainties_base_path()
         return value.format(
             forecast_model_base_path=(
                 forecast_model_base_path
                 if forecast_model_base_path is not None else ""
             ),
             forecast_model_uncertainties_base_path=(
-                forecast_model_uncertainties_base_path
-                if forecast_model_uncertainties_base_path is not None else ""
+                uncertainties_base_path
+                if uncertainties_base_path is not None else ""
             ),
             forecast_model=self.forecast_model.internal_value,
             climatic_indicator=self.configuration.climatic_indicator.name,
