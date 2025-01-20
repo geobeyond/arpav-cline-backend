@@ -1,6 +1,5 @@
 from typing import (
     Annotated,
-    ClassVar,
     Final,
     Optional,
     TYPE_CHECKING,
@@ -31,8 +30,6 @@ _name_description_text: Final[str] = (
 
 
 class ClimaticIndicator(sqlmodel.SQLModel, table=True):
-    identifier_pattern: ClassVar[str] = "{name}-{measure_type}-{aggregation_period}"
-
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str
     measure_type: static.MeasureType
@@ -129,7 +126,7 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        return self.identifier_pattern.format(
+        return "{name}-{measure_type}-{aggregation_period}".format(
             name=self.name,
             measure_type=self.measure_type.value.lower(),
             aggregation_period=self.aggregation_period.value.lower(),
