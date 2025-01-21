@@ -137,6 +137,28 @@ class AggregationPeriod(str, enum.Enum):
         }.get(self, 0)
 
 
+class ObservationYearPeriod(str, enum.Enum):
+    # This does not have any translations or internal value because it is only meant
+    # for internal usage and is not intended for exposing outside the system
+    ALL_YEAR = "all_year"
+    WINTER = "winter"
+    SPRING = "spring"
+    SUMMER = "summer"
+    AUTUMN = "autumn"
+    JANUARY = "january"
+    FEBRUARY = "february"
+    MARCH = "march"
+    APRIL = "april"
+    MAY = "may"
+    JUNE = "june"
+    JULY = "july"
+    AUGUST = "august"
+    SEPTEMBER = "september"
+    OCTOBER = "october"
+    NOVEMBER = "november"
+    DECEMBER = "december"
+
+
 class HistoricalYearPeriod(str, enum.Enum):
     ALL_YEAR = "all_year"
     WINTER = "winter"

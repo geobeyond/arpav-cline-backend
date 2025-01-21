@@ -18,6 +18,10 @@ class InvalidClimaticIndicatorIdentifierError(ArpavError):
     ...
 
 
+class InvalidObservationStationCodeError(ArpavError):
+    ...
+
+
 class InvalidObservationSeriesConfigurationIdentifierError(ArpavError):
     ...
 
@@ -47,4 +51,12 @@ class InvalidForecastTimeWindowError(ArpavError):
 
 
 class InvalidForecastScenarioError(ArpavError):
+    ...
+
+
+class ObservationInternalNameNotFoundError(ArpavError):
+    ...
+
+
+class ObservationDataRetrievalError(ArpavError):
     ...

@@ -34,6 +34,10 @@ def generate_climatic_indicators(
                     observation_station_manager=ObservationStationManager.ARPAV,
                     indicator_observation_name="TDd",
                 ),
+                ClimaticIndicatorObservationNameCreate(
+                    observation_station_manager=ObservationStationManager.ARPAFVG,
+                    indicator_observation_name="TAS",
+                ),
             ],
             forecast_models=[
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(

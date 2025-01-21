@@ -66,8 +66,18 @@ def generate_observation_series_configurations(
             station_managers=[ObservationStationManager.ARPAV],
         ),
         ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tr-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAV],
+        ),
+        ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["su30-absolute-annual"].id,
             measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAV],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["su30-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
             station_managers=[ObservationStationManager.ARPAV],
         ),
         ObservationSeriesConfigurationCreate(
@@ -76,8 +86,88 @@ def generate_observation_series_configurations(
             station_managers=[ObservationStationManager.ARPAV],
         ),
         ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["fd-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAV],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["fd-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["fd-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["pr-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["pr-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["snwdays-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["snwdays-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["su30-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["su30-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["tas-absolute-annual"].id,
             measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tas-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmax-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmax-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmin-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmin-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tr-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tr-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
             station_managers=[ObservationStationManager.ARPAFVG],
         ),
     ]

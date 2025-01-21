@@ -1,9 +1,11 @@
 from ...schemas.static import (
     AggregationPeriod,
     MeasureType,
+    ObservationStationManager,
 )
 from ...schemas.climaticindicators import (
     ClimaticIndicatorCreate,
+    ClimaticIndicatorObservationNameCreate,
     ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator,
 )
 
@@ -33,6 +35,12 @@ def generate_climatic_indicators(
             color_scale_max=100,
             data_precision=0,
             sort_order=12,
+            observation_names=[
+                ClimaticIndicatorObservationNameCreate(
+                    observation_station_manager=ObservationStationManager.ARPAFVG,
+                    indicator_observation_name="SNWDAYS",
+                ),
+            ],
             forecast_models=[
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["model_ensemble"],

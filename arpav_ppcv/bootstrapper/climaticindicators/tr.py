@@ -37,7 +37,11 @@ def generate_climatic_indicators(
                 ClimaticIndicatorObservationNameCreate(
                     observation_station_manager=ObservationStationManager.ARPAV,
                     indicator_observation_name="TR",
-                )
+                ),
+                ClimaticIndicatorObservationNameCreate(
+                    observation_station_manager=ObservationStationManager.ARPAFVG,
+                    indicator_observation_name="TR",
+                ),
             ],
             forecast_models=[
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(

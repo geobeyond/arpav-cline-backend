@@ -1994,16 +1994,13 @@ def get_observation_station(
     return session.get(observations.ObservationStation, observation_station_id)
 
 
-def get_observation_station_by_identifier(
-    session: sqlmodel.Session, observation_station_identifier: str
+def get_observation_station_by_code(
+    session: sqlmodel.Session, code: str
 ) -> Optional[observations.ObservationStation]:
-    """Get an observation station by its identifier."""
-    manager_value, code = observation_station_identifier.split("-")
-    manager = static.ObservationStationManager(manager_value)
+    """Get an observation station by its code"""
     return session.exec(
         sqlmodel.select(observations.ObservationStation).where(
             observations.ObservationStation.code == code,
-            observations.ObservationStation.managed_by == manager
         )
     ).first()
 
@@ -2015,7 +2012,8 @@ def list_observation_stations(
     offset: int = 0,
     include_total: bool = False,
     name_filter: Optional[str] = None,
-    polygon_intersection_filter: shapely.Polygon = None,
+    polygon_intersection_filter: Optional[shapely.Polygon] = None,
+    manager_filter: Optional[static.ObservationStationManager] = None,
 ) -> tuple[Sequence[observations.ObservationStation], Optional[int]]:
     """List existing observation stations.
 
@@ -2038,6 +2036,10 @@ def list_observation_stations(
                 ),
             )
         )
+    if manager_filter is not None:
+        statement = statement.where(
+            observations.ObservationStation.managed_by == manager_filter
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2045,11 +2047,12 @@ def list_observation_stations(
 
 def collect_all_observation_stations(
     session: sqlmodel.Session,
-    polygon_intersection_filter: shapely.Polygon = None,
+    polygon_intersection_filter: Optional[shapely.Polygon] = None,
+    manager_filter: Optional[static.ObservationStationManager] = None,
 ) -> Sequence[observations.ObservationStation]:
     """Collect all observation stations.
 
-    The ``polygon_intersetion_filter`` parameter is expected to be a polygon
+    The ``polygon_intersection_filter`` parameter is expected to be a polygon
     geometry in the EPSG:4326 CRS.
     """
     _, num_total = list_observation_stations(
@@ -2057,12 +2060,14 @@ def collect_all_observation_stations(
         limit=1,
         include_total=True,
         polygon_intersection_filter=polygon_intersection_filter,
+        manager_filter=manager_filter,
     )
     result, _ = list_observation_stations(
         session,
         limit=num_total,
         include_total=False,
         polygon_intersection_filter=polygon_intersection_filter,
+        manager_filter=manager_filter,
     )
     return result
 
@@ -2075,7 +2080,18 @@ def create_observation_station(
     geom = shapely.io.from_geojson(observation_station_create.geom.model_dump_json())
     wkbelement = from_shape(geom)
     db_item = observations.ObservationStation(
-        **observation_station_create.model_dump(exclude={"geom"}),
+        **observation_station_create.model_dump(
+            exclude={
+                "geom",
+                "code",
+            }
+        ),
+        code="-".join(
+            (
+                observation_station_create.managed_by.name.lower(),
+                observation_station_create.code,
+            )
+        ),
         geom=wkbelement,
     )
     session.add(db_item)
@@ -2098,8 +2114,14 @@ def create_many_observation_stations(
         geom = shapely.io.from_geojson(item_create.geom.model_dump_json())
         wkbelement = from_shape(geom)
         db_item = observations.ObservationStation(
-            **item_create.model_dump(exclude={"geom"}),
+            **item_create.model_dump(
+                exclude={
+                    "geom",
+                    "code",
+                }
+            ),
             geom=wkbelement,
+            code="-".join((item_create.managed_by.name.lower(), item_create.code)),
         )
         db_records.append(db_item)
         session.add(db_item)
@@ -3246,3 +3268,22 @@ def delete_forecast_time_window(
         session.commit()
     else:
         raise RuntimeError("Forecast time window not found")
+
+
+def find_new_station_measurements(
+    session: sqlmodel.Session,
+    *,
+    station_id: int,
+    candidates: Sequence[observations.ObservationMeasurementCreate],
+) -> list[observations.ObservationMeasurementCreate]:
+    """Filter the list of candidate measurements, leaving only those that are new."""
+    existing_measurements = collect_all_observation_measurements(
+        session, observation_station_id_filter=station_id
+    )
+    to_drop = []
+    for candidate in candidates:
+        for existing in existing_measurements:
+            if candidate.climatic_indicator_id == existing.climatic_indicator_id:
+                if candidate.date == existing.date:
+                    to_drop.append(candidate.identifier)
+    return [m for m in candidates if m.identifier not in to_drop]

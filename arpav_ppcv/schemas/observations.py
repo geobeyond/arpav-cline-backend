@@ -1,7 +1,6 @@
 import datetime as dt
 import uuid
 from typing import (
-    ClassVar,
     Optional,
     TYPE_CHECKING,
 )
@@ -495,11 +494,6 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
         }
     )
 
-    @pydantic.computed_field
-    @property
-    def identifier(self) -> str:
-        return "{owner}-{code}".format(owner=self.managed_by, code=self.code)
-
 
 class ObservationStationCreate(sqlmodel.SQLModel):
     name: Optional[str] = ""
@@ -594,8 +588,13 @@ class ObservationMeasurementCreate(sqlmodel.SQLModel):
     value: float
     date: dt.date
     measurement_aggregation_type: static.MeasurementAggregationType
-    observation_station_id: pydantic.UUID4
+    observation_station_id: int
     climatic_indicator_id: int
+
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        return "-".join((str(self.climatic_indicator_id), self.date.strftime("%Y%m%D")))
 
 
 class ObservationMeasurementUpdate(sqlmodel.SQLModel):

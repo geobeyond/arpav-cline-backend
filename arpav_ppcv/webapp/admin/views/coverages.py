@@ -1055,11 +1055,15 @@ class ForecastCoverageConfigurationView(ModelView):
         return read_schemas.ForecastCoverageConfigurationRead(
             **instance.model_dump(
                 exclude={
+                    "climatic_indicator",
                     "forecast_models",
                     "time_windows",
                     "observation_series_configurations",
+                    "spatial_region",
                 }
             ),
+            climatic_indicator=instance.climatic_indicator_id,
+            spatial_region=instance.spatial_region_id,
             forecast_models=[
                 fml.forecast_model_id for fml in instance.forecast_model_links
             ],

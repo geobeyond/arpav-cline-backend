@@ -95,6 +95,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     model_config = SettingsConfigDict(
         env_prefix="ARPAV_PPCV__",  # noqa
         env_nested_delimiter="__",
+        secrets_dir="/run/secrets",
     )
 
     debug: bool = False

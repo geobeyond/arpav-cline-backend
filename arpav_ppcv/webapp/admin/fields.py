@@ -64,12 +64,20 @@ class RelatedForecastModelField(starlette_admin.EnumField):
         db_forecast_model = database.get_forecast_model(session, value)
         return db_forecast_model.name
 
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
     @staticmethod
     def choices_loader(request: Request):
         all_forecast_models = database.collect_all_forecast_models(
             request.state.session
         )
-        return [(fm.id, fm.name) for fm in all_forecast_models]
+        return [(str(fm.id), fm.name) for fm in all_forecast_models]
 
 
 class RelatedForecastTimeWindowField(starlette_admin.EnumField):
@@ -82,12 +90,20 @@ class RelatedForecastTimeWindowField(starlette_admin.EnumField):
         db_forecast_time_window = database.get_forecast_time_window(session, value)
         return db_forecast_time_window.name
 
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
     @staticmethod
     def choices_loader(request: Request):
         all_forecast_time_windows = database.collect_all_forecast_time_windows(
             request.state.session
         )
-        return [(tw.id, tw.name) for tw in all_forecast_time_windows]
+        return [(str(tw.id), tw.name) for tw in all_forecast_time_windows]
 
 
 class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
@@ -100,12 +116,20 @@ class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
         db_forecast_time_window = database.get_forecast_time_window(session, value)
         return db_forecast_time_window.name
 
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
     @staticmethod
     def choices_loader(request: Request):
         all_obs_series_confs = database.collect_all_observation_series_configurations(
             request.state.session
         )
-        return [(osc.id, osc.identifier) for osc in all_obs_series_confs]
+        return [(str(osc.id), osc.identifier) for osc in all_obs_series_confs]
 
 
 class RelatedSpatialRegionField(starlette_admin.EnumField):
@@ -117,6 +141,14 @@ class RelatedSpatialRegionField(starlette_admin.EnumField):
         session = request.state.session
         spatial_region = database.get_spatial_region(session, value)
         return spatial_region.name
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):
@@ -152,6 +184,14 @@ class RelatedClimaticIndicatorField(starlette_admin.EnumField):
         session = request.state.session
         climatic_indicator = database.get_climatic_indicator(session, value)
         return climatic_indicator.identifier
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):

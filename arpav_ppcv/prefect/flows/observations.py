@@ -1,5 +1,6 @@
 import datetime as dt
 from typing import (
+    Any,
     Sequence,
     Union,
 )
@@ -8,9 +9,17 @@ import httpx
 import sqlmodel
 import prefect
 import prefect.artifacts
+from prefect.cache_policies import (
+    CacheKeyFnPolicy,
+    RUN_ID,
+)
+from prefect.context import TaskRunContext
 import pyproj
 
-from arpav_ppcv import database
+from arpav_ppcv import (
+    database,
+    exceptions,
+)
 from arpav_ppcv.config import get_settings
 from arpav_ppcv.observations_harvester import operations
 from arpav_ppcv.operations import (
@@ -30,9 +39,21 @@ settings = get_settings()
 db_engine = database.get_engine(settings)
 
 
+def _task_cache_key_builder(context: TaskRunContext, params: dict[str, Any]) -> str:
+    result = ""
+    for key, value in params.items():
+        if key != "client":
+            try:
+                result += value.model_dump_json()
+            except Exception:
+                result += hash(value)
+    return result
+
+
 @prefect.task(
     retries=settings.prefect.num_task_retries,
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
 )
 def harvest_stations(
     client: httpx.Client,
@@ -103,7 +124,9 @@ def find_new_stations(
             )
     for existing_station in existing_stations.values():
         if (
-            possibly_new_stations.get((existing_station.managed_by, existing_station.code))
+            possibly_new_stations.get(
+                (existing_station.managed_by, existing_station.code)
+            )
             is None
         ):
             print(
@@ -155,7 +178,7 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
             prefect.artifacts.create_table_artifact(
                 key="stations-created",
                 table=[
-                    {"id": str(s.id), "identifier": s.identifier, "name": s.name} for s in created
+                    {"id": str(s.id), "code": s.code, "name": s.name} for s in created
                 ],
                 description=f"# Created {len(created)} stations",
             )
@@ -166,6 +189,7 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
 @prefect.task(
     retries=settings.prefect.num_task_retries,
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
 )
 def harvest_monthly_measurements(
     client: httpx.Client,
@@ -217,7 +241,137 @@ def refresh_measurements(
     station_code: str | None = None,
     observation_series_configuration_identifier: str | None = None,
 ):
-    pass
+    client = httpx.Client()
+    to_wait_on = []
+    to_filter_for_new_measurements = {}
+    with sqlmodel.Session(db_engine) as db_session:
+        stations_to_process = _get_stations(db_session, station_code)
+        series_confs_to_process = _get_observation_series_configurations(
+            db_session, observation_series_configuration_identifier
+        )
+        for station in stations_to_process:
+            to_filter_for_new_measurements.setdefault(station.id, [])
+            for series_configuration in series_confs_to_process:
+                if station.managed_by == ObservationStationManager.ARPAV:
+                    fut = harvest_arpav_station_measurements.submit(
+                        client, station, series_configuration
+                    )
+                    to_wait_on.append(fut)
+                elif station.managed_by == ObservationStationManager.ARPAFVG:
+                    fut = harvest_arpafvg_station_measurements.submit(
+                        client, station, series_configuration
+                    )
+                    to_wait_on.append(fut)
+                else:
+                    raise NotImplementedError(
+                        f"Observation stations managed by {station.managed_by} are not "
+                        f"implemented."
+                    )
+        for future in to_wait_on:
+            station_measurements_to_create: list[
+                observations.ObservationMeasurementCreate
+            ] = future.result()
+            try:
+                first_harvested_measurement = station_measurements_to_create[0]
+                to_filter_for_new_measurements[
+                    first_harvested_measurement.observation_station_id
+                ].extend(station_measurements_to_create)
+            except IndexError:
+                pass  # received an empty list, ignore
+
+        all_created = []
+        for (
+            station_id,
+            harvested_measurements,
+        ) in to_filter_for_new_measurements.items():
+            station = database.get_observation_station(db_session, station_id)
+            to_create = database.find_new_station_measurements(
+                db_session,
+                station_id=station_id,
+                candidates=harvested_measurements,
+            )
+            if len(to_create) > 0:
+                print(
+                    f"Found {len(to_create)} new measurements for station "
+                    f"{station.code!r}. Creating them now..."
+                )
+                created = database.create_many_observation_measurements(
+                    db_session, to_create
+                )
+                all_created.extend(created)
+            else:
+                print(f"No new measurements found for station {station.code!r}.")
+
+        prefect.artifacts.create_table_artifact(
+            key="measurements-created",
+            table=[
+                {
+                    "id": str(m.id),
+                    "station": m.observation_station.code,
+                    "climatic_indicator": m.climatic_indicator.identifier,
+                    "date": m.date.strftime("%Y-%m-%d"),
+                    "value": m.value,
+                }
+                for m in all_created
+            ],
+            description=f"# Created {len(all_created)} measurements",
+        )
+
+
+@prefect.task(
+    retries=settings.prefect.num_task_retries,
+    retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
+)
+def harvest_arpafvg_station_measurements(
+    client: httpx.Client,
+    station: observations.ObservationStation,
+    series_configuration: observations.ObservationSeriesConfiguration,
+) -> list[observations.ObservationMeasurementCreate]:
+    harvested_measurements = []
+    raw_measurement_gen = operations.fetch_arpafvg_station_measurements(
+        client,
+        station,
+        series_configuration,
+        settings.arpafvg_observations_base_url,
+        settings.arpafvg_auth_token,
+    )
+    for year_period, raw_measurement in raw_measurement_gen:
+        harvested_measurements.append(
+            operations.parse_arpafvg_measurement(
+                raw_measurement,
+                year_period,
+                station,
+                series_configuration.climatic_indicator,
+            )
+        )
+    return harvested_measurements
+
+
+@prefect.task(
+    retries=settings.prefect.num_task_retries,
+    retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
+)
+def harvest_arpav_station_measurements(
+    client: httpx.Client,
+    station: observations.ObservationStation,
+    series_configuration: observations.ObservationSeriesConfiguration,
+) -> list[observations.ObservationMeasurementCreate]:
+    harvested_measurements = []
+    raw_measurement_gen = operations.fetch_arpav_station_measurements(
+        client, station, series_configuration, settings.arpav_observations_base_url
+    )
+    for year_period, raw_measurement in raw_measurement_gen:
+        harvested_measurements.append(
+            operations.parse_arpav_measurement(
+                raw_measurement,
+                year_period,
+                station,
+                series_configuration.climatic_indicator,
+            )
+        )
+    return harvested_measurements
 
 
 @prefect.flow(
@@ -284,6 +438,7 @@ def refresh_monthly_measurements(
 @prefect.task(
     retries=settings.prefect.num_task_retries,
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
 )
 def harvest_seasonal_measurements(
     client: httpx.Client,
@@ -398,6 +553,7 @@ def refresh_seasonal_measurements(
 @prefect.task(
     retries=settings.prefect.num_task_retries,
     retry_delay_seconds=settings.prefect.task_retry_delay_seconds,
+    cache_policy=CacheKeyFnPolicy(cache_key_fn=_task_cache_key_builder) + RUN_ID,
 )
 def harvest_yearly_measurements(
     client: httpx.Client,
@@ -490,12 +646,16 @@ def refresh_yearly_measurements(
 
 
 def _get_stations(
-    db_session: sqlmodel.Session, station_identifier: str | None = None
-) -> list[observations.Station]:
-    if station_identifier is not None:
-        station = database.get_observation_station_by_identifier(
-            db_session, station_identifier)
-        result = [station] if station else []
+    db_session: sqlmodel.Session, station_code: str | None = None
+) -> list[observations.ObservationStation]:
+    if station_code is not None:
+        station = database.get_observation_station_by_code(db_session, station_code)
+        if station is not None:
+            result = [station]
+        else:
+            raise exceptions.InvalidObservationStationCodeError(
+                f"station with code {station_code!r} not found"
+            )
     else:
         result = database.collect_all_observation_stations(db_session)
     return result
@@ -509,7 +669,13 @@ def _get_observation_series_configurations(
         series_conf = database.get_observation_series_configuration_by_identifier(
             db_session, observation_series_configuration_identifier
         )
-        result = [series_conf] if series_conf else []
+        if series_conf is not None:
+            result = [series_conf]
+        else:
+            raise exceptions.InvalidObservationSeriesConfigurationIdentifierError(
+                f"observation series configuration identifier "
+                f"{observation_series_configuration_identifier!r} not found"
+            )
     else:
         result = database.collect_all_observation_series_configurations(db_session)
     return result
