@@ -41,7 +41,7 @@ netcdf4 = "<1.7"
 cftime = "^1.6.4"
 babel = "^2.15.0"
 pyloess = "^0.1.0"
-prefect = {version = "^3.0.0rc14", allow-prereleases = true}
+prefect = "3.1.13"
 matplotlib = "^3.9.2"
 numpy = "<2"
 

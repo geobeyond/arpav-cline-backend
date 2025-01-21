@@ -1994,16 +1994,16 @@ def get_observation_station(
     return session.get(observations.ObservationStation, observation_station_id)
 
 
-def get_observation_station_by_code(
-    session: sqlmodel.Session, observation_station_code: str
+def get_observation_station_by_identifier(
+    session: sqlmodel.Session, observation_station_identifier: str
 ) -> Optional[observations.ObservationStation]:
-    """Get an observation station by its code.
-
-    Since a station code is unique, it can be used to uniquely identify a station.
-    """
+    """Get an observation station by its identifier."""
+    manager_value, code = observation_station_identifier.split("-")
+    manager = static.ObservationStationManager(manager_value)
     return session.exec(
         sqlmodel.select(observations.ObservationStation).where(
-            observations.ObservationStation.code == observation_station_code
+            observations.ObservationStation.code == code,
+            observations.ObservationStation.managed_by == manager
         )
     ).first()
 

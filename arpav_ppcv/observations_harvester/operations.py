@@ -30,6 +30,11 @@ def fetch_remote_arpafvg_stations(
     # periodo:
     # - 0 means yearly data
     # - 1, 2, 3, 4 means winter, spring, summer, autumn
+    indicator_internal_name = [
+        obs_name.indicator_observation_name
+        for obs_name in series_configuration.climatic_indicator.observation_names
+        if obs_name.station_manager == ObservationStationManager.ARPAV
+    ][0]
     if (
         series_configuration.measurement_aggregation_type
         == MeasurementAggregationType.YEARLY
@@ -48,7 +53,7 @@ def fetch_remote_arpafvg_stations(
             "authorization": f"Bearer {auth_token}",
         },
         params={
-            "indicatore": series_configuration.indicator_internal_name,
+            "indicatore": indicator_internal_name,
             "periodo": period,
         },
     )

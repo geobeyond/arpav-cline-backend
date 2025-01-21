@@ -75,4 +75,9 @@ def generate_observation_series_configurations(
             measurement_aggregation_type=MeasurementAggregationType.YEARLY,
             station_managers=[ObservationStationManager.ARPAV],
         ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tas-absolute-annual"].id,
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[ObservationStationManager.ARPAFVG],
+        ),
     ]

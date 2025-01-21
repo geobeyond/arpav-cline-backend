@@ -454,7 +454,6 @@ class YearlyMeasurementUpdate(sqlmodel.SQLModel):
 
 class ObservationStation(sqlmodel.SQLModel, table=True):
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-    identifier_pattern: ClassVar[str] = "{owner}-{code}"
 
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str = ""
@@ -499,7 +498,7 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        return self.identifier_pattern.format(owner=self.managed_by, code=self.code)
+        return "{owner}-{code}".format(owner=self.managed_by, code=self.code)
 
 
 class ObservationStationCreate(sqlmodel.SQLModel):

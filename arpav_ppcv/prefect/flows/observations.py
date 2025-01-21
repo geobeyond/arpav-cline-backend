@@ -80,30 +80,30 @@ def find_new_stations(
     db_stations: Sequence[observations.ObservationStation],
     new_stations: Sequence[observations.ObservationStationCreate],
 ) -> list[observations.ObservationStationCreate]:
-    possibly_new_stations = {(s.owner, s.code): s for s in new_stations}
-    existing_stations = {(s.owner, s.code): s for s in db_stations}
+    possibly_new_stations = {(s.managed_by, s.code): s for s in new_stations}
+    existing_stations = {(s.managed_by, s.code): s for s in db_stations}
     to_create = []
     for possibly_new_station in possibly_new_stations.values():
         if (
             existing_stations.get(
-                (possibly_new_station.owner, possibly_new_station.code)
+                (possibly_new_station.managed_by, possibly_new_station.code)
             )
             is None
         ):
             print(
-                f"About to create station {possibly_new_station.owner} "
+                f"About to create station {possibly_new_station.managed_by} "
                 f"{possibly_new_station.code} - {possibly_new_station.name}..."
             )
             to_create.append(possibly_new_station)
         else:
             print(
-                f"Station {possibly_new_station.owner} "
+                f"Station {possibly_new_station.managed_by} "
                 f"{possibly_new_station.code} - {possibly_new_station.name} "
                 f"is already known"
             )
     for existing_station in existing_stations.values():
         if (
-            possibly_new_stations.get((existing_station.owner, existing_station.code))
+            possibly_new_stations.get((existing_station.managed_by, existing_station.code))
             is None
         ):
             print(
@@ -155,7 +155,7 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
             prefect.artifacts.create_table_artifact(
                 key="stations-created",
                 table=[
-                    {"id": str(s.id), "code": s.code, "name": s.name} for s in created
+                    {"id": str(s.id), "identifier": s.identifier, "name": s.name} for s in created
                 ],
                 description=f"# Created {len(created)} stations",
             )
@@ -490,13 +490,14 @@ def refresh_yearly_measurements(
 
 
 def _get_stations(
-    db_session: sqlmodel.Session, station_code: str | None = None
+    db_session: sqlmodel.Session, station_identifier: str | None = None
 ) -> list[observations.Station]:
-    if station_code is not None:
-        station = database.get_station_by_code(db_session, station_code)
+    if station_identifier is not None:
+        station = database.get_observation_station_by_identifier(
+            db_session, station_identifier)
         result = [station] if station else []
     else:
-        result = database.collect_all_stations(db_session)
+        result = database.collect_all_observation_stations(db_session)
     return result
 
 

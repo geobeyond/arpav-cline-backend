@@ -28,10 +28,11 @@ def list_observation_stations(ctx: typer.Context) -> None:
 
 
 @stations_app.command(name="get")
-def get_observation_station(ctx: typer.Context, code: str) -> None:
+def get_observation_station(ctx: typer.Context, identifier: str) -> None:
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         if (
-            db_station := database.get_observation_station_by_code(session, code)
+            db_station := database.get_observation_station_by_identifier(
+                session, identifier)
         ) is not None:
             item = schemas.ObservationStationDetail(**db_station.model_dump())
             print(item)
