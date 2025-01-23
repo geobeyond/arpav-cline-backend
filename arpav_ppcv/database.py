@@ -2083,18 +2083,20 @@ def create_observation_station(
         **observation_station_create.model_dump(
             exclude={
                 "geom",
-                "code",
+                "climatic_indicators",
             }
-        ),
-        code="-".join(
-            (
-                observation_station_create.managed_by.name.lower(),
-                observation_station_create.code,
-            )
         ),
         geom=wkbelement,
     )
     session.add(db_item)
+    for climatic_indicator_id in observation_station_create.climatic_indicators or []:
+        climatic_indicator = get_climatic_indicator(session, climatic_indicator_id)
+        if climatic_indicator is not None:
+            db_item.climatic_indicators.append(climatic_indicator)
+        else:
+            logger.warning(
+                f"climatic indicator {climatic_indicator_id} not found, ignoring..."
+            )
     try:
         session.commit()
     except sqlalchemy.exc.DBAPIError:
@@ -2117,14 +2119,21 @@ def create_many_observation_stations(
             **item_create.model_dump(
                 exclude={
                     "geom",
-                    "code",
+                    "climatic_indicators",
                 }
             ),
             geom=wkbelement,
-            code="-".join((item_create.managed_by.name.lower(), item_create.code)),
         )
         db_records.append(db_item)
         session.add(db_item)
+        for climatic_indicator_id in item_create.climatic_indicators or []:
+            climatic_indicator = get_climatic_indicator(session, climatic_indicator_id)
+            if climatic_indicator is not None:
+                db_item.climatic_indicators.append(climatic_indicator)
+            else:
+                logger.warning(
+                    f"climatic indicator {climatic_indicator_id} not found, ignoring..."
+                )
     try:
         session.commit()
     except sqlalchemy.exc.DBAPIError:
@@ -2141,16 +2150,36 @@ def update_observation_station(
     observation_station_update: observations.ObservationStationUpdate,
 ) -> observations.ObservationStation:
     """Update an observation station."""
-    geom = from_shape(
-        shapely.io.from_geojson(observation_station_update.geom.model_dump_json())
-    )
+    if observation_station_update.geom is not None:
+        geom = from_shape(
+            shapely.io.from_geojson(observation_station_update.geom.model_dump_json())
+        )
+    else:
+        geom = None
     other_data = observation_station_update.model_dump(
-        exclude={"geom"}, exclude_unset=True
+        exclude={
+            "geom",
+            "climatic_indicators",
+        },
+        exclude_unset=True,
     )
-    data = {**other_data, "geom": geom}
+    data = {**other_data}
+    if geom is not None:
+        data["geom"] = geom
     for key, value in data.items():
         setattr(db_observation_station, key, value)
     session.add(db_observation_station)
+    updated_climatic_indicators = []
+    for climatic_indicator_id in observation_station_update.climatic_indicators or []:
+        climatic_indicator = get_climatic_indicator(session, climatic_indicator_id)
+        if climatic_indicator is not None:
+            updated_climatic_indicators.append(climatic_indicator)
+        else:
+            logger.warning(
+                f"Climatic indicator with id {climatic_indicator_id} not found, "
+                f"ignoring..."
+            )
+    db_observation_station.climatic_indicators = updated_climatic_indicators
     session.commit()
     session.refresh(db_observation_station)
     return db_observation_station

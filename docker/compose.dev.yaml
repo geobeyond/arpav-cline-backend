@@ -23,6 +23,7 @@ x-common-env: &common-env
   ARPAV_PPCV__LOG_CONFIG_FILE: /home/appuser/app/dev-log-config.yml
   ARPAV_PPCV__THREDDS_SERVER__BASE_URL: http://thredds:8080/thredds
   ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL: http://martin:3000
+  PREFECT_LOGGING_EXTRA_LOGGERS: arpav_ppcv
 
 x-common-volumes: &common-volumes
   - type: bind

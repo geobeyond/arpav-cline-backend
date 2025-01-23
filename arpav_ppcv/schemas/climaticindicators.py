@@ -8,6 +8,7 @@ from typing import (
 import babel
 import pydantic
 import sqlmodel
+from sqlalchemy.orm import relationship as sla_relationship
 
 from . import static
 from ..config import get_translations
@@ -18,9 +19,7 @@ if TYPE_CHECKING:
         ClimaticIndicatorObservationName,
         ObservationMeasurement,
         ObservationSeriesConfiguration,
-        MonthlyMeasurement,
-        SeasonalMeasurement,
-        YearlyMeasurement,
+        ObservationStation,
     )
 
 _name_description_text: Final[str] = (
@@ -72,6 +71,17 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     ] = sqlmodel.Relationship(
         back_populates="climatic_indicator",
     )
+    # this relationship is defined by using the fallback sqlalchemy relationship
+    # method - this is in order to be able to specify the link table as a
+    # string (a facility that sqlalchemy offers, but not sqlmodel) and avoid circular
+    # dependencies which would otherwise occur if using sqlmodel's `link_model`
+    # approach
+    observation_stations: list["ObservationStation"] = sqlmodel.Relationship(
+        sa_relationship=sla_relationship(
+            secondary="observationstationclimaticindicatorlink",
+            back_populates="climatic_indicators",
+        )
+    )
 
     measurements: list["ObservationMeasurement"] = sqlmodel.Relationship(
         back_populates="climatic_indicator",
@@ -79,43 +89,6 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
             # ORM relationship config, which explicitly includes the
             # `delete` and `delete-orphan` options because we want the ORM
             # to try to delete monthly measurements when their related
-            # climatic_indicator is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-
-    monthly_measurements: list["MonthlyMeasurement"] = sqlmodel.Relationship(
-        back_populates="climatic_indicator",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete monthly measurements when their related
-            # climatic_indicator is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-    seasonal_measurements: list["SeasonalMeasurement"] = sqlmodel.Relationship(
-        back_populates="climatic_indicator",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete seasonal measurements when their related
-            # climatic_indicator is deleted
-            "cascade": "all, delete-orphan",
-            # expect that the RDBMS handles cascading deletes
-            "passive_deletes": True,
-        },
-    )
-    yearly_measurements: list["YearlyMeasurement"] = sqlmodel.Relationship(
-        back_populates="climatic_indicator",
-        sa_relationship_kwargs={
-            # ORM relationship config, which explicitly includes the
-            # `delete` and `delete-orphan` options because we want the ORM
-            # to try to delete yearly measurements when their related
             # climatic_indicator is deleted
             "cascade": "all, delete-orphan",
             # expect that the RDBMS handles cascading deletes

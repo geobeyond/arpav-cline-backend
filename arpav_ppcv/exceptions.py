@@ -18,11 +18,19 @@ class InvalidClimaticIndicatorIdentifierError(ArpavError):
     ...
 
 
+class InvalidObservationStationIdError(ArpavError):
+    ...
+
+
 class InvalidObservationStationCodeError(ArpavError):
     ...
 
 
 class InvalidObservationSeriesConfigurationIdentifierError(ArpavError):
+    ...
+
+
+class InvalidObservationSeriesConfigurationIdError(ArpavError):
     ...
 
 

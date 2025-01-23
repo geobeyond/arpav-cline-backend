@@ -10,6 +10,7 @@ import geoalchemy2
 import pydantic
 import sqlalchemy
 import sqlmodel
+from sqlalchemy.orm import relationship as sla_relationship
 
 from . import (
     base,
@@ -295,15 +296,6 @@ class MonthlyMeasurement(MonthlyMeasurementBase, table=True):
             "lazy": "joined",
         },
     )
-    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
-        back_populates="monthly_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
 
 
 # FIXME: Replace this with ObservationMeasurement
@@ -352,15 +344,6 @@ class SeasonalMeasurement(sqlmodel.SQLModel, table=True):
     season: base.Season
 
     station: Station = sqlmodel.Relationship(
-        back_populates="seasonal_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
-    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="seasonal_measurements",
         sa_relationship_kwargs={
             # retrieve the related resource immediately, by means of a SQL JOIN - this
@@ -426,15 +409,6 @@ class YearlyMeasurement(sqlmodel.SQLModel, table=True):
             "lazy": "joined",
         },
     )
-    climatic_indicator: "ClimaticIndicator" = sqlmodel.Relationship(
-        back_populates="yearly_measurements",
-        sa_relationship_kwargs={
-            # retrieve the related resource immediately, by means of a SQL JOIN - this
-            # is instead of the default lazy behavior of only retrieving related
-            # records when they are accessed by the ORM
-            "lazy": "joined",
-        },
-    )
 
 
 # FIXME: Replace this with ObservationMeasurement
@@ -449,6 +423,43 @@ class YearlyMeasurementCreate(sqlmodel.SQLModel):
 class YearlyMeasurementUpdate(sqlmodel.SQLModel):
     value: Optional[float] = None
     year: Optional[int] = None
+
+
+class ObservationStationClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "observation_station_id",
+            ],
+            [
+                "observationstation.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related observation station gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "climatic_indicator_id",
+            ],
+            [
+                "climaticindicator.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related climatic indicator gets deleted
+        ),
+    )
+    observation_station_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
 
 
 class ObservationStation(sqlmodel.SQLModel, table=True):
@@ -483,15 +494,16 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
             "passive_deletes": True,
         },
     )
+    # this relationship is defined by using the fallback sqlalchemy relationship
+    # method - this is in order to be able to specify the link table as a
+    # string (a facility that sqlalchemy offers, but not sqlmodel) and avoid circular
+    # dependencies which would otherwise occur if using sqlmodel's `link_model`
+    # approach
     climatic_indicators: list["ClimaticIndicator"] = sqlmodel.Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": (
-                "and_(ObservationStation.id == ObservationMeasurement.observation_station_id, "
-                "ClimaticIndicator.id == ObservationMeasurement.climatic_indicator_id)"
-            ),
-            "secondary": "observationmeasurement",
-            "viewonly": True,
-        }
+        sa_relationship=sla_relationship(
+            secondary="observationstationclimaticindicatorlink",
+            back_populates="observation_stations",
+        )
     )
 
 
@@ -503,6 +515,7 @@ class ObservationStationCreate(sqlmodel.SQLModel):
     altitude_m: Optional[float] = None
     active_since: Optional[dt.date] = None
     active_until: Optional[dt.date] = None
+    climatic_indicators: Optional[list[int]] = None
 
     def __hash__(self):
         return hash(
@@ -532,6 +545,7 @@ class ObservationStationUpdate(sqlmodel.SQLModel):
     altitude_m: Optional[float] = None
     active_since: Optional[dt.date] = None
     active_until: Optional[dt.date] = None
+    climatic_indicators: Optional[list[int]] = None
 
 
 class ObservationMeasurement(sqlmodel.SQLModel, table=True):

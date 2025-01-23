@@ -939,34 +939,22 @@ def refresh_station_climatic_indicator_database_view(
     climatic_indicator: climaticindicators.ClimaticIndicator,
     db_schema_name: Optional[str] = "public",
 ):
-    sanitized_name = sanitize_observation_variable_name(climatic_indicator.name)
+    """Refresh DB view with stations that have data for input climatic indicator."""
+    sanitized_name = sanitize_observation_variable_name(climatic_indicator.identifier)
     view_name = f"{db_schema_name}.stations_{sanitized_name}"
-    index_name = f"idx_{sanitized_name}"
     drop_view_statement = sqlmodel.text(f"DROP MATERIALIZED VIEW IF EXISTS {view_name}")
     create_view_statement = sqlmodel.text(
         f"CREATE MATERIALIZED VIEW {view_name} "
-        f"AS SELECT DISTINCT s.* "
-        f"FROM yearlymeasurement AS ym "
-        f"JOIN station AS s ON s.id = ym.station_id "
-        f"JOIN climaticindicator AS c ON c.id = ym.climatic_indicator_id "
-        f"WHERE c.name = '{climatic_indicator.name}' "
-        f"AND c.measure_type = '{climatic_indicator.measure_type.value}' "
-        f"UNION "
-        f"SELECT DISTINCT s.* "
-        f"FROM seasonalmeasurement AS sm "
-        f"JOIN station AS s ON s.id = sm.station_id "
-        f"JOIN climaticindicator AS c ON c.id = sm.variable_id "
-        f"WHERE c.name = '{climatic_indicator.name}' "
-        f"AND c.measure_type = '{climatic_indicator.measure_type.value}' "
-        f"UNION "
-        f"SELECT DISTINCT s.* "
-        f"FROM monthlymeasurement AS mm "
-        f"JOIN station AS s ON s.id = mm.station_id "
-        f"JOIN climaticindicator AS c ON c.id = mm.variable_id "
-        f"WHERE c.name = '{climatic_indicator.name}' "
-        f"AND c.measure_type = '{climatic_indicator.measure_type.value}' "
+        f"AS SELECT s.* "
+        f"FROM observationstation AS s "
+        f"JOIN observationstationclimaticindicatorlink AS scil ON s.id = scil.observation_station_id "
+        f"JOIN climaticindicator AS ci ON ci.id = scil.climatic_indicator_id "
+        f"WHERE ci.name = '{climatic_indicator.name}' "
+        f"AND ci.measure_type = '{climatic_indicator.measure_type.name}' "
+        f"AND ci.aggregation_period = '{climatic_indicator.aggregation_period.name}' "
         f"WITH DATA"
     )
+    index_name = f"idx_{sanitized_name}"
     drop_index_statement = sqlmodel.text(f"DROP INDEX IF EXISTS {index_name}")
     create_index_statement = sqlmodel.text(
         f"CREATE INDEX {index_name} ON {view_name} USING gist (geom)"
