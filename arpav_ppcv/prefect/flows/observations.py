@@ -25,6 +25,7 @@ from arpav_ppcv.schemas.static import (
     MeasureType,
     ObservationStationManager,
 )
+from arpav_ppcv.prefect.static import PrefectTaskTag
 
 # this is a module global because we need to configure the prefect flow and
 # task with values from it
@@ -35,6 +36,7 @@ _db_engine = database.get_engine(_settings)
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[PrefectTaskTag.USES_DB.value],
 )
 def refresh_stations_for_climatic_indicator(
     climatic_indicator_id: int, db_schema_name: str
@@ -85,8 +87,12 @@ def refresh_station_variables(
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[
+        PrefectTaskTag.USES_DB.value,
+        PrefectTaskTag.USES_ARPA_V_REST_API,
+    ],
 )
-def harvest_stations(
+def harvest_arpav_stations(
     series_configuration_id: int,
 ) -> tuple[int, set[observations.ObservationStationCreate]]:
     with sqlmodel.Session(_db_engine) as session:
@@ -102,39 +108,52 @@ def harvest_stations(
         ).transform
         stations = set()
         client = httpx.Client()
-        for station_manager in series_configuration.station_managers:
-            if station_manager == ObservationStationManager.ARPAV:
-                retriever = arpav_operations.fetch_remote_stations(
-                    client,
-                    series_configuration,
-                    observations_base_url=_settings.arpav_observations_base_url,
-                )
-                for raw_station in retriever:
-                    stations.add(
-                        arpav_operations.parse_station(raw_station, coord_converter)
-                    )
-            elif station_manager == ObservationStationManager.ARPAFVG:
-                retriever = arpafvg_operations.fetch_remote_stations(
-                    client,
-                    series_configuration,
-                    observations_base_url=_settings.arpafvg_observations_base_url,
-                    auth_token=_settings.arpafvg_auth_token,
-                )
-                for raw_station in retriever:
-                    stations.add(
-                        arpafvg_operations.parse_station(raw_station, coord_converter)
-                    )
-            else:
-                raise NotImplementedError(
-                    f"Observation stations managed by {station_manager} are not "
-                    f"implemented."
-                )
+        retriever = arpav_operations.fetch_remote_stations(
+            client,
+            series_configuration,
+            observations_base_url=_settings.arpav_observations_base_url,
+        )
+        for raw_station in retriever:
+            stations.add(arpav_operations.parse_station(raw_station, coord_converter))
         return series_configuration_id, stations
 
 
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[
+        PrefectTaskTag.USES_DB.value,
+        PrefectTaskTag.USES_ARPA_FVG_REST_API,
+    ],
+)
+def harvest_arpafvg_stations(
+    series_configuration_id: int,
+) -> tuple[int, set[observations.ObservationStationCreate]]:
+    with sqlmodel.Session(_db_engine) as session:
+        series_configuration = database.get_observation_series_configuration(
+            session, series_configuration_id
+        )
+        if series_configuration is None:
+            raise exceptions.InvalidObservationSeriesConfigurationIdentifierError(
+                f"Series configuration with id: {series_configuration_id!r} not found"
+            )
+        stations = set()
+        client = httpx.Client()
+        retriever = arpafvg_operations.fetch_remote_stations(
+            client,
+            series_configuration,
+            observations_base_url=_settings.arpafvg_observations_base_url,
+            auth_token=_settings.arpafvg_auth_token,
+        )
+        for raw_station in retriever:
+            stations.add(arpafvg_operations.parse_station(raw_station))
+        return series_configuration_id, stations
+
+
+@prefect.task(
+    retries=_settings.prefect.num_task_retries,
+    retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[PrefectTaskTag.USES_DB.value],
 )
 def find_new_stations(
     candidate_stations: Iterable[observations.ObservationStationCreate],
@@ -196,8 +215,18 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
                     f"refreshing stations that are part of series "
                     f"{series_conf.identifier!r}..."
                 )
-                fut = harvest_stations.submit(series_conf.id)
-                to_wait_on.append(fut)
+                for station_manager in series_conf.station_managers:
+                    if station_manager == ObservationStationManager.ARPAV:
+                        fut = harvest_arpav_stations.submit(series_conf.id)
+                    elif station_manager == ObservationStationManager.ARPAFVG:
+                        fut = harvest_arpafvg_stations.submit(series_conf.id)
+                    else:
+                        print(
+                            f"Observation stations managed by {station_manager} are not "
+                            f"implemented, skipping..."
+                        )
+                        continue
+                    to_wait_on.append(fut)
             for future in to_wait_on:
                 series_id, series_harvested_stations = future.result()
                 all_harvested_stations[series_id] = series_harvested_stations
@@ -208,8 +237,6 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
             to_create = find_new_stations(candidate_stations)
             if len(to_create) > 0:
                 print(f"Found {len(to_create)} new stations. Creating them now...")
-                for s in to_create:
-                    print(f"- ({s.code}) {s.name}")
                 created = database.create_many_observation_stations(session, to_create)
             else:
                 created = []
@@ -265,31 +292,29 @@ def refresh_measurements(
     station_code: str | None = None,
     observation_series_configuration_identifier: str | None = None,
 ):
-    to_wait_on = []
-    to_filter_for_new_measurements = {}
     with sqlmodel.Session(_db_engine) as db_session:
         stations_to_process = _get_stations(db_session, station_code)
         series_confs_to_process = _get_observation_series_configurations(
             db_session, observation_series_configuration_identifier
         )
-        print(f"{[s.code for s in stations_to_process]=}")
         for station in stations_to_process:
-            to_filter_for_new_measurements.setdefault(station.code, [])
+            to_wait_on = []
             for series_configuration in series_confs_to_process:
-                # is this station associated with this data series' climatic indicator?
                 if series_configuration.climatic_indicator.id in [
                     ci.id for ci in station.climatic_indicators
                 ]:
-                    if station.managed_by == ObservationStationManager.ARPAV:
-                        fut = harvest_arpav_station_measurements.submit(
+                    harvester_task = {
+                        ObservationStationManager.ARPAV: harvest_arpav_station_measurements,
+                        ObservationStationManager.ARPAFVG: harvest_arpafvg_station_measurements,
+                    }.get(station.managed_by)
+                    if harvester_task is not None:
+                        harvested_measurements_fut = harvester_task.submit(
                             station.id, series_configuration.id
                         )
-                        to_wait_on.append(fut)
-                    elif station.managed_by == ObservationStationManager.ARPAFVG:
-                        fut = harvest_arpafvg_station_measurements.submit(
-                            station.id, series_configuration.id
+                        creation_fut = save_observation_station_measurements.submit(
+                            station.id, harvested_measurements_fut.result()
                         )
-                        to_wait_on.append(fut)
+                        to_wait_on.append(creation_fut)
                     else:
                         raise NotImplementedError(
                             f"Observation stations managed by {station.managed_by} "
@@ -301,56 +326,23 @@ def refresh_measurements(
                         f"{series_configuration.climatic_indicator.identifier!r} "
                         f"climatic indicator"
                     )
-
-        for future in to_wait_on:
-            station_measurements_to_create: list[
-                observations.ObservationMeasurementCreate
-            ] = future.result()
-            try:
-                first_harvested_measurement = station_measurements_to_create[0]
-                to_filter_for_new_measurements[
-                    first_harvested_measurement.observation_station_id
-                ].extend(station_measurements_to_create)
-            except IndexError:
-                pass  # received an empty list, ignore
-
-        print(f"{to_filter_for_new_measurements=}")
-        all_created = []
-        for (
-            station_code,
-            harvested_measurements,
-        ) in to_filter_for_new_measurements.items():
-            station = database.get_observation_station_by_code(db_session, station_code)
-            to_create = database.find_new_station_measurements(
-                db_session,
-                station_id=station.id,
-                candidates=harvested_measurements,
-            )
-            if len(to_create) > 0:
-                print(
-                    f"Found {len(to_create)} new measurements for station "
-                    f"{station.code!r}. Creating them now..."
+        artifact_table = []
+        for station_created_measurements_fut in to_wait_on:
+            new_measurements = station_created_measurements_fut.result()
+            for new_measurement in new_measurements or []:
+                artifact_table.append(
+                    {
+                        "id": str(new_measurement.id),
+                        "station": new_measurement.observation_station.code,
+                        "climatic_indicator": new_measurement.climatic_indicator.identifier,
+                        "date": new_measurement.date.strftime("%Y-%m-%d"),
+                        "value": new_measurement.value,
+                    }
                 )
-                created = database.create_many_observation_measurements(
-                    db_session, to_create
-                )
-                all_created.extend(created)
-            else:
-                print(f"No new measurements found for station {station.code!r}.")
-
         prefect.artifacts.create_table_artifact(
             key="measurements-created",
-            table=[
-                {
-                    "id": str(m.id),
-                    "station": m.observation_station.code,
-                    "climatic_indicator": m.climatic_indicator.identifier,
-                    "date": m.date.strftime("%Y-%m-%d"),
-                    "value": m.value,
-                }
-                for m in all_created
-            ],
-            description=f"# Created {len(all_created)} measurements",
+            table=artifact_table,
+            description=f"# Created {len(artifact_table)} measurements",
         )
 
 
@@ -358,6 +350,41 @@ def refresh_measurements(
     log_prints=True,
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[PrefectTaskTag.USES_DB.value],
+)
+def save_observation_station_measurements(
+    station_id: int, measurements: list[observations.ObservationMeasurementCreate]
+) -> list[observations.ObservationMeasurement] | None:
+    with sqlmodel.Session(_db_engine) as session:
+        station = database.get_observation_station(session, station_id)
+        if station is not None:
+            to_create = database.find_new_station_measurements(
+                session,
+                station_id=station.id,
+                candidates=measurements,
+            )
+            if len(to_create) > 0:
+                print(
+                    f"Found {len(to_create)} new measurements for station "
+                    f"{station.code!r}. Creating them now..."
+                )
+                return database.create_many_observation_measurements(session, to_create)
+            else:
+                print(f"No new measurements found for station {station.code!r}.")
+        else:
+            raise exceptions.InvalidObservationStationIdError(
+                f"Station {station_id} does not exist."
+            )
+
+
+@prefect.task(
+    log_prints=True,
+    retries=_settings.prefect.num_task_retries,
+    retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[
+        PrefectTaskTag.USES_DB.value,
+        PrefectTaskTag.USES_ARPA_FVG_REST_API,
+    ],
 )
 def harvest_arpafvg_station_measurements(
     station_id: int,
@@ -394,13 +421,16 @@ def harvest_arpafvg_station_measurements(
                     series_configuration.climatic_indicator,
                 )
             )
-        print(f"harvested_measurements={harvested_measurements}")
         return harvested_measurements
 
 
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    tags=[
+        PrefectTaskTag.USES_DB.value,
+        PrefectTaskTag.USES_ARPA_V_REST_API,
+    ],
 )
 def harvest_arpav_station_measurements(
     station_id: int,

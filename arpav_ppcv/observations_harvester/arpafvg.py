@@ -1,8 +1,5 @@
 import logging
-from typing import (
-    Callable,
-    Generator,
-)
+from typing import Generator
 
 import geojson_pydantic
 import httpx
@@ -66,7 +63,7 @@ def fetch_remote_stations(
 
 
 def parse_station(
-    raw_station: dict, coord_converter: Callable
+    raw_station: dict,
 ) -> observations.ObservationStationCreate:
     pt_4326 = shapely.Point(raw_station["longitude"], raw_station["latitude"])
     return observations.ObservationStationCreate(
@@ -100,10 +97,6 @@ def fetch_station_measurements(
         "statid": station_identifier,
         "indicatore": indicator_internal_name,
     }
-    logger.warning(f"{measurements_url=}")
-    logger.warning(f"{headers=}")
-    logger.warning(f"{station_identifier=}")
-    logger.warning(f"{indicator_internal_name=}")
     if (
         aggreg_type := series_configuration.measurement_aggregation_type
     ) == MeasurementAggregationType.YEARLY:
@@ -118,7 +111,6 @@ def fetch_station_measurements(
         )
         response.raise_for_status()
         for raw_measurement in response.json():
-            logger.warning(f"{raw_measurement=}")
             yield ObservationYearPeriod.ALL_YEAR, raw_measurement
     elif aggreg_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(

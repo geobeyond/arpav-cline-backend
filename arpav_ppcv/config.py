@@ -35,6 +35,9 @@ class PrefectSettings(pydantic.BaseModel):
     station_variables_refresher_flow_cron_schedule: str = (
         "0 5 * * 1"  # run once every week, at 05:00 on monday
     )
+    arpav_rest_api_task_concurrency_limit: int = 20
+    arpafvg_rest_api_task_concurrency_limit: int = 20
+    use_db_task_concurrency_limit: int = 5
 
 
 class ThreddsServerSettings(pydantic.BaseModel):

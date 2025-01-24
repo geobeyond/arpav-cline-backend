@@ -82,6 +82,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      prefect-server:
+        condition: service_healthy
 
   db:
     image: "postgis/postgis:16-3.4"
