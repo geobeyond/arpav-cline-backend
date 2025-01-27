@@ -132,6 +132,30 @@ class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
         return [(str(osc.id), osc.identifier) for osc in all_obs_series_confs]
 
 
+class RelatedObservationStationField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedObservationStationField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        observation_station = database.get_observation_station(session, value)
+        return observation_station.code
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
+    @staticmethod
+    def choices_loader(request: Request) -> list[tuple[int, str]]:
+        all_stations = database.collect_all_observation_stations(request.state.session)
+        return [(s.id, s.name) for s in all_stations]
+
+
 class RelatedSpatialRegionField(starlette_admin.EnumField):
     def __post_init__(self) -> None:
         self.choices_loader = RelatedSpatialRegionField.choices_loader

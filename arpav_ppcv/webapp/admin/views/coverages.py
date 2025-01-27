@@ -750,7 +750,7 @@ class CoverageConfigurationView(ModelView):
 class ForecastTimeWindowView(ModelView):
     identity = "forecast_time_windows"
     name = "Forecast Time Window"
-    label = "Forecast Time Windows"
+    label = "Time Windows"
     pk_attr = "id"
 
     exclude_fields_from_list = (
@@ -849,7 +849,7 @@ class ForecastTimeWindowView(ModelView):
 class ForecastModelView(ModelView):
     identity = "forecast_models"
     name = "Forecast Model"
-    label = "Forecast Models"
+    label = "Models"
     pk_attr = "id"
 
     exclude_fields_from_list = (
@@ -948,7 +948,7 @@ class ForecastModelView(ModelView):
 class ForecastCoverageConfigurationView(ModelView):
     identity = "forecast_coverage_configurations"
     name = "Forecast Coverage Configuration"
-    label = "Forecast Coverage Configurations"
+    label = "Coverage Configurations"
     pk_attr = "id"
 
     exclude_fields_from_list = (
@@ -968,6 +968,7 @@ class ForecastCoverageConfigurationView(ModelView):
     exclude_fields_from_detail = ("id",)
     exclude_fields_from_edit = ("identifier",)
     exclude_fields_from_create = ("identifier",)
+    searchable_fields = ("climatic_indicator",)
 
     fields = (
         starlette_admin.IntegerField("id"),
@@ -1173,11 +1174,27 @@ class ForecastCoverageConfigurationView(ModelView):
         where: Union[dict[str, Any], str, None] = None,
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ForecastCoverageConfigurationRead]:
-        list_params = functools.partial(
+        finder = functools.partial(
             database.list_forecast_coverage_configurations,
             limit=limit,
             offset=skip,
+            climatic_indicator_name_filter=str(where) if where else None,
             include_total=False,
         )
-        db_items, _ = await anyio.to_thread.run_sync(list_params, request.state.session)
+        db_items, _ = await anyio.to_thread.run_sync(finder, request.state.session)
         return [self._serialize_instance(ind) for ind in db_items]
+
+    async def count(
+        self,
+        request: Request,
+        where: Union[Dict[str, Any], str, None] = None,
+    ) -> int:
+        finder = functools.partial(
+            database.collect_all_forecast_coverage_configurations,
+            climatic_indicator_name_filter=str(where) if where else None,
+        )
+        found = await anyio.to_thread.run_sync(
+            finder,
+            request.state.session,
+        )
+        return len(found)

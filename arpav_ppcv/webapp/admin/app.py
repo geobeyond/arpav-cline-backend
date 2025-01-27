@@ -68,49 +68,56 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
         )
     )
     admin.add_view(base_views.SpatialRegionView(base.SpatialRegion))
-    admin.add_view(coverage_views.ForecastModelView(coverages.ForecastModel))
-    admin.add_view(coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow))
+    # admin.add_view(coverage_views.ForecastModelView(coverages.ForecastModel))
+    # admin.add_view(coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow))
+    # admin.add_view(
+    #     coverage_views.ForecastCoverageConfigurationView(
+    #         coverages.ForecastCoverageConfiguration
+    #     )
+    # )
     admin.add_view(
-        coverage_views.ForecastCoverageConfigurationView(
-            coverages.ForecastCoverageConfiguration
+        DropDown(
+            "Forecasts",
+            icon="fa-solid fa-chart-line",
+            always_open=False,
+            views=[
+                coverage_views.ForecastCoverageConfigurationView(
+                    coverages.ForecastCoverageConfiguration
+                ),
+                coverage_views.ForecastModelView(coverages.ForecastModel),
+                coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow),
+            ],
         )
     )
     admin.add_view(
-        observations_views.ObservationStationView(observations.ObservationStation)
-    )
-    admin.add_view(
-        observations_views.ObservationSeriesConfigurationView(
-            observations.ObservationSeriesConfiguration
+        DropDown(
+            "Observations",
+            icon="fa-solid fa-ruler",
+            always_open=False,
+            views=[
+                observations_views.ObservationMeasurementView(
+                    observations.ObservationMeasurement
+                ),
+                observations_views.ObservationSeriesConfigurationView(
+                    observations.ObservationSeriesConfiguration
+                ),
+                observations_views.ObservationStationView(
+                    observations.ObservationStation
+                ),
+            ],
         )
     )
     admin.add_view(
         DropDown(
             "Legacy",
-            icon="fa-solid fa-vials",
+            icon="fa-solid fa-circle-xmark",
+            always_open=False,
             views=[
                 coverage_views.ConfigurationParameterView(
                     coverages.ConfigurationParameter
                 ),
                 coverage_views.CoverageConfigurationView(
                     coverages.CoverageConfiguration
-                ),
-                observations_views.StationView(observations.Station),
-            ],
-        )
-    )
-    admin.add_view(
-        DropDown(
-            "Measurements",
-            icon="fa-solid fa-vials",
-            views=[
-                observations_views.MonthlyMeasurementView(
-                    observations.MonthlyMeasurement
-                ),
-                observations_views.SeasonalMeasurementView(
-                    observations.SeasonalMeasurement
-                ),
-                observations_views.YearlyMeasurementView(
-                    observations.YearlyMeasurement
                 ),
             ],
         )

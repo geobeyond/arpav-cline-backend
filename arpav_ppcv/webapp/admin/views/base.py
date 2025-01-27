@@ -45,7 +45,7 @@ class SpatialRegionView(ModelView):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.icon = "fa-solid fa-cloud-sun-rain"
+        self.icon = "fa-solid fa-globe"
 
     def can_create(self, request: Request) -> bool:
         return False

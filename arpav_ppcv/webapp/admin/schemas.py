@@ -5,10 +5,7 @@ import uuid
 import pydantic
 import sqlmodel
 
-from ...schemas.base import (
-    ObservationAggregationType,
-    Season,
-)
+from ...schemas.base import ObservationAggregationType
 from ...schemas import static
 
 
@@ -115,22 +112,10 @@ class CoverageConfigurationReadListItem(sqlmodel.SQLModel):
     name: str
 
 
-class StationRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-    code: str
-    type: str
-    longitude: float
-    latitude: float
-    active_since: Optional[dt.date]
-    active_until: Optional[dt.date]
-    altitude_m: Optional[float]
-
-
 class ObservationStationRead(sqlmodel.SQLModel):
     id: int
     name: str
-    owner: static.ObservationStationManager
+    managed_by: static.ObservationStationManager
     longitude: float
     latitude: float
     code: str
@@ -147,25 +132,11 @@ class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
     climatic_indicator: int
 
 
-class MonthlyMeasurementRead(sqlmodel.SQLModel):
-    station: str
-    variable: str
+class ObservationMeasurementRead(sqlmodel.SQLModel):
+    observation_station: int
+    climatic_indicator: int
+    measurement_aggregation_type: static.MeasurementAggregationType
     date: dt.date
-    value: float
-
-
-class SeasonalMeasurementRead(sqlmodel.SQLModel):
-    station: str
-    variable: str
-    year: int
-    season: Season
-    value: float
-
-
-class YearlyMeasurementRead(sqlmodel.SQLModel):
-    station: str
-    variable: str
-    year: int
     value: float
 
 
@@ -216,3 +187,38 @@ class SpatialRegionRead(sqlmodel.SQLModel):
     display_name_italian: str
     sort_order: int
     geom: pydantic.Json
+
+
+#
+# class StationRead(sqlmodel.SQLModel):
+#     id: uuid.UUID
+#     name: str
+#     code: str
+#     type: str
+#     longitude: float
+#     latitude: float
+#     active_since: Optional[dt.date]
+#     active_until: Optional[dt.date]
+#     altitude_m: Optional[float]
+#
+#
+# class MonthlyMeasurementRead(sqlmodel.SQLModel):
+#     station: str
+#     variable: str
+#     date: dt.date
+#     value: float
+#
+#
+# class SeasonalMeasurementRead(sqlmodel.SQLModel):
+#     station: str
+#     variable: str
+#     year: int
+#     season: Season
+#     value: float
+#
+#
+# class YearlyMeasurementRead(sqlmodel.SQLModel):
+#     station: str
+#     variable: str
+#     year: int
+#     value: float

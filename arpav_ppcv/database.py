@@ -2530,6 +2530,7 @@ def list_forecast_coverage_configurations(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
+    climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> tuple[Sequence[coverages.ForecastCoverageConfiguration], Optional[int]]:
     """List existing forecast coverage configurations."""
@@ -2541,6 +2542,14 @@ def list_forecast_coverage_configurations(
             coverages.ForecastCoverageConfiguration.climatic_indicator_id
             == climatic_indicator_filter.id
         )
+    if climatic_indicator_name_filter is not None:
+        filter_ = climatic_indicator_name_filter.replace("%", "")
+        filter_ = f"%{filter_}%"
+        statement = statement.join(
+            climaticindicators.ClimaticIndicator,
+            climaticindicators.ClimaticIndicator.id
+            == coverages.ForecastCoverageConfiguration.climatic_indicator_id,
+        ).where(climaticindicators.ClimaticIndicator.name.ilike(filter_))
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2548,18 +2557,21 @@ def list_forecast_coverage_configurations(
 
 def collect_all_forecast_coverage_configurations(
     session: sqlmodel.Session,
+    climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[climaticindicators.ClimaticIndicator] = None,
 ) -> Sequence[coverages.ForecastCoverageConfiguration]:
     _, num_total = list_forecast_coverage_configurations(
         session,
         limit=1,
         include_total=True,
+        climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
     )
     result, _ = list_forecast_coverage_configurations(
         session,
         limit=num_total,
         include_total=False,
+        climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
     )
     return result
