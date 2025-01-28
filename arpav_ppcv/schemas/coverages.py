@@ -17,7 +17,11 @@ import sqlalchemy
 import sqlmodel
 
 from .. import exceptions
-from ..config import get_translations
+from ..config import (
+    ThreddsServerSettings,
+    get_translations,
+)
+from ..thredds import crawler
 from . import (
     base,
     static,
@@ -1023,15 +1027,13 @@ class ForecastCoverageInternal:
     forecast_time_window: Optional[ForecastTimeWindow] = None
 
     def __post_init__(self):
-        error_message = (
-            "{param} {value!r} is not part of the forecast coverage configuration {conf!r}"
-        )
+        error_message = "{param} {value!r} is not part of the forecast coverage configuration {conf!r}"
         if self.scenario not in self.configuration.scenarios:
             raise exceptions.InvalidForecastScenarioError(
                 error_message.format(
                     param="scenario",
                     value=self.scenario.value,
-                    conf=self.configuration.identifier
+                    conf=self.configuration.identifier,
                 )
             )
         if self.forecast_model.id not in (
@@ -1041,7 +1043,7 @@ class ForecastCoverageInternal:
                 error_message.format(
                     param="forecast model",
                     value=self.forecast_model.name,
-                    conf=self.configuration.identifier
+                    conf=self.configuration.identifier,
                 )
             )
         if self.forecast_year_period not in self.configuration.year_periods:
@@ -1049,7 +1051,7 @@ class ForecastCoverageInternal:
                 error_message.format(
                     param="forecast year period",
                     value=self.forecast_year_period.value,
-                    conf=self.configuration.identifier
+                    conf=self.configuration.identifier,
                 )
             )
         if self.forecast_time_window is not None:
@@ -1061,7 +1063,7 @@ class ForecastCoverageInternal:
                     error_message.format(
                         param="forecast time window",
                         value=self.forecast_time_window.name,
-                        conf=self.configuration.identifier
+                        conf=self.configuration.identifier,
                     )
                 )
 
@@ -1077,7 +1079,21 @@ class ForecastCoverageInternal:
             pattern_parts.append(self.forecast_time_window.name)
         return "-".join(pattern_parts)
 
-    def get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
+    @property
+    def lower_uncertainty_identifier(self) -> Optional[str]:
+        result = None
+        if self.configuration.lower_uncertainty_thredds_url_pattern:
+            result = "-".join((self.identifier, "lower_uncertainty"))
+        return result
+
+    @property
+    def upper_uncertainty_identifier(self) -> Optional[str]:
+        result = None
+        if self.configuration.upper_uncertainty_thredds_url_pattern:
+            result = "-".join((self.identifier, "upper_uncertainty"))
+        return result
+
+    def _get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
         result = None
         for fml in self.configuration.climatic_indicator.forecast_model_links:
             if fml.forecast_model_id == self.forecast_model.id:
@@ -1085,7 +1101,7 @@ class ForecastCoverageInternal:
                 break
         return result
 
-    def get_forecast_model_thredds_url_uncertainties_base_path(self) -> Optional[str]:
+    def _get_forecast_model_thredds_url_uncertainties_base_path(self) -> Optional[str]:
         result = None
         for fml in self.configuration.climatic_indicator.forecast_model_links:
             if fml.forecast_model_id == self.forecast_model.id:
@@ -1094,50 +1110,72 @@ class ForecastCoverageInternal:
         return result
 
     def get_netcdf_main_dataset_name(self) -> str:
-        return self._render_templated_value(
-            self.configuration.netcdf_main_dataset_name)
+        return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
 
-    def get_thredds_url(self) -> str:
-        return self._render_templated_value(
-            self.configuration.thredds_url_pattern)
+    def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
 
-    def get_lower_uncertainty_thredds_url(self) -> Optional[str]:
-        return self._render_templated_value(
-            self.configuration.lower_uncertainty_thredds_url_pattern)
+    def get_lower_uncertainty_thredds_ncss_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_lower_uncertainty_thredds_url_fragment()
+        return crawler.get_ncss_url(rendered, settings) if rendered else None
 
-    def get_upper_uncertainty_thredds_url(self) -> Optional[str]:
-        return self._render_templated_value(
-            self.configuration.upper_uncertainty_thredds_url_pattern)
+    def get_upper_uncertainty_thredds_ncss_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_upper_uncertainty_thredds_url_fragment()
+        return crawler.get_ncss_url(rendered, settings) if rendered else None
 
     def get_wms_main_layer_name(self) -> str:
-        return self._render_templated_value(
-            self.configuration.wms_main_layer_name)
+        return self._render_templated_value(self.configuration.wms_main_layer_name)
 
     def get_wms_secondary_layer_name(self) -> Optional[str]:
-        return self._render_templated_value(
-            self.configuration.wms_secondary_layer_name)
+        return self._render_templated_value(self.configuration.wms_secondary_layer_name)
+
+    def _get_thredds_url_fragment(self) -> str:
+        return self._render_templated_value(self.configuration.thredds_url_pattern)
+
+    def _get_lower_uncertainty_thredds_url_fragment(self) -> Optional[str]:
+        if (
+            pattern := self.configuration.lower_uncertainty_thredds_url_pattern
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
+
+    def _get_upper_uncertainty_thredds_url_fragment(self) -> Optional[str]:
+        if (
+            pattern := self.configuration.upper_uncertainty_thredds_url_pattern
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
 
     def _render_templated_value(self, value: str) -> str:
-        forecast_model_base_path = self.get_forecast_model_thredds_url_base_path()
-        uncertainties_base_path = self.get_forecast_model_thredds_url_uncertainties_base_path()
+        forecast_model_base_path = self._get_forecast_model_thredds_url_base_path()
+        uncertainties_base_path = (
+            self._get_forecast_model_thredds_url_uncertainties_base_path()
+        )
         return value.format(
             forecast_model_base_path=(
-                forecast_model_base_path
-                if forecast_model_base_path is not None else ""
+                forecast_model_base_path if forecast_model_base_path is not None else ""
             ),
             forecast_model_uncertainties_base_path=(
-                uncertainties_base_path
-                if uncertainties_base_path is not None else ""
+                uncertainties_base_path if uncertainties_base_path is not None else ""
             ),
             forecast_model=self.forecast_model.internal_value,
             climatic_indicator=self.configuration.climatic_indicator.name,
             time_window=(
                 self.forecast_time_window.internal_value
-                if self.forecast_time_window is not None else ""
+                if self.forecast_time_window is not None
+                else ""
             ),
             scenario=self.scenario.get_internal_value(),
             year_period=self.forecast_year_period.get_internal_value(),
-            spatial_region=self.configuration.spatial_region.name
+            spatial_region=self.configuration.spatial_region.name,
         )
 
     def __hash__(self):

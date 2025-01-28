@@ -42,6 +42,10 @@ class InvalidForecastCoverageIdentifierError(ArpavError):
     ...
 
 
+class InvalidForecastCoverageDataSeriesIdentifierError(ArpavError):
+    ...
+
+
 class InvalidSpatialRegionNameError(ArpavError):
     ...
 

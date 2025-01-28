@@ -279,6 +279,49 @@ class HistoricalYearPeriod(str, enum.Enum):
         }.get(self, self.value)
 
 
+class ForecastDatasetType(str, enum.Enum):
+    MAIN = "main"
+    LOWER_UNCERTAINTY = "lower_uncertainty"
+    UPPER_UNCERTAINTY = "upper_uncertainty"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast dataset")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast dataset description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.MAIN: _("main"),
+            self.LOWER_UNCERTAINTY: _("lower uncertainty"),
+            self.UPPER_UNCERTAINTY: _("upper uncertainty"),
+        }.get(self, self.value)
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.MAIN: _("main description"),
+            self.LOWER_UNCERTAINTY: _("lower uncertainty description"),
+            self.UPPER_UNCERTAINTY: _("upper uncertainty description"),
+        }.get(self, self.value)
+
+    def get_sort_order(self) -> int:
+        return {
+            self.LOWER_UNCERTAINTY: 0,
+            self.MAIN: 1,
+            self.UPPER_UNCERTAINTY: 2,
+        }.get(self, 0)
+
+
 class ForecastYearPeriod(str, enum.Enum):
     ALL_YEAR = "all_year"
     WINTER = "winter"

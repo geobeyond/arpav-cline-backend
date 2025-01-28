@@ -1590,6 +1590,84 @@ SQLAlchemy = ">=1.4"
 shapely = ["Shapely (>=1.7)"]
 
 [[package]]
+name = "geohashr"
+version = "1.4.0"
+description = "Just another geohashing library"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "geohashr-1.4.0-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:0ac15a767391e44416a911457febde879fb7fe5bec66ce6607a034f5821876e5"},
+    {file = "geohashr-1.4.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:078648313dacd69949638ca1710c16831275346fdf3e1c8c41c66362a865acb4"},
+    {file = "geohashr-1.4.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b117c532353e2b7a4a4a6ad7774416ba7dc68805afa0e83c2c8455646e717fc2"},
+    {file = "geohashr-1.4.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c497e327f384c530960ae3e057997c0537535e1913ccb9ebfa3464fd5ba910a1"},
+    {file = "geohashr-1.4.0-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:2aefca873caf6b3fc1a64c83f96c60145d4a0c95a7cbfb91d85dca438b8faf20"},
+    {file = "geohashr-1.4.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:933935ef5b693132dc03d090b81de585c18a5bd830b0ebe37aaf69f4ea63dd2e"},
+    {file = "geohashr-1.4.0-cp310-none-win_amd64.whl", hash = "sha256:80c8da6945df1492a80c98f6934c56a9d00f30d44e0f868c51f4faabe62ec292"},
+    {file = "geohashr-1.4.0-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:aad2575b01d4c35fd6cb989ca84c7536b2a36dd4c9d101ee9b8948a52c1cb530"},
+    {file = "geohashr-1.4.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:ce1563e185ce6779ab96d6c463d52b343001a035bf334d9bff88be10226eb889"},
+    {file = "geohashr-1.4.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:eff3228b7b1b278452db05913255fa0b69d8bd3582924865d856fdf25aea6849"},
+    {file = "geohashr-1.4.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1fb4d18a1c9b36406c5e23ebfa2cdf6eb46aa7be682d26687aeab611e6366618"},
+    {file = "geohashr-1.4.0-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:5285ec03e7053566d39530cc0fa326d6c80eac5090d66776ba2cef24940687ad"},
+    {file = "geohashr-1.4.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:377fdf5c8edf14e1d6360b711b8cc388f33afc079d34cf27376a22f633fe3d70"},
+    {file = "geohashr-1.4.0-cp311-none-win_amd64.whl", hash = "sha256:33155d84d81e1cc1457b60d2d636facbffadcd09977aadf1ae7e9cca8d62d740"},
+    {file = "geohashr-1.4.0-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:6d8749543003f9be7bbb1ef4aac8b9182fc0b6506f167233597fc89c14c7907a"},
+    {file = "geohashr-1.4.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:73c54b55e55a4748baa9955dcf721d96c9d4b06aa13032e555b16b08f85af519"},
+    {file = "geohashr-1.4.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3b5a07ef3a5b260a8bba1ca28f5d7df92ca32e926bea57ec35d27a097024ab4c"},
+    {file = "geohashr-1.4.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:689231e26f19c0e441620375cb736e0ecb133227dd29dada65aa2e3d99c46b30"},
+    {file = "geohashr-1.4.0-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:daa95b50966b00b485ff320f7bd0faf872ba82af4944cb1c38d1a857fcc9e8c4"},
+    {file = "geohashr-1.4.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:ed9ffdae88083dcde0b808e4b86ab20363a7274254823b174b0b5182b5868fd1"},
+    {file = "geohashr-1.4.0-cp312-none-win_amd64.whl", hash = "sha256:8f4ee52efb625df5c720f3f70aeda9290d403a3e19cf4873d3355d980c15d3d8"},
+    {file = "geohashr-1.4.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:4050d94e206ffcaab71e041671fb2548daa218ef3e5bc4030d003df690e86de4"},
+    {file = "geohashr-1.4.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:8538dd6aefff6deef02dd45d5fe00b17712473f9ee3eda5cfde26b820eece28c"},
+    {file = "geohashr-1.4.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3f6b6652f97a4c1e9e0a6af81a8f4dbb79115f3f25a3347f016d5adb00c0c98b"},
+    {file = "geohashr-1.4.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a4e38977d4d7b1c1a4824b31b82158ea8724e550ba546882aed06d9a8c27399c"},
+    {file = "geohashr-1.4.0-cp313-cp313-musllinux_1_1_aarch64.whl", hash = "sha256:9bf5c5cccbb4f40fbe9894849ccd50486e51fb57435db09b255ff80816d2ee4e"},
+    {file = "geohashr-1.4.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:8c1878247625f5bc78747f197ab570b8f2cac2213805f1c23f68c9b27a21b9c1"},
+    {file = "geohashr-1.4.0-cp313-none-win_amd64.whl", hash = "sha256:d83b90a2849bdffc746365cef3b9b9f18dca80990f1fd2ddbbe65e1be3ff13a0"},
+    {file = "geohashr-1.4.0-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:769603fdef6ed51eed3508e1a8cae7cd5573c3d1bc8ee65974999b98e77a0d08"},
+    {file = "geohashr-1.4.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:1dc85f71083af40007ffc07163a9b47b1fbb49d36f7a79b63392425171a1ee12"},
+    {file = "geohashr-1.4.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:612055b0853d13d4635725ab25ff5336554d73fc54c0b4bc053603f4ee42bcbf"},
+    {file = "geohashr-1.4.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4591fcba6ee6f3cbc9f4b7d0e03cb786b3de0c6e047d015a9f050b368ffb5772"},
+    {file = "geohashr-1.4.0-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:8e68f7afadc237d9ec1c93b95dcb3d1985df082c88622d8257b137339db5e128"},
+    {file = "geohashr-1.4.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:456b8daee2cc88ac830f8cfe6971f33090aa658c5c4687bac338e592313a4cfa"},
+    {file = "geohashr-1.4.0-cp38-none-win_amd64.whl", hash = "sha256:b78b422a24ace9d0b00e38e3eb6b95936e24fb8a91fd819f04c39b2de8885c91"},
+    {file = "geohashr-1.4.0-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:374257e2d5aa1a23364711296fde4ed69de971a417abeecca70588c62a002436"},
+    {file = "geohashr-1.4.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:ccab1566e7b1e2a679c8a3ed12bb0639579dd48d252808e9cb1cc0277a04680e"},
+    {file = "geohashr-1.4.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b1114257800ffe35454e1e81ac9faaa84245deafb23a114efeb04fb30641c13c"},
+    {file = "geohashr-1.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7759ae068fd032e1728fd68e378971e45b3a10b3c9b9bf6d1e05c8968e276b6c"},
+    {file = "geohashr-1.4.0-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:a9254bb7e29dc0567dbeb058a3790bd54b056ba35ba1e8c9029bf3007cc1b3b5"},
+    {file = "geohashr-1.4.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:ecd1b33a48533f621923b31e4df56db4d1c2597e3998f95a65b7aa5f85e00ea5"},
+    {file = "geohashr-1.4.0-cp39-none-win_amd64.whl", hash = "sha256:8cbab6a82c0cf0d7d857cb75085e8cda031e3db213937b424a427c66728a93a5"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-macosx_10_12_x86_64.whl", hash = "sha256:453ff83b586e7785364e7432176cad22c61423bafbbdae1ae5b1312ed26f7bc3"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:bdee93170ec5866a1bcb626b206a45e95c41102d66b1c4bdcbba21fd89a0b1ad"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cbbbc4c5b177ee072dc6d014490651341e8174c623b0fd7f5d8577e986cc6eea"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:84cf6699f5258b393841e11320febe028c33d608a46a1d8559a1f5581180cc19"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:a2635cd807b92b3d5423755e632a7dbf2497a73438d67ed42ff6ce16312e338c"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:b4d7c9711ca461af50941c08eadfbb8fcff0278f17fcc0d311343a5dc9ee33f1"},
+    {file = "geohashr-1.4.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:be32dfcd68d7be252616a9941d3220bc6ded4539bafb4455f4fc3cc20ebf75da"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-macosx_10_12_x86_64.whl", hash = "sha256:25476e0380e0ad615c65dfe0b49ba1c8388104c6d48ff325fa9cbb8d843f7cac"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-macosx_11_0_arm64.whl", hash = "sha256:2020c0db04001030b3a8838a73d0da6d44a6d1f5f05c290abf3f97dbda559948"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6bca79b210a85e3622da1c33079c442d4b2f8586f59f83d19d5403baffa09165"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7ed9e5e61ad3ffe09ce41922bb0a327fb79d03687d396c92cc9190e33b059a3b"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:6094cba9568a7b51497e0fb08a4fb5bfd96deea5882179d6ffdb3919afd6bd92"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:a47695ea09eb9e203c81361e6a40bfa180ff0bd905f16c93d3d8f57534ac71c3"},
+    {file = "geohashr-1.4.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:8ad36430daefa319585e796d42f726f1d558064ecc65ec08d48a988568810576"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-macosx_10_12_x86_64.whl", hash = "sha256:04511fc99828ab3db4f517a5885b43e8c831d69e9bfc7267537be06c719c9340"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:35074ef184a9b6282bc3bf491770844bc9526208a681438d0eba242ec066b0b2"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:80680027c5c6b14c0da7c82dab45c5b647f1494832f4393c1e3a85b50f9d89bf"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:28339b2a0fb3670c946a19aa7fbc0e34ad4e11352342631e7ad12a7fb0247226"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:85c7ff908c85ee9b6aa20a82b36b45a6ac808d0f886c8fef7ab85ba03d43ba82"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:871f433ff6355f9ed20a0f4c754e4935ad56064a67972e4447e5dc00fd3d4842"},
+    {file = "geohashr-1.4.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:3ae7904180dbe42732509b7cc24fe0cc994e788d999d44df32cd5160721e53e8"},
+    {file = "geohashr-1.4.0.tar.gz", hash = "sha256:7b9e7ab96b3e9f5033ff8656d611b267c77b46805fd374dd3e107bc77be7c2e4"},
+]
+
+[package.extras]
+dev = ["geohashr[lint,test]"]
+lint = ["ruff (>=0.5.0,<0.6.0)"]
+test = ["pytest (>=8.3.2,<8.4.0)"]
+
+[[package]]
 name = "geojson-pydantic"
 version = "1.2.0"
 description = "Pydantic data models for the GeoJSON spec."
@@ -6567,4 +6645,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6effe5a8830400876ba578959f4ddf364b75338f64a89269acad894b5e19f96a"
+content-hash = "b88c221d395c522a7ab978ac00ebe1c05a61d2012d0db29f780ef534cf5b4db3"

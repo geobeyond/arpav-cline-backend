@@ -1,5 +1,6 @@
 """Database utilities."""
 
+import datetime as dt
 import itertools
 import logging
 import uuid
@@ -8,6 +9,7 @@ from typing import (
     Sequence,
 )
 
+import geohashr
 import geojson_pydantic
 import shapely
 import shapely.io
@@ -24,6 +26,7 @@ from .schemas import (
     base,
     climaticindicators,
     coverages,
+    dataseries,
     municipalities,
     observations,
     static,
@@ -928,6 +931,68 @@ def get_coverage_configuration_by_name(
     ).first()
 
 
+def get_forecast_coverage_data_series(session: sqlmodel.Session, identifier: str):
+    # a forecast data series is always identified by a string like:
+    # {forecast_coverage_identifier}-{series_identifier}, where {series_identifier} is:
+    # {dataset_type}-{wkt_location}-{temporal_range_start}-{temporal_range_end}-{smoothing_identifier}
+    all_parts = identifier.split("-")
+    forecast_coverage_identifier = "-".join(all_parts[:-5])
+    forecast_coverage = get_forecast_coverage(session, forecast_coverage_identifier)
+    if forecast_coverage is None:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"forecast coverage {forecast_coverage_identifier!r} does not exist"
+        )
+    raw_ds_type, raw_location, raw_start, raw_end, raw_smoothing_strategy = identifier
+    try:
+        dataset_type = static.ForecastDatasetType(raw_ds_type)
+    except ValueError:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"dataset type {raw_ds_type} does not exist"
+        )
+    try:
+        location = shapely.Point(geohashr.decode(raw_location))
+    except ValueError:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"location {raw_location} is invalid"
+        )
+    try:
+        start = (
+            dt.date(int(raw_start[:4]), int(raw_start[4:6]), int(raw_start[6:8]))
+            if raw_start != "*"
+            else None
+        )
+    except IndexError:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"temporal range start {raw_start!r} is invalid"
+        )
+    try:
+        end = (
+            dt.date(int(raw_end[:4]), int(raw_end[4:6]), int(raw_end[6:8]))
+            if raw_end != "*"
+            else None
+        )
+    except IndexError:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"temporal range start {raw_start!r} is invalid"
+        )
+    try:
+        smoothing_strategy = base.CoverageDataSmoothingStrategy(
+            raw_smoothing_strategy.upper()
+        )
+    except ValueError:
+        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
+            f"smoothing strategy {raw_smoothing_strategy} does not exist"
+        )
+    return dataseries.ForecastDataSeries(
+        forecast_coverage=forecast_coverage,
+        dataset_type=dataset_type,
+        smoothing_strategy=smoothing_strategy,
+        temporal_start=start,
+        temporal_end=end,
+        location=location,
+    )
+
+
 def get_forecast_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[coverages.ForecastCoverageInternal]:
@@ -1395,6 +1460,21 @@ def generate_forecast_coverages_from_configuration(
             logger.exception(
                 f"Could not generate forecast coverage from combination {combination}"
             )
+    return result
+
+
+def generate_forecast_coverages_for_other_models(
+    forecast_coverage: coverages.ForecastCoverageInternal,
+) -> list[coverages.ForecastCoverageInternal]:
+    candidates = generate_forecast_coverages_from_configuration(
+        forecast_coverage.configuration
+    )
+    result = []
+    for candidate in candidates:
+        if candidate.scenario == forecast_coverage.scenario:
+            if candidate.forecast_year_period == forecast_coverage.forecast_year_period:
+                if candidate.forecast_model != forecast_coverage.forecast_model:
+                    result.append(candidate)
     return result
 
 
