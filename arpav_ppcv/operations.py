@@ -38,7 +38,9 @@ from .schemas import (
     base,
     climaticindicators,
     coverages,
+    dataseries,
     observations,
+    static,
 )
 from .schemas.base import CoreConfParamName
 from .thredds import (
@@ -388,23 +390,44 @@ def _simplify_date(raw_date: str) -> str:
 
 
 def process_coverage_smoothing_strategy(
-    df: pd.DataFrame,
+    pd_series: pd.Series,
     column_to_smooth: str,
     strategy: base.CoverageDataSmoothingStrategy,
     ignore_warnings: bool = True,
     smoothed_series_name: Optional[str] = None,
-) -> tuple[pd.DataFrame, str]:
+) -> tuple[pd.Series, str]:
     smoothed_name = (
         smoothed_series_name
         if smoothed_series_name
         else "__".join((column_to_smooth, strategy.value))
     )
     if strategy == base.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
-        df[smoothed_name] = _apply_loess_smoothing(
-            df, column_to_smooth, ignore_warnings=ignore_warnings
+        pd_series[smoothed_name] = _apply_loess_smoothing(
+            pd_series.to_frame(), column_to_smooth, ignore_warnings=ignore_warnings
         )
     elif strategy == base.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS:
-        df[smoothed_name] = df[column_to_smooth].rolling(center=True, window=11).mean()
+        pd_series[smoothed_name] = (
+            pd_series[column_to_smooth].rolling(center=True, window=11).mean()
+        )
+    else:
+        raise NotImplementedError(f"smoothing strategy {strategy!r} is not implemented")
+    return pd_series, smoothed_name
+
+
+def smooth_station_data_series(
+    series: dataseries.ObservationStationDataSeries,
+    strategy: base.ObservationDataSmoothingStrategy,
+    smoothed_series_name: Optional[str] = None,
+) -> tuple[pd.DataFrame, str]:
+    column_to_smooth = series.identifier
+    smoothed_name = (
+        smoothed_series_name
+        if smoothed_series_name
+        else "__".join((column_to_smooth, strategy.value))
+    )
+    df = pd.to_frame(series.data_)
+    if strategy == base.ObservationDataSmoothingStrategy.MOVING_AVERAGE_5_YEARS:
+        df[smoothed_name] = df[column_to_smooth].rolling(window=5, center=True).mean()
     else:
         raise NotImplementedError(f"smoothing strategy {strategy!r} is not implemented")
     return df, smoothed_name
@@ -513,47 +536,180 @@ def _retrieve_forecast_coverage_data(
     point_geom: shapely.Point,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None] = None,
     include_uncertainty: bool = False,
-) -> tuple[pd.DataFrame, pd.DataFrame | None, pd.DataFrame | None]:
+) -> tuple[
+    dataseries.ForecastDataSeries | None,
+    dataseries.ForecastDataSeries | None,
+    dataseries.ForecastDataSeries | None,
+]:
     retriever = ncss.ForecastCoverageDataRetriever(
         settings=settings,
         http_client=http_client,
         coverage=coverage,
     )
+    main_series = None
+    lower_uncert_series = None
+    upper_uncert_series = None
     main_data = retriever.retrieve_main_data(point_geom, temporal_range)
-    lower_uncert_data = None
-    upper_uncert_data = None
     if main_data is not None:
+        main_series = dataseries.ForecastDataSeries(
+            forecast_coverage=coverage,
+            dataset_type=static.ForecastDatasetType.MAIN,
+            smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+            temporal_start=temporal_range[0],
+            temporal_end=temporal_range[1],
+            location=point_geom,
+            data_=main_data,
+        )
         if include_uncertainty:
             lower_uncert_data = retriever.retrieve_lower_uncertainty_data(
                 point_geom, temporal_range
             )
+            if lower_uncert_data is not None:
+                lower_uncert_series = dataseries.ForecastDataSeries(
+                    forecast_coverage=coverage,
+                    dataset_type=static.ForecastDatasetType.LOWER_UNCERTAINTY,
+                    smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                    temporal_start=temporal_range[0],
+                    temporal_end=temporal_range[1],
+                    location=point_geom,
+                    data_=lower_uncert_data,
+                )
             upper_uncert_data = retriever.retrieve_upper_uncertainty_data(
                 point_geom, temporal_range
             )
-    return main_data, lower_uncert_data, upper_uncert_data
+            if upper_uncert_data is not None:
+                upper_uncert_series = dataseries.ForecastDataSeries(
+                    forecast_coverage=coverage,
+                    dataset_type=static.ForecastDatasetType.UPPER_UNCERTAINTY,
+                    smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                    temporal_start=temporal_range[0],
+                    temporal_end=temporal_range[1],
+                    location=point_geom,
+                    data_=upper_uncert_data,
+                )
+    return main_series, lower_uncert_series, upper_uncert_series
 
 
 def _apply_coverage_smoothing_strategies(
-    data_: pd.DataFrame,
-    series_identifier: str,
-    strategies: list[base.CoverageDataSmoothingStrategy],
-) -> list[tuple[base.CoverageDataSmoothingStrategy, pd.Series]]:
+    data_series: dataseries.ForecastDataSeries,
+    strategies: Sequence[base.CoverageDataSmoothingStrategy],
+) -> list[dataseries.ForecastDataSeries]:
     result = []
     for strategy in strategies:
-        if strategy == base.CoverageDataSmoothingStrategy.NO_SMOOTHING:
-            result.append(
-                (base.CoverageDataSmoothingStrategy.NO_SMOOTHING, data_.squeeze())
-            )
-        else:
-            df, smoothed_name = process_coverage_smoothing_strategy(
-                data_,
-                series_identifier,
+        if strategy != base.CoverageDataSmoothingStrategy.NO_SMOOTHING:
+            pd_series, _ = process_coverage_smoothing_strategy(
+                data_series.data_,
+                data_series.identifier,
                 strategy,
                 smoothed_series_name="-".join(
-                    (series_identifier, strategy.value.lower())
+                    (data_series.identifier, strategy.value.lower())
                 ),
             )
-            result.append((strategy, df[smoothed_name].squeeze()))
+            result.append(
+                dataseries.ForecastDataSeries(
+                    forecast_coverage=data_series.forecast_coverage,
+                    dataset_type=data_series.dataset_type,
+                    smoothing_strategy=strategy,
+                    temporal_start=data_series.temporal_start,
+                    temporal_end=data_series.temporal_end,
+                    location=data_series.location,
+                    data_=pd_series,
+                )
+            )
+    return result
+
+
+def _get_forecast_coverage_coverage_time_series(
+    thredds_settings: config.ThreddsServerSettings,
+    http_client: httpx.Client,
+    forecast_coverage: coverages.ForecastCoverageInternal,
+    point_geom: shapely.Point,
+    smoothing_strategies: Sequence[base.CoverageDataSmoothingStrategy],
+    include_uncertainty: bool,
+    include_related_models: bool,
+    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+) -> list[dataseries.ForecastDataSeries]:
+    data_ = []
+    cov_series = _retrieve_forecast_coverage_data(
+        http_client,
+        thredds_settings,
+        forecast_coverage,
+        point_geom,
+        temporal_range,
+        include_uncertainty=include_uncertainty,
+    )
+    for item in [i for i in cov_series if i is not None]:
+        data_.append(item)
+    if include_related_models:
+        for other_cov in database.generate_forecast_coverages_for_other_models(
+            forecast_coverage
+        ):
+            other_cov_series = _retrieve_forecast_coverage_data(
+                http_client,
+                thredds_settings,
+                other_cov,
+                point_geom,
+                temporal_range,
+                include_uncertainty=include_uncertainty,
+            )
+            for item in [i for i in other_cov_series if i is not None]:
+                data_.append(item)
+    result = []
+    for cov_data_series in data_:
+        smoothed = _apply_coverage_smoothing_strategies(
+            cov_data_series, smoothing_strategies
+        )
+        result.append(cov_data_series)
+        result.extend(smoothed)
+    return result
+
+
+def _get_forecast_coverage_observation_time_series(
+    settings: config.ArpavPpcvSettings,
+    session: sqlmodel.Session,
+    coverage: coverages.ForecastCoverageInternal,
+    point_geom: shapely.Point,
+    smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
+    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+):
+    result = {}
+    for osc_link in coverage.configuration.observation_series_configuration_links:
+        observation_series_conf = osc_link.observation_series_configuration
+        observation_data_series = get_nearby_observation_station_time_series(
+            session,
+            point_geom,
+            observation_series_conf,
+            distance_threshold_meters=settings.nearest_station_radius_meters,
+            temporal_range=temporal_range,
+        )
+        if observation_data_series is not None:
+            result[observation_data_series.identifier] = observation_data_series
+            for smoothing_strategy in smoothing_strategies:
+                if (
+                    smoothing_strategy
+                    == base.ObservationDataSmoothingStrategy.NO_SMOOTHING
+                ):
+                    continue  # already generated
+                else:
+                    series = dataseries.ObservationStationDataSeries(
+                        observation_series_configuration=observation_series_conf,
+                        observation_station=observation_data_series.observation_station,
+                        smoothing_strategy=smoothing_strategy,
+                    )
+                    smoothed_df, col_name = smooth_station_data_series(
+                        observation_data_series,
+                        smoothing_strategy,
+                        smoothed_series_name=series.identifier,
+                    )
+                    series.data_ = smoothed_df[series.identifier].squeeze()
+                    result[series.identifier] = series
+        else:
+            logger.info("No station data found, skipping...")
+    else:
+        logger.info(
+            "Cannot include observation data - no climatic indicator is related "
+            "to this coverage configuration"
+        )
     return result
 
 
@@ -563,145 +719,37 @@ def get_forecast_coverage_time_series(
     http_client: httpx.Client,
     coverage: coverages.ForecastCoverageInternal,
     point_geom: shapely.Point,
-    temporal_range: str,
+    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
     coverage_smoothing_strategies: list[base.CoverageDataSmoothingStrategy],
     observation_smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
     include_coverage_data: bool = True,
     include_observation_data: bool = False,
     include_coverage_uncertainty: bool = False,
     include_coverage_related_models: bool = False,
-) -> tuple[
-    dict[
-        tuple[coverages.CoverageInternal, base.CoverageDataSmoothingStrategy], pd.Series
-    ],
-    Optional[
-        dict[
-            tuple[
-                observations.Station,
-                climaticindicators.ClimaticIndicator,
-                base.ObservationDataSmoothingStrategy,
-            ],
-            pd.Series,
-        ]
-    ],
-]:
-    start, end = parse_temporal_range(temporal_range)
+):
+    coverage_series = None
+    observation_series = None
     if include_coverage_data:
-        data_ = []
-        cov_dataframes = _retrieve_forecast_coverage_data(
-            http_client,
+        coverage_series = _get_forecast_coverage_coverage_time_series(
             settings.thredds_server,
+            http_client,
             coverage,
             point_geom,
-            (start, end),
-            include_uncertainty=include_coverage_uncertainty,
+            coverage_smoothing_strategies,
+            include_coverage_uncertainty,
+            include_coverage_related_models,
+            temporal_range=temporal_range,
         )
-        if cov_dataframes[0] is not None:
-            data_.append((coverage, cov_dataframes))
-        if include_coverage_related_models:
-            for other_cov in database.generate_forecast_coverages_for_other_models(
-                coverage
-            ):
-                other_cov_dataframes = _retrieve_forecast_coverage_data(
-                    http_client,
-                    settings.thredds_server,
-                    other_cov,
-                    point_geom,
-                    (start, end),
-                    include_uncertainty=include_coverage_uncertainty,
-                )
-                if other_cov_dataframes[0] is not None:
-                    data_.append((other_cov, other_cov_dataframes))
-
-        all_coverage_series = {}
-        for cov, (cov_dfs) in data_:
-            cov: coverages.ForecastCoverageInternal
-            main_df, lower_uncert_df, upper_uncert_df = cov_dfs
-            if main_df is not None:
-                smoothed_series = _apply_coverage_smoothing_strategies(
-                    main_df, cov.identifier, coverage_smoothing_strategies
-                )
-                all_coverage_series[cov.identifier] = {
-                    "coverage": cov,
-                    cov.identifier: smoothed_series,
-                }
-            if lower_uncert_df is not None:
-                smoothed_series = _apply_coverage_smoothing_strategies(
-                    lower_uncert_df,
-                    cov.lower_uncertainty_identifier,
-                    coverage_smoothing_strategies,
-                )
-                all_coverage_series[cov.identifier][
-                    cov.lower_uncertainty_identifier
-                ] = smoothed_series
-            if upper_uncert_df is not None:
-                smoothed_series = _apply_coverage_smoothing_strategies(
-                    upper_uncert_df,
-                    cov.upper_uncertainty_identifier,
-                    coverage_smoothing_strategies,
-                )
-                all_coverage_series[cov.identifier][
-                    cov.upper_uncertainty_identifier
-                ] = smoothed_series
-
-    # observation_result = None
-    # if include_observation_data:
-    #     additional_observation_smoothing_strategies = [
-    #         ss
-    #         for ss in observation_smoothing_strategies
-    #         if ss != base.ObservationDataSmoothingStrategy.NO_SMOOTHING
-    #     ]
-    #     if coverage.configuration.related_observation_variable is not None:
-    #         station_data = extract_nearby_station_data(
-    #             session,
-    #             settings,
-    #             point_geom,
-    #             coverage.configuration,
-    #             coverage.identifier,
-    #         )
-    #         if station_data is not None:
-    #             observation_result = {}
-    #             raw_station_data, station = station_data
-    #             station_df = _process_station_data(
-    #                 raw_station_data,
-    #                 start,
-    #                 end,
-    #                 coverage.configuration.climatic_indicator.name,
-    #                 aggregation_type=(
-    #                     coverage.configuration.observation_variable_aggregation_type
-    #                 ),
-    #             )
-    #             observation_result[
-    #                 (
-    #                     station,
-    #                     coverage.configuration.climatic_indicator,
-    #                     base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
-    #                 )
-    #             ] = station_df[coverage.configuration.climatic_indicator.name].squeeze()
-    #             for smoothing_strategy in additional_observation_smoothing_strategies:
-    #                 (
-    #                     station_df,
-    #                     smoothed_column,
-    #                 ) = process_station_data_smoothing_strategy(
-    #                     station_df,
-    #                     coverage.configuration.climatic_indicator.name,
-    #                     smoothing_strategy,
-    #                 )
-    #                 observation_result[
-    #                     (
-    #                         station,
-    #                         coverage.configuration.climatic_indicator,
-    #                         smoothing_strategy,
-    #                     )
-    #                 ] = station_df[smoothed_column].squeeze()
-    #         else:
-    #             logger.info("No station data found, skipping...")
-    #     else:
-    #         logger.info(
-    #             "Cannot include observation data - no climatic indicator is related "
-    #             "to this coverage configuration"
-    #         )
-    # return coverage_result, observation_result
+    if include_observation_data:
+        observation_series = _get_forecast_coverage_observation_time_series(
+            settings,
+            session,
+            coverage,
+            point_geom,
+            observation_smoothing_strategies,
+            temporal_range=temporal_range,
+        )
+    return coverage_series, observation_series
 
 
 def get_coverage_time_series(
@@ -856,6 +904,71 @@ def get_coverage_time_series(
     return coverage_result, observation_result
 
 
+def find_nearby_observation_station(
+    session: sqlmodel.Session,
+    location: shapely.Point,
+    distance_threshold_meters: int,
+    observation_series_configuration: Optional[
+        observations.ObservationSeriesConfiguration
+    ] = None,
+) -> Optional[observations.ObservationStation]:
+    """
+    Find close station that collects data for input series conf's climatic indicator.
+    """
+    point_buffer_geom = _get_spatial_buffer(location, distance_threshold_meters)
+    nearby_stations = database.collect_all_observation_stations(
+        session,
+        polygon_intersection_filter=point_buffer_geom,
+        climatic_indicator_id_filter=(
+            observation_series_configuration.climatic_indicator_id
+            if observation_series_configuration is not None
+            else None
+        ),
+    )
+    return nearby_stations[0] if len(nearby_stations) > 0 else None
+
+
+def get_nearby_observation_station_time_series(
+    session: sqlmodel.Session,
+    location: shapely.Point,
+    observation_series_configuration: observations.ObservationSeriesConfiguration,
+    distance_threshold_meters: int,
+    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+) -> Optional[dataseries.ObservationStationDataSeries]:
+    result = None
+    nearby_station = find_nearby_observation_station(
+        session, location, distance_threshold_meters, observation_series_configuration
+    )
+    if nearby_station is not None:
+        result = dataseries.ObservationStationDataSeries(
+            observation_series_configuration=observation_series_configuration,
+            observation_station=nearby_station,
+            smoothing_strategy=base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
+        )
+        raw_data = database.collect_all_observation_measurements(
+            session,
+            observation_station_id_filter=nearby_station.id,
+            climatic_indicator_id_filter=observation_series_configuration.climatic_indicator_id,
+            aggregation_type_filter=observation_series_configuration.measurement_aggregation_type,
+        )
+        if len(raw_data) > 0:
+            parsed_data = parse_observation_station_data(
+                raw_data,
+                base_name=result.identifier,
+                temporal_range=temporal_range,
+            )
+            result.data_ = parsed_data
+        else:
+            result = None
+    else:
+        logger.info(
+            f"Could not find any observation station within a "
+            f"{distance_threshold_meters} meter radius of {location!r} "
+            f"with suitable data"
+        )
+    return result
+
+
 def extract_nearby_station_data(
     session: sqlmodel.Session,
     settings: config.ArpavPpcvSettings,
@@ -926,6 +1039,29 @@ def extract_nearby_station_data(
         )
         result = None
     return result
+
+
+def parse_observation_station_data(
+    raw_data: Sequence[observations.ObservationMeasurement],
+    base_name: str,
+    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+) -> pd.Series:
+    df = pd.DataFrame([i.model_dump() for i in raw_data])
+    df = df.rename(
+        columns={
+            "value": base_name,
+            "date": "time",
+        },
+    )
+    df = df[[base_name, "time"]]
+    df.set_index("time", inplace=True)
+    if temporal_range is not None:
+        start, end = temporal_range
+        if start is not None:
+            df = df[start:]
+        if end is not None:
+            df = df[:end]
+    return df.squeeze()
 
 
 def _process_station_data(

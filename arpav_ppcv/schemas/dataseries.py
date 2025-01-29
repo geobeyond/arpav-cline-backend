@@ -11,7 +11,14 @@ import shapely
 
 if TYPE_CHECKING:
     from .coverages import ForecastCoverageInternal
-    from .base import CoverageDataSmoothingStrategy
+    from .observations import (
+        ObservationSeriesConfiguration,
+        ObservationStation,
+    )
+    from .base import (
+        CoverageDataSmoothingStrategy,
+        ObservationDataSmoothingStrategy,
+    )
     from .static import ForecastDatasetType
 
 
@@ -23,6 +30,7 @@ class ForecastDataSeries:
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]
     location: shapely.Point
+    data_: Optional[pd.Series] = None
 
     @property
     def identifier(self) -> str:
@@ -31,7 +39,6 @@ class ForecastDataSeries:
                 self.forecast_coverage.identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
-                self.smoothing_strategy.value.upper(),
                 (
                     self.temporal_start.strftime("%Y%m%d")
                     if self.temporal_start is not None
@@ -46,5 +53,20 @@ class ForecastDataSeries:
             )
         )
 
-    def get_data(self) -> Optional[pd.Series]:
-        ...
+
+@dataclasses.dataclass
+class ObservationStationDataSeries:
+    observation_series_configuration: "ObservationSeriesConfiguration"
+    observation_station: "ObservationStation"
+    smoothing_strategy: "ObservationDataSmoothingStrategy"
+    data_: Optional[pd.Series] = None
+
+    @property
+    def identifier(self) -> str:
+        return "-".join(
+            (
+                self.observation_series_configuration.identifier,
+                self.observation_station.code,
+                self.smoothing_strategy.value.lower(),
+            )
+        )

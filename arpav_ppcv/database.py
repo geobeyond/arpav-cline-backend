@@ -1463,9 +1463,23 @@ def generate_forecast_coverages_from_configuration(
     return result
 
 
+# this does not work if the other models are part of a different forecast cov conf
 def generate_forecast_coverages_for_other_models(
+    session: sqlmodel.Session,
     forecast_coverage: coverages.ForecastCoverageInternal,
 ) -> list[coverages.ForecastCoverageInternal]:
+    # two strategies:
+    # 1. try to find a fcc by taking the current one and changing the part of the identifier that names the model
+    # 2. try to find a fcc by looking for the simple one
+    all_forecast_models = collect_all_forecast_models(session)
+
+    # - does the forecast_coverage identifier have a forecast_model?
+    identifier_parts = forecast_coverage.identifier.split("-")
+    for part_index, part in enumerate(identifier_parts):
+        for model_part_name in (fcm.name for fcm in all_forecast_models):
+            if part == model_part_name:
+                ...
+
     candidates = generate_forecast_coverages_from_configuration(
         forecast_coverage.configuration
     )
@@ -1893,11 +1907,10 @@ def create_climatic_indicator(
         db_climatic_indicator.observation_names.append(db_obs_name)
         to_refresh.append(db_obs_name)
     for forecast_model_info in climatic_indicator_create.forecast_models:
-        db_forecast_model_climatic_indicator_link = (
-            coverages.ForecastModelClimaticIndicatorLink(
-                forecast_model_id=forecast_model_info.forecast_model_id,
-                thredds_url_base_path=forecast_model_info.thredds_url_base_path,
-            )
+        db_forecast_model_climatic_indicator_link = coverages.ForecastModelClimaticIndicatorLink(
+            forecast_model_id=forecast_model_info.forecast_model_id,
+            thredds_url_base_path=forecast_model_info.thredds_url_base_path,
+            thredds_url_uncertainties_base_path=forecast_model_info.thredds_url_uncertainties_base_path,
         )
         db_climatic_indicator.forecast_model_links.append(
             db_forecast_model_climatic_indicator_link
@@ -1970,6 +1983,7 @@ def update_climatic_indicator(
                 forecast_model_id=requested_fm_id,
                 climatic_indicator_id=db_climatic_indicator.id,
                 thredds_url_base_path=requested_fm.thredds_url_base_path,
+                thredds_url_uncertainties_base_path=requested_fm.thredds_url_uncertainties_base_path,
             )
             db_climatic_indicator.forecast_model_links.append(db_fm_link)
         else:  # already exists, just update
@@ -2094,6 +2108,7 @@ def list_observation_stations(
     name_filter: Optional[str] = None,
     polygon_intersection_filter: Optional[shapely.Polygon] = None,
     manager_filter: Optional[static.ObservationStationManager] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
 ) -> tuple[Sequence[observations.ObservationStation], Optional[int]]:
     """List existing observation stations.
 
@@ -2120,6 +2135,15 @@ def list_observation_stations(
         statement = statement.where(
             observations.ObservationStation.managed_by == manager_filter
         )
+    if climatic_indicator_id_filter is not None:
+        statement = statement.join(
+            observations.ObservationStationClimaticIndicatorLink,
+            observations.ObservationStation.id
+            == observations.ObservationStationClimaticIndicatorLink.observation_station_id,
+        ).where(
+            observations.ObservationStationClimaticIndicatorLink.climatic_indicator_id
+            == climatic_indicator_id_filter,
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2129,6 +2153,7 @@ def collect_all_observation_stations(
     session: sqlmodel.Session,
     polygon_intersection_filter: Optional[shapely.Polygon] = None,
     manager_filter: Optional[static.ObservationStationManager] = None,
+    climatic_indicator_id_filter: Optional[int] = None,
 ) -> Sequence[observations.ObservationStation]:
     """Collect all observation stations.
 
@@ -2141,6 +2166,7 @@ def collect_all_observation_stations(
         include_total=True,
         polygon_intersection_filter=polygon_intersection_filter,
         manager_filter=manager_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
     )
     result, _ = list_observation_stations(
         session,
@@ -2148,6 +2174,7 @@ def collect_all_observation_stations(
         include_total=False,
         polygon_intersection_filter=polygon_intersection_filter,
         manager_filter=manager_filter,
+        climatic_indicator_id_filter=climatic_indicator_id_filter,
     )
     return result
 
@@ -2290,6 +2317,7 @@ def list_observation_measurements(
     offset: int = 0,
     observation_station_id_filter: Optional[int] = None,
     climatic_indicator_id_filter: Optional[int] = None,
+    aggregation_type_filter: Optional[static.MeasurementAggregationType] = None,
     include_total: bool = False,
 ) -> tuple[Sequence[observations.ObservationMeasurement], Optional[int]]:
     """List existing observation measurements."""
@@ -2306,6 +2334,11 @@ def list_observation_measurements(
             observations.ObservationMeasurement.climatic_indicator_id
             == climatic_indicator_id_filter
         )
+    if aggregation_type_filter is not None:
+        statement = statement.where(
+            observations.ObservationMeasurement.measurement_aggregation_type
+            == aggregation_type_filter.name
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = _get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -2316,12 +2349,14 @@ def collect_all_observation_measurements(
     *,
     observation_station_id_filter: Optional[int] = None,
     climatic_indicator_id_filter: Optional[int] = None,
+    aggregation_type_filter: Optional[static.MeasurementAggregationType] = None,
 ) -> Sequence[observations.ObservationMeasurement]:
     _, num_total = list_observation_measurements(
         session,
         limit=1,
         observation_station_id_filter=observation_station_id_filter,
         climatic_indicator_id_filter=climatic_indicator_id_filter,
+        aggregation_type_filter=aggregation_type_filter,
         include_total=True,
     )
     result, _ = list_observation_measurements(
@@ -2329,6 +2364,7 @@ def collect_all_observation_measurements(
         limit=num_total,
         observation_station_id_filter=observation_station_id_filter,
         climatic_indicator_id_filter=climatic_indicator_id_filter,
+        aggregation_type_filter=aggregation_type_filter,
         include_total=False,
     )
     return result

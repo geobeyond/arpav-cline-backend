@@ -184,6 +184,7 @@ class SpatialRegion(sqlmodel.SQLModel, table=True):
 
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str = sqlmodel.Field(nullable=False, unique=True)
+    internal_value: str
     display_name_english: str = sqlmodel.Field(default="")
     display_name_italian: str = sqlmodel.Field(default="")
     sort_order: int = sqlmodel.Field(default=0)
@@ -207,6 +208,7 @@ class SpatialRegion(sqlmodel.SQLModel, table=True):
 
 class SpatialRegionCreate(sqlmodel.SQLModel):
     name: str
+    internal_value: str
     display_name_english: str = ""
     display_name_italian: str = ""
     sort_order: int = 0
@@ -215,6 +217,7 @@ class SpatialRegionCreate(sqlmodel.SQLModel):
 
 class SpatialRegionUpdate(sqlmodel.SQLModel):
     name: str | None = None
+    internal_value: str | None = None
     display_name_english: str | None = None
     display_name_italian: str | None = None
     sort_order: int | None = None

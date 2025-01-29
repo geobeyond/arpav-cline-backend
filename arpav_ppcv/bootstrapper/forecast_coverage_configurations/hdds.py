@@ -87,10 +87,12 @@ def generate_forecast_coverage_configurations(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "20oc_stddown_ts19762100_{scenario}_ls_{spatial_region}.nc"
             ),
+            lower_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stddown",
             upper_uncertainty_thredds_url_pattern=(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "20oc_stdup_ts19762100_{scenario}_ls_{spatial_region}.nc"
             ),
+            upper_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stdup",
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,

@@ -40,7 +40,7 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
-    ) -> Optional[pd.DataFrame]:
+    ) -> Optional[pd.Series]:
         ncss_url = self.coverage.get_thredds_ncss_url(self.settings)
         netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
         if all((ncss_url, netcdf_variable_name)):
@@ -60,10 +60,12 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
-    ) -> Optional[pd.DataFrame]:
+    ) -> Optional[pd.Series]:
         identifier = self.coverage.lower_uncertainty_identifier
         ncss_url = self.coverage.get_lower_uncertainty_thredds_ncss_url(self.settings)
-        netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
+        netcdf_variable_name = (
+            self.coverage.get_netcdf_lower_uncertainty_main_dataset_name()
+        )
         result = None
         if all((identifier, ncss_url, netcdf_variable_name)):
             result = self._retrieve_location_data(
@@ -88,10 +90,12 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
-    ) -> Optional[pd.DataFrame]:
+    ) -> Optional[pd.Series]:
         identifier = self.coverage.upper_uncertainty_identifier
         ncss_url = self.coverage.get_upper_uncertainty_thredds_ncss_url(self.settings)
-        netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
+        netcdf_variable_name = (
+            self.coverage.get_netcdf_upper_uncertainty_main_dataset_name()
+        )
         if all((identifier, ncss_url, netcdf_variable_name)):
             return self._retrieve_location_data(
                 ncss_url,
@@ -117,7 +121,7 @@ class ForecastCoverageDataRetriever:
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
         target_series_name: Optional[str] = None,
-    ) -> Optional[pd.DataFrame]:
+    ) -> Optional[pd.Series]:
         result = None
         raw_data = query_dataset(
             self.http_client,
@@ -145,7 +149,7 @@ def _parse_ncss_dataset(
     time_start: dt.datetime | None,
     time_end: dt.datetime | None,
     target_series_name: str | None = None,
-) -> pd.DataFrame:
+) -> pd.Series:
     df = pd.read_csv(io.StringIO(raw_data), parse_dates=["time"])
     try:
         col_name = [c for c in df.columns if c.startswith(f"{source_main_ds_name}[")][0]
@@ -172,7 +176,7 @@ def _parse_ncss_dataset(
             df = df[time_start:]
         if time_end is not None:
             df = df[:time_end]
-        return df
+        return df.squeeze()
 
 
 def _simplify_date(raw_date: str) -> str:

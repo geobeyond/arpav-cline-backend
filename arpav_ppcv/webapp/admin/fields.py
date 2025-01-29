@@ -113,8 +113,10 @@ class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
 
     def _get_label(self, value: int, request: Request) -> str:
         session = request.state.session
-        db_forecast_time_window = database.get_forecast_time_window(session, value)
-        return db_forecast_time_window.name
+        db_observation_series_configuration = (
+            database.get_observation_series_configuration(session, value)
+        )
+        return db_observation_series_configuration.identifier
 
     async def serialize_value(
         self,

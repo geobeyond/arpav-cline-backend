@@ -98,10 +98,12 @@ def generate_forecast_coverage_configurations(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_anom_"
                 "stddown_pp_ts_{scenario}_{year_period}_{spatial_region}.nc"
             ),
+            lower_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stddown",
             upper_uncertainty_thredds_url_pattern=(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_anom_"
                 "stdup_pp_ts_{scenario}_{year_period}_{spatial_region}.nc"
             ),
+            upper_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stdup",
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,
@@ -158,10 +160,12 @@ def generate_forecast_coverage_configurations(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "stddown_{scenario}_{year_period}_ts19762100_ls_{spatial_region}.nc"
             ),
+            lower_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stddown",
             upper_uncertainty_thredds_url_pattern=(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "stdup_{scenario}_{year_period}_ts19762100_ls_{spatial_region}.nc"
             ),
+            upper_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stdup",
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,
@@ -178,7 +182,7 @@ def generate_forecast_coverage_configurations(
             ],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v-seasonal"
+                    "tas-absolute-annual-arpa_v:arpa_fvg-seasonal"
                 ],
             ],
         ),
@@ -223,10 +227,12 @@ def generate_forecast_coverage_configurations(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "stddown_{scenario}_ts19762100_ls_{spatial_region}.nc"
             ),
+            lower_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stddown",
             upper_uncertainty_thredds_url_pattern=(
                 "{forecast_model_uncertainties_base_path}/{climatic_indicator}_"
                 "stdup_{scenario}_ts19762100_ls_{spatial_region}.nc"
             ),
+            upper_uncertainty_netcdf_main_dataset_name="{climatic_indicator}_stdup",
             scenarios=[
                 ForecastScenario.RCP26,
                 ForecastScenario.RCP45,
@@ -240,7 +246,7 @@ def generate_forecast_coverage_configurations(
             ],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v-yearly"
+                    "tas-absolute-annual-arpa_v:arpa_fvg-yearly"
                 ],
             ],
         ),
@@ -270,7 +276,7 @@ def generate_forecast_coverage_configurations(
             ],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v-yearly"
+                    "tas-absolute-annual-arpa_v:arpa_fvg-yearly"
                 ],
             ],
         ),

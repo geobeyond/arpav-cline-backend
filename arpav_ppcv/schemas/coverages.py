@@ -903,7 +903,9 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
 
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     scenarios: list[static.ForecastScenario] = sqlmodel.Field(
         default=list,
         sa_column=sqlalchemy.Column(
@@ -969,7 +971,9 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     climatic_indicator_id: int
     spatial_region_id: int
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     scenarios: list[static.ForecastScenario]
     year_periods: list[static.ForecastYearPeriod]
     forecast_models: list[int]
@@ -985,7 +989,9 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     climatic_indicator_id: Optional[int] = None
     spatial_region_id: Optional[int] = None
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     scenarios: Optional[list[static.ForecastScenario]] = None
     year_periods: Optional[list[static.ForecastYearPeriod]] = None
     forecast_models: Optional[list[int]] = None
@@ -1093,24 +1099,18 @@ class ForecastCoverageInternal:
             result = "-".join((self.identifier, "upper_uncertainty"))
         return result
 
-    def _get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
-        result = None
-        for fml in self.configuration.climatic_indicator.forecast_model_links:
-            if fml.forecast_model_id == self.forecast_model.id:
-                result = fml.thredds_url_base_path
-                break
-        return result
-
-    def _get_forecast_model_thredds_url_uncertainties_base_path(self) -> Optional[str]:
-        result = None
-        for fml in self.configuration.climatic_indicator.forecast_model_links:
-            if fml.forecast_model_id == self.forecast_model.id:
-                result = fml.thredds_url_uncertainties_base_path
-                break
-        return result
-
     def get_netcdf_main_dataset_name(self) -> str:
         return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
+
+    def get_netcdf_lower_uncertainty_main_dataset_name(self) -> str:
+        return self._render_templated_value(
+            self.configuration.lower_uncertainty_netcdf_main_dataset_name
+        )
+
+    def get_netcdf_upper_uncertainty_main_dataset_name(self) -> str:
+        return self._render_templated_value(
+            self.configuration.upper_uncertainty_netcdf_main_dataset_name
+        )
 
     def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
         return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
@@ -1132,6 +1132,22 @@ class ForecastCoverageInternal:
 
     def get_wms_secondary_layer_name(self) -> Optional[str]:
         return self._render_templated_value(self.configuration.wms_secondary_layer_name)
+
+    def _get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
+        result = None
+        for fml in self.configuration.climatic_indicator.forecast_model_links:
+            if fml.forecast_model_id == self.forecast_model.id:
+                result = fml.thredds_url_base_path
+                break
+        return result
+
+    def _get_forecast_model_thredds_url_uncertainties_base_path(self) -> Optional[str]:
+        result = None
+        for fml in self.configuration.climatic_indicator.forecast_model_links:
+            if fml.forecast_model_id == self.forecast_model.id:
+                result = fml.thredds_url_uncertainties_base_path
+                break
+        return result
 
     def _get_thredds_url_fragment(self) -> str:
         return self._render_templated_value(self.configuration.thredds_url_pattern)
@@ -1175,7 +1191,7 @@ class ForecastCoverageInternal:
             ),
             scenario=self.scenario.get_internal_value(),
             year_period=self.forecast_year_period.get_internal_value(),
-            spatial_region=self.configuration.spatial_region.name,
+            spatial_region=self.configuration.spatial_region.internal_value,
         )
 
     def __hash__(self):

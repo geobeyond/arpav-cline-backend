@@ -958,7 +958,9 @@ class ForecastCoverageConfigurationView(ModelView):
         "wms_main_layer_name",
         "wms_secondary_layer_name",
         "lower_uncertainty_thredds_url_pattern",
+        "lower_uncertainty_netcdf_main_dataset_name",
         "upper_uncertainty_thredds_url_pattern",
+        "upper_uncertainty_netcdf_main_dataset_name",
         "scenarios",
         "year_periods",
         "forecast_models",
@@ -1013,7 +1015,25 @@ class ForecastCoverageConfigurationView(ModelView):
             "lower_uncertainty_thredds_url_pattern", required=False
         ),
         starlette_admin.StringField(
+            "lower_uncertainty_netcdf_main_dataset_name",
+            required=False,
+            help_text=(
+                "Name of the main variable inside this dataset's lower uncertainty "
+                "NetCDF file. This can be a templated value, such "
+                "as '{historical_year_period}_avg'."
+            ),
+        ),
+        starlette_admin.StringField(
             "upper_uncertainty_thredds_url_pattern", required=False
+        ),
+        starlette_admin.StringField(
+            "upper_uncertainty_netcdf_main_dataset_name",
+            required=False,
+            help_text=(
+                "Name of the main variable inside this dataset's upper uncertainty "
+                "NetCDF file. This can be a templated value, such "
+                "as '{historical_year_period}_avg'."
+            ),
         ),
         starlette_admin.EnumField(
             "scenarios", multiple=True, enum=static.ForecastScenario, required=True
@@ -1095,8 +1115,14 @@ class ForecastCoverageConfigurationView(ModelView):
                     lower_uncertainty_thredds_url_pattern=data.get(
                         "lower_uncertainty_thredds_url_pattern"
                     ),
+                    lower_uncertainty_netcdf_main_dataset_name=data.get(
+                        "lower_uncertainty_netcdf_main_dataset_name"
+                    ),
                     upper_uncertainty_thredds_url_pattern=data.get(
                         "upper_uncertainty_thredds_url_pattern"
+                    ),
+                    upper_uncertainty_netcdf_main_dataset_name=data.get(
+                        "upper_uncertainty_netcdf_main_dataset_name"
                     ),
                     scenarios=data.get("scenarios", []),
                     year_periods=data.get("year_periods", []),
@@ -1133,8 +1159,14 @@ class ForecastCoverageConfigurationView(ModelView):
                     lower_uncertainty_thredds_url_pattern=data.get(
                         "lower_uncertainty_thredds_url_pattern"
                     ),
+                    lower_uncertainty_netcdf_main_dataset_name=data.get(
+                        "lower_uncertainty_netcdf_main_dataset_name"
+                    ),
                     upper_uncertainty_thredds_url_pattern=data.get(
                         "upper_uncertainty_thredds_url_pattern"
+                    ),
+                    upper_uncertainty_netcdf_main_dataset_name=data.get(
+                        "upper_uncertainty_netcdf_main_dataset_name"
                     ),
                     scenarios=data.get("scenarios", []),
                     year_periods=data.get("year_periods", []),
