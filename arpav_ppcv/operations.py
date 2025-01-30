@@ -389,6 +389,37 @@ def _simplify_date(raw_date: str) -> str:
     return f"{raw_year}-{raw_month}-15T00:00:00+00:00"
 
 
+def generate_smoothed_series(
+    data_series: dataseries.ForecastDataSeries,
+    smoothing_strategy: base.CoverageDataSmoothingStrategy,
+) -> dataseries.ForecastDataSeries:
+    smoothed_series = dataseries.ForecastDataSeries(
+        forecast_coverage=data_series.forecast_coverage,
+        dataset_type=data_series.dataset_type,
+        smoothing_strategy=smoothing_strategy,
+        temporal_start=data_series.temporal_start,
+        temporal_end=data_series.temporal_end,
+        location=data_series.location,
+    )
+    df = data_series.data_.to_frame()
+    if smoothing_strategy == base.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
+        df[smoothed_series.identifier] = _apply_loess_smoothing(
+            df, data_series.identifier, ignore_warnings=True
+        )
+    elif (
+        smoothing_strategy == base.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS
+    ):
+        df[smoothed_series.identifier] = (
+            df[data_series.identifier].rolling(center=True, window=11).mean()
+        )
+    else:
+        raise NotImplementedError(
+            f"smoothing strategy {smoothing_strategy!r} is not implemented"
+        )
+    smoothed_series.data_ = df[smoothed_series.identifier].squeeze()
+    return smoothed_series
+
+
 def process_coverage_smoothing_strategy(
     pd_series: pd.Series,
     column_to_smooth: str,
@@ -604,33 +635,35 @@ def _retrieve_forecast_coverage_data(
     return main_series, lower_uncert_series, upper_uncert_series
 
 
-def _apply_coverage_smoothing_strategies(
-    data_series: dataseries.ForecastDataSeries,
-    strategies: Sequence[base.CoverageDataSmoothingStrategy],
-) -> list[dataseries.ForecastDataSeries]:
-    result = []
-    for strategy in strategies:
-        if strategy != base.CoverageDataSmoothingStrategy.NO_SMOOTHING:
-            pd_series, _ = process_coverage_smoothing_strategy(
-                data_series.data_,
-                data_series.identifier,
-                strategy,
-                smoothed_series_name="-".join(
-                    (data_series.identifier, strategy.value.lower())
-                ),
-            )
-            result.append(
-                dataseries.ForecastDataSeries(
-                    forecast_coverage=data_series.forecast_coverage,
-                    dataset_type=data_series.dataset_type,
-                    smoothing_strategy=strategy,
-                    temporal_start=data_series.temporal_start,
-                    temporal_end=data_series.temporal_end,
-                    location=data_series.location,
-                    data_=pd_series,
-                )
-            )
-    return result
+#
+#
+# def _apply_coverage_smoothing_strategies(
+#     data_series: dataseries.ForecastDataSeries,
+#     strategies: Sequence[base.CoverageDataSmoothingStrategy],
+# ) -> list[dataseries.ForecastDataSeries]:
+#     result = []
+#     for strategy in strategies:
+#         if strategy != base.CoverageDataSmoothingStrategy.NO_SMOOTHING:
+#             pd_series, _ = process_coverage_smoothing_strategy(
+#                 data_series.data_,
+#                 data_series.identifier,
+#                 strategy,
+#                 smoothed_series_name="-".join(
+#                     (data_series.identifier, strategy.value.lower())
+#                 ),
+#             )
+#             result.append(
+#                 dataseries.ForecastDataSeries(
+#                     forecast_coverage=data_series.forecast_coverage,
+#                     dataset_type=data_series.dataset_type,
+#                     smoothing_strategy=strategy,
+#                     temporal_start=data_series.temporal_start,
+#                     temporal_end=data_series.temporal_end,
+#                     location=data_series.location,
+#                     data_=pd_series,
+#                 )
+#             )
+#     return result
 
 
 def _get_forecast_coverage_coverage_time_series(
@@ -671,11 +704,17 @@ def _get_forecast_coverage_coverage_time_series(
                 data_.append(item)
     result = []
     for cov_data_series in data_:
-        smoothed = _apply_coverage_smoothing_strategies(
-            cov_data_series, smoothing_strategies
-        )
         result.append(cov_data_series)
-        result.extend(smoothed)
+        for strategy in [
+            s
+            for s in smoothing_strategies
+            if s != base.CoverageDataSmoothingStrategy.NO_SMOOTHING
+        ]:
+            smoothed_series = generate_smoothed_series(
+                cov_data_series,
+                strategy,
+            )
+            result.append(smoothed_series)
     return result
 
 
@@ -686,7 +725,7 @@ def _get_forecast_coverage_observation_time_series(
     point_geom: shapely.Point,
     smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
-):
+) -> list[dataseries.ObservationStationDataSeries]:
     result = {}
     for osc_link in coverage.configuration.observation_series_configuration_links:
         observation_series_conf = osc_link.observation_series_configuration
