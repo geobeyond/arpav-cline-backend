@@ -1463,32 +1463,62 @@ def generate_forecast_coverages_from_configuration(
     return result
 
 
-# this does not work if the other models are part of a different forecast cov conf
 def generate_forecast_coverages_for_other_models(
     session: sqlmodel.Session,
     forecast_coverage: coverages.ForecastCoverageInternal,
 ) -> list[coverages.ForecastCoverageInternal]:
-    # two strategies:
-    # 1. try to find a fcc by taking the current one and changing the part of the identifier that names the model
-    # 2. try to find a fcc by looking for the simple one
+    """Get a list of forecast coverages with the other forecast models.
+
+    The implementation of this function is a bit complex because it is possible
+    that forecast models for the same climatic indicator are distributed across
+    multiple forecast coverage configurations.
+    """
+
     all_forecast_models = collect_all_forecast_models(session)
+    other_model_ids = [
+        fm.id
+        for fm in all_forecast_models
+        if fm.id != forecast_coverage.forecast_model.id
+    ]
 
-    # - does the forecast_coverage identifier have a forecast_model?
-    identifier_parts = forecast_coverage.identifier.split("-")
-    for part_index, part in enumerate(identifier_parts):
-        for model_part_name in (fcm.name for fcm in all_forecast_models):
-            if part == model_part_name:
-                ...
+    indicator = forecast_coverage.configuration.climatic_indicator
+    conf_ids = set()
+    for candidate_forecast_cov_conf in indicator.forecast_coverage_configurations:
+        for candidate_model_link in candidate_forecast_cov_conf.forecast_model_links:
+            if candidate_model_link.forecast_model_id in other_model_ids:
+                # the respective forecast_cov_conf is able to generate forecast
+                # coverages with this forecast model
+                conf_ids.add(candidate_forecast_cov_conf.id)
+    candidate_forecast_coverages = []
+    for conf_id in conf_ids:
+        forecast_cov_conf = get_forecast_coverage_configuration(session, conf_id)
+        possible_forecast_coverages = generate_forecast_coverages_from_configuration(
+            forecast_cov_conf
+        )
+        candidate_forecast_coverages.extend(possible_forecast_coverages)
 
-    candidates = generate_forecast_coverages_from_configuration(
-        forecast_coverage.configuration
-    )
     result = []
-    for candidate in candidates:
-        if candidate.scenario == forecast_coverage.scenario:
-            if candidate.forecast_year_period == forecast_coverage.forecast_year_period:
-                if candidate.forecast_model != forecast_coverage.forecast_model:
-                    result.append(candidate)
+    for candidate in candidate_forecast_coverages:
+        same_scenario = candidate.scenario == forecast_coverage.scenario
+        same_year_period = (
+            candidate.forecast_year_period == forecast_coverage.forecast_year_period
+        )
+        different_model = (
+            candidate.forecast_model.id != forecast_coverage.forecast_model.id
+        )
+        model_already_in_result = candidate.forecast_model.id in [
+            f.forecast_model.id for f in result
+        ]
+        if same_scenario and same_year_period and different_model:
+            if not model_already_in_result:
+                logger.debug(f"Adding {candidate.identifier!r} to the result...")
+                result.append(candidate)
+            else:
+                logger.debug(
+                    f"Not Adding {candidate.identifier!r} to the result because "
+                    f"another forecast coverage with the same forecast model is "
+                    f"already present in the result..."
+                )
     return result
 
 
@@ -2690,6 +2720,18 @@ def collect_all_forecast_coverage_configurations(
         climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
     )
+    return result
+
+
+def collect_all_forecast_coverage_configurations_with_identifier_filter(
+    session: sqlmodel.Session,
+    identifier_filter: Optional[str] = None,
+) -> list[coverages.ForecastCoverageConfiguration]:
+    all_fccs = collect_all_forecast_coverage_configurations(session)
+    if identifier_filter is not None:
+        result = [fcc for fcc in all_fccs if identifier_filter in fcc.identifier]
+    else:
+        result = all_fccs
     return result
 
 

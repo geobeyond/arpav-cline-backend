@@ -1103,14 +1103,22 @@ class ForecastCoverageInternal:
         return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
 
     def get_netcdf_lower_uncertainty_main_dataset_name(self) -> str:
-        return self._render_templated_value(
-            self.configuration.lower_uncertainty_netcdf_main_dataset_name
-        )
+        if (
+            pattern := self.configuration.lower_uncertainty_netcdf_main_dataset_name
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
 
     def get_netcdf_upper_uncertainty_main_dataset_name(self) -> str:
-        return self._render_templated_value(
-            self.configuration.upper_uncertainty_netcdf_main_dataset_name
-        )
+        if (
+            pattern := self.configuration.upper_uncertainty_netcdf_main_dataset_name
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
 
     def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
         return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)

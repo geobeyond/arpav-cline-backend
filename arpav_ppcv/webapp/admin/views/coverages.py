@@ -1207,13 +1207,10 @@ class ForecastCoverageConfigurationView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ForecastCoverageConfigurationRead]:
         finder = functools.partial(
-            database.list_forecast_coverage_configurations,
-            limit=limit,
-            offset=skip,
-            climatic_indicator_name_filter=str(where) if where else None,
-            include_total=False,
+            database.collect_all_forecast_coverage_configurations_with_identifier_filter,
+            identifier_filter=str(where) if where else None,
         )
-        db_items, _ = await anyio.to_thread.run_sync(finder, request.state.session)
+        db_items = await anyio.to_thread.run_sync(finder, request.state.session)
         return [self._serialize_instance(ind) for ind in db_items]
 
     async def count(
@@ -1222,8 +1219,8 @@ class ForecastCoverageConfigurationView(ModelView):
         where: Union[Dict[str, Any], str, None] = None,
     ) -> int:
         finder = functools.partial(
-            database.collect_all_forecast_coverage_configurations,
-            climatic_indicator_name_filter=str(where) if where else None,
+            database.collect_all_forecast_coverage_configurations_with_identifier_filter,
+            identifier_filter=str(where) if where else None,
         )
         found = await anyio.to_thread.run_sync(
             finder,

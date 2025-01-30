@@ -40,6 +40,7 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
+        target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
         ncss_url = self.coverage.get_thredds_ncss_url(self.settings)
         netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
@@ -49,7 +50,7 @@ class ForecastCoverageDataRetriever:
                 netcdf_variable_name,
                 location,
                 temporal_range,
-                target_series_name=self.coverage.identifier,
+                target_series_name=target_series_name or self.coverage.identifier,
             )
         elif ncss_url is None:
             logger.warning("Could not find coverage's NCSS URL")
@@ -60,8 +61,9 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
+        target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
-        identifier = self.coverage.lower_uncertainty_identifier
+        identifier = target_series_name or self.coverage.lower_uncertainty_identifier
         ncss_url = self.coverage.get_lower_uncertainty_thredds_ncss_url(self.settings)
         netcdf_variable_name = (
             self.coverage.get_netcdf_lower_uncertainty_main_dataset_name()
@@ -76,7 +78,7 @@ class ForecastCoverageDataRetriever:
                 target_series_name=identifier,
             )
         elif identifier is None:
-            logger.warning(
+            logger.info(
                 f"Coverage {self.coverage.identifier!r} does not specify a lower "
                 f"uncertainty dataset"
             )
@@ -90,12 +92,16 @@ class ForecastCoverageDataRetriever:
         self,
         location: shapely.Point,
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
+        target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
-        identifier = self.coverage.upper_uncertainty_identifier
+        identifier = target_series_name or self.coverage.upper_uncertainty_identifier
         ncss_url = self.coverage.get_upper_uncertainty_thredds_ncss_url(self.settings)
         netcdf_variable_name = (
             self.coverage.get_netcdf_upper_uncertainty_main_dataset_name()
         )
+        logger.debug(f"{identifier=}")
+        logger.debug(f"{ncss_url=}")
+        logger.debug(f"{netcdf_variable_name=}")
         if all((identifier, ncss_url, netcdf_variable_name)):
             return self._retrieve_location_data(
                 ncss_url,
@@ -140,6 +146,8 @@ class ForecastCoverageDataRetriever:
                 time_end=temporal_range[1] if temporal_range else None,
                 target_series_name=target_series_name,
             )
+        else:
+            logger.info(f"Did not receive any data from {ncss_url!r}")
         return result
 
 

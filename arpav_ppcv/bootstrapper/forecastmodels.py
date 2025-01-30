@@ -14,7 +14,7 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
         ),
         coverages.ForecastModelCreate(
             name="ec_earth_cclm_4_8_17",
-            internal_value="ec_earth_cclm_4_8_17",
+            internal_value="EC-EARTH_CCLM4-8-17",
             display_name_english="EC-EARTH_CCLM4-8-17",
             display_name_italian="EC-EARTH_CCLM4-8-17",
             description_english="Global: EC-EARTH. Regional: CCLM4-8-17",
@@ -23,7 +23,7 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
         ),
         coverages.ForecastModelCreate(
             name="ec_earth_racmo22e",
-            internal_value="ec_earth_racmo22e",
+            internal_value="EC-EARTH_RACMO22E",
             display_name_english="EC-EARTH_RACMO22E",
             display_name_italian="EC-EARTH_RACMO22E",
             description_english="Global: EC-EARTH. Regional: RACMO22E",
@@ -32,7 +32,7 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
         ),
         coverages.ForecastModelCreate(
             name="ec_earth_rca4",
-            internal_value="ec_earth_rca4",
+            internal_value="EC-EARTH_RCA4",
             display_name_english="EC-EARTH_RCA4",
             display_name_italian="EC-EARTH_RCA4",
             description_english="Global: EC-EARTH. Regional: RCA4",
@@ -41,7 +41,7 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
         ),
         coverages.ForecastModelCreate(
             name="hadgem2_racmo22e",
-            internal_value="hadgem2_racmo22e",
+            internal_value="HadGEM2-ES_RACMO22E",
             display_name_english="HadGEM2-ES_RACMO22E",
             display_name_italian="HadGEM2-ES_RACMO22E",
             description_english="Global: HadGEM2-ES. Regional: RACMO22E",
@@ -50,7 +50,7 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
         ),
         coverages.ForecastModelCreate(
             name="mpi_esm_lr_remo2009",
-            internal_value="mpi_esm_lr_remo2009",
+            internal_value="MPI-ESM-LR_REMO2009",
             display_name_english="MPI-ESM-LR_REMO2009",
             display_name_italian="MPI-ESM-LR_REMO2009",
             description_english="Global: MPI-ESM-LR. Regional: REMO2009",

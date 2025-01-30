@@ -401,17 +401,20 @@ def process_coverage_smoothing_strategy(
         if smoothed_series_name
         else "__".join((column_to_smooth, strategy.value))
     )
+    df = pd_series.to_frame()
     if strategy == base.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
-        pd_series[smoothed_name] = _apply_loess_smoothing(
+        df[smoothed_name] = _apply_loess_smoothing(
             pd_series.to_frame(), column_to_smooth, ignore_warnings=ignore_warnings
         )
+        new_series = df[smoothed_name].squeeze()
     elif strategy == base.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS:
-        pd_series[smoothed_name] = (
+        df[smoothed_name] = (
             pd_series[column_to_smooth].rolling(center=True, window=11).mean()
         )
+        new_series = df[smoothed_name].squeeze()
     else:
         raise NotImplementedError(f"smoothing strategy {strategy!r} is not implemented")
-    return pd_series, smoothed_name
+    return new_series, smoothed_name
 
 
 def smooth_station_data_series(
@@ -546,47 +549,58 @@ def _retrieve_forecast_coverage_data(
         http_client=http_client,
         coverage=coverage,
     )
-    main_series = None
+    main_series = dataseries.ForecastDataSeries(
+        forecast_coverage=coverage,
+        dataset_type=static.ForecastDatasetType.MAIN,
+        smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+        temporal_start=temporal_range[0],
+        temporal_end=temporal_range[1],
+        location=point_geom,
+    )
     lower_uncert_series = None
     upper_uncert_series = None
-    main_data = retriever.retrieve_main_data(point_geom, temporal_range)
+    main_data = retriever.retrieve_main_data(
+        point_geom, temporal_range, target_series_name=main_series.identifier
+    )
     if main_data is not None:
-        main_series = dataseries.ForecastDataSeries(
-            forecast_coverage=coverage,
-            dataset_type=static.ForecastDatasetType.MAIN,
-            smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
-            temporal_start=temporal_range[0],
-            temporal_end=temporal_range[1],
-            location=point_geom,
-            data_=main_data,
-        )
+        main_series.data_ = main_data
         if include_uncertainty:
+            lower_uncert_series = dataseries.ForecastDataSeries(
+                forecast_coverage=coverage,
+                dataset_type=static.ForecastDatasetType.LOWER_UNCERTAINTY,
+                smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                temporal_start=temporal_range[0],
+                temporal_end=temporal_range[1],
+                location=point_geom,
+            )
             lower_uncert_data = retriever.retrieve_lower_uncertainty_data(
-                point_geom, temporal_range
+                point_geom,
+                temporal_range,
+                target_series_name=lower_uncert_series.identifier,
             )
             if lower_uncert_data is not None:
-                lower_uncert_series = dataseries.ForecastDataSeries(
-                    forecast_coverage=coverage,
-                    dataset_type=static.ForecastDatasetType.LOWER_UNCERTAINTY,
-                    smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
-                    temporal_start=temporal_range[0],
-                    temporal_end=temporal_range[1],
-                    location=point_geom,
-                    data_=lower_uncert_data,
-                )
+                lower_uncert_series.data_ = lower_uncert_data
+            else:
+                lower_uncert_series = None
+            upper_uncert_series = dataseries.ForecastDataSeries(
+                forecast_coverage=coverage,
+                dataset_type=static.ForecastDatasetType.UPPER_UNCERTAINTY,
+                smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                temporal_start=temporal_range[0],
+                temporal_end=temporal_range[1],
+                location=point_geom,
+            )
             upper_uncert_data = retriever.retrieve_upper_uncertainty_data(
-                point_geom, temporal_range
+                point_geom,
+                temporal_range,
+                target_series_name=upper_uncert_series.identifier,
             )
             if upper_uncert_data is not None:
-                upper_uncert_series = dataseries.ForecastDataSeries(
-                    forecast_coverage=coverage,
-                    dataset_type=static.ForecastDatasetType.UPPER_UNCERTAINTY,
-                    smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
-                    temporal_start=temporal_range[0],
-                    temporal_end=temporal_range[1],
-                    location=point_geom,
-                    data_=upper_uncert_data,
-                )
+                upper_uncert_series.data_ = upper_uncert_data
+            else:
+                upper_uncert_series = None
+    else:
+        main_series = None
     return main_series, lower_uncert_series, upper_uncert_series
 
 
@@ -621,6 +635,7 @@ def _apply_coverage_smoothing_strategies(
 
 def _get_forecast_coverage_coverage_time_series(
     thredds_settings: config.ThreddsServerSettings,
+    session: sqlmodel.Session,
     http_client: httpx.Client,
     forecast_coverage: coverages.ForecastCoverageInternal,
     point_geom: shapely.Point,
@@ -642,7 +657,7 @@ def _get_forecast_coverage_coverage_time_series(
         data_.append(item)
     if include_related_models:
         for other_cov in database.generate_forecast_coverages_for_other_models(
-            forecast_coverage
+            session, forecast_coverage
         ):
             other_cov_series = _retrieve_forecast_coverage_data(
                 http_client,
@@ -732,6 +747,7 @@ def get_forecast_coverage_time_series(
     if include_coverage_data:
         coverage_series = _get_forecast_coverage_coverage_time_series(
             settings.thredds_server,
+            session,
             http_client,
             coverage,
             point_geom,
