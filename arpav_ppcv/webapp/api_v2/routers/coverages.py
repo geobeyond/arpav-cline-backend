@@ -49,6 +49,13 @@ from ..schemas.base import (
     TimeSeries,
     TimeSeriesList,
 )
+from ...frontendutils import schemas as frontend_schemas
+from ...frontendutils.schemas import (
+    LegacyForecastVariableCombinationsList,
+    LegacyForecastVariableCombinations,
+    LegacyForecastMenuTranslations,
+)
+from ...frontendutils.navigation import get_forecast_advanced_section_navigation
 
 
 logger = logging.getLogger(__name__)
@@ -650,9 +657,26 @@ def get_time_series(
 
 @router.get(
     "/forecast-variable-combinations",
-    response_model=coverage_schemas.ForecastVariableCombinationsList,
+    response_model=LegacyForecastVariableCombinationsList,
 )
 def get_forecast_variable_combinations(
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+):
+    sections = get_forecast_advanced_section_navigation(db_session)
+    return LegacyForecastVariableCombinationsList(
+        combinations=[
+            LegacyForecastVariableCombinations.from_navigation_section(s)
+            for s in sections
+        ],
+        translations=LegacyForecastMenuTranslations.from_navigation_sections(sections)
+    )
+
+
+@router.get(
+    "/old-forecast-variable-combinations",
+    response_model=coverage_schemas.ForecastVariableCombinationsList,
+)
+def old_get_forecast_variable_combinations(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
 ):
     variable_combinations = operations.get_forecast_variable_parameters(db_session)
