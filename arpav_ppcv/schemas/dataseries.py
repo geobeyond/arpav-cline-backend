@@ -15,11 +15,11 @@ if TYPE_CHECKING:
         ObservationSeriesConfiguration,
         ObservationStation,
     )
-    from .base import (
+    from .static import (
+        ForecastDatasetType,
         CoverageDataSmoothingStrategy,
         ObservationDataSmoothingStrategy,
     )
-    from .static import ForecastDatasetType
 
 
 @dataclasses.dataclass

@@ -18,6 +18,7 @@ import sqlmodel
 
 from .. import exceptions
 from ..config import (
+    ArpavPpcvSettings,
     ThreddsServerSettings,
     get_translations,
 )
@@ -1122,6 +1123,9 @@ class ForecastCoverageInternal:
 
     def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
         return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
+
+    def get_wms_base_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_wms_base_url(self._get_thredds_url_fragment(), settings)
 
     def get_lower_uncertainty_thredds_ncss_url(
         self, settings: ThreddsServerSettings

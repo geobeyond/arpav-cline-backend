@@ -424,6 +424,90 @@ class MeasurementAggregationType(str, enum.Enum):
         }.get(self, 0)
 
 
+class CoverageDataSmoothingStrategy(str, enum.Enum):
+    NO_SMOOTHING = "NO_SMOOTHING"
+    LOESS_SMOOTHING = "LOESS_SMOOTHING"
+    MOVING_AVERAGE_11_YEARS = "MOVING_AVERAGE_11_YEARS"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("coverage data processing method")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("coverage data processing method description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.NO_SMOOTHING.name: _("no processing"),
+            self.LOESS_SMOOTHING.name: _("LOESS"),
+            self.MOVING_AVERAGE_11_YEARS.name: _("centered 11-year moving average"),
+        }.get(self, self.value)
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.NO_SMOOTHING.name: _("no processing description"),
+            self.LOESS_SMOOTHING.name: _("LOESS description"),
+            self.MOVING_AVERAGE_11_YEARS.name: _(
+                "centered 11-year moving average description"),
+        }.get(self, self.value)
+
+    def get_sort_order(self) -> int:
+        return {
+            self.NO_SMOOTHING.name: 0,
+            self.LOESS_SMOOTHING.name: 0,
+            self.MOVING_AVERAGE_11_YEARS.name: 0,
+        }.get(self, 0)
+
+
+class ObservationDataSmoothingStrategy(str, enum.Enum):
+    NO_SMOOTHING = "NO_SMOOTHING"
+    MOVING_AVERAGE_5_YEARS = "MOVING_AVERAGE_5_YEARS"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation data processing method")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation data processing method description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.NO_SMOOTHING.name: _("no processing"),
+            self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
+        }[self.name] or self.name
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.NO_SMOOTHING.name: _("no processing description"),
+            self.MOVING_AVERAGE_5_YEARS.name: _(
+                "centered 5-year moving average description"),
+        }.get(self, self.value)
+
+    def get_sort_order(self) -> int:
+        return {
+            self.NO_SMOOTHING.name: 0,
+            self.MOVING_AVERAGE_5_YEARS.name: 0,
+        }.get(self, 0)
+
+
 class ObservationStationManager(str, enum.Enum):
     ARPAV = "arpa_v"
     ARPAFVG = "arpa_fvg"

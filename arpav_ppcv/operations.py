@@ -54,10 +54,10 @@ logger = logging.getLogger(__name__)
 def get_climate_barometer_time_series(
     settings: config.ArpavPpcvSettings,
     session: sqlmodel.Session,
-    smoothing_strategies: list[base.CoverageDataSmoothingStrategy],
+    smoothing_strategies: list[static.CoverageDataSmoothingStrategy],
     include_uncertainty: bool,
 ) -> dict[
-    tuple[coverages.CoverageInternal, base.CoverageDataSmoothingStrategy], pd.Series
+    tuple[coverages.CoverageInternal, static.CoverageDataSmoothingStrategy], pd.Series
 ]:
     covs = database.collect_all_coverages(
         session,
@@ -70,7 +70,7 @@ def get_climate_barometer_time_series(
     additional_smoothing_strategies = [
         ss
         for ss in smoothing_strategies
-        if ss != base.CoverageDataSmoothingStrategy.NO_SMOOTHING
+        if ss != static.CoverageDataSmoothingStrategy.NO_SMOOTHING
     ]
     dfs = []
     for cov in covs:
@@ -97,7 +97,7 @@ def get_climate_barometer_time_series(
                 dfs.append((upper_cov, upper_df))
     result = {}
     for cov, df in dfs:
-        result[(cov, base.CoverageDataSmoothingStrategy.NO_SMOOTHING)] = df[
+        result[(cov, static.CoverageDataSmoothingStrategy.NO_SMOOTHING)] = df[
             cov.identifier
         ].squeeze()
         for strategy in additional_smoothing_strategies:
@@ -234,14 +234,14 @@ def get_observation_time_series(
     station: observations.Station,
     month: int,
     temporal_range: str,
-    smoothing_strategies: list[base.ObservationDataSmoothingStrategy] = [  # noqa
-        base.ObservationDataSmoothingStrategy.NO_SMOOTHING
+    smoothing_strategies: list[static.ObservationDataSmoothingStrategy] = [  # noqa
+        static.ObservationDataSmoothingStrategy.NO_SMOOTHING
     ],
     include_decade_data: bool = False,
     mann_kendall_parameters: base.MannKendallParameters | None = None,
 ) -> dict[
     tuple[
-        base.ObservationDataSmoothingStrategy, Optional[base.ObservationDerivedSeries]
+        static.ObservationDataSmoothingStrategy, Optional[base.ObservationDerivedSeries]
     ],
     tuple[pd.Series, Optional[dict]],
 ]:
@@ -250,7 +250,7 @@ def get_observation_time_series(
     df = get_station_data(session, climatic_indicator, station, month, (start, end))
     if df is not None:
         result = {
-            (base.ObservationDataSmoothingStrategy.NO_SMOOTHING, None): (
+            (static.ObservationDataSmoothingStrategy.NO_SMOOTHING, None): (
                 df[climatic_indicator.name].squeeze(),
                 None,
             )
@@ -258,7 +258,7 @@ def get_observation_time_series(
         additional_strategies = [
             ss
             for ss in smoothing_strategies
-            if ss != base.ObservationDataSmoothingStrategy.NO_SMOOTHING
+            if ss != static.ObservationDataSmoothingStrategy.NO_SMOOTHING
         ]
         for smoothing_strategy in additional_strategies:
             smoothed_df, smoothed_column_name = process_station_data_smoothing_strategy(
@@ -272,7 +272,7 @@ def get_observation_time_series(
             decade_df = aggregate_decade_data(climatic_indicator, df)
             result[
                 (
-                    base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
+                    static.ObservationDataSmoothingStrategy.NO_SMOOTHING,
                     base.ObservationDerivedSeries.DECADE_SERIES,
                 )
             ] = (decade_df[climatic_indicator.name].squeeze(), None)
@@ -282,7 +282,7 @@ def get_observation_time_series(
             )
             result[
                 (
-                    base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
+                    static.ObservationDataSmoothingStrategy.NO_SMOOTHING,
                     base.ObservationDerivedSeries.MANN_KENDALL_SERIES,
                 )
             ] = (mk_df[climatic_indicator.name].squeeze(), {"mann-kendall": mk_info})
@@ -391,7 +391,7 @@ def _simplify_date(raw_date: str) -> str:
 
 def generate_smoothed_series(
     data_series: dataseries.ForecastDataSeries,
-    smoothing_strategy: base.CoverageDataSmoothingStrategy,
+    smoothing_strategy: static.CoverageDataSmoothingStrategy,
 ) -> dataseries.ForecastDataSeries:
     smoothed_series = dataseries.ForecastDataSeries(
         forecast_coverage=data_series.forecast_coverage,
@@ -402,12 +402,12 @@ def generate_smoothed_series(
         location=data_series.location,
     )
     df = data_series.data_.to_frame()
-    if smoothing_strategy == base.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
+    if smoothing_strategy == static.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
         df[smoothed_series.identifier] = _apply_loess_smoothing(
             df, data_series.identifier, ignore_warnings=True
         )
     elif (
-        smoothing_strategy == base.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS
+        smoothing_strategy == static.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS
     ):
         df[smoothed_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
@@ -423,7 +423,7 @@ def generate_smoothed_series(
 def process_coverage_smoothing_strategy(
     pd_series: pd.Series,
     column_to_smooth: str,
-    strategy: base.CoverageDataSmoothingStrategy,
+    strategy: static.CoverageDataSmoothingStrategy,
     ignore_warnings: bool = True,
     smoothed_series_name: Optional[str] = None,
 ) -> tuple[pd.Series, str]:
@@ -433,12 +433,12 @@ def process_coverage_smoothing_strategy(
         else "__".join((column_to_smooth, strategy.value))
     )
     df = pd_series.to_frame()
-    if strategy == base.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
+    if strategy == static.CoverageDataSmoothingStrategy.LOESS_SMOOTHING:
         df[smoothed_name] = _apply_loess_smoothing(
             pd_series.to_frame(), column_to_smooth, ignore_warnings=ignore_warnings
         )
         new_series = df[smoothed_name].squeeze()
-    elif strategy == base.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS:
+    elif strategy == static.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS:
         df[smoothed_name] = (
             pd_series[column_to_smooth].rolling(center=True, window=11).mean()
         )
@@ -450,7 +450,7 @@ def process_coverage_smoothing_strategy(
 
 def smooth_station_data_series(
     series: dataseries.ObservationStationDataSeries,
-    strategy: base.ObservationDataSmoothingStrategy,
+    strategy: static.ObservationDataSmoothingStrategy,
     smoothed_series_name: Optional[str] = None,
 ) -> tuple[pd.DataFrame, str]:
     column_to_smooth = series.identifier
@@ -460,7 +460,7 @@ def smooth_station_data_series(
         else "__".join((column_to_smooth, strategy.value))
     )
     df = pd.to_frame(series.data_)
-    if strategy == base.ObservationDataSmoothingStrategy.MOVING_AVERAGE_5_YEARS:
+    if strategy == static.ObservationDataSmoothingStrategy.MOVING_AVERAGE_5_YEARS:
         df[smoothed_name] = df[column_to_smooth].rolling(window=5, center=True).mean()
     else:
         raise NotImplementedError(f"smoothing strategy {strategy!r} is not implemented")
@@ -470,10 +470,10 @@ def smooth_station_data_series(
 def process_station_data_smoothing_strategy(
     df: pd.DataFrame,
     column_to_smooth: str,
-    strategy: base.ObservationDataSmoothingStrategy,
+    strategy: static.ObservationDataSmoothingStrategy,
 ) -> tuple[pd.DataFrame, str]:
     smoothed_column_name = "__".join((column_to_smooth, strategy.value))
-    if strategy == base.ObservationDataSmoothingStrategy.MOVING_AVERAGE_5_YEARS:
+    if strategy == static.ObservationDataSmoothingStrategy.MOVING_AVERAGE_5_YEARS:
         df[smoothed_column_name] = (
             df[column_to_smooth].rolling(window=5, center=True).mean()
         )
@@ -583,7 +583,7 @@ def _retrieve_forecast_coverage_data(
     main_series = dataseries.ForecastDataSeries(
         forecast_coverage=coverage,
         dataset_type=static.ForecastDatasetType.MAIN,
-        smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+        smoothing_strategy=static.CoverageDataSmoothingStrategy.NO_SMOOTHING,
         temporal_start=temporal_range[0],
         temporal_end=temporal_range[1],
         location=point_geom,
@@ -599,7 +599,7 @@ def _retrieve_forecast_coverage_data(
             lower_uncert_series = dataseries.ForecastDataSeries(
                 forecast_coverage=coverage,
                 dataset_type=static.ForecastDatasetType.LOWER_UNCERTAINTY,
-                smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                smoothing_strategy=static.CoverageDataSmoothingStrategy.NO_SMOOTHING,
                 temporal_start=temporal_range[0],
                 temporal_end=temporal_range[1],
                 location=point_geom,
@@ -616,7 +616,7 @@ def _retrieve_forecast_coverage_data(
             upper_uncert_series = dataseries.ForecastDataSeries(
                 forecast_coverage=coverage,
                 dataset_type=static.ForecastDatasetType.UPPER_UNCERTAINTY,
-                smoothing_strategy=base.CoverageDataSmoothingStrategy.NO_SMOOTHING,
+                smoothing_strategy=static.CoverageDataSmoothingStrategy.NO_SMOOTHING,
                 temporal_start=temporal_range[0],
                 temporal_end=temporal_range[1],
                 location=point_geom,
@@ -639,11 +639,11 @@ def _retrieve_forecast_coverage_data(
 #
 # def _apply_coverage_smoothing_strategies(
 #     data_series: dataseries.ForecastDataSeries,
-#     strategies: Sequence[base.CoverageDataSmoothingStrategy],
+#     strategies: Sequence[static.CoverageDataSmoothingStrategy],
 # ) -> list[dataseries.ForecastDataSeries]:
 #     result = []
 #     for strategy in strategies:
-#         if strategy != base.CoverageDataSmoothingStrategy.NO_SMOOTHING:
+#         if strategy != static.CoverageDataSmoothingStrategy.NO_SMOOTHING:
 #             pd_series, _ = process_coverage_smoothing_strategy(
 #                 data_series.data_,
 #                 data_series.identifier,
@@ -672,7 +672,7 @@ def _get_forecast_coverage_coverage_time_series(
     http_client: httpx.Client,
     forecast_coverage: coverages.ForecastCoverageInternal,
     point_geom: shapely.Point,
-    smoothing_strategies: Sequence[base.CoverageDataSmoothingStrategy],
+    smoothing_strategies: Sequence[static.CoverageDataSmoothingStrategy],
     include_uncertainty: bool,
     include_related_models: bool,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
@@ -708,7 +708,7 @@ def _get_forecast_coverage_coverage_time_series(
         for strategy in [
             s
             for s in smoothing_strategies
-            if s != base.CoverageDataSmoothingStrategy.NO_SMOOTHING
+            if s != static.CoverageDataSmoothingStrategy.NO_SMOOTHING
         ]:
             smoothed_series = generate_smoothed_series(
                 cov_data_series,
@@ -723,7 +723,7 @@ def _get_forecast_coverage_observation_time_series(
     session: sqlmodel.Session,
     coverage: coverages.ForecastCoverageInternal,
     point_geom: shapely.Point,
-    smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
+    smoothing_strategies: list[static.ObservationDataSmoothingStrategy],
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
 ) -> list[dataseries.ObservationStationDataSeries]:
     result = {}
@@ -741,7 +741,7 @@ def _get_forecast_coverage_observation_time_series(
             for smoothing_strategy in smoothing_strategies:
                 if (
                     smoothing_strategy
-                    == base.ObservationDataSmoothingStrategy.NO_SMOOTHING
+                    == static.ObservationDataSmoothingStrategy.NO_SMOOTHING
                 ):
                     continue  # already generated
                 else:
@@ -774,13 +774,16 @@ def get_forecast_coverage_time_series(
     coverage: coverages.ForecastCoverageInternal,
     point_geom: shapely.Point,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
-    coverage_smoothing_strategies: list[base.CoverageDataSmoothingStrategy],
-    observation_smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
+    coverage_smoothing_strategies: list[static.CoverageDataSmoothingStrategy],
+    observation_smoothing_strategies: list[static.ObservationDataSmoothingStrategy],
     include_coverage_data: bool = True,
     include_observation_data: bool = False,
     include_coverage_uncertainty: bool = False,
     include_coverage_related_models: bool = False,
-):
+) ->tuple[
+    Optional[list[dataseries.ForecastDataSeries]],
+    Optional[list[dataseries.ObservationStationDataSeries]]
+]:
     coverage_series = None
     observation_series = None
     if include_coverage_data:
@@ -814,22 +817,22 @@ def get_coverage_time_series(
     coverage: coverages.CoverageInternal,
     point_geom: shapely.Point,
     temporal_range: str,
-    coverage_smoothing_strategies: list[base.CoverageDataSmoothingStrategy],
-    observation_smoothing_strategies: list[base.ObservationDataSmoothingStrategy],
+    coverage_smoothing_strategies: list[static.CoverageDataSmoothingStrategy],
+    observation_smoothing_strategies: list[static.ObservationDataSmoothingStrategy],
     include_coverage_data: bool = True,
     include_observation_data: bool = False,
     include_coverage_uncertainty: bool = False,
     include_coverage_related_data: bool = False,
 ) -> tuple[
     dict[
-        tuple[coverages.CoverageInternal, base.CoverageDataSmoothingStrategy], pd.Series
+        tuple[coverages.CoverageInternal, static.CoverageDataSmoothingStrategy], pd.Series
     ],
     Optional[
         dict[
             tuple[
                 observations.Station,
                 climaticindicators.ClimaticIndicator,
-                base.ObservationDataSmoothingStrategy,
+                static.ObservationDataSmoothingStrategy,
             ],
             pd.Series,
         ]
@@ -861,7 +864,7 @@ def get_coverage_time_series(
     additional_coverage_smoothing_strategies = [
         ss
         for ss in coverage_smoothing_strategies
-        if ss != base.CoverageDataSmoothingStrategy.NO_SMOOTHING
+        if ss != static.CoverageDataSmoothingStrategy.NO_SMOOTHING
     ]
 
     for cov, data_ in raw_data.items():
@@ -875,7 +878,7 @@ def get_coverage_time_series(
         )
         unsmoothed_data = df[cov.identifier]
         coverage_result[
-            (cov, base.CoverageDataSmoothingStrategy.NO_SMOOTHING)
+            (cov, static.CoverageDataSmoothingStrategy.NO_SMOOTHING)
         ] = unsmoothed_data
         if unsmoothed_data.count() > 1:
             for smoothing_strategy in additional_coverage_smoothing_strategies:
@@ -890,7 +893,7 @@ def get_coverage_time_series(
                 ].squeeze()
 
     if not include_coverage_data:
-        del coverage_result[(coverage, base.CoverageDataSmoothingStrategy.NO_SMOOTHING)]
+        del coverage_result[(coverage, static.CoverageDataSmoothingStrategy.NO_SMOOTHING)]
         for smoothing_strategy in additional_coverage_smoothing_strategies:
             try:
                 del coverage_result[(coverage, smoothing_strategy)]
@@ -904,7 +907,7 @@ def get_coverage_time_series(
         additional_observation_smoothing_strategies = [
             ss
             for ss in observation_smoothing_strategies
-            if ss != base.ObservationDataSmoothingStrategy.NO_SMOOTHING
+            if ss != static.ObservationDataSmoothingStrategy.NO_SMOOTHING
         ]
         if coverage.configuration.related_observation_variable is not None:
             station_data = extract_nearby_station_data(
@@ -930,7 +933,7 @@ def get_coverage_time_series(
                     (
                         station,
                         coverage.configuration.climatic_indicator,
-                        base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
+                        static.ObservationDataSmoothingStrategy.NO_SMOOTHING,
                     )
                 ] = station_df[coverage.configuration.climatic_indicator.name].squeeze()
                 for smoothing_strategy in additional_observation_smoothing_strategies:
@@ -998,7 +1001,7 @@ def get_nearby_observation_station_time_series(
         result = dataseries.ObservationStationDataSeries(
             observation_series_configuration=observation_series_configuration,
             observation_station=nearby_station,
-            smoothing_strategy=base.ObservationDataSmoothingStrategy.NO_SMOOTHING,
+            smoothing_strategy=static.ObservationDataSmoothingStrategy.NO_SMOOTHING,
         )
         raw_data = database.collect_all_observation_measurements(
             session,

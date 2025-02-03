@@ -37,12 +37,12 @@ from ....thredds import (
     crawler as thredds_crawler,
     utils as thredds_utils,
 )
-from ....schemas.base import (
+from ....schemas.coverages import ConfigurationParameterValue
+from ....schemas.climaticindicators import ClimaticIndicator
+from ....schemas.static import (
     CoverageDataSmoothingStrategy,
     ObservationDataSmoothingStrategy,
 )
-from ....schemas.coverages import ConfigurationParameterValue
-from ....schemas.climaticindicators import ClimaticIndicator
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
 from ..schemas.base import (
@@ -280,6 +280,91 @@ def get_coverage_identifier(
 
 @router.get("/wms/{coverage_identifier}")
 async def wms_endpoint(
+    request: Request,
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
+    coverage_identifier: str,
+    version: str = "1.3.0",
+):
+    """### Serve coverage via OGC Web Map Service.
+
+    Pass additional relevant WMS query parameters directly to this endpoint.
+    """
+
+    if coverage_identifier.split("-")[0] == "forecast":
+        cov = await anyio.to_thread.run_sync(
+            db.get_forecast_coverage,
+            db_session,
+            coverage_identifier,
+        )
+    else:
+        cov = None
+
+    if cov is not None:
+        base_wms_url = cov.get_wms_base_url(settings.thredds_server)
+        parsed_url = urllib.parse.urlparse(base_wms_url)
+        logger.info(f"{base_wms_url=}")
+        query_params = {k.lower(): v for k, v in request.query_params.items()}
+        logger.debug(f"original query params: {query_params=}")
+        if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
+            query_params = thredds_utils.tweak_wms_get_map_request(
+                query_params,
+                ncwms_palette=cov.configuration.climatic_indicator.palette,
+                ncwms_color_scale_range=(
+                    cov.configuration.climatic_indicator.color_scale_min,
+                    cov.configuration.climatic_indicator.color_scale_max,
+                ),
+                uncertainty_visualization_scale_range=(
+                    settings.thredds_server.uncertainty_visualization_scale_range
+                ),
+            )
+        logger.debug(f"{query_params=}")
+        wms_url = parsed_url._replace(
+            query=urllib.parse.urlencode(
+                {
+                    **query_params,
+                    "service": "WMS",
+                    "version": version,
+                }
+            )
+        ).geturl()
+        logger.info(f"{wms_url=}")
+        try:
+            wms_response = await thredds_utils.proxy_request(wms_url, http_client)
+        except httpx.HTTPStatusError as err:
+            logger.exception(
+                msg=f"THREDDS server replied with an error: {err.response.text}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY, detail=err.response.text
+            )
+        except httpx.HTTPError as err:
+            logger.exception(msg="THREDDS server replied with an error")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+            ) from err
+        else:
+            if query_params.get("request") == "GetCapabilities":
+                response_content = _modify_capabilities_response(
+                    wms_response.text, str(request.url).partition("?")[0]
+                )
+            else:
+                response_content = wms_response.content
+            response = Response(
+                content=response_content,
+                status_code=wms_response.status_code,
+                headers=dict(wms_response.headers),
+            )
+        return response
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
+
+
+@router.get("/old-wms/{coverage_identifier}")
+async def old_wms_endpoint(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
@@ -562,6 +647,98 @@ def get_climate_barometer_time_series(
 
 @router.get("/time-series/{coverage_identifier}", response_model=TimeSeriesList)
 def get_time_series(
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
+    coverage_identifier: str,
+    coords: str,
+    datetime: Optional[str] = "../..",
+    include_coverage_data: bool = True,
+    include_observation_data: Annotated[
+        bool,
+        Query(
+            description=(
+                    "Whether data from the nearest observation station (if any) "
+                    "should be included in the response."
+            )
+        ),
+    ] = False,
+    coverage_data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
+        CoverageDataSmoothingStrategy.NO_SMOOTHING
+    ],  # noqa
+    observation_data_smoothing: Annotated[
+        list[ObservationDataSmoothingStrategy], Query()
+    ] = [ObservationDataSmoothingStrategy.NO_SMOOTHING],  # noqa
+    include_coverage_uncertainty: bool = False,
+    include_coverage_related_data: bool = False,
+):
+    """Get dataset time series for a geographic location."""
+    if coverage_identifier.split("-")[0] == "forecast":
+        coverage = db.get_forecast_coverage(db_session, coverage_identifier)
+    else:
+        coverage = None
+    if coverage is not None:
+        # TODO: catch errors with invalid geom
+        geom = shapely.io.from_wkt(coords)
+        if geom.geom_type == "MultiPoint":
+            logger.warning(
+                f"Expected coords parameter to be a WKT Point but "
+                f"got {geom.geom_type!r} instead - Using the first point"
+            )
+            point_geom = geom.geoms[0]
+        elif geom.geom_type == "Point":
+            point_geom = geom
+        else:
+            logger.warning(
+                f"Expected coords parameter to be a WKT Point but "
+                f"got {geom.geom_type!r} instead - Using the centroid instead"
+            )
+            point_geom = geom.centroid
+        try:
+            temporal_range = operations.parse_temporal_range(datetime)
+            (
+                coverage_series,
+                observations_series,
+            ) = operations.get_forecast_coverage_time_series(
+                settings,
+                db_session,
+                http_client,
+                coverage,
+                point_geom,
+                temporal_range,
+                coverage_data_smoothing,
+                observation_data_smoothing,
+                include_coverage_data,
+                include_observation_data,
+                include_coverage_uncertainty,
+                include_coverage_related_data,
+            )
+        except exceptions.CoverageDataRetrievalError as err:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not retrieve data",
+            ) from err
+        else:
+            series = []
+            for forecast_cov_series in coverage_series:
+                series.append(
+                    TimeSeries.from_forecast_data_series(forecast_cov_series)
+                )
+            if observations_series is not None:
+                for obs_station_series in observations_series:
+                    series.append(
+                        TimeSeries.from_observation_station_data_series(
+                            obs_station_series)
+                    )
+            return TimeSeriesList(series=series)
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
+
+
+@router.get("/old-time-series/{coverage_identifier}", response_model=TimeSeriesList)
+def old_get_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],

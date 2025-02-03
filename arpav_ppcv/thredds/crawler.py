@@ -62,6 +62,39 @@ def get_ncss_url(
     return result
 
 
+def get_wms_base_url(
+    rendered_fragment: str, thredds_settings: ThreddsServerSettings
+) -> Optional[str]:
+    if any(c in rendered_fragment for c in FNMATCH_SPECIAL_CHARS):
+        logger.debug(
+            f"THREDDS dataset url ({rendered_fragment}) is an "
+            f"fnmatch pattern, retrieving the actual URL from the server..."
+        )
+        final_fragment = find_thredds_dataset_url_fragment(
+            rendered_fragment,
+            thredds_settings.base_url,
+        )
+        if final_fragment is not None:
+            result = "/".join(
+                (
+                    thredds_settings.base_url,
+                    thredds_settings.wms_service_url_fragment,
+                    final_fragment,
+                )
+            )
+        else:
+            result = None
+    else:
+        result = "/".join(
+            (
+                thredds_settings.base_url,
+                thredds_settings.wms_service_url_fragment,
+                rendered_fragment,
+            )
+        )
+    return result
+
+
 def get_thredds_url_fragment(
     coverage: "coverages.CoverageInternal", thredds_base_url: str
 ) -> str:
