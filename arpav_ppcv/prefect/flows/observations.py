@@ -229,7 +229,8 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
                     to_wait_on.append(fut)
             for future in to_wait_on:
                 series_id, series_harvested_stations = future.result()
-                all_harvested_stations[series_id] = series_harvested_stations
+                series_stations = all_harvested_stations.setdefault(series_id, [])
+                series_stations.extend(series_harvested_stations)
 
             candidate_stations = set()
             for harvested_stations in all_harvested_stations.values():
