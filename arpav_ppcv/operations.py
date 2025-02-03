@@ -407,7 +407,8 @@ def generate_smoothed_series(
             df, data_series.identifier, ignore_warnings=True
         )
     elif (
-        smoothing_strategy == static.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS
+        smoothing_strategy
+        == static.CoverageDataSmoothingStrategy.MOVING_AVERAGE_11_YEARS
     ):
         df[smoothed_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
@@ -780,9 +781,9 @@ def get_forecast_coverage_time_series(
     include_observation_data: bool = False,
     include_coverage_uncertainty: bool = False,
     include_coverage_related_models: bool = False,
-) ->tuple[
+) -> tuple[
     Optional[list[dataseries.ForecastDataSeries]],
-    Optional[list[dataseries.ObservationStationDataSeries]]
+    Optional[list[dataseries.ObservationStationDataSeries]],
 ]:
     coverage_series = None
     observation_series = None
@@ -825,7 +826,8 @@ def get_coverage_time_series(
     include_coverage_related_data: bool = False,
 ) -> tuple[
     dict[
-        tuple[coverages.CoverageInternal, static.CoverageDataSmoothingStrategy], pd.Series
+        tuple[coverages.CoverageInternal, static.CoverageDataSmoothingStrategy],
+        pd.Series,
     ],
     Optional[
         dict[
@@ -893,7 +895,9 @@ def get_coverage_time_series(
                 ].squeeze()
 
     if not include_coverage_data:
-        del coverage_result[(coverage, static.CoverageDataSmoothingStrategy.NO_SMOOTHING)]
+        del coverage_result[
+            (coverage, static.CoverageDataSmoothingStrategy.NO_SMOOTHING)
+        ]
         for smoothing_strategy in additional_coverage_smoothing_strategies:
             try:
                 del coverage_result[(coverage, smoothing_strategy)]
@@ -1509,3 +1513,115 @@ def _list_possible_climatic_indicators(
             i for i in filtered if i.aggregation_period.value.lower() in periods
         ]
     return filtered
+
+
+def convert_conf_params_filter(
+    session: sqlmodel.Session, configuration_parameter_values: Sequence[str]
+) -> coverages.LegacyConfParamFilterValues:
+    """Convert filter parameters from the legacy conf-param based format.
+
+    This function converts a sequence of `name=value` strings, which was used
+    in a previous version of the system to query the configuration parameters in
+    use by some forecast coverage with the current approach of using well-known
+    types.
+    """
+    aggregation_period = None
+    archive = None
+    climatological_model = None
+    climatological_standard_normal = None
+    climatological_variable = None
+    historical_variable = None
+    historical_year_period = None
+    measure = None
+    scenario = None
+    uncertainty_type = None
+    time_window = None
+    year_period = None
+    climatic_indicator = None
+    for raw_value in configuration_parameter_values:
+        param_name, param_value = raw_value.partition(":")[::2]
+        if param_name == "aggregation_period":
+            try:
+                aggregation_period = static.AggregationPeriod(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an aggregation period, skipping..."
+                )
+        elif param_name == "archive":
+            archive = param_value
+        elif param_name == "climatological_model":
+            climatological_model = database.get_forecast_model_by_name(
+                session, param_value
+            )
+            if climatological_model is None:
+                logger.warning(
+                    f"Could not parse {param_value!r} as valid forecast model name, "
+                    f"skipping..."
+                )
+        elif param_name == "climatological_variable":
+            climatological_variable = param_value
+        elif param_name == "historical_variable":
+            historical_variable = param_value
+        elif param_name == "historical_year_period":
+            try:
+                historical_year_period = static.HistoricalYearPeriod(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an historical year period, skipping..."
+                )
+        elif param_name == "measure":
+            try:
+                measure = static.MeasureType(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an measure type, skipping..."
+                )
+        elif param_name == "scenario":
+            try:
+                scenario = static.ForecastScenario(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as scenario, skipping..."
+                )
+        elif param_name == "time_window":
+            time_window = database.get_forecast_time_window_by_name(
+                session, param_value
+            )
+            if time_window is None:
+                logger.warning(
+                    f"Could not parse {param_value!r} as valid time window name, "
+                    f"skipping..."
+                )
+        elif param_name == "year_period":
+            try:
+                year_period = static.ForecastYearPeriod(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an forecast year period, skipping..."
+                )
+        elif param_name == "uncertainty_type":
+            uncertainty_type = param_value
+        elif param_name == "climatological_standard_normal":
+            climatological_standard_normal = param_value
+    if all((climatological_variable, measure, aggregation_period)):
+        climatic_indicator = database.get_climatic_indicator_by_identifier(
+            session,
+            "-".join(
+                (climatological_variable, measure.value, aggregation_period.value)
+            ),
+        )
+    return coverages.LegacyConfParamFilterValues(
+        aggregation_period=aggregation_period,
+        archive=archive,
+        climatological_variable=climatological_variable,
+        climatological_model=climatological_model,
+        historical_year_period=historical_year_period,
+        historical_variable=historical_variable,
+        measure=measure,
+        scenario=scenario,
+        time_window=time_window,
+        year_period=year_period,
+        uncertainty_type=uncertainty_type,
+        climatological_standard_normal=climatological_standard_normal,
+        climatic_indicator=climatic_indicator,
+    )

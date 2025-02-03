@@ -9,7 +9,10 @@ from ....config import (
     LOCALE_EN,
     LOCALE_IT,
 )
-from ....schemas import coverages as app_models
+from ....schemas import (
+    coverages as app_models,
+    static,
+)
 from ....schemas.climaticindicators import ClimaticIndicator
 from . import base
 
@@ -80,6 +83,159 @@ class ConfigurationParameterPossibleValueRead(pydantic.BaseModel):
     configuration_parameter_value: str
 
 
+class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
+    url: pydantic.AnyHttpUrl
+    id: int
+    name: str
+    display_name_english: str
+    display_name_italian: str
+    wms_main_layer_name: str | None
+    wms_secondary_layer_name: str | None
+    climatic_indicator_identifier: str
+    forecast_model_names: list[str]
+    scenarios: list[static.ForecastScenario]
+    has_associated_uncertainty_datasets: bool
+    year_periods: list[static.ForecastYearPeriod]
+    possible_values: list[ConfigurationParameterPossibleValueRead]
+
+    @classmethod
+    def prepare_possible_values(
+        cls, instance: app_models.ForecastCoverageConfiguration
+    ) -> list[ConfigurationParameterPossibleValueRead]:
+        possible_values = [
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="aggregation_period",
+                configuration_parameter_display_name_english=instance.climatic_indicator.aggregation_period.get_param_display_name(
+                    LOCALE_EN
+                ),
+                configuration_parameter_display_name_italian=instance.climatic_indicator.aggregation_period.get_param_display_name(
+                    LOCALE_IT
+                ),
+                configuration_parameter_value=instance.climatic_indicator.aggregation_period.value,
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="climatological_variable",
+                configuration_parameter_display_name_english=instance.climatic_indicator.display_name_english,
+                configuration_parameter_display_name_italian=instance.climatic_indicator.display_name_italian,
+                configuration_parameter_value=instance.climatic_indicator.name,
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="measure",
+                configuration_parameter_display_name_english=instance.climatic_indicator.measure_type.get_param_display_name(
+                    LOCALE_EN
+                ),
+                configuration_parameter_display_name_italian=instance.climatic_indicator.measure_type.get_param_display_name(
+                    LOCALE_IT
+                ),
+                configuration_parameter_value=instance.climatic_indicator.measure_type.value,
+            ),
+        ]
+        for forecast_model_link in instance.forecast_model_links:
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="climatological_model",
+                    configuration_parameter_display_name_english=forecast_model_link.forecast_model.display_name_english,
+                    configuration_parameter_display_name_italian=forecast_model_link.forecast_model.display_name_italian,
+                    configuration_parameter_value=forecast_model_link.forecast_model.name,
+                ),
+            )
+        for scenario in instance.scenarios:
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="scenario",
+                    configuration_parameter_display_name_english=scenario.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=scenario.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=scenario.value,
+                ),
+            )
+        if instance.lower_uncertainty_thredds_url_pattern is not None:
+            type_ = static.ForecastDatasetType.LOWER_UNCERTAINTY
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="uncertainty_type",
+                    configuration_parameter_display_name_english=type_.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=type_.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=type_.value,
+                ),
+            )
+        if instance.upper_uncertainty_thredds_url_pattern is not None:
+            type_ = static.ForecastDatasetType.UPPER_UNCERTAINTY
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="uncertainty_type",
+                    configuration_parameter_display_name_english=type_.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=type_.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=type_.value,
+                ),
+            )
+        for time_window_link in instance.forecast_time_window_links:
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="time_window",
+                    configuration_parameter_display_name_english=time_window_link.forecast_time_window.display_name_english,
+                    configuration_parameter_display_name_italian=time_window_link.forecast_time_window.display_name_italian,
+                    configuration_parameter_value=time_window_link.forecast_time_window.name,
+                ),
+            )
+        for year_period in instance.year_periods:
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="year_period",
+                    configuration_parameter_display_name_english=year_period.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=year_period.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=year_period.value,
+                ),
+            )
+        return possible_values
+
+    @classmethod
+    def from_db_instance(
+        cls,
+        instance: app_models.ForecastCoverageConfiguration,
+        request: Request,
+    ) -> "LegacyForecastCoverageConfigurationReadListItem":
+        url = request.url_for(
+            "get_forecast_coverage_configuration",
+            **{"coverage_configuration_id": instance.id},
+        )
+        return cls(
+            **instance.model_dump(
+                exclude={
+                    "display_name_english",
+                    "display_name_italian",
+                }
+            ),
+            name=instance.identifier,
+            climatic_indicator_identifier=instance.climatic_indicator.identifier,
+            forecast_model_names=[
+                fml.forecast_model.name for fml in instance.forecast_model_links
+            ],
+            has_associated_uncertainty_datasets=(
+                instance.lower_uncertainty_netcdf_main_dataset_name is not None
+            ),
+            display_name_english=instance.climatic_indicator.display_name_english,
+            display_name_italian=instance.climatic_indicator.display_name_italian,
+            url=str(url),
+            possible_values=cls.prepare_possible_values(instance),
+        )
+
+
 class CoverageConfigurationReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
     id: uuid.UUID
@@ -125,6 +281,58 @@ class CoverageConfigurationReadListItem(pydantic.BaseModel):
                 )
                 for pv in instance.possible_values
             ],
+        )
+
+
+class LegacyForecastCoverageConfigurationReadDetail(
+    LegacyForecastCoverageConfigurationReadListItem
+):
+    url: pydantic.AnyHttpUrl
+    unit_english: str
+    unit_italian: str
+    allowed_coverage_identifiers: list[str]
+    description_english: str | None
+    description_italian: str | None
+    legend: CoverageImageLegend
+    data_precision: int
+
+    @classmethod
+    def from_db_instance(
+        cls,
+        instance: app_models.ForecastCoverageConfiguration,
+        forecast_coverages: list[app_models.ForecastCoverageInternal],
+        legend_colors: list[tuple[float, str]],
+        request: Request,
+    ) -> "LegacyForecastCoverageConfigurationReadDetail":
+        url = request.url_for(
+            "get_forecast_coverage_configuration",
+            **{"forecast_coverage_configuration_id": instance.id},
+        )
+        return cls(
+            **instance.model_dump(),
+            name=instance.identifier,
+            climatic_indicator_identifier=instance.climatic_indicator.identifier,
+            forecast_model_names=[
+                fml.forecast_model.name for fml in instance.forecast_model_links
+            ],
+            has_associated_uncertainty_datasets=(
+                instance.lower_uncertainty_netcdf_main_dataset_name is not None
+            ),
+            display_name_english=instance.climatic_indicator.display_name_english,
+            display_name_italian=instance.climatic_indicator.display_name_italian,
+            description_english=instance.climatic_indicator.description_english,
+            description_italian=instance.climatic_indicator.description_italian,
+            unit_english=instance.climatic_indicator.unit_english,
+            unit_italian=instance.climatic_indicator.unit_italian,
+            data_precision=instance.climatic_indicator.data_precision,
+            url=str(url),
+            possible_values=cls.prepare_possible_values(instance),
+            allowed_coverage_identifiers=[cov.identifier for cov in forecast_coverages],
+            legend=CoverageImageLegend(
+                color_entries=[
+                    ImageLegendColor(value=v, color=c) for v, c in legend_colors
+                ]
+            ),
         )
 
 
@@ -183,10 +391,174 @@ class CoverageConfigurationReadDetail(CoverageConfigurationReadListItem):
         )
 
 
+class LegacyForecastCoverageConfigurationList(base.WebResourceList):
+    items: list[LegacyForecastCoverageConfigurationReadListItem]
+    list_item_type = LegacyForecastCoverageConfigurationReadListItem
+    path_operation_name = "list_forecast_coverage_configurations"
+
+
 class CoverageConfigurationList(base.WebResourceList):
     items: list[CoverageConfigurationReadListItem]
     list_item_type = CoverageConfigurationReadListItem
     path_operation_name = "list_coverage_configurations"
+
+
+class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
+    identifier: str
+    related_coverage_configuration_url: str
+    wms_base_url: str
+    wms_main_layer_name: str | None = None
+    wms_secondary_layer_name: str | None = None
+    possible_values: list[ConfigurationParameterPossibleValueRead]
+
+    @classmethod
+    def prepare_possible_values(
+        cls, instance: app_models.ForecastCoverageInternal
+    ) -> list[ConfigurationParameterPossibleValueRead]:
+        possible_values = [
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="aggregation_period",
+                configuration_parameter_display_name_english=(
+                    instance.configuration.climatic_indicator.aggregation_period.get_param_display_name(
+                        LOCALE_EN
+                    )
+                ),
+                configuration_parameter_display_name_italian=(
+                    instance.configuration.climatic_indicator.aggregation_period.get_param_display_name(
+                        LOCALE_IT
+                    )
+                ),
+                configuration_parameter_value=(
+                    instance.configuration.climatic_indicator.aggregation_period.value
+                ),
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="climatological_variable",
+                configuration_parameter_display_name_english=(
+                    instance.configuration.climatic_indicator.display_name_english
+                ),
+                configuration_parameter_display_name_italian=(
+                    instance.configuration.climatic_indicator.display_name_italian
+                ),
+                configuration_parameter_value=(
+                    instance.configuration.climatic_indicator.name
+                ),
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="measure",
+                configuration_parameter_display_name_english=(
+                    instance.configuration.climatic_indicator.measure_type.get_param_display_name(
+                        LOCALE_EN
+                    )
+                ),
+                configuration_parameter_display_name_italian=(
+                    instance.configuration.climatic_indicator.measure_type.get_param_display_name(
+                        LOCALE_IT
+                    )
+                ),
+                configuration_parameter_value=(
+                    instance.configuration.climatic_indicator.measure_type.value
+                ),
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="climatological_model",
+                configuration_parameter_display_name_english=instance.forecast_model.display_name_english,
+                configuration_parameter_display_name_italian=instance.forecast_model.display_name_italian,
+                configuration_parameter_value=instance.forecast_model.name,
+            ),
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="scenario",
+                configuration_parameter_display_name_english=instance.scenario.get_param_display_name(
+                    LOCALE_EN
+                ),
+                configuration_parameter_display_name_italian=instance.scenario.get_param_display_name(
+                    LOCALE_IT
+                ),
+                configuration_parameter_value=instance.scenario.value,
+            ),
+        ]
+        if instance.configuration.lower_uncertainty_thredds_url_pattern is not None:
+            type_ = static.ForecastDatasetType.LOWER_UNCERTAINTY
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="uncertainty_type",
+                    configuration_parameter_display_name_english=type_.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=type_.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=type_.value,
+                ),
+            )
+        if instance.configuration.upper_uncertainty_thredds_url_pattern is not None:
+            type_ = static.ForecastDatasetType.UPPER_UNCERTAINTY
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="uncertainty_type",
+                    configuration_parameter_display_name_english=type_.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    configuration_parameter_display_name_italian=type_.get_param_display_name(
+                        LOCALE_IT
+                    ),
+                    configuration_parameter_value=type_.value,
+                ),
+            )
+        if instance.forecast_time_window is not None:
+            possible_values.append(
+                ConfigurationParameterPossibleValueRead(
+                    configuration_parameter_name="time_window",
+                    configuration_parameter_display_name_english=instance.forecast_time_window.display_name_english,
+                    configuration_parameter_display_name_italian=instance.forecast_time_window.display_name_italian,
+                    configuration_parameter_value=instance.forecast_time_window.name,
+                ),
+            )
+
+        possible_values.append(
+            ConfigurationParameterPossibleValueRead(
+                configuration_parameter_name="year_period",
+                configuration_parameter_display_name_english=instance.forecast_year_period.get_param_display_name(
+                    LOCALE_EN
+                ),
+                configuration_parameter_display_name_italian=instance.forecast_year_period.get_param_display_name(
+                    LOCALE_IT
+                ),
+                configuration_parameter_value=instance.forecast_year_period.value,
+            ),
+        )
+        return possible_values
+
+    @classmethod
+    def from_db_instance(
+        cls,
+        instance: app_models.ForecastCoverageInternal,
+        request: Request,
+    ) -> "LegacyForecastCoverageReadListItem":
+        wms_base_url = request.url_for(
+            "wms_endpoint", coverage_identifier=instance.identifier
+        )
+        return cls(
+            identifier=instance.identifier,
+            wms_base_url=str(wms_base_url),
+            wms_main_layer_name=(
+                instance.get_wms_main_layer_name()
+                if instance.configuration.wms_main_layer_name is not None
+                else None
+            ),
+            wms_secondary_layer_name=(
+                instance.get_wms_secondary_layer_name()
+                if instance.configuration.wms_secondary_layer_name is not None
+                else None
+            ),
+            related_coverage_configuration_url=str(
+                request.url_for(
+                    "get_forecast_coverage_configuration",
+                    forecast_coverage_configuration_id=instance.configuration.id,
+                )
+            ),
+            possible_values=cls.prepare_possible_values(instance),
+        )
 
 
 class CoverageIdentifierReadListItem(pydantic.BaseModel):
@@ -245,9 +617,41 @@ class CoverageIdentifierReadListItem(pydantic.BaseModel):
         )
 
 
+class LegacyForecastCoverageList(base.WebResourceList):
+    items: list[LegacyForecastCoverageReadListItem]
+    path_operation_name = "list_forecast_coverage_identifiers"
+
+    @classmethod
+    def from_items(
+        cls,
+        items: typing.Sequence[app_models.ForecastCoverageInternal],
+        request: Request,
+        *,
+        limit: int,
+        offset: int,
+        filtered_total: int,
+        unfiltered_total: int,
+    ):
+        return cls(
+            meta=base.get_meta(len(items), unfiltered_total, filtered_total),
+            links=base.get_list_links(
+                request,
+                cls.path_operation_name,
+                limit,
+                offset,
+                filtered_total,
+                len(items),
+            ),
+            items=[
+                LegacyForecastCoverageReadListItem.from_db_instance(i, request)
+                for i in items
+            ],
+        )
+
+
 class CoverageIdentifierList(base.WebResourceList):
     items: list[CoverageIdentifierReadListItem]
-    path_operation_name = "list_coverage_identifiers"
+    path_operation_name = "list_forecast_coverage_identifiers"
 
     @classmethod
     def from_items(

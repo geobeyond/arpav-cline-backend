@@ -1,6 +1,5 @@
 import logging
 import urllib.parse
-from operator import itemgetter
 from xml.etree import ElementTree as et
 from typing import (
     Annotated,
@@ -34,7 +33,6 @@ from .... import (
 )
 from ....config import ArpavPpcvSettings
 from ....thredds import (
-    crawler as thredds_crawler,
     utils as thredds_utils,
 )
 from ....schemas.coverages import ConfigurationParameterValue
@@ -49,7 +47,6 @@ from ..schemas.base import (
     TimeSeries,
     TimeSeriesList,
 )
-from ...frontendutils import schemas as frontend_schemas
 from ...frontendutils.schemas import (
     LegacyForecastVariableCombinationsList,
     LegacyForecastVariableCombinations,
@@ -68,7 +65,54 @@ _INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL = "Invalid coverage identifier"
     "/configuration-parameters",
     response_model=coverage_schemas.ConfigurationParameterList,
 )
-def list_configuration_parameters(
+def list_legacy_configuration_parameters(
+    request: Request,
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
+    name_contains: str | None = None,
+):
+    """List forecast-related configuration parameters."""
+    # - historical variable
+    # - climatological variable
+    # - scenario
+    # - time window
+    # - year period
+    # - historical year period
+    # - archive
+    # - measure
+    # - climatological model
+    # - aggregation period
+    # - uncertainty type
+    # - archive
+    # - climatological standard normal
+    config_params, filtered_total = db.list_configuration_parameters(
+        db_session,
+        limit=list_params.limit,
+        offset=list_params.offset,
+        include_total=True,
+        name_filter=name_contains,
+    )
+    _, unfiltered_total = db.list_configuration_parameters(
+        db_session, limit=1, offset=0, include_total=True
+    )
+    return coverage_schemas.ConfigurationParameterList.from_items(
+        config_params,
+        request,
+        limit=list_params.limit,
+        offset=list_params.offset,
+        filtered_total=filtered_total,
+        unfiltered_total=unfiltered_total,
+    )
+
+
+@router.get(
+    "/old-configuration-parameters",
+    response_model=coverage_schemas.ConfigurationParameterList,
+    tags=[
+        "old",
+    ],
+)
+def old_list_configuration_parameters(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
@@ -97,9 +141,9 @@ def list_configuration_parameters(
 
 @router.get(
     "/coverage-configurations",
-    response_model=coverage_schemas.CoverageConfigurationList,
+    response_model=coverage_schemas.LegacyForecastCoverageConfigurationList,
 )
-def list_coverage_configurations(
+def list_forecast_coverage_configurations(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
@@ -113,57 +157,30 @@ def list_coverage_configurations(
         Query(),
     ] = None,
 ):
-    """### List coverage configurations.
-
-    A coverage configuration represents a set of multiple NetCDF files that are
-    available in the ARPAV THREDDS server.
-
-    A coverage configuration can be used to generate *coverage identifiers* that
-    refer to individual NetCDF files by constructing a string based on the
-    `dataset_id_pattern` property. For example, If there is a coverage configuration
-    with the following properties:
-
-    ```yaml
-    name: myds
-    coverage_id_pattern: {name}-something-{scenario}-{year_period}
-    possible_values:
-      - configuration_parameter_name: scenario
-        configuration_parameter_value: scen1
-      - configuration_parameter_name: scenario
-        configuration_parameter_value: scen2
-      - configuration_parameter_name: year_period
-        configuration_parameter_value: winter
-      - configuration_parameter_name: year_period
-        configuration_parameter_value: autumn
-    ```
-
-    Then the following would be valid coverage identifiers:
-
-    - `myds-something-scen1-winter`
-    - `myds-something-scen1-autumn`
-    - `myds-something-scen2-winter`
-    - `myds-something-scen2-autumn`
-
-    Each of these coverage identifiers could further be used to gain access to the WMS
-    endpoint.
-
-    """
-    conf_param_values_filter, climatic_indicator = _retrieve_climatic_indicator_filter(
+    """List existing **forecast** coverage configurations."""
+    filter_values = operations.convert_conf_params_filter(
         db_session, possible_value or []
     )
-    coverage_configurations, filtered_total = db.list_coverage_configurations(
-        db_session,
-        limit=list_params.limit,
-        offset=list_params.offset,
-        include_total=True,
-        configuration_parameter_values_filter=conf_param_values_filter,
-        climatic_indicator_filter=climatic_indicator,
-    )
-    _, unfiltered_total = db.list_coverage_configurations(
-        db_session, limit=1, offset=0, include_total=True
-    )
-    return coverage_schemas.CoverageConfigurationList.from_items(
-        coverage_configurations,
+    if filter_values.archive and filter_values.archive != "forecast":
+        forecast_coverage_configurations = []
+        filtered_total = 0
+        unfiltered_total = 0
+    else:
+        (
+            forecast_coverage_configurations,
+            filtered_total,
+        ) = db.legacy_list_forecast_coverage_configurations(
+            db_session,
+            limit=list_params.limit,
+            offset=list_params.offset,
+            include_total=True,
+            conf_param_filter=filter_values,
+        )
+        _, unfiltered_total = db.list_coverage_configurations(
+            db_session, limit=1, offset=0, include_total=True
+        )
+    return coverage_schemas.LegacyForecastCoverageConfigurationList.from_items(
+        forecast_coverage_configurations,
         request,
         limit=list_params.limit,
         offset=list_params.offset,
@@ -173,53 +190,61 @@ def list_coverage_configurations(
 
 
 @router.get(
-    "/coverage-configurations/{coverage_configuration_id}",
-    response_model=coverage_schemas.CoverageConfigurationReadDetail,
+    "/coverage-configurations/{forecast_coverage_configuration_id}",
+    response_model=coverage_schemas.LegacyForecastCoverageConfigurationReadDetail,
 )
-def get_coverage_configuration(
+def get_forecast_coverage_configuration(
     request: Request,
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_configuration_id: pydantic.UUID4,
+    forecast_coverage_configuration_id: int,
 ):
-    db_coverage_configuration = db.get_coverage_configuration(
-        db_session, coverage_configuration_id
+    db_forecast_coverage_configuration = db.get_forecast_coverage_configuration(
+        db_session, forecast_coverage_configuration_id
     )
-    allowed_coverage_identifiers = db.generate_coverage_identifiers(
-        coverage_configuration=db_coverage_configuration
+    forecast_coverages = db.generate_forecast_coverages_from_configuration(
+        db_forecast_coverage_configuration
     )
+
     palette_colors = palette.parse_palette(
-        db_coverage_configuration.palette, settings.palettes_dir
+        db_forecast_coverage_configuration.climatic_indicator.palette,
+        settings.palettes_dir,
     )
     applied_colors = []
     if palette_colors is not None:
-        minimum = db_coverage_configuration.color_scale_min
-        maximum = db_coverage_configuration.color_scale_max
+        minimum = db_forecast_coverage_configuration.climatic_indicator.color_scale_min
+        maximum = db_forecast_coverage_configuration.climatic_indicator.color_scale_max
         if abs(maximum - minimum) > 0.001:
             applied_colors = palette.apply_palette(
                 palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
             )
         else:
             logger.warning(
-                f"Cannot calculate applied colors for coverage "
-                f"configuration {db_coverage_configuration.name!r} - check the "
-                f"colorscale min and max values"
+                f"Cannot calculate applied colors for forecast coverage "
+                f"configuration {db_forecast_coverage_configuration.identifier!r} - "
+                f"check the respective climatic indicator's colorscale min "
+                f"and max values"
             )
     else:
-        logger.warning(f"Unable to parse palette {db_coverage_configuration.palette!r}")
-    return coverage_schemas.CoverageConfigurationReadDetail.from_db_instance(
-        db_coverage_configuration, allowed_coverage_identifiers, applied_colors, request
+        logger.warning(
+            f"Unable to parse palette "
+            f"{db_forecast_coverage_configuration.climatic_indicator.palette!r}"
+        )
+    return (
+        coverage_schemas.LegacyForecastCoverageConfigurationReadDetail.from_db_instance(
+            db_forecast_coverage_configuration,
+            forecast_coverages,
+            applied_colors,
+            request,
+        )
     )
-
-
-# PossibleValue: pydantic.StringConstraints(pattern="^[\w-_]+:[\w-_]+$")
 
 
 @router.get(
     "/coverage-identifiers",
-    response_model=coverage_schemas.CoverageIdentifierList,
+    response_model=coverage_schemas.LegacyForecastCoverageList,
 )
-def list_coverage_identifiers(
+def list_forecast_coverage_identifiers(
     request: Request,
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -235,23 +260,21 @@ def list_coverage_identifiers(
         Query(),
     ] = None,
 ):
-    conf_param_values_filter, climatic_indicator = _retrieve_climatic_indicator_filter(
+    conf_param_filter = operations.convert_conf_params_filter(
         db_session, possible_value or []
     )
-    cov_internals, filtered_total = db.list_coverage_identifiers(
+    cov_internals, filtered_total = db.legacy_list_forecast_coverages(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
-        configuration_parameter_values_filter=conf_param_values_filter,
-        climatic_indicator_filter=climatic_indicator,
+        conf_param_filter=conf_param_filter,
     )
-    _, unfiltered_total = db.list_coverage_identifiers(
+    _, unfiltered_total = db.legacy_list_forecast_coverages(
         db_session, limit=1, offset=0, include_total=True
     )
-
-    return coverage_schemas.CoverageIdentifierList.from_items(
+    return coverage_schemas.LegacyForecastCoverageList.from_items(
         cov_internals,
         request,
         limit=list_params.limit,
@@ -303,95 +326,6 @@ async def wms_endpoint(
 
     if cov is not None:
         base_wms_url = cov.get_wms_base_url(settings.thredds_server)
-        parsed_url = urllib.parse.urlparse(base_wms_url)
-        logger.info(f"{base_wms_url=}")
-        query_params = {k.lower(): v for k, v in request.query_params.items()}
-        logger.debug(f"original query params: {query_params=}")
-        if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
-            query_params = thredds_utils.tweak_wms_get_map_request(
-                query_params,
-                ncwms_palette=cov.configuration.climatic_indicator.palette,
-                ncwms_color_scale_range=(
-                    cov.configuration.climatic_indicator.color_scale_min,
-                    cov.configuration.climatic_indicator.color_scale_max,
-                ),
-                uncertainty_visualization_scale_range=(
-                    settings.thredds_server.uncertainty_visualization_scale_range
-                ),
-            )
-        logger.debug(f"{query_params=}")
-        wms_url = parsed_url._replace(
-            query=urllib.parse.urlencode(
-                {
-                    **query_params,
-                    "service": "WMS",
-                    "version": version,
-                }
-            )
-        ).geturl()
-        logger.info(f"{wms_url=}")
-        try:
-            wms_response = await thredds_utils.proxy_request(wms_url, http_client)
-        except httpx.HTTPStatusError as err:
-            logger.exception(
-                msg=f"THREDDS server replied with an error: {err.response.text}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY, detail=err.response.text
-            )
-        except httpx.HTTPError as err:
-            logger.exception(msg="THREDDS server replied with an error")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-            ) from err
-        else:
-            if query_params.get("request") == "GetCapabilities":
-                response_content = _modify_capabilities_response(
-                    wms_response.text, str(request.url).partition("?")[0]
-                )
-            else:
-                response_content = wms_response.content
-            response = Response(
-                content=response_content,
-                status_code=wms_response.status_code,
-                headers=dict(wms_response.headers),
-            )
-        return response
-    else:
-        raise HTTPException(
-            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-        )
-
-
-@router.get("/old-wms/{coverage_identifier}")
-async def old_wms_endpoint(
-    request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
-    coverage_identifier: str,
-    version: str = "1.3.0",
-):
-    """### Serve coverage via OGC Web Map Service.
-
-    Pass additional relevant WMS query parameters directly to this endpoint.
-    """
-
-    cov = await anyio.to_thread.run_sync(
-        db.get_coverage, db_session, coverage_identifier
-    )
-    if cov is not None:
-        ds_fragment = thredds_crawler.get_thredds_url_fragment(
-            cov, settings.thredds_server.base_url
-        )
-
-        base_wms_url = "/".join(
-            (
-                settings.thredds_server.base_url,
-                settings.thredds_server.wms_service_url_fragment,
-                ds_fragment,
-            )
-        )
         parsed_url = urllib.parse.urlparse(base_wms_url)
         logger.info(f"{base_wms_url=}")
         query_params = {k.lower(): v for k, v in request.query_params.items()}
@@ -658,8 +592,8 @@ def get_time_series(
         bool,
         Query(
             description=(
-                    "Whether data from the nearest observation station (if any) "
-                    "should be included in the response."
+                "Whether data from the nearest observation station (if any) "
+                "should be included in the response."
             )
         ),
     ] = False,
@@ -721,14 +655,13 @@ def get_time_series(
         else:
             series = []
             for forecast_cov_series in coverage_series:
-                series.append(
-                    TimeSeries.from_forecast_data_series(forecast_cov_series)
-                )
+                series.append(TimeSeries.from_forecast_data_series(forecast_cov_series))
             if observations_series is not None:
                 for obs_station_series in observations_series:
                     series.append(
                         TimeSeries.from_observation_station_data_series(
-                            obs_station_series)
+                            obs_station_series
+                        )
                     )
             return TimeSeriesList(series=series)
     else:
@@ -737,7 +670,13 @@ def get_time_series(
         )
 
 
-@router.get("/old-time-series/{coverage_identifier}", response_model=TimeSeriesList)
+@router.get(
+    "/old-time-series/{coverage_identifier}",
+    response_model=TimeSeriesList,
+    tags=[
+        "old",
+    ],
+)
 def old_get_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
@@ -845,37 +784,7 @@ def get_forecast_variable_combinations(
             LegacyForecastVariableCombinations.from_navigation_section(s)
             for s in sections
         ],
-        translations=LegacyForecastMenuTranslations.from_navigation_sections(sections)
-    )
-
-
-@router.get(
-    "/old-forecast-variable-combinations",
-    response_model=coverage_schemas.ForecastVariableCombinationsList,
-)
-def old_get_forecast_variable_combinations(
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-):
-    variable_combinations = operations.get_forecast_variable_parameters(db_session)
-    var_combinations = []
-    for climatic_indicator, param_combinations in variable_combinations.items():
-        var_combinations.append(
-            (
-                climatic_indicator.sort_order,
-                climatic_indicator.aggregation_period.get_sort_order(),
-                climatic_indicator.measure_type.get_sort_order(),
-                coverage_schemas.ForecastVariableCombinations.from_items(
-                    climatic_indicator, param_combinations
-                ),
-            )
-        )
-    var_combinations.sort(key=itemgetter(0, 1, 2))
-    var_combinations = [vc[3] for vc in var_combinations]
-    return coverage_schemas.ForecastVariableCombinationsList(
-        combinations=var_combinations,
-        translations=coverage_schemas.ForecastMenuTranslations.from_items(
-            variable_combinations
-        ),
+        translations=LegacyForecastMenuTranslations.from_navigation_sections(sections),
     )
 
 

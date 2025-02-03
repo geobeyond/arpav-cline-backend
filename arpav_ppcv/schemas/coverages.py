@@ -18,7 +18,6 @@ import sqlmodel
 
 from .. import exceptions
 from ..config import (
-    ArpavPpcvSettings,
     ThreddsServerSettings,
     get_translations,
 )
@@ -69,6 +68,9 @@ class ForecastTimeWindow(sqlmodel.SQLModel, table=True):
         translations = get_translations(locale)
         _ = translations.gettext
         return _("time window description")
+
+    def __hash__(self):
+        return self.id
 
 
 class ForecastTimeWindowCreate(sqlmodel.SQLModel):
@@ -122,6 +124,9 @@ class ForecastModel(sqlmodel.SQLModel, table=True):
         translations = get_translations(locale)
         _ = translations.gettext
         return _("forecast model description")
+
+    def __hash__(self):
+        return self.id
 
 
 class ForecastModelCreate(sqlmodel.SQLModel):
@@ -1208,3 +1213,20 @@ class ForecastCoverageInternal:
 
     def __hash__(self):
         return hash(self.identifier)
+
+
+@dataclasses.dataclass(frozen=True)
+class LegacyConfParamFilterValues:
+    aggregation_period: Optional[static.AggregationPeriod]  # done
+    archive: Optional[str]  # done
+    climatological_model: Optional[ForecastModel]  #
+    climatological_standard_normal: Optional[str]
+    climatological_variable: Optional[str]  # done
+    historical_variable: Optional[str]
+    historical_year_period: Optional[static.HistoricalYearPeriod]
+    measure: Optional[static.MeasureType]
+    scenario: Optional[static.ForecastScenario]
+    uncertainty_type: Optional[str]
+    time_window: Optional[ForecastTimeWindow]
+    year_period: Optional[static.ForecastYearPeriod]
+    climatic_indicator: Optional["climaticindicators.ClimaticIndicator"]  # done

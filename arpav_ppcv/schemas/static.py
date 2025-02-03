@@ -94,7 +94,7 @@ class MeasureType(str, enum.Enum):
     def get_sort_order(self) -> int:
         return {
             self.ABSOLUTE: 0,
-            self.ANOMALY: 0,
+            self.ANOMALY: 1,
         }.get(self, 0)
 
 
@@ -133,7 +133,7 @@ class AggregationPeriod(str, enum.Enum):
     def get_sort_order(self) -> int:
         return {
             self.ANNUAL: 0,
-            self.THIRTY_YEAR: 0,
+            self.THIRTY_YEAR: 1,
         }.get(self, 0)
 
 
@@ -457,7 +457,8 @@ class CoverageDataSmoothingStrategy(str, enum.Enum):
             self.NO_SMOOTHING.name: _("no processing description"),
             self.LOESS_SMOOTHING.name: _("LOESS description"),
             self.MOVING_AVERAGE_11_YEARS.name: _(
-                "centered 11-year moving average description"),
+                "centered 11-year moving average description"
+            ),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
@@ -498,7 +499,8 @@ class ObservationDataSmoothingStrategy(str, enum.Enum):
         return {
             self.NO_SMOOTHING.name: _("no processing description"),
             self.MOVING_AVERAGE_5_YEARS.name: _(
-                "centered 5-year moving average description"),
+                "centered 5-year moving average description"
+            ),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
