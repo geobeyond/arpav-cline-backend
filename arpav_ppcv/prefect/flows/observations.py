@@ -298,8 +298,8 @@ def refresh_measurements(
         series_confs_to_process = _get_observation_series_configurations(
             db_session, observation_series_configuration_identifier
         )
+        to_wait_on = []
         for station in stations_to_process:
-            to_wait_on = []
             for series_configuration in series_confs_to_process:
                 if series_configuration.climatic_indicator.id in [
                     ci.id for ci in station.climatic_indicators
