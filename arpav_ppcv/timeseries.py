@@ -7,20 +7,23 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pandas as pd
 import pyloess
 import pyproj
 from pyproj.enums import TransformDirection
+import shapely
 from shapely.ops import transform
 
 from .thredds import ncss
-from .schemas import dataseries
+from .schemas import (
+    dataseries,
+    static,
+)
 
 if TYPE_CHECKING:
     import datetime as dt
     import httpx
     import numpy as np
-    import pandas as pd
-    import shapely
     import sqlmodel
     from . import (
         config,
@@ -29,7 +32,6 @@ if TYPE_CHECKING:
     from .schemas import (
         coverages,
         observations,
-        static,
     )
 
 logger = logging.getLogger(__name__)
@@ -68,7 +70,7 @@ def generate_derived_forecast_series(
 
 
 def _apply_loess_smoothing(
-    df: "pd.DataFrame", source_column_name: str, ignore_warnings: bool = True
+    df: pd.DataFrame, source_column_name: str, ignore_warnings: bool = True
 ) -> "np.ndarray":
     with warnings.catch_warnings():
         if ignore_warnings:
@@ -109,13 +111,13 @@ def _get_spatial_buffer(
 
 
 def find_nearby_observation_station(
-    session: sqlmodel.Session,
+    session: "sqlmodel.Session",
     location: shapely.Point,
     distance_threshold_meters: int,
     observation_series_configuration: Optional[
-        observations.ObservationSeriesConfiguration
+        "observations.ObservationSeriesConfiguration"
     ] = None,
-) -> Optional[observations.ObservationStation]:
+) -> Optional["observations.ObservationStation"]:
     """
     Find close station that collects data for input series conf's climatic indicator.
     """
@@ -133,11 +135,11 @@ def find_nearby_observation_station(
 
 
 def get_nearby_observation_station_time_series(
-    session: sqlmodel.Session,
+    session: "sqlmodel.Session",
     location: shapely.Point,
     observation_series_configuration: "observations.ObservationSeriesConfiguration",
     distance_threshold_meters: int,
-    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> Optional[dataseries.ObservationStationDataSeries]:
     result = None
     nearby_station = find_nearby_observation_station(
@@ -174,9 +176,9 @@ def get_nearby_observation_station_time_series(
 
 
 def parse_observation_station_data(
-    raw_data: Sequence[observations.ObservationMeasurement],
+    raw_data: Sequence["observations.ObservationMeasurement"],
     base_name: str,
-    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> pd.Series:
     df = pd.DataFrame([i.model_dump() for i in raw_data])
     df = df.rename(
@@ -203,7 +205,7 @@ def get_forecast_coverage_time_series(
     http_client: "httpx.Client",
     coverage: "coverages.ForecastCoverageInternal",
     point_geom: "shapely.Point",
-    temporal_range: tuple["dt.datetime" | None, "dt.datetime" | None],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
     forecast_coverage_processing_methods: list[
         "static.CoverageTimeSeriesProcessingMethod"
     ],
@@ -269,15 +271,15 @@ def generate_derived_observation_series(
 
 
 def _get_forecast_coverage_coverage_time_series(
-    thredds_settings: config.ThreddsServerSettings,
-    session: sqlmodel.Session,
-    http_client: httpx.Client,
-    forecast_coverage: coverages.ForecastCoverageInternal,
+    thredds_settings: "config.ThreddsServerSettings",
+    session: "sqlmodel.Session",
+    http_client: "httpx.Client",
+    forecast_coverage: "coverages.ForecastCoverageInternal",
     point_geom: shapely.Point,
     processing_methods: Sequence[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
     include_related_models: bool,
-    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.ForecastDataSeries]:
     data_ = []
     cov_series = _retrieve_forecast_coverage_data(
@@ -321,12 +323,12 @@ def _get_forecast_coverage_coverage_time_series(
 
 
 def _get_forecast_coverage_observation_time_series(
-    settings: config.ArpavPpcvSettings,
-    session: sqlmodel.Session,
-    coverage: coverages.ForecastCoverageInternal,
+    settings: "config.ArpavPpcvSettings",
+    session: "sqlmodel.Session",
+    coverage: "coverages.ForecastCoverageInternal",
     point_geom: shapely.Point,
     processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
-    temporal_range: tuple[dt.datetime | None, dt.datetime | None],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.ObservationStationDataSeries]:
     result = {}
     for osc_link in coverage.configuration.observation_series_configuration_links:
@@ -370,11 +372,11 @@ def _get_forecast_coverage_observation_time_series(
 
 
 def _retrieve_forecast_coverage_data(
-    http_client: httpx.Client,
-    settings: config.ThreddsServerSettings,
-    coverage: coverages.ForecastCoverageInternal,
+    http_client: "httpx.Client",
+    settings: "config.ThreddsServerSettings",
+    coverage: "coverages.ForecastCoverageInternal",
     point_geom: shapely.Point,
-    temporal_range: tuple[dt.datetime | None, dt.datetime | None] = None,
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
     include_uncertainty: bool = False,
 ) -> tuple[
     dataseries.ForecastDataSeries | None,
