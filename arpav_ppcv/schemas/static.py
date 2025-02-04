@@ -59,6 +59,45 @@ class ForecastScenario(str, enum.Enum):
         }.get(self, self.value)
 
 
+class DataCategory(str, enum.Enum):
+    FORECAST = "forecast"
+    HISTORICAL = "historical"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("data category")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("data category description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.FORECAST: _("forecast"),
+            self.HISTORICAL: _("historical"),
+        }.get(self, self.value)
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.FORECAST: _("forecast description"),
+            self.HISTORICAL: _("historical description"),
+        }.get(self, self.value)
+
+    def get_sort_order(self) -> int:
+        return {
+            self.FORECAST: 0,
+            self.HISTORICAL: 1,
+        }.get(self, 0)
+
+
 class MeasureType(str, enum.Enum):
     ABSOLUTE = "absolute"
     ANOMALY = "anomaly"
@@ -424,8 +463,8 @@ class MeasurementAggregationType(str, enum.Enum):
         }.get(self, 0)
 
 
-class CoverageDataSmoothingStrategy(str, enum.Enum):
-    NO_SMOOTHING = "NO_SMOOTHING"
+class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
+    NO_PROCESSING = "NO_PROCESSING"
     LOESS_SMOOTHING = "LOESS_SMOOTHING"
     MOVING_AVERAGE_11_YEARS = "MOVING_AVERAGE_11_YEARS"
 
@@ -445,7 +484,7 @@ class CoverageDataSmoothingStrategy(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_SMOOTHING.name: _("no processing"),
+            self.NO_PROCESSING.name: _("no processing"),
             self.LOESS_SMOOTHING.name: _("LOESS"),
             self.MOVING_AVERAGE_11_YEARS.name: _("centered 11-year moving average"),
         }.get(self, self.value)
@@ -454,7 +493,7 @@ class CoverageDataSmoothingStrategy(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_SMOOTHING.name: _("no processing description"),
+            self.NO_PROCESSING.name: _("no processing description"),
             self.LOESS_SMOOTHING.name: _("LOESS description"),
             self.MOVING_AVERAGE_11_YEARS.name: _(
                 "centered 11-year moving average description"
@@ -463,15 +502,17 @@ class CoverageDataSmoothingStrategy(str, enum.Enum):
 
     def get_sort_order(self) -> int:
         return {
-            self.NO_SMOOTHING.name: 0,
+            self.NO_PROCESSING.name: 0,
             self.LOESS_SMOOTHING.name: 0,
             self.MOVING_AVERAGE_11_YEARS.name: 0,
         }.get(self, 0)
 
 
-class ObservationDataSmoothingStrategy(str, enum.Enum):
-    NO_SMOOTHING = "NO_SMOOTHING"
+class ObservationTimeSeriesProcessingMethod(str, enum.Enum):
+    NO_PROCESSING = "NO_PROCESSING"
     MOVING_AVERAGE_5_YEARS = "MOVING_AVERAGE_5_YEARS"
+    MANN_KENDALL_TREND = "MANN_KENDALL_TREND"
+    DECADE_AGGREGATION = "DECADE_AGGREGATION"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -489,24 +530,30 @@ class ObservationDataSmoothingStrategy(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_SMOOTHING.name: _("no processing"),
+            self.NO_PROCESSING.name: _("no processing"),
             self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
+            self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
+            self.DECADE_AGGREGATION.name: _("Decade aggregation"),
         }[self.name] or self.name
 
     def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_SMOOTHING.name: _("no processing description"),
+            self.NO_PROCESSING.name: _("no processing description"),
             self.MOVING_AVERAGE_5_YEARS.name: _(
                 "centered 5-year moving average description"
             ),
+            self.MANN_KENDALL_TREND: _("Mann-Kendall trend description"),
+            self.DECADE_AGGREGATION.name: _("Decade aggregation description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
-            self.NO_SMOOTHING.name: 0,
-            self.MOVING_AVERAGE_5_YEARS.name: 0,
+            self.NO_PROCESSING.name: 0,
+            self.MOVING_AVERAGE_5_YEARS.name: 1,
+            self.MANN_KENDALL_TREND.name: 2,
+            self.DECADE_AGGREGATION.name: 3,
         }.get(self, 0)
 
 

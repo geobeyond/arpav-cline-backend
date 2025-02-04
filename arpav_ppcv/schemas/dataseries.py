@@ -9,24 +9,23 @@ import geohashr
 import pandas as pd
 import shapely
 
+from ..config import get_translations
+from . import static
+
 if TYPE_CHECKING:
+    import babel
     from .coverages import ForecastCoverageInternal
     from .observations import (
         ObservationSeriesConfiguration,
         ObservationStation,
-    )
-    from .static import (
-        ForecastDatasetType,
-        CoverageDataSmoothingStrategy,
-        ObservationDataSmoothingStrategy,
     )
 
 
 @dataclasses.dataclass
 class ForecastDataSeries:
     forecast_coverage: "ForecastCoverageInternal"
-    dataset_type: "ForecastDatasetType"
-    smoothing_strategy: "CoverageDataSmoothingStrategy"
+    dataset_type: static.ForecastDatasetType
+    processing_method: static.CoverageTimeSeriesProcessingMethod
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]
     location: shapely.Point
@@ -49,16 +48,28 @@ class ForecastDataSeries:
                     if self.temporal_end is not None
                     else "*"
                 ),
-                self.smoothing_strategy.value.lower(),
+                self.processing_method.value.lower(),
             )
         )
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast data series")
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast data series description")
 
 
 @dataclasses.dataclass
 class ObservationStationDataSeries:
     observation_series_configuration: "ObservationSeriesConfiguration"
     observation_station: "ObservationStation"
-    smoothing_strategy: "ObservationDataSmoothingStrategy"
+    processing_method: static.ObservationTimeSeriesProcessingMethod
     data_: Optional[pd.Series] = None
 
     @property
@@ -67,6 +78,18 @@ class ObservationStationDataSeries:
             (
                 self.observation_series_configuration.identifier,
                 self.observation_station.code,
-                self.smoothing_strategy.value.lower(),
+                self.processing_method.value.lower(),
             )
         )
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station data series")
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station data series description")

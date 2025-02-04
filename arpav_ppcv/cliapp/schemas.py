@@ -6,6 +6,10 @@ from ..schemas import (
 )
 
 
+class OverviewCoverageConfigurationItem(pydantic.BaseModel):
+    identifier: str
+
+
 class ClimaticIndicatorItem(pydantic.BaseModel):
     identifier: str
 
@@ -47,53 +51,3 @@ class ObservationSeriesConfigurationDetail(pydantic.BaseModel):
     climatic_indicator: ClimaticIndicatorItem
     measurement_aggregation_type: static.MeasurementAggregationType
     station_managers: list[static.ObservationStationManager]
-
-
-class ObservationStationCreate(observations.StationCreate):
-    ...
-
-
-class ObservationStationUpdate(observations.StationUpdate):
-    ...
-
-
-# class VariableRead(observations.VariableBase):
-#     ...
-#
-#
-# class VariableCreate(observations.VariableCreate):
-#     ...
-#
-#
-# class VariableUpdate(observations.VariableUpdate):
-#     ...
-
-
-# class MonthlyMeasurementRead(observations.MonthlyMeasurementBase):
-#     station_id: pydantic.UUID4
-#     variable_id: pydantic.UUID4
-#
-#
-# # TODO: remove this
-# class MonthlyMeasurementCreate(observations.MonthlyMeasurementCreate):
-#     ...
-#
-#
-# # TODO: remove this
-# class MonthlyMeasurementUpdate(observations.MonthlyMeasurementUpdate):
-#     ...
-#
-#
-# class SeasonalMeasurementRead(pydantic.BaseModel):
-#     station_id: pydantic.UUID4
-#     variable_id: pydantic.UUID4
-#     year: int
-#     season: base.Season
-#     value: float
-#
-#
-# class YearlyMeasurementRead(pydantic.BaseModel):
-#     station_id: pydantic.UUID4
-#     variable_id: pydantic.UUID4
-#     year: int
-#     value: float

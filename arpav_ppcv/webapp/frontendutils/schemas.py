@@ -18,10 +18,16 @@ if typing.TYPE_CHECKING:
 @dataclasses.dataclass
 class ForecastCoverageNavigationSection:
     climatic_indicator: "ClimaticIndicator"
-    forecast_models: list["coverages.ForecastModel"] = dataclasses.field(default_factory=list)
+    forecast_models: list["coverages.ForecastModel"] = dataclasses.field(
+        default_factory=list
+    )
     scenarios: list["static.ForecastScenario"] = dataclasses.field(default_factory=list)
-    year_periods: list["static.ForecastYearPeriod"] = dataclasses.field(default_factory=list)
-    time_windows: list["coverages.ForecastTimeWindow"] = dataclasses.field(default_factory=list)
+    year_periods: list["static.ForecastYearPeriod"] = dataclasses.field(
+        default_factory=list
+    )
+    time_windows: list["coverages.ForecastTimeWindow"] = dataclasses.field(
+        default_factory=list
+    )
 
 
 class LegacyForecastVariableCombinations(pydantic.BaseModel):
@@ -31,9 +37,7 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
     other_parameters: dict[str, list[str]]
 
     @classmethod
-    def from_navigation_section(
-        cls, section: ForecastCoverageNavigationSection
-    ):
+    def from_navigation_section(cls, section: ForecastCoverageNavigationSection):
         other = {
             "climatological_model": [fm.name for fm in section.forecast_models],
             "scenario": [s.value for s in section.scenarios],
@@ -45,7 +49,7 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
             variable=section.climatic_indicator.name,
             aggregation_period=section.climatic_indicator.aggregation_period.value,
             measure=section.climatic_indicator.measure_type.value,
-            other_parameters=other
+            other_parameters=other,
         )
 
 
@@ -59,61 +63,81 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
             # FIXME: get rid of all the StaticCoverageSeriesParameter stuff
             parameter_names={
                 "series_name": {
-                    LOCALE_EN.language: StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(LOCALE_EN),
-                    LOCALE_IT.language: StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(LOCALE_IT),
+                    LOCALE_EN.language: StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(
+                        LOCALE_IT
+                    ),
                 },
                 "processing_method": {
-                    LOCALE_EN.language: series.smoothing_strategy.get_param_display_name(LOCALE_EN),
-                    LOCALE_IT.language: series.smoothing_strategy.get_param_display_name(LOCALE_IT),
+                    LOCALE_EN.language: series.processing_method.get_param_display_name(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: series.processing_method.get_param_display_name(
+                        LOCALE_IT
+                    ),
                 },
                 "coverage_identifier": {
-                    LOCALE_EN.language: StaticCoverageSeriesParameter.COVERAGE_IDENTIFIER.get_display_name(LOCALE_EN),
-                    LOCALE_IT.language: StaticCoverageSeriesParameter.COVERAGE_IDENTIFIER.get_display_name(LOCALE_IT),
+                    LOCALE_EN.language: StaticCoverageSeriesParameter.COVERAGE_IDENTIFIER.get_display_name(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: StaticCoverageSeriesParameter.COVERAGE_IDENTIFIER.get_display_name(
+                        LOCALE_IT
+                    ),
                 },
                 "coverage_configuration": {
-                    LOCALE_EN.language: StaticCoverageSeriesParameter.COVERAGE_CONFIGURATION.get_display_name(LOCALE_EN),
-                    LOCALE_IT.language: StaticCoverageSeriesParameter.COVERAGE_CONFIGURATION.get_display_name(LOCALE_IT),
+                    LOCALE_EN.language: StaticCoverageSeriesParameter.COVERAGE_CONFIGURATION.get_display_name(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: StaticCoverageSeriesParameter.COVERAGE_CONFIGURATION.get_display_name(
+                        LOCALE_IT
+                    ),
                 },
                 "aggregation_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .aggregation_period.get_param_display_name(LOCALE_EN)
+                        series.forecast_coverage.configuration.climatic_indicator.aggregation_period.get_param_display_name(
+                            LOCALE_EN
+                        )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .aggregation_period.get_param_display_name(LOCALE_IT)
+                        series.forecast_coverage.configuration.climatic_indicator.aggregation_period.get_param_display_name(
+                            LOCALE_IT
+                        )
                     ),
                 },
                 "climatological_model": {
                     LOCALE_EN.language: (
                         series.forecast_coverage.forecast_model.get_display_name(
-                            LOCALE_EN)
-                    ),
-                    LOCALE_IT.language: (
-                        series.forecast_coverage.forecast_model.get_display_name(
-                            LOCALE_IT)
-                    ),
-                },
-                "climatological_variable": {
-                    LOCALE_EN.language: (
-                        series.forecast_coverage.configuration
-                        .climatic_indicator.get_display_name(LOCALE_EN)
-                    ),
-                    LOCALE_IT.language: (
-                        series.forecast_coverage.configuration
-                        .climatic_indicator.get_display_name(LOCALE_IT)
-                    ),
-                },
-                "measure": {
-                    LOCALE_EN.language: (
-                        series.forecast_coverage.configuration
-                        .climatic_indicator.measure_type.get_param_display_name(
                             LOCALE_EN
                         )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration
-                        .climatic_indicator.measure_type.get_param_display_name(
+                        series.forecast_coverage.forecast_model.get_display_name(
+                            LOCALE_IT
+                        )
+                    ),
+                },
+                "climatological_variable": {
+                    LOCALE_EN.language: (
+                        series.forecast_coverage.configuration.climatic_indicator.get_display_name(
+                            LOCALE_EN
+                        )
+                    ),
+                    LOCALE_IT.language: (
+                        series.forecast_coverage.configuration.climatic_indicator.get_display_name(
+                            LOCALE_IT
+                        )
+                    ),
+                },
+                "measure": {
+                    LOCALE_EN.language: (
+                        series.forecast_coverage.configuration.climatic_indicator.measure_type.get_param_display_name(
+                            LOCALE_EN
+                        )
+                    ),
+                    LOCALE_IT.language: (
+                        series.forecast_coverage.configuration.climatic_indicator.measure_type.get_param_display_name(
                             LOCALE_IT
                         )
                     ),
@@ -121,41 +145,43 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 "scenario": {
                     LOCALE_EN.language: (
                         series.forecast_coverage.scenario.get_param_display_name(
-                            LOCALE_EN)
+                            LOCALE_EN
+                        )
                     ),
                     LOCALE_IT.language: (
                         series.forecast_coverage.scenario.get_param_display_name(
-                            LOCALE_IT)
+                            LOCALE_IT
+                        )
                     ),
                 },
                 "year_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.forecast_year_period
-                        .get_param_display_name(LOCALE_EN)
+                        series.forecast_coverage.forecast_year_period.get_param_display_name(
+                            LOCALE_EN
+                        )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.forecast_year_period
-                        .get_param_display_name(LOCALE_IT)
+                        series.forecast_coverage.forecast_year_period.get_param_display_name(
+                            LOCALE_IT
+                        )
                     ),
                 },
             },
             parameter_values={
                 "series_name": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .description_english
+                        series.forecast_coverage.configuration.climatic_indicator.description_english
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .description_italian
+                        series.forecast_coverage.configuration.climatic_indicator.description_italian
                     ),
                 },
                 "processing_method": {
                     LOCALE_EN.language: (
-                        series.smoothing_strategy.get_value_display_name(LOCALE_EN),
+                        series.processing_method.get_value_display_name(LOCALE_EN),
                     ),
                     LOCALE_IT.language: (
-                        series.smoothing_strategy.get_value_display_name(LOCALE_IT),
+                        series.processing_method.get_value_display_name(LOCALE_IT),
                     ),
                 },
                 "coverage_identifier": {
@@ -168,12 +194,14 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "aggregation_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .aggregation_period.get_value_display_name(LOCALE_EN)
+                        series.forecast_coverage.configuration.climatic_indicator.aggregation_period.get_value_display_name(
+                            LOCALE_EN
+                        )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .aggregation_period.get_value_display_name(LOCALE_IT)
+                        series.forecast_coverage.configuration.climatic_indicator.aggregation_period.get_value_display_name(
+                            LOCALE_IT
+                        )
                     ),
                 },
                 "climatological_model": {
@@ -186,46 +214,112 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "climatological_variable": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .display_name_english,
+                        series.forecast_coverage.configuration.climatic_indicator.display_name_english,
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .display_name_italian,
+                        series.forecast_coverage.configuration.climatic_indicator.display_name_italian,
                     ),
                 },
                 "measure": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .measure_type.get_value_display_name(LOCALE_EN),
+                        series.forecast_coverage.configuration.climatic_indicator.measure_type.get_value_display_name(
+                            LOCALE_EN
+                        ),
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator
-                        .measure_type.get_value_display_name(LOCALE_IT),
+                        series.forecast_coverage.configuration.climatic_indicator.measure_type.get_value_display_name(
+                            LOCALE_IT
+                        ),
                     ),
                 },
                 "scenario": {
                     LOCALE_EN.language: (
                         series.forecast_coverage.scenario.get_value_display_name(
-                            LOCALE_EN),
+                            LOCALE_EN
+                        ),
                     ),
                     LOCALE_IT.language: (
                         series.forecast_coverage.scenario.get_value_display_name(
-                            LOCALE_IT),
+                            LOCALE_IT
+                        ),
                     ),
                 },
                 "year_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.forecast_year_period
-                        .get_value_display_name(LOCALE_EN),
+                        series.forecast_coverage.forecast_year_period.get_value_display_name(
+                            LOCALE_EN
+                        ),
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.forecast_year_period
-                        .get_value_display_name(LOCALE_IT),
+                        series.forecast_coverage.forecast_year_period.get_value_display_name(
+                            LOCALE_IT
+                        ),
                     ),
                 },
             },
         )
+
+    @classmethod
+    def from_observation_station_data_series(
+        cls, series: "dataseries.ObservationStationDataSeries"
+    ):
+        names = {}
+        values = {}
+        for key_name in (
+            "series_name",
+            "processing_method",
+            "station",
+            "variable",
+            "series_elaboriation",
+            "derived_series",
+        ):
+            names[key_name] = {}
+            values[key_name] = {}
+        for locale in (LOCALE_EN, LOCALE_IT):
+            names["series_name"][locale.language] = series.get_display_name(locale)
+            values["series_name"][locale.language] = series.identifier
+
+            names["processing_method"][
+                locale.language
+            ] = static.ObservationTimeSeriesProcessingMethod.get_param_display_name(
+                locale
+            )
+            values["processing_method"][
+                locale.language
+            ] = series.processing_method.get_value_display_name(locale)
+
+            names["station"][
+                locale.language
+            ] = series.observation_station.get_display_name(locale)
+            values["station"][locale.language] = series.observation_station.code
+
+            names["variable"][
+                locale.language
+            ] = series.observation_series_configuration.climatic_indicator.get_display_name(
+                locale
+            )
+            values["variable"][locale.language] = {
+                LOCALE_EN: series.observation_series_configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: series.observation_series_configuration.climatic_indicator.display_name_italian,
+            }.get(
+                locale,
+                series.observation_series_configuration.climatic_indicator.identifier,
+            )
+
+            names["series_elaboration"][locale.language] = names["processing_method"][
+                locale.language
+            ]
+            values["series_elaboration"][locale.language] = values["processing_method"][
+                locale.language
+            ]
+
+            names["derived_series"][locale.language] = names["processing_method"][
+                locale.language
+            ]
+            values["derived_series"][locale.language] = values["processing_method"][
+                locale.language
+            ]
+        return cls(parameter_names=names, parameter_values=values)
 
 
 class LegacyConfigurationParameterMenuTranslation(pydantic.BaseModel):
@@ -241,8 +335,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
 
     @classmethod
     def from_navigation_sections(
-        cls,
-        sections: list[ForecastCoverageNavigationSection]
+        cls, sections: list[ForecastCoverageNavigationSection]
     ):
         vars = {}
         aggreg_periods = {}
@@ -258,7 +351,9 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
         unique_models = set()
         unique_time_windows = set()
         for section in sections:
-            vars[section.climatic_indicator.name] = LegacyConfigurationParameterMenuTranslation(
+            vars[
+                section.climatic_indicator.name
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
                     LOCALE_EN.language: section.climatic_indicator.display_name_english,
                     LOCALE_IT.language: section.climatic_indicator.display_name_italian,
@@ -273,69 +368,70 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
             unique_models.update(section.forecast_models)
             unique_time_windows.update(section.time_windows)
         unique_aggregation_periods = {
-            s.climatic_indicator.aggregation_period for s in sections}
+            s.climatic_indicator.aggregation_period for s in sections
+        }
         for aggregation_period in unique_aggregation_periods:
-            aggreg_periods[aggregation_period.value] = LegacyConfigurationParameterMenuTranslation(
+            aggreg_periods[
+                aggregation_period.value
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
                     LOCALE_EN.language: aggregation_period.get_value_display_name(
-                        LOCALE_EN),
+                        LOCALE_EN
+                    ),
                     LOCALE_IT.language: aggregation_period.get_value_display_name(
-                        LOCALE_IT),
+                        LOCALE_IT
+                    ),
                 },
                 description={
                     LOCALE_EN.language: aggregation_period.get_value_description(
-                        LOCALE_EN),
+                        LOCALE_EN
+                    ),
                     LOCALE_IT.language: aggregation_period.get_value_description(
-                        LOCALE_IT),
-                }
+                        LOCALE_IT
+                    ),
+                },
             )
         for measure_type in {s.climatic_indicator.measure_type for s in sections}:
             measures[measure_type.value] = LegacyConfigurationParameterMenuTranslation(
                 name={
-                    LOCALE_EN.language: measure_type.get_value_display_name(
-                        LOCALE_EN),
-                    LOCALE_IT.language: measure_type.get_value_display_name(
-                        LOCALE_IT),
+                    LOCALE_EN.language: measure_type.get_value_display_name(LOCALE_EN),
+                    LOCALE_IT.language: measure_type.get_value_display_name(LOCALE_IT),
                 },
                 description={
-                    LOCALE_EN.language: measure_type.get_value_description(
-                        LOCALE_EN),
-                    LOCALE_IT.language: measure_type.get_value_description(
-                        LOCALE_IT),
-                }
+                    LOCALE_EN.language: measure_type.get_value_description(LOCALE_EN),
+                    LOCALE_IT.language: measure_type.get_value_description(LOCALE_IT),
+                },
             )
         for year_period in unique_year_periods:
-            other["year_period"][year_period.value] = LegacyConfigurationParameterMenuTranslation(
+            other["year_period"][
+                year_period.value
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
-                    LOCALE_EN.language: year_period.get_value_display_name(
-                        LOCALE_EN),
-                    LOCALE_IT.language: year_period.get_value_display_name(
-                        LOCALE_IT),
+                    LOCALE_EN.language: year_period.get_value_display_name(LOCALE_EN),
+                    LOCALE_IT.language: year_period.get_value_display_name(LOCALE_IT),
                 },
                 description={
-                    LOCALE_EN.language: year_period.get_value_description(
-                        LOCALE_EN),
-                    LOCALE_IT.language: year_period.get_value_description(
-                        LOCALE_IT),
+                    LOCALE_EN.language: year_period.get_value_description(LOCALE_EN),
+                    LOCALE_IT.language: year_period.get_value_description(LOCALE_IT),
                 },
             )
         for scenario in unique_scenarios:
-            other["scenario"][scenario.value] = LegacyConfigurationParameterMenuTranslation(
+            other["scenario"][
+                scenario.value
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
-                    LOCALE_EN.language: scenario.get_value_display_name(
-                        LOCALE_EN),
-                    LOCALE_IT.language: scenario.get_value_display_name(
-                        LOCALE_IT),
+                    LOCALE_EN.language: scenario.get_value_display_name(LOCALE_EN),
+                    LOCALE_IT.language: scenario.get_value_display_name(LOCALE_IT),
                 },
                 description={
-                    LOCALE_EN.language: scenario.get_value_description(
-                        LOCALE_EN),
-                    LOCALE_IT.language: scenario.get_value_description(
-                        LOCALE_IT),
+                    LOCALE_EN.language: scenario.get_value_description(LOCALE_EN),
+                    LOCALE_IT.language: scenario.get_value_description(LOCALE_IT),
                 },
             )
         for forecast_model in unique_models:
-            other["climatological_model"][forecast_model.name] = LegacyConfigurationParameterMenuTranslation(
+            other["climatological_model"][
+                forecast_model.name
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
                     LOCALE_EN.language: forecast_model.display_name_english,
                     LOCALE_IT.language: forecast_model.display_name_italian,
@@ -346,7 +442,9 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
                 },
             )
         for time_window in unique_time_windows:
-            other["time_window"][time_window.name] = LegacyConfigurationParameterMenuTranslation(
+            other["time_window"][
+                time_window.name
+            ] = LegacyConfigurationParameterMenuTranslation(
                 name={
                     LOCALE_EN.language: time_window.display_name_english,
                     LOCALE_IT.language: time_window.display_name_italian,
@@ -360,7 +458,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
             variable=vars,
             aggregation_period=aggreg_periods,
             measure=measures,
-            other_parameters=other
+            other_parameters=other,
         )
 
 

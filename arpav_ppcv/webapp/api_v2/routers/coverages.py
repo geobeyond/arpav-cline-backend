@@ -30,6 +30,7 @@ from .... import (
     exceptions,
     operations,
     palette,
+    timeseries,
 )
 from ....config import ArpavPpcvSettings
 from ....thredds import (
@@ -38,8 +39,8 @@ from ....thredds import (
 from ....schemas.coverages import ConfigurationParameterValue
 from ....schemas.climaticindicators import ClimaticIndicator
 from ....schemas.static import (
-    CoverageDataSmoothingStrategy,
-    ObservationDataSmoothingStrategy,
+    CoverageTimeSeriesProcessingMethod,
+    ObservationTimeSeriesProcessingMethod,
 )
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
@@ -551,13 +552,14 @@ def _modify_capabilities_response(
 def get_climate_barometer_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
-        CoverageDataSmoothingStrategy.NO_SMOOTHING
+    data_smoothing: Annotated[list[CoverageTimeSeriesProcessingMethod], Query()] = [
+        CoverageTimeSeriesProcessingMethod.NO_PROCESSING
     ],
     include_uncertainty: bool = False,
 ):
     """Get climate barometer time series."""
     try:
+        # FIXME: use function from timeseries module instead of operations
         relevant_series = operations.get_climate_barometer_time_series(
             settings,
             db_session,
@@ -597,12 +599,12 @@ def get_time_series(
             )
         ),
     ] = False,
-    coverage_data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
-        CoverageDataSmoothingStrategy.NO_SMOOTHING
-    ],  # noqa
+    coverage_data_smoothing: Annotated[
+        list[CoverageTimeSeriesProcessingMethod], Query()
+    ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
     observation_data_smoothing: Annotated[
-        list[ObservationDataSmoothingStrategy], Query()
-    ] = [ObservationDataSmoothingStrategy.NO_SMOOTHING],  # noqa
+        list[ObservationTimeSeriesProcessingMethod], Query()
+    ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
     include_coverage_uncertainty: bool = False,
     include_coverage_related_data: bool = False,
 ):
@@ -633,19 +635,19 @@ def get_time_series(
             (
                 coverage_series,
                 observations_series,
-            ) = operations.get_forecast_coverage_time_series(
-                settings,
-                db_session,
-                http_client,
-                coverage,
-                point_geom,
-                temporal_range,
-                coverage_data_smoothing,
-                observation_data_smoothing,
-                include_coverage_data,
-                include_observation_data,
-                include_coverage_uncertainty,
-                include_coverage_related_data,
+            ) = timeseries.get_forecast_coverage_time_series(
+                settings=settings,
+                session=db_session,
+                http_client=http_client,
+                coverage=coverage,
+                point_geom=point_geom,
+                temporal_range=temporal_range,
+                forecast_coverage_processing_methods=coverage_data_smoothing,
+                observation_processing_methods=observation_data_smoothing,
+                include_coverage_data=include_coverage_data,
+                include_observation_data=include_observation_data,
+                include_coverage_uncertainty=include_coverage_uncertainty,
+                include_coverage_related_models=include_coverage_related_data,
             )
         except exceptions.CoverageDataRetrievalError as err:
             raise HTTPException(
@@ -694,12 +696,12 @@ def old_get_time_series(
             )
         ),
     ] = False,
-    coverage_data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
-        CoverageDataSmoothingStrategy.NO_SMOOTHING
-    ],  # noqa
+    coverage_data_smoothing: Annotated[
+        list[CoverageTimeSeriesProcessingMethod], Query()
+    ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
     observation_data_smoothing: Annotated[
-        list[ObservationDataSmoothingStrategy], Query()
-    ] = [ObservationDataSmoothingStrategy.NO_SMOOTHING],  # noqa
+        list[ObservationTimeSeriesProcessingMethod], Query()
+    ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
     include_coverage_uncertainty: bool = False,
     include_coverage_related_data: bool = False,
 ):

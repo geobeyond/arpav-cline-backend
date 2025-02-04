@@ -711,20 +711,6 @@ class HistoricalVariableMenuTree(TypedDict):
     combinations: dict[str, VariableMenuTreeCombination]
 
 
-class BaseCoverageConfiguration(sqlmodel.SQLModel):
-    id: int | None = sqlmodel.Field(default=None, primary_key=True)
-    netcdf_main_dataset_name: str
-    thredds_url_pattern: str
-    wms_main_layer_name: str
-    wms_secondary_layer_name: Optional[str] = None
-    climatic_indicator_id: Optional[int] = sqlmodel.Field(
-        default=None, foreign_key="climaticindicator.id"
-    )
-    spatial_region_id: Optional[int] = sqlmodel.Field(
-        default=None, foreign_key="spatialregion.id"
-    )
-
-
 class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
     __table_args__ = (
         sqlalchemy.ForeignKeyConstraint(
@@ -907,7 +893,90 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
     )
 
 
+class BaseCoverageConfiguration(sqlmodel.SQLModel):
+    id: int | None = sqlmodel.Field(default=None, primary_key=True)
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    climatic_indicator_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="climaticindicator.id"
+    )
+    spatial_region_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="spatialregion.id"
+    )
+
+
+class OverviewCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    data_category: static.DataCategory
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    scenarios: list[static.ForecastScenario] = sqlmodel.Field(
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastScenario))
+        ),
+    )
+
+    spatial_region: base.SpatialRegion = sqlmodel.Relationship(
+        back_populates="overview_coverage_configurations"
+    )
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="overview_coverage_configurations"
+    )
+
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        return "overview-{data_category}-{climatic_indicator_identifier}-{spatial_region}".format(
+            data_category=self.data_category.value,
+            climatic_indicator_identifier=self.climatic_indicator.identifier,
+            spatial_region=self.spatial_region.name,
+        )
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("overview coverage configuration")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("overview coverage configuration description")
+
+
+class OverviewCoverageConfigurationCreate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    climatic_indicator_id: int
+    spatial_region_id: int
+    data_category: static.DataCategory
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    scenarios: Optional[list[static.ForecastScenario]] = None
+
+
+class OverviewCoverageConfigurationUpdate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: Optional[str] = None
+    thredds_url_pattern: Optional[str] = None
+    climatic_indicator_id: Optional[int] = None
+    spatial_region_id: Optional[int] = None
+    data_category: Optional[static.DataCategory] = None
+    lower_uncertainty_thredds_url_pattern: Optional[str] = None
+    lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    upper_uncertainty_thredds_url_pattern: Optional[str] = None
+    upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
+    scenarios: Optional[list[static.ForecastScenario]] = None
+
+
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    data_category: ClassVar[static.DataCategory] = static.DataCategory.FORECAST
+    wms_main_layer_name: str
+    wms_secondary_layer_name: Optional[str] = None
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
     lower_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
@@ -960,13 +1029,24 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
         extra_parts_fragment = ""
         if len(identifier_extra_parts) > 0:
             extra_parts_fragment = f"-{'-'.join(identifier_extra_parts)}"
-        return (
-            "forecast-{climatic_indicator_identifier}-{spatial_region}{extra}".format(
-                climatic_indicator_identifier=self.climatic_indicator.identifier,
-                spatial_region=self.spatial_region.name,
-                extra=extra_parts_fragment,
-            )
+        return "{data_category}-{climatic_indicator_identifier}-{spatial_region}{extra}".format(
+            data_category=static.DataCategory.FORECAST.value,
+            climatic_indicator_identifier=self.climatic_indicator.identifier,
+            spatial_region=self.spatial_region.name,
+            extra=extra_parts_fragment,
         )
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast coverage configuration")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast coverage configuration description")
 
 
 class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):

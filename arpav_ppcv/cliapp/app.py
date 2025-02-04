@@ -14,6 +14,7 @@ from ..schemas import (
 )
 from . import schemas
 from .climaticindicators import app as climatic_indicators_app
+from .coverages import app as coverages_app
 from .observations import (
     series_configurations_app,
     stations_app,
@@ -23,6 +24,7 @@ app = typer.Typer()
 app.add_typer(climatic_indicators_app, name="climatic-indicators")
 app.add_typer(stations_app, name="observation-stations")
 app.add_typer(series_configurations_app, name="observation-series-configurations")
+app.add_typer(coverages_app, name="overview-coverage-configurations")
 
 _JSON_INDENTATION = 2
 

@@ -45,6 +45,9 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     data_precision: int = sqlmodel.Field(default=0)
     sort_order: int = sqlmodel.Field(default=0)
 
+    overview_coverage_configurations: list[
+        "coverages.OverviewCoverageConfiguration"
+    ] = sqlmodel.Relationship(back_populates="climatic_indicator")
     forecast_coverage_configurations: list[
         "coverages.ForecastCoverageConfiguration"
     ] = sqlmodel.Relationship(back_populates="climatic_indicator")

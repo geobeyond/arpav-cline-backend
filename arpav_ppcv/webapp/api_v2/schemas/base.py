@@ -259,13 +259,17 @@ class TimeSeries(pydantic.BaseModel):
                 if not math.isnan(value)
             ],
             info={
-                "processing_method": series.smoothing_strategy.value,
+                "processing_method": series.processing_method.value,
                 "station": series.observation_station.name,
                 "variable": series.observation_series_configuration.climatic_indicator.name,
                 "series_elaboration": None,
                 "derived_series": None,
             },
-            translations=None
+            translations=(
+                LegacyTimeSeriesTranslations.from_observation_station_data_series(
+                    series
+                )
+            ),
         )
 
     @classmethod
@@ -278,25 +282,25 @@ class TimeSeries(pydantic.BaseModel):
                 if not math.isnan(value)
             ],
             info={
-                "processing_method": series.smoothing_strategy.value,
+                "processing_method": series.processing_method.value,
                 "coverage_identifier": series.forecast_coverage.identifier,
                 "coverage_configuration": (
-                    series.forecast_coverage.configuration.identifier),
+                    series.forecast_coverage.configuration.identifier
+                ),
                 "aggregation_period": (
-                    series.forecast_coverage.configuration
-                    .climatic_indicator.aggregation_period.value
+                    series.forecast_coverage.configuration.climatic_indicator.aggregation_period.value
                 ),
                 "climatological_model": series.forecast_coverage.forecast_model.name,
                 "climatological_variable": (
-                    series.forecast_coverage.configuration.climatic_indicator.name),
+                    series.forecast_coverage.configuration.climatic_indicator.name
+                ),
                 "measure": (
-                    series.forecast_coverage.configuration
-                    .climatic_indicator.measure_type.value
+                    series.forecast_coverage.configuration.climatic_indicator.measure_type.value
                 ),
                 "scenario": series.forecast_coverage.scenario.value,
                 "year_period": series.forecast_coverage.forecast_year_period.value,
             },
-            translations=LegacyTimeSeriesTranslations.from_forecast_data_series(series)
+            translations=LegacyTimeSeriesTranslations.from_forecast_data_series(series),
         )
 
     @classmethod

@@ -68,19 +68,15 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
         )
     )
     admin.add_view(base_views.SpatialRegionView(base.SpatialRegion))
-    # admin.add_view(coverage_views.ForecastModelView(coverages.ForecastModel))
-    # admin.add_view(coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow))
-    # admin.add_view(
-    #     coverage_views.ForecastCoverageConfigurationView(
-    #         coverages.ForecastCoverageConfiguration
-    #     )
-    # )
     admin.add_view(
         DropDown(
             "Forecasts",
             icon="fa-solid fa-chart-line",
             always_open=False,
             views=[
+                coverage_views.OverviewCoverageConfigurationView(
+                    coverages.OverviewCoverageConfiguration
+                ),
                 coverage_views.ForecastCoverageConfigurationView(
                     coverages.ForecastCoverageConfiguration
                 ),

@@ -17,8 +17,10 @@ from . import (
     fields,
     static,
 )
+from ..config import get_translations
 
 if TYPE_CHECKING:
+    import babel
     from .climaticindicators import ClimaticIndicator
     from . import coverages
 
@@ -505,6 +507,18 @@ class ObservationStation(sqlmodel.SQLModel, table=True):
             back_populates="observation_stations",
         )
     )
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station")
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation station description")
 
 
 class ObservationStationCreate(sqlmodel.SQLModel):

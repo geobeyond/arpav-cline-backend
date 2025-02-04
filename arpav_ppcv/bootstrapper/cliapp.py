@@ -19,6 +19,7 @@ from ..schemas.coverages import (
     CoverageConfigurationUpdate,
 )
 
+from .overview_coverage_configurations import generate_overview_coverage_configurations
 from .forecast_coverage_configurations import (
     cdd as cdd_forecast_coverage_configurations,
     cdds as cdds_forecast_coverage_configurations,
@@ -507,6 +508,36 @@ def bootstrap_coverage_configurations(
         )
 
 
+@app.command("overview-coverage-configurations")
+def bootstrap_overview_coverage_configurations(ctx: typer.Context):
+    """Create initial overview coverage configurations."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_spatial_regions = database.collect_all_spatial_regions(session)
+        clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
+        region_ids = {sr.name: sr.id for sr in all_spatial_regions}
+
+        to_create = generate_overview_coverage_configurations(
+            climatic_indicator_ids=clim_ind_ids,
+            spatial_region_ids=region_ids,
+        )
+        for overview_coverage_configuration_create in to_create:
+            try:
+                db_overview_cov_conf = database.create_overview_coverage_configuration(
+                    session, overview_coverage_configuration_create
+                )
+                print(
+                    f"Created overview coverage "
+                    f"configuration {db_overview_cov_conf.identifier!r}"
+                )
+            except IntegrityError as err:
+                print(
+                    f"Could not create overview coverage configuration "
+                    f"{overview_coverage_configuration_create!r}: {err}"
+                )
+                session.rollback()
+
+
 @app.command("forecast-coverage-configurations")
 def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
     """Create initial forecast coverage configurations."""
@@ -761,9 +792,9 @@ def perform_full_bootstrap(
             dir_okay=True,
             resolve_path=True,
             help=(
-                    "Path to the directory that holds geoJSON files with the "
-                    "spatial boundaries of spatial regions. Example: "
-                    "/home/appuser/app/data/spatial-regions"
+                "Path to the directory that holds geoJSON files with the "
+                "spatial boundaries of spatial regions. Example: "
+                "/home/appuser/app/data/spatial-regions"
             ),
         ),
     ],
@@ -771,8 +802,8 @@ def perform_full_bootstrap(
         Path,
         typer.Argument(
             help=(
-                    "Path to the municipalities geoJSON dataset. Example: "
-                    "/home/appuser/app/data/municipalities-istat-2021.geojson"
+                "Path to the municipalities geoJSON dataset. Example: "
+                "/home/appuser/app/data/municipalities-istat-2021.geojson"
             )
         ),
     ],
@@ -785,17 +816,18 @@ def perform_full_bootstrap(
     ctx.invoke(
         bootstrap_spatial_regions,
         ctx=ctx,
-        region_bounds_base_directory=region_bounds_base_directory
+        region_bounds_base_directory=region_bounds_base_directory,
     )
     ctx.invoke(
         bootstrap_municipalities,
         ctx=ctx,
         municipalities_dataset=municipalities_dataset,
-        force=True
+        force=True,
     )
     ctx.invoke(bootstrap_forecast_models, ctx=ctx)
     ctx.invoke(bootstrap_forecast_time_windows, ctx=ctx)
     ctx.invoke(bootstrap_climatic_indicators, ctx=ctx)
     ctx.invoke(bootstrap_observation_series_configurations, ctx=ctx)
     ctx.invoke(bootstrap_forecast_coverage_configurations, ctx=ctx)
+    ctx.invoke(bootstrap_overview_coverage_configurations, ctx=ctx)
     print("All done!")
