@@ -1111,6 +1111,97 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
 
 
 @dataclasses.dataclass(frozen=True)
+class OverviewCoverageInternal:
+    configuration: OverviewCoverageConfiguration
+    scenario: Optional[static.ForecastScenario] = None
+
+    @property
+    def identifier(self) -> str:
+        pattern_parts = [self.configuration.identifier]
+        pattern_parts.append(self.scenario.value if self.scenario else "*")
+        return "-".join(pattern_parts)
+
+    @property
+    def lower_uncertainty_identifier(self) -> Optional[str]:
+        result = None
+        if self.configuration.lower_uncertainty_thredds_url_pattern:
+            result = "-".join((self.identifier, "lower_uncertainty"))
+        return result
+
+    @property
+    def upper_uncertainty_identifier(self) -> Optional[str]:
+        result = None
+        if self.configuration.upper_uncertainty_thredds_url_pattern:
+            result = "-".join((self.identifier, "upper_uncertainty"))
+        return result
+
+    def get_netcdf_main_dataset_name(self) -> str:
+        return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
+
+    def get_netcdf_lower_uncertainty_main_dataset_name(self) -> str:
+        if (
+                pattern := self.configuration.lower_uncertainty_netcdf_main_dataset_name
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
+
+    def get_netcdf_upper_uncertainty_main_dataset_name(self) -> str:
+        if (
+                pattern := self.configuration.upper_uncertainty_netcdf_main_dataset_name
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
+
+    def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
+
+    def get_lower_uncertainty_thredds_ncss_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_lower_uncertainty_thredds_url_fragment()
+        return crawler.get_ncss_url(rendered, settings) if rendered else None
+
+    def get_upper_uncertainty_thredds_ncss_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_upper_uncertainty_thredds_url_fragment()
+        return crawler.get_ncss_url(rendered, settings) if rendered else None
+
+    def _get_thredds_url_fragment(self) -> str:
+        return self._render_templated_value(self.configuration.thredds_url_pattern)
+
+    def _get_lower_uncertainty_thredds_url_fragment(self) -> Optional[str]:
+        if (
+                pattern := self.configuration.lower_uncertainty_thredds_url_pattern
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
+
+    def _get_upper_uncertainty_thredds_url_fragment(self) -> Optional[str]:
+        if (
+                pattern := self.configuration.upper_uncertainty_thredds_url_pattern
+        ) is not None:
+            result = self._render_templated_value(pattern)
+        else:
+            result = None
+        return result
+
+    def _render_templated_value(self, value: str) -> str:
+        return value.format(
+            climatic_indicator=self.configuration.climatic_indicator.name,
+            data_category=self.configuration.data_category.value,
+            scenario=self.scenario.get_internal_value() if self.scenario else "",
+            spatial_region=self.configuration.spatial_region.internal_value,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
 class ForecastCoverageInternal:
     configuration: ForecastCoverageConfiguration
     scenario: static.ForecastScenario

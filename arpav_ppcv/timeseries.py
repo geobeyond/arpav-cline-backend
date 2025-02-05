@@ -441,3 +441,60 @@ def _retrieve_forecast_coverage_data(
     else:
         main_series = None
     return main_series, lower_uncert_series, upper_uncert_series
+
+
+def get_overview_coverage_time_series(
+    *,
+    settings: config.ArpavPpcvSettings,
+    session: sqlmodel.Session,
+    coverage: "coverages.OverviewCoverageInternal",
+    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    include_uncertainty: bool,
+) -> list[dataseries.OverviewDataSeries]:
+    covs = database.collect_all_coverages(
+        session,
+        configuration_parameter_values_filter=[
+            database.get_configuration_parameter_value_by_names(
+                session, base.CoreConfParamName.ARCHIVE.value, "barometro_climatico"
+            )
+        ],
+    )
+    additional_smoothing_strategies = [
+        ss
+        for ss in smoothing_strategies
+        if ss != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+    ]
+    dfs = []
+    for cov in covs:
+        is_uncertainty_cov = False
+        for used_value in cov.configuration.possible_values:
+            if (
+                    used_value.configuration_parameter_value.configuration_parameter.name
+                    == CoreConfParamName.UNCERTAINTY_TYPE.value
+            ):
+                is_uncertainty_cov = True
+        if not is_uncertainty_cov:
+            df = _get_climate_barometer_data(settings, cov)
+            dfs.append((cov, df))
+
+        if include_uncertainty:
+            lower_cov, upper_cov = get_related_uncertainty_coverage_configurations(
+                session, cov
+            )
+            if lower_cov is not None:
+                lower_df = _get_climate_barometer_data(settings, lower_cov)
+                dfs.append((lower_cov, lower_df))
+            if upper_cov is not None:
+                upper_df = _get_climate_barometer_data(settings, upper_cov)
+                dfs.append((upper_cov, upper_df))
+    result = {}
+    for cov, df in dfs:
+        result[(cov, static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING)] = df[
+            cov.identifier
+        ].squeeze()
+        for strategy in additional_smoothing_strategies:
+            df, smoothed_col = process_coverage_smoothing_strategy(
+                df, cov.identifier, strategy
+            )
+            result[(cov, strategy)] = df[smoothed_col].squeeze()
+    return result
