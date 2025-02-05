@@ -198,9 +198,6 @@ class SpatialRegion(sqlmodel.SQLModel, table=True):
         )
     )
 
-    overview_coverage_configurations: list[
-        "coverages.OverviewCoverageConfiguration"
-    ] = sqlmodel.Relationship(back_populates="spatial_region")
     forecast_coverage_configurations: list[
         "coverages.ForecastCoverageConfiguration"
     ] = sqlmodel.Relationship(back_populates="spatial_region")

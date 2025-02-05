@@ -19,6 +19,7 @@ from ...schemas import (
     climaticindicators,
     coverages,
     observations,
+    overviews,
 )
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
@@ -27,6 +28,7 @@ from .views import (
     climaticindicators as climaticindicators_views,
     coverages as coverage_views,
     observations as observations_views,
+    overviews as overviews_views,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,13 +72,25 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
     admin.add_view(base_views.SpatialRegionView(base.SpatialRegion))
     admin.add_view(
         DropDown(
+            "Overviews",
+            icon="fa-regular fa-flag",
+            always_open=False,
+            views=[
+                overviews_views.ForecastOverviewSeriesConfigurationView(
+                    overviews.ForecastOverviewSeriesConfiguration
+                ),
+                overviews_views.ObservationOverviewSeriesConfigurationView(
+                    overviews.ObservationOverviewSeriesConfiguration
+                ),
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
             "Forecasts",
             icon="fa-solid fa-chart-line",
             always_open=False,
             views=[
-                coverage_views.OverviewCoverageConfigurationView(
-                    coverages.OverviewCoverageConfiguration
-                ),
                 coverage_views.ForecastCoverageConfigurationView(
                     coverages.ForecastCoverageConfiguration
                 ),

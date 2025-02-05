@@ -2,7 +2,9 @@ import datetime as dt
 import dataclasses
 from typing import (
     Optional,
+    Protocol,
     TYPE_CHECKING,
+    Union,
 )
 
 import geohashr
@@ -16,26 +18,111 @@ if TYPE_CHECKING:
     import babel
     from .coverages import (
         ForecastCoverageInternal,
-        OverviewCoverageInternal,
     )
     from .observations import (
         ObservationSeriesConfiguration,
         ObservationStation,
     )
+    from .overviews import (
+        ForecastOverviewSeriesInternal,
+        ObservationOverviewSeriesInternal,
+    )
+
+
+class OverviewDataSeriesProtocol(Protocol):
+    overview_series: Union[
+        "ForecastOverviewSeriesInternal", "ObservationOverviewSeriesInternal"
+    ]
+    dataset_type: static.DatasetType
+    processing_method: static.CoverageTimeSeriesProcessingMethod
+    data_: Optional[pd.Series]
+
+    @property
+    def identifier(self) -> str:
+        return NotImplemented
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        return NotImplemented
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        return NotImplemented
+
+    def replace(self, **kwargs) -> "OverviewDataSeriesProtocol":
+        return NotImplemented
 
 
 @dataclasses.dataclass
-class OverviewDataSeries:
-    overview_coverage: "OverviewCoverageInternal"
-    dataset_type: static.ForecastDatasetType
+class ObservationOverviewDataSeries:
+    overview_series: "ObservationOverviewSeriesInternal"
+    dataset_type: static.DatasetType
     processing_method: static.CoverageTimeSeriesProcessingMethod
     data_: Optional[pd.Series] = None
+
+    @property
+    def identifier(self) -> str:
+        return "-".join(
+            (
+                self.overview_series.identifier,
+                self.dataset_type.value,
+                self.processing_method.value,
+            )
+        )
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation overview data series")
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("observation overview data series description")
+
+    def replace(self, *args, **kwargs) -> "ObservationOverviewDataSeries":
+        return dataclasses.replace(self, **kwargs)
+
+
+@dataclasses.dataclass
+class ForecastOverviewDataSeries:
+    overview_series: "ForecastOverviewSeriesInternal"
+    processing_method: static.CoverageTimeSeriesProcessingMethod
+    dataset_type: static.DatasetType
+    data_: Optional[pd.Series] = None
+
+    @property
+    def identifier(self) -> str:
+        return "-".join(
+            (
+                self.overview_series.identifier,
+                self.dataset_type.value,
+                self.processing_method.value,
+            )
+        )
+
+    @staticmethod
+    def get_display_name(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast overview data series")
+
+    @staticmethod
+    def get_description(locale: "babel.Locale") -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("forecast overview data series description")
+
+    def replace(self, *args, **kwargs) -> "ForecastOverviewDataSeries":
+        return dataclasses.replace(self, **kwargs)
 
 
 @dataclasses.dataclass
 class ForecastDataSeries:
     forecast_coverage: "ForecastCoverageInternal"
-    dataset_type: static.ForecastDatasetType
+    dataset_type: static.DatasetType
     processing_method: static.CoverageTimeSeriesProcessingMethod
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]

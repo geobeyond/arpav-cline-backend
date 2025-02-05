@@ -14,7 +14,10 @@ from . import static
 from ..config import get_translations
 
 if TYPE_CHECKING:
-    from . import coverages
+    from . import (
+        coverages,
+        overviews,
+    )
     from .observations import (
         ClimaticIndicatorObservationName,
         ObservationMeasurement,
@@ -45,8 +48,11 @@ class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     data_precision: int = sqlmodel.Field(default=0)
     sort_order: int = sqlmodel.Field(default=0)
 
-    overview_coverage_configurations: list[
-        "coverages.OverviewCoverageConfiguration"
+    observation_overview_series_configurations: list[
+        "overviews.ObservationOverviewSeriesConfiguration"
+    ] = sqlmodel.Relationship(back_populates="climatic_indicator")
+    forecast_overview_series_configurations: list[
+        "overviews.ForecastOverviewSeriesConfiguration"
     ] = sqlmodel.Relationship(back_populates="climatic_indicator")
     forecast_coverage_configurations: list[
         "coverages.ForecastCoverageConfiguration"

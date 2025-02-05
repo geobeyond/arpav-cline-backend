@@ -72,3 +72,7 @@ class ObservationInternalNameNotFoundError(ArpavError):
 
 class ObservationDataRetrievalError(ArpavError):
     ...
+
+
+class InvalidOverviewSeriesConfigurationIdentifierError(ArpavError):
+    ...

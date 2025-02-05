@@ -318,7 +318,7 @@ class HistoricalYearPeriod(str, enum.Enum):
         }.get(self, self.value)
 
 
-class ForecastDatasetType(str, enum.Enum):
+class DatasetType(str, enum.Enum):
     MAIN = "main"
     LOWER_UNCERTAINTY = "lower_uncertainty"
     UPPER_UNCERTAINTY = "upper_uncertainty"
@@ -464,9 +464,9 @@ class MeasurementAggregationType(str, enum.Enum):
 
 
 class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
-    NO_PROCESSING = "NO_PROCESSING"
-    LOESS_SMOOTHING = "LOESS_SMOOTHING"
-    MOVING_AVERAGE_11_YEARS = "MOVING_AVERAGE_11_YEARS"
+    NO_PROCESSING = "no_processing"
+    LOESS_SMOOTHING = "loess_smoothing"
+    MOVING_AVERAGE_11_YEARS = "moving_average_11_years"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -509,10 +509,10 @@ class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
 
 
 class ObservationTimeSeriesProcessingMethod(str, enum.Enum):
-    NO_PROCESSING = "NO_PROCESSING"
-    MOVING_AVERAGE_5_YEARS = "MOVING_AVERAGE_5_YEARS"
-    MANN_KENDALL_TREND = "MANN_KENDALL_TREND"
-    DECADE_AGGREGATION = "DECADE_AGGREGATION"
+    NO_PROCESSING = "no_processing"
+    MOVING_AVERAGE_5_YEARS = "moving_average_5_years"
+    MANN_KENDALL_TREND = "mann_kendall_trend"
+    DECADE_AGGREGATION = "decade_aggregation"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:

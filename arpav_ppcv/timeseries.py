@@ -14,7 +14,11 @@ from pyproj.enums import TransformDirection
 import shapely
 from shapely.ops import transform
 
-from .thredds import ncss
+from . import db
+from .thredds import (
+    ncss,
+    opendap,
+)
 from .schemas import (
     dataseries,
     static,
@@ -32,9 +36,37 @@ if TYPE_CHECKING:
     from .schemas import (
         coverages,
         observations,
+        overviews,
     )
 
 logger = logging.getLogger(__name__)
+
+
+def generate_derived_overview_series(
+    data_series: dataseries.OverviewDataSeriesProtocol,
+    processing_method: static.CoverageTimeSeriesProcessingMethod,
+) -> dataseries.OverviewDataSeriesProtocol:
+    derived_series = data_series.replace(
+        processing_method=processing_method, data_=None
+    )
+    df = data_series.data_.to_frame()
+    if processing_method == static.CoverageTimeSeriesProcessingMethod.LOESS_SMOOTHING:
+        df[derived_series.identifier] = _apply_loess_smoothing(
+            df, data_series.identifier, ignore_warnings=True
+        )
+    elif (
+        processing_method
+        == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
+    ):
+        df[derived_series.identifier] = (
+            df[data_series.identifier].rolling(center=True, window=11).mean()
+        )
+    else:
+        raise NotImplementedError(
+            f"Processing method {processing_method!r} is not implemented"
+        )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
 
 
 def generate_derived_forecast_series(
@@ -390,7 +422,7 @@ def _retrieve_forecast_coverage_data(
     )
     main_series = dataseries.ForecastDataSeries(
         forecast_coverage=coverage,
-        dataset_type=static.ForecastDatasetType.MAIN,
+        dataset_type=static.DatasetType.MAIN,
         processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=temporal_range[0],
         temporal_end=temporal_range[1],
@@ -406,7 +438,7 @@ def _retrieve_forecast_coverage_data(
         if include_uncertainty:
             lower_uncert_series = dataseries.ForecastDataSeries(
                 forecast_coverage=coverage,
-                dataset_type=static.ForecastDatasetType.LOWER_UNCERTAINTY,
+                dataset_type=static.DatasetType.LOWER_UNCERTAINTY,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 temporal_start=temporal_range[0],
                 temporal_end=temporal_range[1],
@@ -423,7 +455,7 @@ def _retrieve_forecast_coverage_data(
                 lower_uncert_series = None
             upper_uncert_series = dataseries.ForecastDataSeries(
                 forecast_coverage=coverage,
-                dataset_type=static.ForecastDatasetType.UPPER_UNCERTAINTY,
+                dataset_type=static.DatasetType.UPPER_UNCERTAINTY,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 temporal_start=temporal_range[0],
                 temporal_end=temporal_range[1],
@@ -443,58 +475,163 @@ def _retrieve_forecast_coverage_data(
     return main_series, lower_uncert_series, upper_uncert_series
 
 
-def get_overview_coverage_time_series(
+def get_overview_time_series(
     *,
     settings: "config.ArpavPpcvSettings",
     session: "sqlmodel.Session",
-    coverage: "coverages.OverviewCoverageInternal",
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
-) -> list[dataseries.OverviewDataSeries]:
-    covs = database.collect_all_coverages(
-        session,
-        configuration_parameter_values_filter=[
-            database.get_configuration_parameter_value_by_names(
-                session, base.CoreConfParamName.ARCHIVE.value, "barometro_climatico"
-            )
-        ],
+) -> list[dataseries.OverviewDataSeriesProtocol]:
+    forecast_series_confs = db.collect_all_forecast_overview_series_configurations(
+        session
     )
-    additional_smoothing_strategies = [
-        ss
-        for ss in smoothing_strategies
-        if ss != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-    ]
-    dfs = []
-    for cov in covs:
-        is_uncertainty_cov = False
-        for used_value in cov.configuration.possible_values:
-            if (
-                    used_value.configuration_parameter_value.configuration_parameter.name
-                    == CoreConfParamName.UNCERTAINTY_TYPE.value
-            ):
-                is_uncertainty_cov = True
-        if not is_uncertainty_cov:
-            df = _get_climate_barometer_data(settings, cov)
-            dfs.append((cov, df))
 
-        if include_uncertainty:
-            lower_cov, upper_cov = get_related_uncertainty_coverage_configurations(
-                session, cov
+    result = []
+    for forecast_series_conf in forecast_series_confs:
+        forecast_series = db.generate_forecast_overview_series_from_configuration(
+            forecast_series_conf
+        )
+        for series in forecast_series:
+            result.extend(
+                get_forecast_overview_time_series(
+                    settings=settings.thredds_server,
+                    overview_series=series,
+                    processing_methods=processing_methods,
+                    include_uncertainty=include_uncertainty,
+                )
             )
-            if lower_cov is not None:
-                lower_df = _get_climate_barometer_data(settings, lower_cov)
-                dfs.append((lower_cov, lower_df))
-            if upper_cov is not None:
-                upper_df = _get_climate_barometer_data(settings, upper_cov)
-                dfs.append((upper_cov, upper_df))
-    result = {}
-    for cov, df in dfs:
-        result[(cov, static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING)] = df[
-            cov.identifier
-        ].squeeze()
-        for strategy in additional_smoothing_strategies:
-            df, smoothed_col = process_coverage_smoothing_strategy(
-                df, cov.identifier, strategy
+    observation_series_confs = (
+        db.collect_all_observation_overview_series_configurations(session)
+    )
+    for observation_series_conf in observation_series_confs:
+        observation_series = db.generate_observation_overview_series_from_configuration(
+            observation_series_conf
+        )
+        result.extend(
+            get_observation_overview_time_series(
+                settings=settings.thredds_server,
+                overview_series=observation_series,
+                processing_methods=processing_methods,
             )
-            result[(cov, strategy)] = df[smoothed_col].squeeze()
+        )
     return result
+
+
+def get_observation_overview_time_series(
+    *,
+    settings: "config.ThreddsServerSettings",
+    overview_series: "overviews.ObservationOverviewSeriesInternal",
+    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+) -> list[dataseries.OverviewDataSeriesProtocol]:
+    series = _retrieve_observation_overview_data(settings, overview_series)
+    result = []
+    if series is not None:
+        result.append(series)
+        for processing_method in (
+            pm
+            for pm in processing_methods
+            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+        ):
+            derived_series = generate_derived_overview_series(series, processing_method)
+            result.append(derived_series)
+    return result
+
+
+def get_forecast_overview_time_series(
+    *,
+    settings: "config.ThreddsServerSettings",
+    overview_series: "overviews.ForecastOverviewSeriesInternal",
+    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    include_uncertainty: bool,
+) -> list[dataseries.OverviewDataSeriesProtocol]:
+    data_ = []
+    series = _retrieve_forecast_overview_data(
+        settings, overview_series, include_uncertainty
+    )
+    for item in [i for i in series if i is not None]:
+        data_.append(item)
+    result = []
+    for overview_series in data_:
+        result.append(overview_series)
+        for processing_method in (
+            pm
+            for pm in processing_methods
+            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+        ):
+            derived_series = generate_derived_overview_series(
+                overview_series, processing_method
+            )
+            result.append(derived_series)
+    return result
+
+
+def _retrieve_forecast_overview_data(
+    settings: "config.ThreddsServerSettings",
+    overview_series: "overviews.ForecastOverviewSeriesInternal",
+    include_uncertainty: bool,
+) -> tuple[
+    dataseries.OverviewDataSeriesProtocol | None,
+    dataseries.OverviewDataSeriesProtocol | None,
+    dataseries.OverviewDataSeriesProtocol | None,
+]:
+    retriever = opendap.ForecastOverviewDataRetriever(
+        settings=settings,
+        overview_series=overview_series,
+    )
+    main_series = dataseries.ForecastOverviewDataSeries(
+        overview_series=overview_series,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        dataset_type=static.DatasetType.MAIN,
+    )
+    lower_uncert_series = None
+    upper_uncert_series = None
+    main_data = retriever.retrieve_main_data(main_series.identifier)
+    if main_data is not None:
+        main_series.data_ = main_data
+        if include_uncertainty:
+            lower_uncert_series = dataseries.ForecastOverviewDataSeries(
+                overview_series=overview_series,
+                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+                dataset_type=static.DatasetType.LOWER_UNCERTAINTY,
+            )
+            lower_uncert_data = retriever.retrieve_lower_uncertainty_data(
+                lower_uncert_series.identifier
+            )
+            if lower_uncert_data is not None:
+                lower_uncert_series.data_ = lower_uncert_data
+            else:
+                lower_uncert_series = None
+            upper_uncert_series = dataseries.ForecastOverviewDataSeries(
+                overview_series=overview_series,
+                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+                dataset_type=static.DatasetType.UPPER_UNCERTAINTY,
+            )
+            upper_uncert_data = retriever.retrieve_upper_uncertainty_data(
+                upper_uncert_series.identifier
+            )
+            if upper_uncert_data is not None:
+                upper_uncert_series.data_ = upper_uncert_data
+            else:
+                upper_uncert_series = None
+    return main_series, lower_uncert_series, upper_uncert_series
+
+
+def _retrieve_observation_overview_data(
+    settings: "config.ThreddsServerSettings",
+    overview_series: "overviews.ObservationOverviewSeriesInternal",
+) -> Optional[dataseries.OverviewDataSeriesProtocol]:
+    retriever = opendap.ObservationOverviewDataRetriever(
+        settings=settings,
+        overview_series=overview_series,
+    )
+    main_series = dataseries.ObservationOverviewDataSeries(
+        overview_series=overview_series,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        dataset_type=static.DatasetType.MAIN,
+    )
+    main_data = retriever.retrieve_main_data(main_series.identifier)
+    if main_data is not None:
+        main_series.data_ = main_data
+    else:
+        main_series = None
+    return main_series

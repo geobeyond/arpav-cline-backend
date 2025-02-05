@@ -140,14 +140,20 @@ class ObservationMeasurementRead(sqlmodel.SQLModel):
     value: float
 
 
-class OverviewCoverageConfigurationRead(sqlmodel.SQLModel):
+class ObservationOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
     id: int
     identifier: str
-    data_category: static.DataCategory
     netcdf_main_dataset_name: str
     thredds_url_pattern: str
     climatic_indicator: Optional[int]
-    spatial_region: Optional[int]
+
+
+class ForecastOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
+    id: int
+    identifier: str
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    climatic_indicator: Optional[int]
     lower_uncertainty_thredds_url_pattern: Optional[str]
     lower_uncertainty_netcdf_main_dataset_name: Optional[str]
     upper_uncertainty_thredds_url_pattern: Optional[str]

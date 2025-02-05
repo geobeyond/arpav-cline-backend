@@ -17,7 +17,7 @@ def list_overview_coverage_configurations(ctx: typer.Context) -> None:
     occ_table.add_column("identifier", justify="right")
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_overview_cov_confs = list(
-            database.collect_all_overview_coverage_configurations(session)
+            database.collect_all_forecast_overview_series_configurations(session)
         )
         all_overview_cov_confs.sort(key=attrgetter("identifier"))
         for overview_cov_conf in all_overview_cov_confs:

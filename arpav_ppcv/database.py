@@ -945,7 +945,7 @@ def get_forecast_coverage_data_series(session: sqlmodel.Session, identifier: str
         )
     raw_ds_type, raw_location, raw_start, raw_end, raw_smoothing_strategy = identifier
     try:
-        dataset_type = static.ForecastDatasetType(raw_ds_type)
+        dataset_type = static.DatasetType(raw_ds_type)
     except ValueError:
         raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
             f"dataset type {raw_ds_type} does not exist"
@@ -2823,91 +2823,6 @@ def delete_spatial_region(session: sqlmodel.Session, spatial_region_id: int) -> 
         session.commit()
     else:
         raise RuntimeError("Spatial region not found")
-
-
-def list_overview_coverage_configurations(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    include_total: bool = False,
-) -> tuple[Sequence[coverages.OverviewCoverageConfiguration], Optional[int]]:
-    """List existing overview coverage configurations."""
-    statement = sqlmodel.select(coverages.OverviewCoverageConfiguration).order_by(
-        coverages.OverviewCoverageConfiguration.id
-    )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = _get_total_num_records(session, statement) if include_total else None
-    return items, num_items
-
-
-def collect_all_overview_coverage_configurations(
-    session: sqlmodel.Session,
-) -> Sequence[coverages.OverviewCoverageConfiguration]:
-    _, num_total = list_overview_coverage_configurations(
-        session,
-        limit=1,
-        include_total=True,
-    )
-    result, _ = list_overview_coverage_configurations(
-        session,
-        limit=num_total,
-        include_total=False,
-    )
-    return result
-
-
-def get_overview_coverage_configuration(
-    session: sqlmodel.Session,
-    overview_coverage_configuration_id: int,
-) -> Optional[coverages.OverviewCoverageConfiguration]:
-    return session.get(
-        coverages.OverviewCoverageConfiguration, overview_coverage_configuration_id
-    )
-
-
-def create_overview_coverage_configuration(
-    session: sqlmodel.Session,
-    overview_coverage_configuration_create: coverages.OverviewCoverageConfigurationCreate,
-) -> coverages.OverviewCoverageConfiguration:
-    db_overview_coverage_configuration = coverages.OverviewCoverageConfiguration(
-        **overview_coverage_configuration_create.model_dump()
-    )
-    session.add(db_overview_coverage_configuration)
-    session.commit()
-    session.refresh(db_overview_coverage_configuration)
-    return db_overview_coverage_configuration
-
-
-def update_overview_coverage_configuration(
-    session: sqlmodel.Session,
-    db_overview_coverage_configuration: coverages.OverviewCoverageConfiguration,
-    overview_coverage_configuration_update: coverages.OverviewCoverageConfigurationUpdate,
-) -> coverages.OverviewCoverageConfiguration:
-    """Update a overview coverage configuration."""
-    data_ = overview_coverage_configuration_update.model_dump(
-        exclude_unset=True,
-        exclude_none=True,
-    )
-    for key, value in data_.items():
-        setattr(db_overview_coverage_configuration, key, value)
-    session.add(db_overview_coverage_configuration)
-    session.commit()
-    session.refresh(db_overview_coverage_configuration)
-    return db_overview_coverage_configuration
-
-
-def delete_overview_coverage_configuration(
-    session: sqlmodel.Session, overview_coverage_configuration_id: int
-) -> None:
-    db_item = get_overview_coverage_configuration(
-        session, overview_coverage_configuration_id
-    )
-    if db_item is not None:
-        session.delete(db_item)
-        session.commit()
-    else:
-        raise RuntimeError("Overview coverage configuration not found")
 
 
 def list_forecast_coverage_configurations(

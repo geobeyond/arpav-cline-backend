@@ -153,7 +153,7 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
                 ),
             )
         if instance.lower_uncertainty_thredds_url_pattern is not None:
-            type_ = static.ForecastDatasetType.LOWER_UNCERTAINTY
+            type_ = static.DatasetType.LOWER_UNCERTAINTY
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="uncertainty_type",
@@ -167,7 +167,7 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
                 ),
             )
         if instance.upper_uncertainty_thredds_url_pattern is not None:
-            type_ = static.ForecastDatasetType.UPPER_UNCERTAINTY
+            type_ = static.DatasetType.UPPER_UNCERTAINTY
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="uncertainty_type",
@@ -478,7 +478,7 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
             ),
         ]
         if instance.configuration.lower_uncertainty_thredds_url_pattern is not None:
-            type_ = static.ForecastDatasetType.LOWER_UNCERTAINTY
+            type_ = static.DatasetType.LOWER_UNCERTAINTY
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="uncertainty_type",
@@ -492,7 +492,7 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
                 ),
             )
         if instance.configuration.upper_uncertainty_thredds_url_pattern is not None:
-            type_ = static.ForecastDatasetType.UPPER_UNCERTAINTY
+            type_ = static.DatasetType.UPPER_UNCERTAINTY
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="uncertainty_type",

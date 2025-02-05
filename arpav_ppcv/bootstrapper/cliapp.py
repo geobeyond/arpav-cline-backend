@@ -9,6 +9,7 @@ from rich import print
 from sqlalchemy.exc import IntegrityError
 
 from .. import database
+from .. import db
 from ..prefect.flows import observations as observations_flows
 from ..schemas import (
     municipalities,
@@ -19,7 +20,10 @@ from ..schemas.coverages import (
     CoverageConfigurationUpdate,
 )
 
-from .overview_coverage_configurations import generate_overview_coverage_configurations
+from .overview_series_configurations import (
+    generate_observation_overview_series_configurations,
+    generate_forecast_overview_series_configurations,
+)
 from .forecast_coverage_configurations import (
     cdd as cdd_forecast_coverage_configurations,
     cdds as cdds_forecast_coverage_configurations,
@@ -508,32 +512,51 @@ def bootstrap_coverage_configurations(
         )
 
 
-@app.command("overview-coverage-configurations")
-def bootstrap_overview_coverage_configurations(ctx: typer.Context):
-    """Create initial overview coverage configurations."""
+@app.command("overview-series-configurations")
+def bootstrap_overview_series_configurations(ctx: typer.Context):
+    """Create initial overview series configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_climatic_indicators = database.collect_all_climatic_indicators(session)
-        all_spatial_regions = database.collect_all_spatial_regions(session)
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
-        region_ids = {sr.name: sr.id for sr in all_spatial_regions}
 
-        to_create = generate_overview_coverage_configurations(
-            climatic_indicator_ids=clim_ind_ids,
-            spatial_region_ids=region_ids,
+        overview_obs_series_confs_to_create = (
+            generate_observation_overview_series_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+            )
         )
-        for overview_coverage_configuration_create in to_create:
+        for overview_obs in overview_obs_series_confs_to_create:
             try:
-                db_overview_cov_conf = database.create_overview_coverage_configuration(
-                    session, overview_coverage_configuration_create
+                db_overview_obs = db.create_observation_overview_series_configuration(
+                    session, overview_obs
                 )
                 print(
-                    f"Created overview coverage "
-                    f"configuration {db_overview_cov_conf.identifier!r}"
+                    f"Created observation overview series "
+                    f"configuration {db_overview_obs.identifier!r}"
                 )
             except IntegrityError as err:
                 print(
-                    f"Could not create overview coverage configuration "
-                    f"{overview_coverage_configuration_create!r}: {err}"
+                    f"Could not create observation overview series configuration "
+                    f"{overview_obs!r}: {err}"
+                )
+                session.rollback()
+        overview_forecast_series_confs_to_create = (
+            generate_forecast_overview_series_configurations(
+                climatic_indicator_ids=clim_ind_ids
+            )
+        )
+        for overview_forecast in overview_forecast_series_confs_to_create:
+            try:
+                db_overview_forecast = db.create_forecast_overview_series_configuration(
+                    session, overview_forecast
+                )
+                print(
+                    f"Created forecast overview series "
+                    f"configuration {db_overview_forecast.identifier!r}"
+                )
+            except IntegrityError as err:
+                print(
+                    f"Could not create forecast overview series configuration "
+                    f"{overview_forecast!r}: {err}"
                 )
                 session.rollback()
 
@@ -829,5 +852,5 @@ def perform_full_bootstrap(
     ctx.invoke(bootstrap_climatic_indicators, ctx=ctx)
     ctx.invoke(bootstrap_observation_series_configurations, ctx=ctx)
     ctx.invoke(bootstrap_forecast_coverage_configurations, ctx=ctx)
-    ctx.invoke(bootstrap_overview_coverage_configurations, ctx=ctx)
+    ctx.invoke(bootstrap_overview_series_configurations, ctx=ctx)
     print("All done!")
