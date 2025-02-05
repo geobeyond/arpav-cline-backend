@@ -14,11 +14,22 @@ from . import static
 
 if TYPE_CHECKING:
     import babel
-    from .coverages import ForecastCoverageInternal
+    from .coverages import (
+        ForecastCoverageInternal,
+        OverviewCoverageInternal,
+    )
     from .observations import (
         ObservationSeriesConfiguration,
         ObservationStation,
     )
+
+
+@dataclasses.dataclass
+class OverviewDataSeries:
+    overview_coverage: "OverviewCoverageInternal"
+    dataset_type: static.ForecastDatasetType
+    processing_method: static.CoverageTimeSeriesProcessingMethod
+    data_: Optional[pd.Series] = None
 
 
 @dataclasses.dataclass

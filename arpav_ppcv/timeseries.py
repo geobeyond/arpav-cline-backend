@@ -445,8 +445,8 @@ def _retrieve_forecast_coverage_data(
 
 def get_overview_coverage_time_series(
     *,
-    settings: config.ArpavPpcvSettings,
-    session: sqlmodel.Session,
+    settings: "config.ArpavPpcvSettings",
+    session: "sqlmodel.Session",
     coverage: "coverages.OverviewCoverageInternal",
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
