@@ -14,9 +14,10 @@ from ....config import (
 )
 from ....schemas import (
     base as base_schemas,
-    observations as observations_schemas,
     climaticindicators as climaticindicators_schemas,
     coverages as coverages_schemas,
+    legacy,
+    observations as observations_schemas,
 )
 from ....schemas.base import (
     StaticObservationSeriesParameter,
@@ -94,7 +95,7 @@ class TimeSeries(pydantic.BaseModel):
         series: pd.Series,
         station: observations_schemas.Station,
         climatic_indicator: climaticindicators_schemas.ClimaticIndicator,
-        smoothing_strategy: base_schemas.ObservationDataSmoothingStrategy,
+        smoothing_strategy: legacy.ObservationDataSmoothingStrategy,
         extra_info: typing.Optional[dict[str, str | int | float | dict]] = None,
         derived_series: typing.Optional[base_schemas.ObservationDerivedSeries] = None,
     ):
@@ -257,7 +258,7 @@ class TimeSeries(pydantic.BaseModel):
         cls,
         series: pd.Series,
         coverage: coverages_schemas.CoverageInternal,
-        smoothing_strategy: base_schemas.CoverageDataSmoothingStrategy,
+        smoothing_strategy: legacy.CoverageDataSmoothingStrategy,
     ):
         info = {}
         param_names_translations = {}

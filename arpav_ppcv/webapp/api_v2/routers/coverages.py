@@ -25,7 +25,8 @@ from sqlmodel import Session
 from starlette.background import BackgroundTask
 
 from .... import (
-    database as db,
+    database,
+    db,
     datadownloads,
     exceptions,
     operations,
@@ -36,6 +37,7 @@ from ....config import ArpavPpcvSettings
 from ....thredds import (
     utils as thredds_utils,
 )
+from ....schemas import legacy
 from ....schemas.coverages import ConfigurationParameterValue
 from ....schemas.climaticindicators import ClimaticIndicator
 from ....schemas.static import (
@@ -44,7 +46,9 @@ from ....schemas.static import (
 )
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
-from ..schemas.base import (
+from ..schemas.timeseries import (
+    LegacyTimeSeries,
+    LegacyTimeSeriesList,
     TimeSeries,
     TimeSeriesList,
 )
@@ -64,7 +68,7 @@ _INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL = "Invalid coverage identifier"
 
 @router.get(
     "/configuration-parameters",
-    response_model=coverage_schemas.ConfigurationParameterList,
+    response_model=coverage_schemas.LegacyConfigurationParameterList,
 )
 def list_legacy_configuration_parameters(
     request: Request,
@@ -86,17 +90,17 @@ def list_legacy_configuration_parameters(
     # - uncertainty type
     # - archive
     # - climatological standard normal
-    config_params, filtered_total = db.list_configuration_parameters(
+    config_params, filtered_total = database.list_configuration_parameters(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
     )
-    _, unfiltered_total = db.list_configuration_parameters(
+    _, unfiltered_total = database.list_configuration_parameters(
         db_session, limit=1, offset=0, include_total=True
     )
-    return coverage_schemas.ConfigurationParameterList.from_items(
+    return coverage_schemas.LegacyConfigurationParameterList.from_items(
         config_params,
         request,
         limit=list_params.limit,
@@ -108,7 +112,7 @@ def list_legacy_configuration_parameters(
 
 @router.get(
     "/old-configuration-parameters",
-    response_model=coverage_schemas.ConfigurationParameterList,
+    response_model=coverage_schemas.LegacyConfigurationParameterList,
     tags=[
         "old",
     ],
@@ -120,17 +124,17 @@ def old_list_configuration_parameters(
     name_contains: str | None = None,
 ):
     """List configuration parameters."""
-    config_params, filtered_total = db.list_configuration_parameters(
+    config_params, filtered_total = database.list_configuration_parameters(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
     )
-    _, unfiltered_total = db.list_configuration_parameters(
+    _, unfiltered_total = database.list_configuration_parameters(
         db_session, limit=1, offset=0, include_total=True
     )
-    return coverage_schemas.ConfigurationParameterList.from_items(
+    return coverage_schemas.LegacyConfigurationParameterList.from_items(
         config_params,
         request,
         limit=list_params.limit,
@@ -170,14 +174,14 @@ def list_forecast_coverage_configurations(
         (
             forecast_coverage_configurations,
             filtered_total,
-        ) = db.legacy_list_forecast_coverage_configurations(
+        ) = database.legacy_list_forecast_coverage_configurations(
             db_session,
             limit=list_params.limit,
             offset=list_params.offset,
             include_total=True,
             conf_param_filter=filter_values,
         )
-        _, unfiltered_total = db.list_coverage_configurations(
+        _, unfiltered_total = database.list_coverage_configurations(
             db_session, limit=1, offset=0, include_total=True
         )
     return coverage_schemas.LegacyForecastCoverageConfigurationList.from_items(
@@ -200,10 +204,10 @@ def get_forecast_coverage_configuration(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     forecast_coverage_configuration_id: int,
 ):
-    db_forecast_coverage_configuration = db.get_forecast_coverage_configuration(
+    db_forecast_coverage_configuration = database.get_forecast_coverage_configuration(
         db_session, forecast_coverage_configuration_id
     )
-    forecast_coverages = db.generate_forecast_coverages_from_configuration(
+    forecast_coverages = database.generate_forecast_coverages_from_configuration(
         db_forecast_coverage_configuration
     )
 
@@ -245,7 +249,7 @@ def get_forecast_coverage_configuration(
     "/coverage-identifiers",
     response_model=coverage_schemas.LegacyForecastCoverageList,
 )
-def list_forecast_coverage_identifiers(
+def legacy_list_forecast_coverage_identifiers(
     request: Request,
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -264,6 +268,7 @@ def list_forecast_coverage_identifiers(
     conf_param_filter = operations.convert_conf_params_filter(
         db_session, possible_value or []
     )
+    logger.debug(f"{conf_param_filter=}")
     cov_internals, filtered_total = db.legacy_list_forecast_coverages(
         db_session,
         limit=list_params.limit,
@@ -294,7 +299,7 @@ def get_coverage_identifier(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
 ):
-    if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
         return coverage_schemas.CoverageIdentifierReadListItem.from_db_instance(
             coverage, request
         )
@@ -318,7 +323,7 @@ async def wms_endpoint(
 
     if coverage_identifier.split("-")[0] == "forecast":
         cov = await anyio.to_thread.run_sync(
-            db.get_forecast_coverage,
+            database.get_forecast_coverage,
             db_session,
             coverage_identifier,
         )
@@ -431,7 +436,7 @@ async def get_forecast_data(
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
-    if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
         used_values = coverage.configuration.retrieve_configuration_parameters(
             coverage.identifier
         )
@@ -552,17 +557,24 @@ def _modify_capabilities_response(
 def get_overview_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    data_smoothing: Annotated[list[CoverageTimeSeriesProcessingMethod], Query()] = [
-        CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+    data_smoothing: Annotated[list[legacy.CoverageDataSmoothingStrategy], Query()] = [
+        legacy.CoverageDataSmoothingStrategy.NO_SMOOTHING
     ],
     include_uncertainty: bool = False,
 ):
     """Get climate barometer time series."""
+    # converting from legacy data_smoothing enum
+    processing_methods = [
+        strategy.to_processing_method() for strategy in data_smoothing
+    ]
     try:
-        relevant_series = timeseries.get_overview_time_series(
+        (
+            forecast_overview_time_series,
+            observation_overview_time_series,
+        ) = timeseries.get_overview_time_series(
             settings=settings,
             session=db_session,
-            processing_methods=data_smoothing,
+            processing_methods=processing_methods,
             include_uncertainty=include_uncertainty,
         )
     except exceptions.OverviewDataRetrievalError as err:
@@ -572,47 +584,15 @@ def get_overview_time_series(
         ) from err
     else:
         series = []
-        for overview_data_series in relevant_series:
+        for forecast_series in forecast_overview_time_series:
             series.append(
-                TimeSeries.from_overview_series(overview_data_series)
+                LegacyTimeSeries.from_forecast_overview_series(forecast_series)
             )
-        return TimeSeriesList(series=series)
-
-
-@router.get(
-    "/old-time-series/climate-barometer",
-    response_model=TimeSeriesList,
-)
-def old_get_climate_barometer_time_series(
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    data_smoothing: Annotated[list[CoverageTimeSeriesProcessingMethod], Query()] = [
-        CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-    ],
-    include_uncertainty: bool = False,
-):
-    """Get climate barometer time series."""
-    try:
-        # FIXME: use function from timeseries module instead of operations
-        relevant_series = operations.get_climate_barometer_time_series(
-            settings,
-            db_session,
-            smoothing_strategies=data_smoothing,
-            include_uncertainty=include_uncertainty,
-        )
-    except exceptions.CoverageDataRetrievalError as err:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not retrieve data",
-        ) from err
-    else:
-        series = []
-        for coverage_info, pd_series in relevant_series.items():
-            cov, smoothing_strategy = coverage_info
+        for observation_series in observation_overview_time_series:
             series.append(
-                TimeSeries.from_coverage_series(pd_series, cov, smoothing_strategy)
+                LegacyTimeSeries.from_historical_overview_series(observation_series)
             )
-        return TimeSeriesList(series=series)
+        return LegacyTimeSeriesList(series=series)
 
 
 @router.get("/time-series/{coverage_identifier}", response_model=TimeSeriesList)
@@ -644,7 +624,7 @@ def get_time_series(
 ):
     """Get dataset time series for a geographic location."""
     if coverage_identifier.split("-")[0] == "forecast":
-        coverage = db.get_forecast_coverage(db_session, coverage_identifier)
+        coverage = database.get_forecast_coverage(db_session, coverage_identifier)
     else:
         coverage = None
     if coverage is not None:
@@ -745,7 +725,7 @@ def old_get_time_series(
     forecast model, this endpoint will return a representation of the various temporal
     series of data related to this forecast.
     """
-    if (coverage := db.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
         # TODO: catch errors with invalid geom
         geom = shapely.io.from_wkt(coords)
         if geom.geom_type == "MultiPoint":
@@ -834,7 +814,7 @@ def _retrieve_climatic_indicator_filter(
         if param_name in ("climatological_variable", "measure", "aggregation_period"):
             climatic_indicator_parts[param_name] = param_value
         else:
-            db_parameter_value = db.get_configuration_parameter_value_by_names(
+            db_parameter_value = database.get_configuration_parameter_value_by_names(
                 session, param_name, param_value
             )
             if db_parameter_value is not None:
@@ -851,7 +831,7 @@ def _retrieve_climatic_indicator_filter(
         )
     )
     try:
-        climatic_indicator = db.get_climatic_indicator_by_identifier(
+        climatic_indicator = database.get_climatic_indicator_by_identifier(
             session, climatic_indicator_id
         )
     except exceptions.InvalidClimaticIndicatorIdentifierError as err:

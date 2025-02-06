@@ -481,18 +481,21 @@ def get_overview_time_series(
     session: "sqlmodel.Session",
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
-) -> list[dataseries.OverviewDataSeriesProtocol]:
+) -> tuple[
+    list[dataseries.ForecastOverviewDataSeries],
+    list[dataseries.ObservationOverviewDataSeries],
+]:
     forecast_series_confs = db.collect_all_forecast_overview_series_configurations(
         session
     )
 
-    result = []
+    forecast_overview_data_series = []
     for forecast_series_conf in forecast_series_confs:
         forecast_series = db.generate_forecast_overview_series_from_configuration(
             forecast_series_conf
         )
         for series in forecast_series:
-            result.extend(
+            forecast_overview_data_series.extend(
                 get_forecast_overview_time_series(
                     settings=settings.thredds_server,
                     overview_series=series,
@@ -500,6 +503,7 @@ def get_overview_time_series(
                     include_uncertainty=include_uncertainty,
                 )
             )
+    observation_overview_data_series = []
     observation_series_confs = (
         db.collect_all_observation_overview_series_configurations(session)
     )
@@ -507,14 +511,14 @@ def get_overview_time_series(
         observation_series = db.generate_observation_overview_series_from_configuration(
             observation_series_conf
         )
-        result.extend(
+        observation_overview_data_series.extend(
             get_observation_overview_time_series(
                 settings=settings.thredds_server,
                 overview_series=observation_series,
                 processing_methods=processing_methods,
             )
         )
-    return result
+    return forecast_overview_data_series, observation_overview_data_series
 
 
 def get_observation_overview_time_series(
@@ -522,7 +526,7 @@ def get_observation_overview_time_series(
     settings: "config.ThreddsServerSettings",
     overview_series: "overviews.ObservationOverviewSeriesInternal",
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
-) -> list[dataseries.OverviewDataSeriesProtocol]:
+) -> list[dataseries.ObservationOverviewDataSeries]:
     series = _retrieve_observation_overview_data(settings, overview_series)
     result = []
     if series is not None:
@@ -543,7 +547,7 @@ def get_forecast_overview_time_series(
     overview_series: "overviews.ForecastOverviewSeriesInternal",
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
-) -> list[dataseries.OverviewDataSeriesProtocol]:
+) -> list[dataseries.ForecastOverviewDataSeries]:
     data_ = []
     series = _retrieve_forecast_overview_data(
         settings, overview_series, include_uncertainty
@@ -570,9 +574,9 @@ def _retrieve_forecast_overview_data(
     overview_series: "overviews.ForecastOverviewSeriesInternal",
     include_uncertainty: bool,
 ) -> tuple[
-    dataseries.OverviewDataSeriesProtocol | None,
-    dataseries.OverviewDataSeriesProtocol | None,
-    dataseries.OverviewDataSeriesProtocol | None,
+    dataseries.ForecastOverviewDataSeries | None,
+    dataseries.ForecastOverviewDataSeries | None,
+    dataseries.ForecastOverviewDataSeries | None,
 ]:
     retriever = opendap.ForecastOverviewDataRetriever(
         settings=settings,
@@ -619,7 +623,7 @@ def _retrieve_forecast_overview_data(
 def _retrieve_observation_overview_data(
     settings: "config.ThreddsServerSettings",
     overview_series: "overviews.ObservationOverviewSeriesInternal",
-) -> Optional[dataseries.OverviewDataSeriesProtocol]:
+) -> Optional[dataseries.ObservationOverviewDataSeries]:
     retriever = opendap.ObservationOverviewDataRetriever(
         settings=settings,
         overview_series=overview_series,

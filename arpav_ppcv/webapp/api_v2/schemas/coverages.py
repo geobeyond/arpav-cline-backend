@@ -619,7 +619,7 @@ class CoverageIdentifierReadListItem(pydantic.BaseModel):
 
 class LegacyForecastCoverageList(base.WebResourceList):
     items: list[LegacyForecastCoverageReadListItem]
-    path_operation_name = "list_forecast_coverage_identifiers"
+    path_operation_name = "legacy_list_forecast_coverage_identifiers"
 
     @classmethod
     def from_items(
@@ -681,10 +681,10 @@ class CoverageIdentifierList(base.WebResourceList):
         )
 
 
-class ConfigurationParameterList(base.WebResourceList):
+class LegacyConfigurationParameterList(base.WebResourceList):
     items: list[ConfigurationParameterReadListItem]
     list_item_type = ConfigurationParameterReadListItem
-    path_operation_name = "list_configuration_parameters"
+    path_operation_name = "list_legacy_configuration_parameters"
 
 
 class CoverageDataDownloadListMeta(pydantic.BaseModel):

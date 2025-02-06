@@ -16,3 +16,9 @@ from .overviews import (
     generate_forecast_overview_series_from_configuration,  # noqa
     generate_observation_overview_series_from_configuration,  # noqa
 )
+
+from .legacy import (
+    legacy_collect_all_forecast_coverage_configurations,  # noqa
+    legacy_list_forecast_coverage_configurations,  # noqa
+    legacy_list_forecast_coverages,  # noqa
+)
