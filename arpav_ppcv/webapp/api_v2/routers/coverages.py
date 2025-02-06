@@ -549,7 +549,41 @@ def _modify_capabilities_response(
     "/time-series/climate-barometer",
     response_model=TimeSeriesList,
 )
-def get_climate_barometer_time_series(
+def get_overview_time_series(
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    data_smoothing: Annotated[list[CoverageTimeSeriesProcessingMethod], Query()] = [
+        CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+    ],
+    include_uncertainty: bool = False,
+):
+    """Get climate barometer time series."""
+    try:
+        relevant_series = timeseries.get_overview_time_series(
+            settings=settings,
+            session=db_session,
+            processing_methods=data_smoothing,
+            include_uncertainty=include_uncertainty,
+        )
+    except exceptions.OverviewDataRetrievalError as err:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not retrieve data",
+        ) from err
+    else:
+        series = []
+        for overview_data_series in relevant_series:
+            series.append(
+                TimeSeries.from_overview_series(overview_data_series)
+            )
+        return TimeSeriesList(series=series)
+
+
+@router.get(
+    "/old-time-series/climate-barometer",
+    response_model=TimeSeriesList,
+)
+def old_get_climate_barometer_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     data_smoothing: Annotated[list[CoverageTimeSeriesProcessingMethod], Query()] = [

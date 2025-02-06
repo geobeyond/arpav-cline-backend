@@ -304,6 +304,33 @@ class TimeSeries(pydantic.BaseModel):
         )
 
     @classmethod
+    def from_overview_series(cls, series: "dataseries.OverviewDataSeriesProtocol"):
+        return cls(
+            name=series.identifier,
+            values=[
+                TimeSeriesItem(datetime=timestamp, value=value)
+                for timestamp, value in series.data_.to_dict().items()
+                if not math.isnan(value)
+            ],
+            info={
+                "processing_method": series.processing_method.value,
+                "series_configuration": series.overview_series.configuration.identifier,
+                "climatological_variable": (
+                    series.overview_series.configuration.climatic_indicator.name
+                ),
+                "measure": (
+                    series.overview_series.configuration
+                    .climatic_indicator.measure_type.value
+                ),
+                "aggregation_period": (
+                    series.overview_series.configuration
+                    .climatic_indicator.aggregation_period.value
+                ),
+            },
+            translations=LegacyTimeSeriesTranslations.from_overview_data_series(series)
+        )
+
+    @classmethod
     def from_coverage_series(
         cls,
         series: pd.Series,

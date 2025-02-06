@@ -6,6 +6,10 @@ class InvalidCoverageIdentifierException(ArpavError):
     ...
 
 
+class OverviewDataRetrievalError(ArpavError):
+    ...
+
+
 class CoverageDataRetrievalError(ArpavError):
     ...
 

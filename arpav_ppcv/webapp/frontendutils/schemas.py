@@ -321,6 +321,70 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
             ]
         return cls(parameter_names=names, parameter_values=values)
 
+    @classmethod
+    def from_overview_data_series(
+        cls, series: "dataseries.OverviewDataSeriesProtocol"
+    ):
+        names = {}
+        values = {}
+        for key_name in (
+                "series_name",
+                "processing_method",
+                "series_configuration",
+                "climatological_variable",
+                "measure",
+                "aggregation_period",
+        ):
+            names[key_name] = {}
+            values[key_name] = {}
+        for locale in (LOCALE_EN, LOCALE_IT):
+            names["series_name"][locale.language] = series.get_display_name(locale)
+            values["series_name"][locale.language] = series.identifier
+
+            names["processing_method"][
+                locale.language
+            ] = static.CoverageTimeSeriesProcessingMethod.get_param_display_name(
+                locale
+            )
+            values["processing_method"][
+                locale.language
+            ] = series.processing_method.get_value_display_name(locale)
+
+            names["series_configuration"][
+                locale.language
+            ] = series.overview_series.configuration.get_display_name(locale)
+            values["series_configuration"][
+                locale.language
+            ] = series.overview_series.configuration.identifier,
+
+            names["climatological_variable"][locale.language] = (
+                series.overview_series.configuration
+                .climatic_indicator.get_display_name(locale)
+            )
+            values["climatological_variable"][
+                locale.language
+            ] = {
+                LOCALE_EN: series.overview_series.configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: series.overview_series.configuration.climatic_indicator.display_name_italian,
+            }.get(
+                locale,
+                series.overview_series.configuration.climatic_indicator.identifier,
+            )
+
+            names["measure"][locale.language] = static.MeasureType.get_param_display_name(locale)
+            values["measure"][locale.language] = (
+                series.overview_series.configuration.climatic_indicator
+                .measure_type.get_value_display_name(locale)
+            )
+
+            names["aggregation_period"][locale.language] = static.AggregationPeriod.get_param_display_name(locale)
+            values["aggregation_period"][locale.language] = (
+                series.overview_series.configuration.climatic_indicator
+                .aggregation_period.get_value_display_name(locale)
+            )
+
+        return cls(parameter_names=names, parameter_values=values)
+
 
 class LegacyConfigurationParameterMenuTranslation(pydantic.BaseModel):
     name: dict[str, str]
