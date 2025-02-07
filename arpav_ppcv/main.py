@@ -190,11 +190,11 @@ def import_thredds_datasets(
             )
         ),
     ],
-    name_filter: Annotated[
+    coverage_configuration_identifier_filter: Annotated[
         str,
         typer.Option(
             help=(
-                "Only process coverage configurations whose name contains "
+                "Only process coverage configurations whose identifier contains "
                 "this substring"
             )
         ),
@@ -211,20 +211,39 @@ def import_thredds_datasets(
 ):
     """Import NetCDF datasets from a THREDDS server."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        relevant_cov_confs = database.collect_all_coverage_configurations(
-            session, name_filter=name_filter
-        )
-        urls = []
-        for cov_conf in relevant_cov_confs:
-            cov_conf_urls = crawler.get_coverage_configuration_urls(
-                base_thredds_url, cov_conf
+        relevant_forecast_cov_confs = (
+            database.collect_all_forecast_coverage_configurations_with_identifier_filter(
+            session,
+                identifier_filter=coverage_configuration_identifier_filter
             )
-            urls.extend(cov_conf_urls)
-
-    print(f"Trying to download {len(urls)} datasets...")
+        )
+        # TODO: Implement also historical coverages
+        # TODO: Implement also overviews
+        urls = []
+        settings: config.ArpavPpcvSettings = ctx.obj["settings"]
+        for forecast_cov_conf in relevant_forecast_cov_confs:
+            forecast_covs = database.generate_forecast_coverages_from_configuration(
+                forecast_cov_conf)
+            for cov in forecast_covs:
+                urls.append(
+                    cov.get_thredds_file_download_url(settings.thredds_server)
+                )
+                lower_uncert_url = cov.get_lower_uncertainty_thredds_file_download_url(
+                    settings.thredds_server)
+                if lower_uncert_url is not None:
+                    urls.append(lower_uncert_url)
+                upper_uncert_url = cov.get_upper_uncertainty_thredds_file_download_url(
+                    settings.thredds_server)
+                if upper_uncert_url is not None:
+                    urls.append(upper_uncert_url)
+    remote_urls = [
+        url.replace(settings.thredds_server.base_url, base_thredds_url)
+        for url in urls
+    ]
+    print(f"Trying to download {len(remote_urls)} datasets...")
     anyio.run(
         crawler.download_datasets,  # noqa
-        urls,
+        remote_urls,
         base_thredds_url,
         output_base_dir,
         force_download,

@@ -1138,11 +1138,26 @@ class ForecastCoverageInternal:
             result = None
         return result
 
-    def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
-        return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
+    def get_thredds_file_download_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
+
+    def get_lower_uncertainty_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_lower_uncertainty_thredds_url_fragment()
+        return crawler.get_file_download_url(rendered, settings) if rendered else None
+
+    def get_upper_uncertainty_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_upper_uncertainty_thredds_url_fragment()
+        return crawler.get_file_download_url(rendered, settings) if rendered else None
 
     def get_wms_base_url(self, settings: ThreddsServerSettings) -> Optional[str]:
         return crawler.get_wms_base_url(self._get_thredds_url_fragment(), settings)
+
+    def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
 
     def get_lower_uncertainty_thredds_ncss_url(
         self, settings: ThreddsServerSettings

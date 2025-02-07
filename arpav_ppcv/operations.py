@@ -38,6 +38,7 @@ from .schemas import (
     base,
     climaticindicators,
     coverages,
+    legacy,
     observations,
     static,
 )
@@ -1065,9 +1066,9 @@ def convert_conf_params_filter(
     for raw_value in configuration_parameter_values:
         param_name, param_value = raw_value.partition(":")[::2]
         if param_name == "aggregation_period":
-            try:
-                aggregation_period = static.AggregationPeriod(param_value)
-            except ValueError:
+            aggregation_period = legacy.parse_legacy_aggregation_period(
+                param_value)
+            if aggregation_period is None:
                 logger.warning(
                     f"Could not parse {param_value!r} as an aggregation period, skipping..."
                 )

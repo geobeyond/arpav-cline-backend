@@ -12,6 +12,15 @@ if typing.TYPE_CHECKING:
     from .climaticindicators import ClimaticIndicator
 
 
+def parse_legacy_aggregation_period(
+    legacy_value: str
+) -> Optional[static.AggregationPeriod]:
+    return {
+        "30yr": static.AggregationPeriod.THIRTY_YEAR,
+        "annual": static.AggregationPeriod.ANNUAL,
+    }.get(legacy_value)
+
+
 def convert_uncertainty_type(dataset_type: static.DatasetType) -> Optional[str]:
     return {
         dataset_type.LOWER_UNCERTAINTY: "lower_bound",

@@ -45,6 +45,7 @@ class ThreddsServerSettings(pydantic.BaseModel):
     wms_service_url_fragment: str = "wms"
     netcdf_subset_service_url_fragment: str = "ncss/grid"  # noqa
     opendap_service_url_fragment: str = "dodsC"  # noqa
+    file_download_service_url_fragment: str = "fileServer"  # noqa
     uncertainty_visualization_scale_range: tuple[float, float] = pydantic.Field(
         default=(0, 9)
     )
