@@ -30,6 +30,7 @@ from pandas.core.indexes.datetimes import DatetimeIndex
 from pyproj.enums import TransformDirection
 from shapely.ops import transform
 
+import arpav_ppcv.db.legacy
 from . import (
     config,
     database,
@@ -60,10 +61,10 @@ def get_climate_barometer_time_series(
     tuple[coverages.CoverageInternal, static.CoverageTimeSeriesProcessingMethod],
     pd.Series,
 ]:
-    covs = database.collect_all_coverages(
+    covs = arpav_ppcv.db.legacy.collect_all_coverages(
         session,
         configuration_parameter_values_filter=[
-            database.get_configuration_parameter_value_by_names(
+            arpav_ppcv.db.legacy.get_configuration_parameter_value_by_names(
                 session, base.CoreConfParamName.ARCHIVE.value, "barometro_climatico"
             )
         ],
@@ -442,7 +443,10 @@ def get_related_uncertainty_coverage_configurations(
         pv.configuration_parameter_value
         for pv in coverage.configuration.retrieve_used_values(coverage.identifier)
     ]
-    lower_, upper_ = database.ensure_uncertainty_type_configuration_parameters_exist(
+    (
+        lower_,
+        upper_,
+    ) = arpav_ppcv.db.legacy.ensure_uncertainty_type_configuration_parameters_exist(
         session
     )
     if (
@@ -903,7 +907,8 @@ def _filter_configuration_parameter_values(
     result = []
     for v in possible_param_values:
         if (
-            conf_param_value := database.get_configuration_parameter_value_by_names(
+            conf_param_value
+            := arpav_ppcv.db.legacy.get_configuration_parameter_value_by_names(
                 session, param_name, v
             )
         ) is not None:
@@ -912,7 +917,7 @@ def _filter_configuration_parameter_values(
             logger.warning(f"Invalid {param_name}: {v!r}, ignoring...")
     else:
         if len(result) == 0 and return_all_if_filter_empty:
-            result = database.get_configuration_parameter_by_name(
+            result = arpav_ppcv.db.legacy.get_configuration_parameter_by_name(
                 session, param_name
             ).allowed_values[:]
     return result
@@ -974,7 +979,7 @@ def list_coverage_identifiers_by_param_values(
             f"time_window: {time_window.name if time_window else time_window!r}..."
         )
         param_values_filter = [
-            database.get_configuration_parameter_value_by_names(
+            arpav_ppcv.db.legacy.get_configuration_parameter_value_by_names(
                 session, CoreConfParamName.ARCHIVE.value, "forecast"
             ),
             model,
@@ -983,7 +988,7 @@ def list_coverage_identifiers_by_param_values(
             time_window,
         ]
         filter_ = [i for i in param_values_filter if i is not None]
-        cov_confs, _ = database.list_coverage_configurations(
+        cov_confs, _ = arpav_ppcv.db.legacy.list_coverage_configurations(
             session,
             limit=limit,
             offset=offset,
@@ -991,7 +996,7 @@ def list_coverage_identifiers_by_param_values(
             climatic_indicator_filter=climatic_indicator,
         )
         for cov_conf in cov_confs:
-            identifiers = database.generate_coverage_identifiers(
+            identifiers = arpav_ppcv.db.legacy.generate_coverage_identifiers(
                 cov_conf, configuration_parameter_values_filter=filter_
             )
             for cov_id in identifiers:
@@ -1066,8 +1071,7 @@ def convert_conf_params_filter(
     for raw_value in configuration_parameter_values:
         param_name, param_value = raw_value.partition(":")[::2]
         if param_name == "aggregation_period":
-            aggregation_period = legacy.parse_legacy_aggregation_period(
-                param_value)
+            aggregation_period = legacy.parse_legacy_aggregation_period(param_value)
             if aggregation_period is None:
                 logger.warning(
                     f"Could not parse {param_value!r} as an aggregation period, skipping..."

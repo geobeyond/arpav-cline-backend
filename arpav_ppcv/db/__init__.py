@@ -19,6 +19,7 @@ from .overviews import (
 
 from .legacy import (
     legacy_collect_all_forecast_coverage_configurations,  # noqa
+    legacy_list_configuration_parameters,  # noqa
     legacy_list_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverages,  # noqa
 )

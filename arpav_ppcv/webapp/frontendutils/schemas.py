@@ -7,6 +7,7 @@ from ...config import (
     LOCALE_IT,
 )
 from ...schemas import static
+from ...schemas import legacy as legacy_schemas
 
 if typing.TYPE_CHECKING:
     from ...schemas.climaticindicators import ClimaticIndicator
@@ -37,6 +38,9 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
     @classmethod
     def from_navigation_section(cls, section: ForecastCoverageNavigationSection):
         other = {
+            "archive": [
+                "forecast",
+            ],
             "climatological_model": [fm.name for fm in section.forecast_models],
             "scenario": [s.value for s in section.scenarios],
             "year_period": [yp.value for yp in section.year_periods],
@@ -45,7 +49,9 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
             other["time_window"] = [tw.name for tw in section.time_windows]
         return cls(
             variable=section.climatic_indicator.name,
-            aggregation_period=section.climatic_indicator.aggregation_period.value,
+            aggregation_period=legacy_schemas.convert_to_aggregation_period(
+                section.climatic_indicator.aggregation_period
+            ),
             measure=section.climatic_indicator.measure_type.value,
             other_parameters=other,
         )
@@ -71,6 +77,18 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
         measures = {}
         other = {
             "year_period": {},
+            "archive": {
+                "forecast": LegacyConfigurationParameterMenuTranslation(
+                    name={
+                        LOCALE_EN.language: "Forecast data",
+                        LOCALE_IT.language: "Forecast data",
+                    },
+                    description={
+                        LOCALE_EN.language: "Forecast data",
+                        LOCALE_IT.language: "Forecast data",
+                    },
+                ),
+            },
             "scenario": {},
             "climatological_model": {},
             "time_window": {},
@@ -101,7 +119,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
         }
         for aggregation_period in unique_aggregation_periods:
             aggreg_periods[
-                aggregation_period.value
+                legacy_schemas.convert_to_aggregation_period(aggregation_period)
             ] = LegacyConfigurationParameterMenuTranslation(
                 name={
                     LOCALE_EN.language: aggregation_period.get_value_display_name(

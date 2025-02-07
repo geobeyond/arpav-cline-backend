@@ -6,10 +6,8 @@ from pandas.core.dtypes.common import (
     is_float_dtype,
 )
 
-from arpav_ppcv import (
-    database,
-    operations,
-)
+import arpav_ppcv.db.legacy
+from arpav_ppcv import operations
 from arpav_ppcv.schemas import coverages
 
 
@@ -130,7 +128,7 @@ def test_get_related_uncertainty_coverage_configurations(
     expected_lower_identifier,
     expected_upper_identifier,
 ):
-    cov_conf = database.get_coverage_configuration_by_name(
+    cov_conf = arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
         arpav_db_session, cov_conf_name
     )
     lower_, upper_ = operations.get_related_uncertainty_coverage_configurations(
@@ -166,7 +164,7 @@ def test_get_related_coverage_configurations(
     cov_identifier,
     expected_related_coverage_identifiers,
 ):
-    cov_conf = database.get_coverage_configuration_by_name(
+    cov_conf = arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
         arpav_db_session, cov_conf_name
     )
     related = operations.get_related_coverages(

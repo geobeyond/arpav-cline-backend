@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from geoalchemy2.shape import from_shape
 from typer.testing import CliRunner
 
+import arpav_ppcv.db.legacy
 from arpav_ppcv import (
     config,
     database,
@@ -215,7 +216,7 @@ def sample_real_configuration_parameters(arpav_db_session):
     params_to_create = bootstrappable_configuration_parameters()
     created_params = []
     for param_to_create in params_to_create:
-        created_param = database.create_configuration_parameter(
+        created_param = arpav_ppcv.db.legacy.create_configuration_parameter(
             arpav_db_session, param_to_create
         )
         created_params.append(created_param)
@@ -292,8 +293,10 @@ def sample_real_coverage_configurations(
     sample_real_configuration_parameters,
     sample_real_climatic_indicators,
 ):
-    all_conf_param_values = database.collect_all_configuration_parameter_values(
-        arpav_db_session
+    all_conf_param_values = (
+        arpav_ppcv.db.legacy.collect_all_configuration_parameter_values(
+            arpav_db_session
+        )
     )
     all_climatic_indicators = database.collect_all_climatic_indicators(arpav_db_session)
     cov_confs_to_create = (
@@ -307,7 +310,7 @@ def sample_real_coverage_configurations(
     )
     created_cov_confs = {}
     for cov_conf_to_create in cov_confs_to_create:
-        cov_conf = database.create_coverage_configuration(
+        cov_conf = arpav_ppcv.db.legacy.create_coverage_configuration(
             arpav_db_session, cov_conf_to_create
         )
         created_cov_confs[cov_conf.name] = cov_conf
@@ -371,7 +374,7 @@ def sample_real_coverage_configurations(
                 for pv in main_cov_conf.possible_values
             ],
         )
-        database.update_coverage_configuration(
+        arpav_ppcv.db.legacy.update_coverage_configuration(
             arpav_db_session,
             main_cov_conf,
             cov_update,

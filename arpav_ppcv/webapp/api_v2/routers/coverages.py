@@ -77,27 +77,14 @@ def list_legacy_configuration_parameters(
     name_contains: str | None = None,
 ):
     """List forecast-related configuration parameters."""
-    # - historical variable
-    # - climatological variable
-    # - scenario
-    # - time window
-    # - year period
-    # - historical year period
-    # - archive
-    # - measure
-    # - climatological model
-    # - aggregation period
-    # - uncertainty type
-    # - archive
-    # - climatological standard normal
-    config_params, filtered_total = database.list_configuration_parameters(
+    config_params, filtered_total = db.legacy_list_configuration_parameters(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
     )
-    _, unfiltered_total = database.list_configuration_parameters(
+    _, unfiltered_total = db.legacy_list_configuration_parameters(
         db_session, limit=1, offset=0, include_total=True
     )
     return coverage_schemas.LegacyConfigurationParameterList.from_items(
@@ -124,14 +111,14 @@ def old_list_configuration_parameters(
     name_contains: str | None = None,
 ):
     """List configuration parameters."""
-    config_params, filtered_total = database.list_configuration_parameters(
+    config_params, filtered_total = legacy.list_configuration_parameters(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
         include_total=True,
         name_filter=name_contains,
     )
-    _, unfiltered_total = database.list_configuration_parameters(
+    _, unfiltered_total = legacy.list_configuration_parameters(
         db_session, limit=1, offset=0, include_total=True
     )
     return coverage_schemas.LegacyConfigurationParameterList.from_items(
@@ -181,7 +168,7 @@ def list_forecast_coverage_configurations(
             include_total=True,
             conf_param_filter=filter_values,
         )
-        _, unfiltered_total = database.list_coverage_configurations(
+        _, unfiltered_total = legacy.list_coverage_configurations(
             db_session, limit=1, offset=0, include_total=True
         )
     return coverage_schemas.LegacyForecastCoverageConfigurationList.from_items(
@@ -299,7 +286,7 @@ def get_coverage_identifier(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
 ):
-    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := legacy.get_coverage(db_session, coverage_identifier)) is not None:
         return coverage_schemas.CoverageIdentifierReadListItem.from_db_instance(
             coverage, request
         )
@@ -436,7 +423,7 @@ async def get_forecast_data(
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
-    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := legacy.get_coverage(db_session, coverage_identifier)) is not None:
         used_values = coverage.configuration.retrieve_configuration_parameters(
             coverage.identifier
         )
@@ -725,7 +712,7 @@ def old_get_time_series(
     forecast model, this endpoint will return a representation of the various temporal
     series of data related to this forecast.
     """
-    if (coverage := database.get_coverage(db_session, coverage_identifier)) is not None:
+    if (coverage := legacy.get_coverage(db_session, coverage_identifier)) is not None:
         # TODO: catch errors with invalid geom
         geom = shapely.io.from_wkt(coords)
         if geom.geom_type == "MultiPoint":
@@ -814,7 +801,7 @@ def _retrieve_climatic_indicator_filter(
         if param_name in ("climatological_variable", "measure", "aggregation_period"):
             climatic_indicator_parts[param_name] = param_value
         else:
-            db_parameter_value = database.get_configuration_parameter_value_by_names(
+            db_parameter_value = legacy.get_configuration_parameter_value_by_names(
                 session, param_name, param_value
             )
             if db_parameter_value is not None:

@@ -8,6 +8,7 @@ import typer
 from rich import print
 from sqlalchemy.exc import IntegrityError
 
+import arpav_ppcv.db.legacy
 from .. import database
 from .. import db
 from ..prefect.flows import observations as observations_flows
@@ -309,7 +310,7 @@ def bootstrap_coverage_configuration_parameters(
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         for param_create in params:
             try:
-                db_param = database.create_configuration_parameter(
+                db_param = arpav_ppcv.db.legacy.create_configuration_parameter(
                     session, param_create
                 )
                 print(f"Created configuration parameter {db_param.name!r}")
@@ -328,8 +329,8 @@ def bootstrap_coverage_configurations(
 ):
     """Create initial coverage configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_conf_param_values = database.collect_all_configuration_parameter_values(
-            session
+        all_conf_param_values = (
+            arpav_ppcv.db.legacy.collect_all_configuration_parameter_values(session)
         )
         conf_param_values = {
             (pv.configuration_parameter.name, pv.name): pv
@@ -409,7 +410,7 @@ def bootstrap_coverage_configurations(
 
     for cov_conf_create in coverage_configurations:
         try:
-            db_cov_conf = database.create_coverage_configuration(
+            db_cov_conf = arpav_ppcv.db.legacy.create_coverage_configuration(
                 session, cov_conf_create
             )
             print(f"Created coverage configuration {db_cov_conf.name!r}")
@@ -422,7 +423,8 @@ def bootstrap_coverage_configurations(
 
     print("Creating related coverage relationships...")
     all_cov_confs = {
-        cc.name: cc for cc in database.collect_all_coverage_configurations(session)
+        cc.name: cc
+        for cc in arpav_ppcv.db.legacy.collect_all_coverage_configurations(session)
     }
 
     to_update = {}
@@ -505,7 +507,7 @@ def bootstrap_coverage_configurations(
                 for pv in main_cov_conf.possible_values
             ],
         )
-        database.update_coverage_configuration(
+        arpav_ppcv.db.legacy.update_coverage_configuration(
             session,
             main_cov_conf,
             cov_update,

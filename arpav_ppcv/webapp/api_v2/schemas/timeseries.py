@@ -901,7 +901,7 @@ class LegacyTimeSeries(pydantic.BaseModel):
             static.DatasetType.UPPER_UNCERTAINTY,
         ):
             info["uncertainty_type"] = (
-                legacy.convert_uncertainty_type(series.dataset_type) or ""
+                legacy.convert_to_uncertainty_type(series.dataset_type) or ""
             )
         return cls(
             name=series.identifier,

@@ -4,6 +4,7 @@ from typing import Any
 import starlette_admin
 from starlette.requests import Request
 
+import arpav_ppcv.db.legacy
 from ... import database
 from . import schemas as read_schemas
 
@@ -34,7 +35,7 @@ class PossibleConfigurationParameterValuesField(starlette_admin.EnumField):
         value: read_schemas.ConfigurationParameterPossibleValueRead,
         request: Request,
     ) -> Any:
-        conf_parameter_value = database.get_configuration_parameter_value(
+        conf_parameter_value = arpav_ppcv.db.legacy.get_configuration_parameter_value(
             request.state.session, value.configuration_parameter_value_id
         )
         result = " - ".join(

@@ -5,6 +5,7 @@ from operator import attrgetter
 import pydantic
 import pytest
 
+import arpav_ppcv.db.legacy
 from arpav_ppcv import database
 from arpav_ppcv.schemas import coverages
 
@@ -40,7 +41,7 @@ def test_list_stations(arpav_db_session, sample_stations, limit, offset, include
 def test_list_coverage_configurations(
     arpav_db_session, sample_coverage_configurations, limit, offset, include_total
 ):
-    db_cov_confs, total = database.list_coverage_configurations(
+    db_cov_confs, total = arpav_ppcv.db.legacy.list_coverage_configurations(
         arpav_db_session, limit=limit, offset=offset, include_total=include_total
     )
     ordered_cov_confs = sorted(
@@ -201,7 +202,7 @@ def test_create_coverage_configuration_simple(
             climatic_indicator_id=some_indicator.id,
             possible_values=[],
         )
-        created = database.create_coverage_configuration(
+        created = arpav_ppcv.db.legacy.create_coverage_configuration(
             arpav_db_session, cov_conf_create
         )
         assert created.id is not None
@@ -215,12 +216,14 @@ def test_delete_coverage_configuration_works(
     arpav_db_session, sample_real_coverage_configurations
 ):
     cov_conf_name = "tas_annual_absolute_model_ensemble"
-    db_cov_conf = database.get_coverage_configuration_by_name(
+    db_cov_conf = arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
         arpav_db_session, cov_conf_name
     )
-    database.delete_coverage_configuration(arpav_db_session, db_cov_conf.id)
+    arpav_ppcv.db.legacy.delete_coverage_configuration(arpav_db_session, db_cov_conf.id)
     assert (
-        database.get_coverage_configuration_by_name(arpav_db_session, cov_conf_name)
+        arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+            arpav_db_session, cov_conf_name
+        )
         is None
     )
 
@@ -246,7 +249,9 @@ def test_create_coverage_configuration_with_possible_values(
             for p in possible_values
         ],
     )
-    created = database.create_coverage_configuration(arpav_db_session, cov_conf_create)
+    created = arpav_ppcv.db.legacy.create_coverage_configuration(
+        arpav_db_session, cov_conf_create
+    )
     assert created.id is not None
     for possible_value in possible_values:
         assert possible_value.id in [
@@ -279,7 +284,7 @@ def test_create_coverage_configuration_uses_new_possible_values(
             )
         ],
     )
-    created1 = database.create_coverage_configuration(
+    created1 = arpav_ppcv.db.legacy.create_coverage_configuration(
         arpav_db_session, cov_conf_create1
     )
 
@@ -306,7 +311,7 @@ def test_create_coverage_configuration_uses_new_possible_values(
             )
         ],
     )
-    created2 = database.create_coverage_configuration(
+    created2 = arpav_ppcv.db.legacy.create_coverage_configuration(
         arpav_db_session, cov_conf_create2
     )
     assert created2.id is not None

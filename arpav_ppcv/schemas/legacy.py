@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 
 
 def parse_legacy_aggregation_period(
-    legacy_value: str
+    legacy_value: str,
 ) -> Optional[static.AggregationPeriod]:
     return {
         "30yr": static.AggregationPeriod.THIRTY_YEAR,
@@ -21,11 +21,20 @@ def parse_legacy_aggregation_period(
     }.get(legacy_value)
 
 
-def convert_uncertainty_type(dataset_type: static.DatasetType) -> Optional[str]:
+def convert_to_aggregation_period(
+    aggregation_period: static.AggregationPeriod,
+) -> Optional[str]:
+    return {
+        aggregation_period.THIRTY_YEAR: "30yr",
+        aggregation_period.ANNUAL: "annual",
+    }.get(aggregation_period, aggregation_period.value)
+
+
+def convert_to_uncertainty_type(dataset_type: static.DatasetType) -> Optional[str]:
     return {
         dataset_type.LOWER_UNCERTAINTY: "lower_bound",
         dataset_type.UPPER_UNCERTAINTY: "upper_bound",
-    }.get(dataset_type)
+    }.get(dataset_type, dataset_type.value)
 
 
 def convert_overview_historical_variable(

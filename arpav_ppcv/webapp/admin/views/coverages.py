@@ -24,6 +24,7 @@ from starlette.requests import Request
 from starlette_admin import exceptions as starlette_admin_exceptions
 from starlette_admin.contrib.sqlmodel import ModelView
 
+import arpav_ppcv.db.legacy
 from .... import database
 from ....schemas import (
     coverages,
@@ -40,8 +41,10 @@ logger = logging.getLogger(__name__)
 
 
 def possible_values_choices_loader(request: Request) -> Sequence[tuple[str, str]]:
-    all_conf_parameter_values = database.collect_all_configuration_parameter_values(
-        request.state.session
+    all_conf_parameter_values = (
+        arpav_ppcv.db.legacy.collect_all_configuration_parameter_values(
+            request.state.session
+        )
     )
     result = []
     for conf_param_value in all_conf_parameter_values:
@@ -67,7 +70,9 @@ def coverage_configurations_choices_loader(
     else:
         main_cov_conf_id = None
     result = []
-    all_cov_confs = database.collect_all_coverage_configurations(request.state.session)
+    all_cov_confs = arpav_ppcv.db.legacy.collect_all_coverage_configurations(
+        request.state.session
+    )
     for cov_conf in [cc for cc in all_cov_confs if cc.id != main_cov_conf_id]:
         result.append((cov_conf.name, cov_conf.name))
     return result
@@ -166,7 +171,7 @@ class ConfigurationParameterView(ModelView):
                 ],
             )
             db_configuration_parameter = await anyio.to_thread.run_sync(
-                database.create_configuration_parameter,
+                arpav_ppcv.db.legacy.create_configuration_parameter,
                 request.state.session,
                 config_param_create,
             )
@@ -190,7 +195,7 @@ class ConfigurationParameterView(ModelView):
         data: Dict[str, Any],
     ):
         conf_param = await anyio.to_thread.run_sync(
-            database.get_configuration_parameter, request.state.session, pk
+            arpav_ppcv.db.legacy.get_configuration_parameter, request.state.session, pk
         )
         if conf_param.name in [p.value for p in base.CoreConfParamName]:
             if data.get("name") != conf_param.name:
@@ -231,10 +236,12 @@ class ConfigurationParameterView(ModelView):
                 ],
             )
             db_configuration_parameter = await anyio.to_thread.run_sync(
-                database.get_configuration_parameter, request.state.session, pk
+                arpav_ppcv.db.legacy.get_configuration_parameter,
+                request.state.session,
+                pk,
             )
             db_configuration_parameter = await anyio.to_thread.run_sync(
-                database.update_configuration_parameter,
+                arpav_ppcv.db.legacy.update_configuration_parameter,
                 request.state.session,
                 db_configuration_parameter,
                 config_param_update,
@@ -255,7 +262,7 @@ class ConfigurationParameterView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ConfigurationParameterRead:
         db_conf_param = await anyio.to_thread.run_sync(
-            database.get_configuration_parameter, request.state.session, pk
+            arpav_ppcv.db.legacy.get_configuration_parameter, request.state.session, pk
         )
         allowed = []
         for av in db_conf_param.allowed_values:
@@ -276,7 +283,7 @@ class ConfigurationParameterView(ModelView):
         order_by: Optional[List[str]] = None,
     ) -> Sequence[read_schemas.ConfigurationParameterRead]:
         list_params = functools.partial(
-            database.list_configuration_parameters,
+            arpav_ppcv.db.legacy.legacy_list_configuration_parameters,
             limit=limit,
             offset=skip,
             name_filter=str(where) if where not in (None, "") else None,
@@ -305,7 +312,9 @@ class ConfigurationParameterView(ModelView):
     async def delete(self, request: Request, pks: List[Any]) -> Optional[int]:
         for pk in pks:
             conf_param = await anyio.to_thread.run_sync(
-                database.get_configuration_parameter, request.state.session, pk
+                arpav_ppcv.db.legacy.get_configuration_parameter,
+                request.state.session,
+                pk,
             )
             if conf_param.name in (p.value for p in base.CoreConfParamName):
                 raise starlette_admin_exceptions.ActionFailed(
@@ -529,7 +538,7 @@ class CoverageConfigurationView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.CoverageConfigurationRead:
         db_cov_conf = await anyio.to_thread.run_sync(
-            database.get_coverage_configuration, request.state.session, pk
+            arpav_ppcv.db.legacy.get_coverage_configuration, request.state.session, pk
         )
         return self._serialize_instance(db_cov_conf)
 
@@ -542,7 +551,7 @@ class CoverageConfigurationView(ModelView):
         order_by: Optional[List[str]] = None,
     ) -> Sequence[read_schemas.CoverageConfigurationRead]:
         list_cov_confs = functools.partial(
-            database.list_coverage_configurations,
+            arpav_ppcv.db.legacy.list_coverage_configurations,
             limit=limit,
             offset=skip,
             name_filter=str(where) if where not in (None, "") else None,
@@ -565,7 +574,7 @@ class CoverageConfigurationView(ModelView):
             possible_values_create = []
             for possible_value in data["possible_values"]:
                 param_name, param_value = possible_value.partition(" - ")[::2]
-                conf_param = database.get_configuration_parameter_by_name(
+                conf_param = arpav_ppcv.db.legacy.get_configuration_parameter_by_name(
                     session, param_name
                 )
                 conf_param_value = [
@@ -588,8 +597,10 @@ class CoverageConfigurationView(ModelView):
                     "uncertainty_lower_bounds_coverage_configuration"
                 )
             ) is not None:
-                db_uncertainty_lower = database.get_coverage_configuration_by_name(
-                    session, uncertainty_lower_name
+                db_uncertainty_lower = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, uncertainty_lower_name
+                    )
                 )
                 uncertainty_lower_id = db_uncertainty_lower.id
             else:
@@ -599,16 +610,20 @@ class CoverageConfigurationView(ModelView):
                     "uncertainty_upper_bounds_coverage_configuration"
                 )
             ) is not None:
-                db_uncertainty_upper = database.get_coverage_configuration_by_name(
-                    session, uncertainty_upper_name
+                db_uncertainty_upper = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, uncertainty_upper_name
+                    )
                 )
                 uncertainty_upper_id = db_uncertainty_upper.id
             else:
                 uncertainty_upper_id = None
             related_cov_conf_ids = []
             for related_cov_conf_name in data.get("related_coverages", []):
-                db_related_cov_conf = database.get_coverage_configuration_by_name(
-                    session, related_cov_conf_name
+                db_related_cov_conf = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, related_cov_conf_name
+                    )
                 )
                 related_cov_conf_ids.append(db_related_cov_conf.id)
             cov_conf_create = coverages.CoverageConfigurationCreate(
@@ -642,7 +657,9 @@ class CoverageConfigurationView(ModelView):
                 secondary_coverage_configurations_ids=related_cov_conf_ids,
             )
             db_cov_conf = await anyio.to_thread.run_sync(
-                database.create_coverage_configuration, session, cov_conf_create
+                arpav_ppcv.db.legacy.create_coverage_configuration,
+                session,
+                cov_conf_create,
             )
             return self._serialize_instance(db_cov_conf)
         except Exception as e:
@@ -657,7 +674,7 @@ class CoverageConfigurationView(ModelView):
             possible_values = []
             for pv in data["possible_values"]:
                 param_name, param_value = pv.rpartition(" - ")[::2]
-                conf_param = database.get_configuration_parameter_by_name(
+                conf_param = arpav_ppcv.db.legacy.get_configuration_parameter_by_name(
                     session, param_name
                 )
                 conf_param_value = [
@@ -680,8 +697,10 @@ class CoverageConfigurationView(ModelView):
                     "uncertainty_lower_bounds_coverage_configuration"
                 )
             ) is not None:
-                db_uncertainty_lower = database.get_coverage_configuration_by_name(
-                    session, uncertainty_lower_name
+                db_uncertainty_lower = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, uncertainty_lower_name
+                    )
                 )
                 uncertainty_lower_id = db_uncertainty_lower.id
             else:
@@ -691,16 +710,20 @@ class CoverageConfigurationView(ModelView):
                     "uncertainty_upper_bounds_coverage_configuration"
                 )
             ) is not None:
-                db_uncertainty_upper = database.get_coverage_configuration_by_name(
-                    session, uncertainty_upper_name
+                db_uncertainty_upper = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, uncertainty_upper_name
+                    )
                 )
                 uncertainty_upper_id = db_uncertainty_upper.id
             else:
                 uncertainty_upper_id = None
             related_cov_conf_ids = []
             for related_cov_conf_name in data.get("related_coverages", []):
-                db_related_cov_conf = database.get_coverage_configuration_by_name(
-                    session, related_cov_conf_name
+                db_related_cov_conf = (
+                    arpav_ppcv.db.legacy.get_coverage_configuration_by_name(
+                        session, related_cov_conf_name
+                    )
                 )
                 related_cov_conf_ids.append(db_related_cov_conf.id)
             cov_conv_update = coverages.CoverageConfigurationUpdate(
@@ -734,10 +757,10 @@ class CoverageConfigurationView(ModelView):
                 secondary_coverage_configurations_ids=related_cov_conf_ids,
             )
             db_coverage_configuration = await anyio.to_thread.run_sync(
-                database.get_coverage_configuration, session, pk
+                arpav_ppcv.db.legacy.get_coverage_configuration, session, pk
             )
             db_coverage_configuration = await anyio.to_thread.run_sync(
-                database.update_coverage_configuration,
+                arpav_ppcv.db.legacy.update_coverage_configuration,
                 session,
                 db_coverage_configuration,
                 cov_conv_update,

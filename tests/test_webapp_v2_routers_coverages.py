@@ -5,11 +5,11 @@ import httpx
 import pytest_httpx
 import pytest
 
+import arpav_ppcv.db.legacy
 from arpav_ppcv.schemas import (
     coverages,
     observations,
 )
-from arpav_ppcv import database
 
 random.seed(0)
 
@@ -99,7 +99,7 @@ def test_get_time_series(
         method="get",
         text=sample_tas_csv_data["tas"],
     )
-    identifiers = database.generate_coverage_identifiers(db_cov_conf)
+    identifiers = arpav_ppcv.db.legacy.generate_coverage_identifiers(db_cov_conf)
     cov_id = random.choice(identifiers)
     series_response = test_client_v2_app.get(
         test_client_v2_app.app.url_path_for(
