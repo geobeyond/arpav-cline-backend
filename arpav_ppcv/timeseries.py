@@ -2,6 +2,7 @@ import functools
 import logging
 import warnings
 from typing import (
+    cast,
     Optional,
     Sequence,
     TYPE_CHECKING,
@@ -57,6 +58,38 @@ def generate_derived_overview_series(
     elif (
         processing_method
         == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
+    ):
+        df[derived_series.identifier] = (
+            df[data_series.identifier].rolling(center=True, window=11).mean()
+        )
+    else:
+        raise NotImplementedError(
+            f"Processing method {processing_method!r} is not implemented"
+        )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_derived_historical_series(
+    data_series: dataseries.HistoricalDataSeries,
+    processing_method: static.CoverageTimeSeriesProcessingMethod,
+) -> dataseries.HistoricalDataSeries:
+    derived_series = dataseries.HistoricalDataSeries(
+        historical_coverage=data_series.historical_coverage,
+        dataset_type=data_series.dataset_type,
+        processing_method=processing_method,
+        temporal_start=data_series.temporal_start,
+        temporal_end=data_series.temporal_end,
+        location=data_series.location,
+    )
+    df = data_series.data_.to_frame()
+    if processing_method == static.CoverageTimeSeriesProcessingMethod.LOESS_SMOOTHING:
+        df[derived_series.identifier] = _apply_loess_smoothing(
+            df, data_series.identifier, ignore_warnings=True
+        )
+    elif (
+            processing_method
+            == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
     ):
         df[derived_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
@@ -230,6 +263,39 @@ def parse_observation_station_data(
     return df.squeeze()
 
 
+def get_historical_coverage_time_series(
+    *,
+    settings: "config.ArpavPpcvSettings",
+    http_client: "httpx.Client",
+    coverage: "coverages.HistoricalCoverageInternal",
+    point_geom: "shapely.Point",
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    processing_methods: list[
+        "static.CoverageTimeSeriesProcessingMethod"
+    ],
+) -> list[dataseries.HistoricalDataSeries]:
+    result = []
+    cov_main_series = _retrieve_historical_coverage_data(
+        http_client,
+        settings.thredds_server,
+        coverage,
+        point_geom,
+        temporal_range,
+    )
+    if cov_main_series is not None:
+        result.append(cov_main_series)
+        for processing_method in [
+            pm for pm in processing_methods
+            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+        ]:
+            derived_series = generate_derived_historical_series(
+                cov_main_series,
+                processing_method,
+            )
+            result.append(derived_series)
+    return result
+
+
 def get_forecast_coverage_time_series(
     *,
     settings: "config.ArpavPpcvSettings",
@@ -401,6 +467,36 @@ def _get_forecast_coverage_observation_time_series(
             "to this coverage configuration"
         )
     return result
+
+
+def _retrieve_historical_coverage_data(
+    http_client: "httpx.Client",
+    settings: "config.ThreddsServerSettings",
+    coverage: "coverages.HistoricalCoverageInternal",
+    point_geom: shapely.Point,
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+) -> Optional[dataseries.HistoricalDataSeries]:
+    retriever = ncss.SimpleCoverageDataRetriever(
+        settings=settings,
+        http_client=http_client,
+        coverage=cast(ncss.RetrievableCoverageProtocol, coverage)
+    )
+    main_series = dataseries.HistoricalDataSeries(
+        historical_coverage=coverage,
+        dataset_type=static.DatasetType.MAIN,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        temporal_start=temporal_range[0],
+        temporal_end=temporal_range[1],
+        location=point_geom,
+    )
+    main_data = retriever.retrieve_main_data(
+        point_geom, temporal_range, target_series_name=main_series.identifier
+    )
+    if main_data is not None:
+        main_series.data_ = main_data
+    else:
+        main_series = None
+    return main_series
 
 
 def _retrieve_forecast_coverage_data(

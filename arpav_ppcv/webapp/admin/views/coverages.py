@@ -25,7 +25,11 @@ from starlette_admin import exceptions as starlette_admin_exceptions
 from starlette_admin.contrib.sqlmodel import ModelView
 
 import arpav_ppcv.db.legacy
-from .... import database
+from .... import (
+    config,
+    database,
+    db,
+)
 from ....schemas import (
     coverages,
     base,
@@ -1243,6 +1247,192 @@ class ForecastCoverageConfigurationView(ModelView):
     ) -> int:
         finder = functools.partial(
             database.collect_all_forecast_coverage_configurations_with_identifier_filter,
+            identifier_filter=str(where) if where else None,
+        )
+        found = await anyio.to_thread.run_sync(
+            finder,
+            request.state.session,
+        )
+        return len(found)
+
+
+class HistoricalCoverageConfigurationView(ModelView):
+    identity = "historical_coverage_configurations"
+    name = "Historical Coverage Configuration"
+    label = "Coverage Configurations"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "netcdf_main_dataset_name",
+        "thredds_url_pattern",
+        "wms_main_layer_name",
+        "reference_period",
+        "year_periods",
+        "decades",
+    )
+    exclude_fields_from_detail = ("id",)
+    exclude_fields_from_edit = ("identifier",)
+    exclude_fields_from_create = ("identifier",)
+    searchable_fields = ("climatic_indicator",)
+
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("identifier", read_only=True),
+        starlette_admin.StringField(
+            "netcdf_main_dataset_name",
+            required=True,
+            help_text=(
+                "Name of the main variable inside this dataset's NetCDF file. This can "
+                "be a templated value, such as '{historical_year_period}_avg'."
+            ),
+        ),
+        starlette_admin.StringField(
+            "thredds_url_pattern",
+            required=True,
+            help_text=(
+                "Path pattern to the dataset's URL in THREDDS. This can be "
+                "templated with the name of any configuration parameter that belongs "
+                "to the coverage. This can also be given a shell-like pattern, which "
+                "can be useful when the dataset filename differs by additional "
+                "characters than just those that are used for configuration parameters. "
+                "Example: 'cline_yr/TDd_{historical_year_period}_1992-202[34]_py85.nc' "
+                "- this example features the '{historical_year_period}' template, which "
+                "gets replaced by the concrete value of the parameter, and it also "
+                "features the shell-like style expressed in '202[34]', which means "
+                "to look for files that have either '2023' or '2024' in that "
+                "part of their name."
+            ),
+        ),
+        starlette_admin.StringField("wms_main_layer_name", required=True),
+        fields.RelatedClimaticIndicatorField(
+            "climatic_indicator",
+            help_text="climatic indicator",
+            required=True,
+        ),
+        fields.RelatedSpatialRegionField(
+            "spatial_region",
+            required=True,
+        ),
+        starlette_admin.EnumField(
+            "reference_period", enum=static.HistoricalReferencePeriod, required=False
+        ),
+        starlette_admin.EnumField(
+            "decades", multiple=True, enum=static.HistoricalDecade, required=False
+        ),
+        starlette_admin.EnumField(
+            "year_periods",
+            multiple=True,
+            enum=static.HistoricalYearPeriod,
+            required=True,
+        ),
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.icon = "fa-solid fa-map"
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.HistoricalCoverageConfiguration,
+    ):
+        return read_schemas.HistoricalCoverageConfigurationRead(
+            **instance.model_dump(
+                exclude={
+                    "climatic_indicator",
+                    "spatial_region",
+                    "decades",
+                }
+            ),
+            climatic_indicator=instance.climatic_indicator_id,
+            spatial_region=instance.spatial_region_id,
+            decades=instance.decades or [],
+        )
+
+    async def create(self, request: Request, data: dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            historical_coverage_configuration_create = (
+                coverages.HistoricalCoverageConfigurationCreate(
+                    netcdf_main_dataset_name=data["netcdf_main_dataset_name"],
+                    thredds_url_pattern=data["thredds_url_pattern"],
+                    wms_main_layer_name=data["wms_main_layer_name"],
+                    climatic_indicator_id=data["climatic_indicator"],
+                    spatial_region_id=data["spatial_region"],
+                    reference_period=data.get("reference_period"),
+                    decades=data.get("decades", []),
+                    year_periods=data.get("year_periods", []),
+                )
+            )
+            db_historical_coverage_configuration = await anyio.to_thread.run_sync(
+                db.create_historical_coverage_configuration,
+                request.state.session,
+                historical_coverage_configuration_create,
+            )
+            return self._serialize_instance(db_historical_coverage_configuration)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            historical_coverage_configuration_create = (
+                coverages.HistoricalCoverageConfigurationUpdate(
+                    netcdf_main_dataset_name=data["netcdf_main_dataset_name"],
+                    thredds_url_pattern=data["thredds_url_pattern"],
+                    wms_main_layer_name=data["wms_main_layer_name"],
+                    climatic_indicator_id=data["climatic_indicator"],
+                    spatial_region_id=data["spatial_region"],
+                    reference_period=data.get("reference_period"),
+                    decades=data.get("decades", []),
+                    year_periods=data.get("year_periods", []),
+                )
+            )
+            db_historical_coverage_configuration = await anyio.to_thread.run_sync(
+                db.get_historical_coverage_configuration, request.state.session, pk
+            )
+            db_historical_coverage_configuration = await anyio.to_thread.run_sync(
+                db.update_historical_coverage_configuration,
+                request.state.session,
+                db_historical_coverage_configuration,
+                historical_coverage_configuration_create,
+            )
+            return self._serialize_instance(db_historical_coverage_configuration)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.HistoricalCoverageConfigurationRead:
+        db_item = await anyio.to_thread.run_sync(
+            db.get_historical_coverage_configuration, request.state.session, pk
+        )
+        return self._serialize_instance(db_item)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.HistoricalCoverageConfigurationRead]:
+        finder = functools.partial(
+            db.collect_all_historical_coverage_configurations_with_identifier_filter,
+            identifier_filter=str(where) if where else None,
+        )
+        db_items = await anyio.to_thread.run_sync(finder, request.state.session)
+        return [self._serialize_instance(ind) for ind in db_items]
+
+    async def count(
+        self,
+        request: Request,
+        where: Union[Dict[str, Any], str, None] = None,
+    ) -> int:
+        finder = functools.partial(
+            db.collect_all_historical_coverage_configurations_with_identifier_filter,
             identifier_filter=str(where) if where else None,
         )
         found = await anyio.to_thread.run_sync(

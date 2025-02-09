@@ -906,7 +906,6 @@ class BaseCoverageConfiguration(sqlmodel.SQLModel):
 
 
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
-    data_category: ClassVar[static.DataCategory] = static.DataCategory.FORECAST
     wms_main_layer_name: str
     wms_secondary_layer_name: Optional[str] = None
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
@@ -1015,31 +1014,6 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     forecast_models: Optional[list[int]] = None
     forecast_time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
-
-
-class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
-    identifier_pattern: ClassVar[
-        str
-    ] = "historical-{climatic_indicator}-{spatial_region}"
-
-    year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
-        default=list, sa_column=sqlalchemy.Column(sqlmodel.ARRAY(sqlmodel.String))
-    )
-
-    spatial_region: base.SpatialRegion = sqlmodel.Relationship(
-        back_populates="historical_coverage_configurations"
-    )
-    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
-        back_populates="historical_coverage_configurations"
-    )
-
-    @pydantic.computed_field
-    @property
-    def identifier(self) -> str:
-        return self.identifier_pattern.format(
-            climatic_indicator=self.climatic_indicator.identifier,
-            spatial_region=self.spatial_region.name,
-        )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1235,6 +1209,141 @@ class ForecastCoverageInternal:
             ),
             scenario=self.scenario.get_internal_value(),
             year_period=self.forecast_year_period.get_internal_value(),
+            spatial_region=self.configuration.spatial_region.internal_value,
+        )
+
+    def __hash__(self):
+        return hash(self.identifier)
+
+
+class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    reference_period: Optional[static.HistoricalReferencePeriod]
+    wms_main_layer_name: str
+    decades: list[static.HistoricalDecade] = sqlmodel.Field(
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalDecade))
+        ),
+    )
+    year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalYearPeriod))
+        )
+    )
+
+    spatial_region: base.SpatialRegion = sqlmodel.Relationship(
+        back_populates="historical_coverage_configurations"
+    )
+    climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
+        back_populates="historical_coverage_configurations"
+    )
+
+    @pydantic.computed_field
+    @property
+    def identifier(self) -> str:
+        extra = f"-{self.reference_period.value}" if self.reference_period else ""
+        return "{data_category}-{climatic_indicator}-{spatial_region}{extra}".format(
+            data_category=static.DataCategory.HISTORICAL.value,
+            climatic_indicator=self.climatic_indicator.identifier,
+            spatial_region=self.spatial_region.name,
+            extra=extra
+        )
+
+    @staticmethod
+    def get_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical coverage configuration")
+
+    @staticmethod
+    def get_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical coverage configuration description")
+
+
+class HistoricalCoverageConfigurationCreate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    wms_main_layer_name: str
+    climatic_indicator_id: int
+    spatial_region_id: int
+    reference_period: Optional[static.HistoricalReferencePeriod] = None
+    decades: Optional[list[static.HistoricalDecade]] = None
+    year_periods: list[static.HistoricalYearPeriod]
+
+
+class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
+    netcdf_main_dataset_name: Optional[str] = None
+    thredds_url_pattern: Optional[str] = None
+    wms_main_layer_name: Optional[str] = None
+    climatic_indicator_id: Optional[int] = None
+    spatial_region_id: Optional[int] = None
+    reference_period: Optional[static.HistoricalReferencePeriod] = None
+    decades: Optional[list[static.HistoricalDecade]] = None
+    year_periods: Optional[list[static.HistoricalYearPeriod]] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class HistoricalCoverageInternal:
+    configuration: HistoricalCoverageConfiguration
+    year_period: static.HistoricalYearPeriod
+    decade: Optional[static.HistoricalDecade] = None
+
+    def __post_init__(self):
+        error_message = "{param} {value!r} is not part of the historical coverage configuration {conf!r}"
+        if self.year_period not in self.configuration.year_periods:
+            raise exceptions.InvalidHistoricalYearPeriod(
+                error_message.format(
+                    param="year_period",
+                    value=self.year_period.value,
+                    conf=self.configuration.identifier,
+                )
+            )
+        if self.decade not in self.configuration.decades:
+            raise exceptions.InvalidHistoricalDecade(
+                error_message.format(
+                    param="decade",
+                    value=self.decade.value,
+                    conf=self.configuration.identifier,
+                )
+            )
+
+    @property
+    def identifier(self) -> str:
+        pattern_parts = [self.configuration.identifier]
+        pattern_parts.append(self.year_period.value)
+        if self.decade is not None:
+            pattern_parts.append(self.decade.value)
+        return "-".join(pattern_parts)
+
+    def get_netcdf_main_dataset_name(self) -> str:
+        return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
+
+    def get_thredds_file_download_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
+
+    def get_wms_base_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_wms_base_url(self._get_thredds_url_fragment(), settings)
+
+    def get_thredds_ncss_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+        return crawler.get_ncss_url(self._get_thredds_url_fragment(), settings)
+
+    def get_wms_main_layer_name(self) -> str:
+        return self._render_templated_value(self.configuration.wms_main_layer_name)
+
+    def _get_thredds_url_fragment(self) -> str:
+        return self._render_templated_value(self.configuration.thredds_url_pattern)
+
+    def _render_templated_value(self, value: str) -> str:
+        return value.format(
+            climatic_indicator=(
+                self.configuration.climatic_indicator
+                .historical_coverages_internal_name
+            ),
+            year_period=self.year_period.get_internal_value(),
+            decade=self.decade.get_internal_value() if self.decade else "",
             spatial_region=self.configuration.spatial_region.internal_value,
         )
 

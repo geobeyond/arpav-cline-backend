@@ -27,6 +27,7 @@ from rich.panel import Panel
 from . import (
     config,
     database,
+    db,
 )
 from .cliapp.app import app as cli_app
 from .bootstrapper.cliapp import app as bootstrapper_app
@@ -213,11 +214,16 @@ def import_thredds_datasets(
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         relevant_forecast_cov_confs = (
             database.collect_all_forecast_coverage_configurations_with_identifier_filter(
-            session,
+                session,
                 identifier_filter=coverage_configuration_identifier_filter
             )
         )
-        # TODO: Implement also historical coverages
+        relevant_historical_cov_confs = (
+            db.collect_all_historical_coverage_configurations_with_identifier_filter(
+                session,
+                identifier_filter=coverage_configuration_identifier_filter
+            )
+        )
         # TODO: Implement also overviews
         urls = []
         settings: config.ArpavPpcvSettings = ctx.obj["settings"]
@@ -236,6 +242,13 @@ def import_thredds_datasets(
                     settings.thredds_server)
                 if upper_uncert_url is not None:
                     urls.append(upper_uncert_url)
+        for historical_cov_conf in relevant_historical_cov_confs:
+            historical_covs = db.generate_historical_coverages_from_configuration(
+                historical_cov_conf)
+            for cov in historical_covs:
+                urls.append(
+                    cov.get_thredds_file_download_url(settings.thredds_server)
+                )
     remote_urls = [
         url.replace(settings.thredds_server.base_url, base_thredds_url)
         for url in urls

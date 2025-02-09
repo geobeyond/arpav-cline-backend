@@ -12,6 +12,8 @@ import logging
 import xml.etree.ElementTree as etree
 from typing import (
     Optional,
+    Protocol,
+    Union,
     TYPE_CHECKING,
 )
 
@@ -25,15 +27,83 @@ from . import models
 
 if TYPE_CHECKING:
     from ..config import ThreddsServerSettings
-    from ..schemas.coverages import ForecastCoverageInternal
+    from ..schemas.coverages import (
+        ForecastCoverageInternal,
+    )
 
 logger = logging.getLogger(__name__)
 
 
+class RetrievableCoverageProtocol(Protocol):
+    identifier: str
+
+    def get_thredds_ncss_url(self, settings: "ThreddsServerSettings") -> Optional[str]:
+        ...
+
+    def get_netcdf_main_dataset_name(self) -> Optional[str]:
+        ...
+
+
 @dataclasses.dataclass
-class ForecastCoverageDataRetriever:
+class SimpleCoverageDataRetriever:
     settings: "ThreddsServerSettings"
     http_client: httpx.Client
+    coverage: RetrievableCoverageProtocol
+
+    def retrieve_main_data(
+        self,
+        location: shapely.Point,
+        temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
+        target_series_name: Optional[str] = None,
+    ) -> Optional[pd.Series]:
+        ncss_url = self.coverage.get_thredds_ncss_url(self.settings)
+        netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
+        if all((ncss_url, netcdf_variable_name)):
+            return self._retrieve_location_data(
+                ncss_url,
+                netcdf_variable_name,
+                location,
+                temporal_range,
+                target_series_name=target_series_name or self.coverage.identifier,
+            )
+        elif ncss_url is None:
+            logger.warning("Could not find coverage's NCSS URL")
+        else:
+            logger.warning("Could not find coverage's NetCDF variable name")
+
+    def _retrieve_location_data(
+        self,
+        ncss_url: str,
+        netcdf_variable_name: str,
+        location: shapely.Point,
+        temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
+        target_series_name: Optional[str] = None,
+    ) -> Optional[pd.Series]:
+        result = None
+        raw_data = query_dataset(
+            self.http_client,
+            thredds_ncss_url=ncss_url,
+            variable_name=netcdf_variable_name,
+            longitude=location.x,
+            latitude=location.y,
+            time_start=temporal_range[0],
+            time_end=temporal_range[1],
+        )
+        if raw_data is not None:
+            result = _parse_ncss_dataset(
+                raw_data,
+                netcdf_variable_name,
+                time_start=temporal_range[0] if temporal_range else None,
+                time_end=temporal_range[1] if temporal_range else None,
+                target_series_name=target_series_name,
+            )
+        else:
+            logger.info(f"Did not receive any data from {ncss_url!r}")
+        return result
+
+
+@dataclasses.dataclass
+class ForecastCoverageDataRetriever(SimpleCoverageDataRetriever):
     coverage: "ForecastCoverageInternal"
 
     def retrieve_main_data(
@@ -119,36 +189,6 @@ class ForecastCoverageDataRetriever:
             logger.warning("Could not find coverage's upper uncertainty NCSS URL")
         else:
             logger.warning("Could not find coverage's NetCDF variable name")
-
-    def _retrieve_location_data(
-        self,
-        ncss_url: str,
-        netcdf_variable_name: str,
-        location: shapely.Point,
-        temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
-        target_series_name: Optional[str] = None,
-    ) -> Optional[pd.Series]:
-        result = None
-        raw_data = query_dataset(
-            self.http_client,
-            thredds_ncss_url=ncss_url,
-            variable_name=netcdf_variable_name,
-            longitude=location.x,
-            latitude=location.y,
-            time_start=temporal_range[0],
-            time_end=temporal_range[1],
-        )
-        if raw_data is not None:
-            result = _parse_ncss_dataset(
-                raw_data,
-                netcdf_variable_name,
-                time_start=temporal_range[0] if temporal_range else None,
-                time_end=temporal_range[1] if temporal_range else None,
-                target_series_name=target_series_name,
-            )
-        else:
-            logger.info(f"Did not receive any data from {ncss_url!r}")
-        return result
 
 
 def _parse_ncss_dataset(

@@ -34,6 +34,7 @@ _name_description_text: Final[str] = (
 class ClimaticIndicator(sqlmodel.SQLModel, table=True):
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     name: str
+    historical_coverages_internal_name: str | None
     measure_type: static.MeasureType
     aggregation_period: static.AggregationPeriod
     display_name_english: str = sqlmodel.Field(default="")
@@ -166,6 +167,7 @@ class ClimaticIndicatorCreate(sqlmodel.SQLModel):
         str,
         pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
     ]
+    historical_coverages_internal_name: Optional[str] = None
     measure_type: static.MeasureType
     aggregation_period: static.AggregationPeriod
     display_name_english: str = sqlmodel.Field(default="")
@@ -192,6 +194,7 @@ class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
         Optional[str],
         pydantic.Field(pattern=static.NAME_PATTERN, description=_name_description_text),
     ] = None
+    historical_coverages_internal_name: Optional[str] = None
     measure_type: Optional[static.MeasureType] = None
     aggregation_period: Optional[static.AggregationPeriod] = None
     display_name_english: Optional[str] = None

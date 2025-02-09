@@ -16,6 +16,7 @@ def generate_climatic_indicators(
     return [
         ClimaticIndicatorCreate(
             name="fd",
+            historical_coverages_internal_name="FD",
             measure_type=MeasureType.ABSOLUTE,
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Frost days (FD)",
@@ -30,7 +31,7 @@ def generate_climatic_indicators(
             unit_italian="gg",
             palette="default/seq-Blues-inv",
             color_scale_min=0,
-            color_scale_max=200,
+            color_scale_max=160,
             data_precision=0,
             sort_order=5,
             observation_names=[
@@ -70,6 +71,90 @@ def generate_climatic_indicators(
                     thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped",
                 ),
             ],
+        ),
+        ClimaticIndicatorCreate(
+            name="fd",
+            historical_coverages_internal_name="FD",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.ANNUAL,
+            display_name_english="Frost days (FD)",
+            display_name_italian="Giorni di gelo (FD)",
+            description_english=(
+                "Number of days with minimum temperature less than 0ºC"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima minore di 0°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu",
+            color_scale_min=-60,
+            color_scale_max=60,
+            data_precision=0,
+            sort_order=5,
+        ),
+        ClimaticIndicatorCreate(
+            name="fd",
+            historical_coverages_internal_name="FD",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Frost days (FD)",
+            display_name_italian="Giorni di gelo (FD)",
+            description_english=(
+                "Number of days with minimum temperature less than 0ºC"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima minore di 0°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-Blues-inv",
+            color_scale_min=0,
+            color_scale_max=160,
+            data_precision=0,
+            sort_order=5,
+        ),
+        ClimaticIndicatorCreate(
+            name="fd",
+            historical_coverages_internal_name="FD",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Frost days (FD)",
+            display_name_italian="Giorni di gelo (FD)",
+            description_english=(
+                "Number of days with minimum temperature less than 0ºC"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima minore di 0°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu",
+            color_scale_min=-60,
+            color_scale_max=60,
+            data_precision=0,
+            sort_order=5,
+        ),
+        ClimaticIndicatorCreate(
+            name="fd",
+            historical_coverages_internal_name="FD",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.THIRTY_YEAR,
+            display_name_english="Frost days (FD)",
+            display_name_italian="Giorni di gelo (FD)",
+            description_english=(
+                "Number of days with minimum temperature less than 0ºC"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima minore di 0°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-Blues-inv",
+            color_scale_min=0,
+            color_scale_max=160,
+            data_precision=0,
+            sort_order=5,
         ),
         ClimaticIndicatorCreate(
             name="fd",

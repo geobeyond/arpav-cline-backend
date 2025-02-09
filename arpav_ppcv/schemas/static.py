@@ -139,6 +139,7 @@ class MeasureType(str, enum.Enum):
 
 class AggregationPeriod(str, enum.Enum):
     ANNUAL = "annual"
+    TEN_YEAR = "ten_year"
     THIRTY_YEAR = "thirty_year"
 
     @staticmethod
@@ -158,6 +159,7 @@ class AggregationPeriod(str, enum.Enum):
         _ = translations.gettext
         return {
             self.ANNUAL: _("annual"),
+            self.TEN_YEAR: _("10yr"),
             self.THIRTY_YEAR: _("30yr"),
         }.get(self, self.value)
 
@@ -166,12 +168,14 @@ class AggregationPeriod(str, enum.Enum):
         _ = translations.gettext
         return {
             self.ANNUAL: _("annual description"),
+            self.TEN_YEAR: _("10yr description"),
             self.THIRTY_YEAR: _("30yr description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
             self.ANNUAL: 0,
+            self.TEN_YEAR: 2,
             self.THIRTY_YEAR: 1,
         }.get(self, 0)
 
@@ -460,6 +464,99 @@ class MeasurementAggregationType(str, enum.Enum):
             self.MONTHLY: 0,
             self.SEASONAL: 0,
             self.YEARLY: 0,
+        }.get(self, 0)
+
+
+class HistoricalDecade(str, enum.Enum):
+    DECADE_1961_1970 = "decade_1961_1970"
+    DECADE_1971_1980 = "decade_1971_1980"
+    DECADE_1981_1990 = "decade_1981_1990"
+    DECADE_1991_2000 = "decade_1991_2000"
+    DECADE_2001_2010 = "decade_2001_2010"
+    DECADE_2011_2020 = "decade_2011_2020"
+    DECADE_2021_2030 = "decade_2021_2030"
+    DECADE_2031_2040 = "decade_2031_2040"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical decade")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical decade description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.DECADE_1961_1970: _("decade_1961_1970"),
+            self.DECADE_1971_1980: _("decade_1971_1980"),
+            self.DECADE_1981_1990: _("decade_1981_1990"),
+            self.DECADE_1991_2000: _("decade_1991_2000"),
+            self.DECADE_2001_2010: _("decade_2001_2010"),
+            self.DECADE_2011_2020: _("decade_2011_2020"),
+            self.DECADE_2021_2030: _("decade_2021_2030"),
+            self.DECADE_2031_2040: _("decade_2031_2040"),
+        }.get(self, self.value)
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.CLIMATE_STANDARD_NORMAL_1961_1990.name: _("1961-1990 description"),
+            self.CLIMATE_STANDARD_NORMAL_1991_2020.name: _("1991-2020 description"),
+        }.get(self, self.value)
+
+    def get_internal_value(self) -> str:
+        return self.value.replace("decade_", "").replace("_", "-")
+
+    def get_sort_order(self) -> int:
+        return {
+            self.CLIMATE_STANDARD_NORMAL_1961_1990: 0,
+            self.CLIMATE_STANDARD_NORMAL_1991_2020: 1,
+        }.get(self, 0)
+
+
+class HistoricalReferencePeriod(str, enum.Enum):
+    CLIMATE_STANDARD_NORMAL_1961_1990 = "climate_standard_normal_1961_1990"
+    CLIMATE_STANDARD_NORMAL_1991_2020 = "climate_standard_normal_1991_2020"
+
+    @staticmethod
+    def get_param_display_name(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical reference period")
+
+    @staticmethod
+    def get_param_description(locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return _("historical reference period description")
+
+    def get_value_display_name(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.CLIMATE_STANDARD_NORMAL_1961_1990: _("1961-1990"),
+            self.CLIMATE_STANDARD_NORMAL_1991_2020: _("1991-2020"),
+        }.get(self, self.value)
+
+    def get_value_description(self, locale: babel.Locale) -> str:
+        translations = get_translations(locale)
+        _ = translations.gettext
+        return {
+            self.CLIMATE_STANDARD_NORMAL_1961_1990: _("1961-1990 description"),
+            self.CLIMATE_STANDARD_NORMAL_1991_2020: _("1991-2020 description"),
+        }.get(self, self.value)
+
+    def get_sort_order(self) -> int:
+        return {
+            self.CLIMATE_STANDARD_NORMAL_1961_1990: 0,
+            self.CLIMATE_STANDARD_NORMAL_1991_2020: 1,
         }.get(self, 0)
 
 

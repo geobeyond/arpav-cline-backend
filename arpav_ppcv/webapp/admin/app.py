@@ -101,6 +101,18 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
     )
     admin.add_view(
         DropDown(
+            "Historical",
+            icon="fa-solid fa-clock-rotate-left",
+            always_open=False,
+            views=[
+                coverage_views.HistoricalCoverageConfigurationView(
+                    coverages.HistoricalCoverageConfiguration
+                ),
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
             "Observations",
             icon="fa-solid fa-ruler",
             always_open=False,

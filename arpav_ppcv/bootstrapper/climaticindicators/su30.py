@@ -16,6 +16,7 @@ def generate_climatic_indicators(
     return [
         ClimaticIndicatorCreate(
             name="su30",
+            historical_coverages_internal_name="SU30",
             measure_type=MeasureType.ABSOLUTE,
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Summer days (SU30)",
@@ -30,7 +31,7 @@ def generate_climatic_indicators(
             unit_italian="gg",
             palette="default/seq-YlOrRd",
             color_scale_min=0,
-            color_scale_max=100,
+            color_scale_max=110,
             data_precision=0,
             sort_order=4,
             observation_names=[
@@ -70,6 +71,90 @@ def generate_climatic_indicators(
                     thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped",
                 ),
             ],
+        ),
+        ClimaticIndicatorCreate(
+            name="su30",
+            historical_coverages_internal_name="SU30",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.ANNUAL,
+            display_name_english="Summer days (SU30)",
+            display_name_italian="Giorni caldi (SU30)",
+            description_english=(
+                "Number of days with maximum temperature larger than 30°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura massima maggiore di 30°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-50,
+            color_scale_max=50,
+            data_precision=0,
+            sort_order=4,
+        ),
+        ClimaticIndicatorCreate(
+            name="su30",
+            historical_coverages_internal_name="SU30",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Summer days (SU30)",
+            display_name_italian="Giorni caldi (SU30)",
+            description_english=(
+                "Number of days with maximum temperature larger than 30°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura massima maggiore di 30°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=110,
+            data_precision=0,
+            sort_order=4,
+        ),
+        ClimaticIndicatorCreate(
+            name="su30",
+            historical_coverages_internal_name="SU30",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Summer days (SU30)",
+            display_name_italian="Giorni caldi (SU30)",
+            description_english=(
+                "Number of days with maximum temperature larger than 30°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura massima maggiore di 30°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-50,
+            color_scale_max=50,
+            data_precision=0,
+            sort_order=4,
+        ),
+        ClimaticIndicatorCreate(
+            name="su30",
+            historical_coverages_internal_name="SU30",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.THIRTY_YEAR,
+            display_name_english="Summer days (SU30)",
+            display_name_italian="Giorni caldi (SU30)",
+            description_english=(
+                "Number of days with maximum temperature larger than 30°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura massima maggiore di 30°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=110,
+            data_precision=0,
+            sort_order=4,
         ),
         ClimaticIndicatorCreate(
             name="su30",

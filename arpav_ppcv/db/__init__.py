@@ -1,3 +1,13 @@
+from .historicalcoverages import (
+    list_historical_coverage_configurations,
+    collect_all_historical_coverage_configurations,
+    collect_all_historical_coverage_configurations_with_identifier_filter,
+    create_historical_coverage_configuration,
+    generate_historical_coverages_from_configuration,
+    get_historical_coverage_configuration,
+    update_historical_coverage_configuration,
+    delete_historical_coverage_configuration,
+)
 from .overviews import (
     list_forecast_overview_series_configurations,  # noqa
     collect_all_forecast_overview_series_configurations,  # noqa

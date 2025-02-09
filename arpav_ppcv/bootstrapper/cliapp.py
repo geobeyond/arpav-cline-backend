@@ -40,6 +40,17 @@ from .forecast_coverage_configurations import (
     tasmin as tasmin_forecast_coverage_configurations,
     tr as tr_forecast_coverage_configurations,
 )
+from .historical_coverage_configurations import (
+    cdds as cdds_historical_coverage_configurations,
+    fd as fd_historical_coverage_configurations,
+    hdds as hdds_historical_coverage_configurations,
+    pr as pr_historical_coverage_configurations,
+    su30 as su30_historical_coverage_configurations,
+    tas as tas_historical_coverage_configurations,
+    tasmax as tasmax_historical_coverage_configurations,
+    tasmin as tasmin_historical_coverage_configurations,
+    tr as tr_historical_coverage_configurations,
+)
 from .coverage_configurations.forecast import (
     cdd as cdd_forecast,
     cdds as cdds_forecast,
@@ -714,6 +725,84 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
                 session.rollback()
 
 
+@app.command("historical-coverage-configurations")
+def bootstrap_historical_coverage_configurations(ctx: typer.Context):
+    """Create initial historical coverage configurations."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_spatial_regions = database.collect_all_spatial_regions(session)
+        clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
+        region_ids = {sr.name: sr.id for sr in all_spatial_regions}
+
+        to_create = cdds_historical_coverage_configurations.generate_historical_coverage_configurations(
+            climatic_indicator_ids=clim_ind_ids,
+            spatial_region_ids=region_ids,
+        )
+        to_create.extend(
+            fd_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            hdds_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            pr_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            su30_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            tas_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            tasmax_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            tasmin_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        to_create.extend(
+            tr_historical_coverage_configurations.generate_historical_coverage_configurations(
+                climatic_indicator_ids=clim_ind_ids,
+                spatial_region_ids=region_ids,
+            )
+        )
+        for historical_coverage_configuration_create in to_create:
+            try:
+                db_historical_cov_conf = db.create_historical_coverage_configuration(
+                    session, historical_coverage_configuration_create
+                )
+                print(
+                    f"Created historical coverage "
+                    f"configuration {db_historical_cov_conf.identifier!r}"
+                )
+            except IntegrityError as err:
+                print(
+                    f"Could not create historical coverage configuration "
+                    f"{historical_coverage_configuration_create!r}: {err}"
+                )
+                session.rollback()
+
+
 @app.command("spatial-regions")
 def bootstrap_spatial_regions(
     ctx: typer.Context,
@@ -854,5 +943,6 @@ def perform_full_bootstrap(
     ctx.invoke(bootstrap_climatic_indicators, ctx=ctx)
     ctx.invoke(bootstrap_observation_series_configurations, ctx=ctx)
     ctx.invoke(bootstrap_forecast_coverage_configurations, ctx=ctx)
+    ctx.invoke(bootstrap_historical_coverage_configurations, ctx=ctx)
     ctx.invoke(bootstrap_overview_series_configurations, ctx=ctx)
     print("All done!")

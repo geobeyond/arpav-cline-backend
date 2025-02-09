@@ -16,6 +16,30 @@ def generate_climatic_indicators(
     return [
         ClimaticIndicatorCreate(
             name="cdds",
+            historical_coverages_internal_name="CDD_jrc",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.ANNUAL,
+            display_name_english="Cooling degree days (CDDs)",
+            display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+            description_english=(
+                "Sum of the average daily temperature minus 21°C if the "
+                "average daily temperature is larger than 24°C"
+            ),
+            description_italian=(
+                "Somma della temperatura media giornaliera meno 21°C se la "
+                "temperatura media giornaliera è maggiore di 24°C"
+            ),
+            unit_english="ºC",
+            unit_italian="ºC",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-300,
+            color_scale_max=300,
+            data_precision=0,
+            sort_order=8,
+        ),
+        ClimaticIndicatorCreate(
+            name="cdds",
+            historical_coverages_internal_name="CDD_jrc",
             measure_type=MeasureType.ABSOLUTE,
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Cooling degree days (CDDs)",
@@ -32,7 +56,7 @@ def generate_climatic_indicators(
             unit_italian="ºC",
             palette="default/seq-YlOrRd",
             color_scale_min=0,
-            color_scale_max=1000,
+            color_scale_max=650,
             data_precision=0,
             sort_order=8,
             observation_names=[
@@ -68,6 +92,75 @@ def generate_climatic_indicators(
                     thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped_noppcne",
                 ),
             ],
+        ),
+        ClimaticIndicatorCreate(
+            name="cdds",
+            historical_coverages_internal_name="CDD_jrc",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Cooling degree days (CDDs)",
+            display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+            description_english=(
+                "Sum of the average daily temperature minus 21°C if the "
+                "average daily temperature is larger than 24°C"
+            ),
+            description_italian=(
+                "Somma della temperatura media giornaliera meno 21°C se la "
+                "temperatura media giornaliera è maggiore di 24°C"
+            ),
+            unit_english="ºC",
+            unit_italian="ºC",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-300,
+            color_scale_max=300,
+            data_precision=0,
+            sort_order=8,
+        ),
+        ClimaticIndicatorCreate(
+            name="cdds",
+            historical_coverages_internal_name="CDD_jrc",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Cooling degree days (CDDs)",
+            display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+            description_english=(
+                "Sum of the average daily temperature minus 21°C if the "
+                "average daily temperature is larger than 24°C"
+            ),
+            description_italian=(
+                "Somma della temperatura media giornaliera meno 21°C se la "
+                "temperatura media giornaliera è maggiore di 24°C"
+            ),
+            unit_english="ºC",
+            unit_italian="ºC",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=650,
+            data_precision=0,
+            sort_order=8,
+        ),
+        ClimaticIndicatorCreate(
+            name="cdds",
+            historical_coverages_internal_name="CDD_jrc",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.THIRTY_YEAR,
+            display_name_english="Cooling degree days (CDDs)",
+            display_name_italian="Gradi giorno di raffrescamento (CDDs)",
+            description_english=(
+                "Sum of the average daily temperature minus 21°C if the "
+                "average daily temperature is larger than 24°C"
+            ),
+            description_italian=(
+                "Somma della temperatura media giornaliera meno 21°C se la "
+                "temperatura media giornaliera è maggiore di 24°C"
+            ),
+            unit_english="ºC",
+            unit_italian="ºC",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=650,
+            data_precision=0,
+            sort_order=8,
         ),
         ClimaticIndicatorCreate(
             name="cdds",

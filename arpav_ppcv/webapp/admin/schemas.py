@@ -23,6 +23,7 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     identifier: str
     id: int
     name: str
+    historical_coverages_internal_name: Optional[str] = None
     measure_type: static.MeasureType
     aggregation_period: static.AggregationPeriod
     display_name_english: str
@@ -159,6 +160,19 @@ class ForecastOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str]
     upper_uncertainty_netcdf_main_dataset_name: Optional[str]
     scenarios: list[static.ForecastScenario]
+
+
+class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
+    id: int
+    identifier: str
+    netcdf_main_dataset_name: str
+    thredds_url_pattern: str
+    wms_main_layer_name: str
+    climatic_indicator: Optional[int]
+    spatial_region: Optional[int]
+    reference_period: Optional[static.HistoricalReferencePeriod]
+    year_periods: list[static.HistoricalYearPeriod]
+    decades: list[static.HistoricalDecade]
 
 
 class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):

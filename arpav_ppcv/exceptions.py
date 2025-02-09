@@ -70,6 +70,22 @@ class InvalidForecastScenarioError(ArpavError):
     ...
 
 
+class InvalidHistoricalYearPeriod(ArpavError):
+    ...
+
+
+class InvalidHistoricalDecade(ArpavError):
+    ...
+
+
+class InvalidHistoricalCoverageConfigurationIdentifierError(ArpavError):
+    ...
+
+
+class InvalidHistoricalCoverageIdentifierError(ArpavError):
+    ...
+
+
 class ObservationInternalNameNotFoundError(ArpavError):
     ...
 

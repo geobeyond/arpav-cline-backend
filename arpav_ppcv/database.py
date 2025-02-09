@@ -1502,7 +1502,7 @@ def get_forecast_coverage_configuration_by_identifier(
 ) -> Optional[coverages.ForecastCoverageConfiguration]:
     error_message = f"{identifier!r} is not a valid forecast coverage identifier"
     parts = identifier.split("-")
-    if parts[0] == "forecast":
+    if parts[0] == static.DataCategory.FORECAST.value:
         if len(parts) >= 5:
             climatic_indicator_identifier = "-".join(parts[1:4])
             climatic_indicator = get_climatic_indicator_by_identifier(

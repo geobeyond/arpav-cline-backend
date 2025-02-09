@@ -16,6 +16,7 @@ def generate_climatic_indicators(
     return [
         ClimaticIndicatorCreate(
             name="tr",
+            historical_coverages_internal_name="TR",
             measure_type=MeasureType.ABSOLUTE,
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Tropical nights (TR)",
@@ -30,7 +31,7 @@ def generate_climatic_indicators(
             unit_italian="gg",
             palette="default/seq-YlOrRd",
             color_scale_min=0,
-            color_scale_max=120,
+            color_scale_max=65,
             data_precision=1,
             sort_order=3,
             observation_names=[
@@ -70,6 +71,90 @@ def generate_climatic_indicators(
                     thredds_url_base_path="MPI-ESM-LR_REMO2009ymbc/clipped",
                 ),
             ],
+        ),
+        ClimaticIndicatorCreate(
+            name="tr",
+            historical_coverages_internal_name="TR",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.ANNUAL,
+            display_name_english="Tropical nights (TR)",
+            display_name_italian="Notti tropicali (TR)",
+            description_english=(
+                "Number of days with minimum temperature larger than 20°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima maggiore di 20°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-40,
+            color_scale_max=40,
+            data_precision=1,
+            sort_order=3,
+        ),
+        ClimaticIndicatorCreate(
+            name="tr",
+            historical_coverages_internal_name="TR",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Tropical nights (TR)",
+            display_name_italian="Notti tropicali (TR)",
+            description_english=(
+                "Number of days with minimum temperature larger than 20°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima maggiore di 20°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=65,
+            data_precision=1,
+            sort_order=3,
+        ),
+        ClimaticIndicatorCreate(
+            name="tr",
+            historical_coverages_internal_name="TR",
+            measure_type=MeasureType.ANOMALY,
+            aggregation_period=AggregationPeriod.TEN_YEAR,
+            display_name_english="Tropical nights (TR)",
+            display_name_italian="Notti tropicali (TR)",
+            description_english=(
+                "Number of days with minimum temperature larger than 20°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima maggiore di 20°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/div-RdBu-inv",
+            color_scale_min=-40,
+            color_scale_max=40,
+            data_precision=1,
+            sort_order=3,
+        ),
+        ClimaticIndicatorCreate(
+            name="tr",
+            historical_coverages_internal_name="TR",
+            measure_type=MeasureType.ABSOLUTE,
+            aggregation_period=AggregationPeriod.THIRTY_YEAR,
+            display_name_english="Tropical nights (TR)",
+            display_name_italian="Notti tropicali (TR)",
+            description_english=(
+                "Number of days with minimum temperature larger than 20°C"
+            ),
+            description_italian=(
+                "Numero di giorni con temperatura minima maggiore di 20°C"
+            ),
+            unit_english="days",
+            unit_italian="gg",
+            palette="default/seq-YlOrRd",
+            color_scale_min=0,
+            color_scale_max=65,
+            data_precision=1,
+            sort_order=3,
         ),
         ClimaticIndicatorCreate(
             name="tr",
