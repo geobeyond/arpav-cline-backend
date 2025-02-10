@@ -13,9 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
-from .... import (
-    database as db,
-)
+from .... import db
 from ...responses import GeoJsonResponse
 from ... import dependencies
 from ..schemas import observations

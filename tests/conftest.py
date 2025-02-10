@@ -17,7 +17,7 @@ from typer.testing import CliRunner
 import arpav_ppcv.db.legacy
 from arpav_ppcv import (
     config,
-    database,
+    db,
     main,
 )
 from arpav_ppcv.schemas import (
@@ -171,7 +171,7 @@ def sample_real_climatic_indicators(
     created = []
     for indicator_to_create in generate_tas_climatic_indicators():
         created.append(
-            database.create_climatic_indicator(arpav_db_session, indicator_to_create)
+            db.create_climatic_indicator(arpav_db_session, indicator_to_create)
         )
     return created
 
@@ -298,7 +298,7 @@ def sample_real_coverage_configurations(
             arpav_db_session
         )
     )
-    all_climatic_indicators = database.collect_all_climatic_indicators(arpav_db_session)
+    all_climatic_indicators = db.collect_all_climatic_indicators(arpav_db_session)
     cov_confs_to_create = (
         tas_forecast_bootstrappable_configurations.generate_configurations(
             conf_param_values={
@@ -921,7 +921,7 @@ def _override_get_settings():
 
 
 def _override_get_db_engine(settings=Depends(dependencies.get_settings)):
-    yield database.get_engine(settings, use_test_db=True)
+    yield db.get_engine(settings, use_test_db=True)
 
 
 def _override_get_db_session(engine=Depends(dependencies.get_db_engine)):

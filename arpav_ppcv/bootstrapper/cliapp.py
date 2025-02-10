@@ -9,7 +9,6 @@ from rich import print
 from sqlalchemy.exc import IntegrityError
 
 import arpav_ppcv.db.legacy
-from .. import database
 from .. import db
 from ..prefect.flows import observations as observations_flows
 from ..schemas import (
@@ -123,7 +122,7 @@ def bootstrap_municipalities(
 
     should_bootstrap = False
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        _, num_existing_municipalities = database.list_municipalities(
+        _, num_existing_municipalities = db.list_municipalities(
             session, include_total=True
         )
         if num_existing_municipalities == 0:
@@ -163,9 +162,9 @@ def bootstrap_municipalities(
             if len(to_create) > 0:
                 if num_existing_municipalities > 0:
                     print("About to delete pre-existing municipalities...")
-                    database.delete_all_municipalities(session)
+                    db.delete_all_municipalities(session)
                 print(f"About to save {len(to_create)} municipalities...")
-                database.create_many_municipalities(session, to_create)
+                db.create_many_municipalities(session, to_create)
                 if has_centroid_info:
                     print("About to (re)create municipality centroids DB view...")
                     ctx.invoke(bootstrap_municipality_centroids, ctx)
@@ -194,9 +193,9 @@ def bootstrap_municipality_centroids(
         f"WITH DATA"
     )
     create_index_statement = sqlmodel.text(
-        f"CREATE INDEX {index_name} ON {view_name} USING gist (geom)"
+        f"CREATE INDEX {index_name} ON {view_name} USING gist (geom)"  # noqa
     )
-    drop_index_statement = sqlmodel.text(f"DROP INDEX IF EXISTS {index_name}")
+    drop_index_statement = sqlmodel.text(f"DROP INDEX IF EXISTS {index_name}")  # noqa
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         session.execute(drop_view_statement)
         session.execute(drop_index_statement)
@@ -229,7 +228,7 @@ def bootstrap_climatic_indicators(
 ):
     """Create initial climatic indicators."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_forecast_models = database.collect_all_forecast_models(session)
+        all_forecast_models = db.collect_all_forecast_models(session)
         forecast_model_ids = {fm.name: fm.id for fm in all_forecast_models}
         to_create = cdd_climatic_indicators.generate_climatic_indicators(
             forecast_model_ids
@@ -273,7 +272,7 @@ def bootstrap_climatic_indicators(
         for climatic_indicator_create in to_create:
             if name_filter is None or name_filter in climatic_indicator_create.name:
                 try:
-                    db_climatic_indicator = database.create_climatic_indicator(
+                    db_climatic_indicator = db.create_climatic_indicator(
                         session, climatic_indicator_create
                     )
                     print(
@@ -294,13 +293,13 @@ def bootstrap_climatic_indicators(
 def bootstrap_observation_series_configurations(ctx: typer.Context):
     """Create initial observation series configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_climatic_indicators = db.collect_all_climatic_indicators(session)
         to_generate = generate_observation_series_configurations(
             {ind.identifier: ind for ind in all_climatic_indicators}
         )
         for obs_series_create in to_generate:
             try:
-                db_series_conf = database.create_observation_series_configuration(
+                db_series_conf = db.create_observation_series_configuration(
                     session, obs_series_create
                 )
                 print(
@@ -347,7 +346,7 @@ def bootstrap_coverage_configurations(
             (pv.configuration_parameter.name, pv.name): pv
             for pv in all_conf_param_values
         }
-        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_climatic_indicators = db.collect_all_climatic_indicators(session)
         clim_indicator_ids = {i.identifier: i.id for i in all_climatic_indicators}
     coverage_configurations = []
     coverage_configurations.extend(
@@ -529,7 +528,7 @@ def bootstrap_coverage_configurations(
 def bootstrap_overview_series_configurations(ctx: typer.Context):
     """Create initial overview series configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_climatic_indicators = database.collect_all_climatic_indicators(session)
+        all_climatic_indicators = db.collect_all_climatic_indicators(session)
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
 
         overview_obs_series_confs_to_create = (
@@ -578,12 +577,12 @@ def bootstrap_overview_series_configurations(ctx: typer.Context):
 def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
     """Create initial forecast coverage configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_climatic_indicators = database.collect_all_climatic_indicators(session)
-        all_spatial_regions = database.collect_all_spatial_regions(session)
-        all_forecast_models = database.collect_all_forecast_models(session)
-        all_forecast_time_windows = database.collect_all_forecast_time_windows(session)
+        all_climatic_indicators = db.collect_all_climatic_indicators(session)
+        all_spatial_regions = db.collect_all_spatial_regions(session)
+        all_forecast_models = db.collect_all_forecast_models(session)
+        all_forecast_time_windows = db.collect_all_forecast_time_windows(session)
         all_observation_series_configurations = (
-            database.collect_all_observation_series_configurations(session)
+            db.collect_all_observation_series_configurations(session)
         )
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
         region_ids = {sr.name: sr.id for sr in all_spatial_regions}
@@ -710,7 +709,7 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
         )
         for forecast_coverage_configuration_create in to_create:
             try:
-                db_forecast_cov_conf = database.create_forecast_coverage_configuration(
+                db_forecast_cov_conf = db.create_forecast_coverage_configuration(
                     session, forecast_coverage_configuration_create
                 )
                 print(
@@ -729,8 +728,8 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
 def bootstrap_historical_coverage_configurations(ctx: typer.Context):
     """Create initial historical coverage configurations."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        all_climatic_indicators = database.collect_all_climatic_indicators(session)
-        all_spatial_regions = database.collect_all_spatial_regions(session)
+        all_climatic_indicators = db.collect_all_climatic_indicators(session)
+        all_spatial_regions = db.collect_all_spatial_regions(session)
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
         region_ids = {sr.name: sr.id for sr in all_spatial_regions}
 
@@ -823,13 +822,13 @@ def bootstrap_spatial_regions(
 ):
     """Create initial spatial regions."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        existing = database.collect_all_spatial_regions(session)
+        existing = db.collect_all_spatial_regions(session)
         for spatial_region_create in generate_spatial_regions(
             region_bounds_base_directory
         ):
             if spatial_region_create.name not in (sr.name for sr in existing):
                 try:
-                    db_spatial_region = database.create_spatial_region(
+                    db_spatial_region = db.create_spatial_region(
                         session, spatial_region_create
                     )
                     print(f"Created spatial region {db_spatial_region.name!r}")
@@ -849,11 +848,11 @@ def bootstrap_spatial_regions(
 def bootstrap_forecast_models(ctx: typer.Context):
     """Create initial forecast models."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        existing = database.collect_all_forecast_models(session)
+        existing = db.collect_all_forecast_models(session)
         for forecast_model_create in generate_forecast_models():
             if forecast_model_create.name not in (db_fm.name for db_fm in existing):
                 try:
-                    db_forecast_model = database.create_forecast_model(
+                    db_forecast_model = db.create_forecast_model(
                         session, forecast_model_create
                     )
                     print(f"Created forecast model {db_forecast_model.name!r}")
@@ -873,11 +872,11 @@ def bootstrap_forecast_models(ctx: typer.Context):
 def bootstrap_forecast_time_windows(ctx: typer.Context):
     """Create initial forecast time windows."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        existing = database.collect_all_forecast_time_windows(session)
+        existing = db.collect_all_forecast_time_windows(session)
         for forecast_time_window_create in generate_forecast_time_windows():
             if forecast_time_window_create.name not in (tw.name for tw in existing):
                 try:
-                    db_forecast_time_window = database.create_forecast_time_window(
+                    db_forecast_time_window = db.create_forecast_time_window(
                         session, forecast_time_window_create
                     )
                     print(

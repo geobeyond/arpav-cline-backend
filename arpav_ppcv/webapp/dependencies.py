@@ -5,10 +5,8 @@ import pydantic
 import sqlmodel
 from fastapi import Depends
 
-from .. import (
-    config,
-    database,
-)
+from .. import config
+from ..db import get_engine
 
 
 def get_settings() -> config.ArpavPpcvSettings:
@@ -17,7 +15,7 @@ def get_settings() -> config.ArpavPpcvSettings:
 
 def get_db_engine(settings: config.ArpavPpcvSettings = Depends(get_settings)):
     """Dependency for FastAPI to create a database engine."""
-    yield database.get_engine(settings)
+    yield get_engine(settings)
 
 
 def get_db_session(engine=Depends(get_db_engine)):  # noqa: B008

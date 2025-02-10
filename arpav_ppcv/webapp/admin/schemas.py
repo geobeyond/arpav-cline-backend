@@ -6,11 +6,21 @@ import pydantic
 import sqlmodel
 
 from ...schemas.base import ObservationAggregationType
-from ...schemas import static
+from ...schemas.static import (
+    AggregationPeriod,
+    ForecastScenario,
+    ForecastYearPeriod,
+    HistoricalDecade,
+    HistoricalReferencePeriod,
+    HistoricalYearPeriod,
+    MeasurementAggregationType,
+    MeasureType,
+    ObservationStationManager,
+)
 
 
 class ClimaticIndicatorObservationNameRead(sqlmodel.SQLModel):
-    station_manager: static.ObservationStationManager
+    station_manager: ObservationStationManager
     indicator_observation_name: str
 
 
@@ -24,8 +34,8 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     id: int
     name: str
     historical_coverages_internal_name: Optional[str] = None
-    measure_type: static.MeasureType
-    aggregation_period: static.AggregationPeriod
+    measure_type: MeasureType
+    aggregation_period: AggregationPeriod
     display_name_english: str
     display_name_italian: str
     description_english: str
@@ -116,7 +126,7 @@ class CoverageConfigurationReadListItem(sqlmodel.SQLModel):
 class ObservationStationRead(sqlmodel.SQLModel):
     id: int
     name: str
-    managed_by: static.ObservationStationManager
+    managed_by: ObservationStationManager
     longitude: float
     latitude: float
     code: str
@@ -128,15 +138,15 @@ class ObservationStationRead(sqlmodel.SQLModel):
 class ObservationSeriesConfigurationRead(sqlmodel.SQLModel):
     id: int
     identifier: str
-    measurement_aggregation_type: static.MeasurementAggregationType
-    station_managers: list[static.ObservationStationManager]
+    measurement_aggregation_type: MeasurementAggregationType
+    station_managers: list[ObservationStationManager]
     climatic_indicator: int
 
 
 class ObservationMeasurementRead(sqlmodel.SQLModel):
     observation_station: int
     climatic_indicator: int
-    measurement_aggregation_type: static.MeasurementAggregationType
+    measurement_aggregation_type: MeasurementAggregationType
     date: dt.date
     value: float
 
@@ -159,7 +169,7 @@ class ForecastOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
     lower_uncertainty_netcdf_main_dataset_name: Optional[str]
     upper_uncertainty_thredds_url_pattern: Optional[str]
     upper_uncertainty_netcdf_main_dataset_name: Optional[str]
-    scenarios: list[static.ForecastScenario]
+    scenarios: list[ForecastScenario]
 
 
 class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
@@ -170,9 +180,9 @@ class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
     wms_main_layer_name: str
     climatic_indicator: Optional[int]
     spatial_region: Optional[int]
-    reference_period: Optional[static.HistoricalReferencePeriod]
-    year_periods: list[static.HistoricalYearPeriod]
-    decades: list[static.HistoricalDecade]
+    reference_period: Optional[HistoricalReferencePeriod]
+    year_periods: list[HistoricalYearPeriod]
+    decades: list[HistoricalDecade]
 
 
 class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
@@ -188,8 +198,8 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     lower_uncertainty_netcdf_main_dataset_name: Optional[str]
     upper_uncertainty_thredds_url_pattern: Optional[str]
     upper_uncertainty_netcdf_main_dataset_name: Optional[str]
-    scenarios: list[static.ForecastScenario]
-    year_periods: list[static.ForecastYearPeriod]
+    scenarios: list[ForecastScenario]
+    year_periods: list[ForecastYearPeriod]
     forecast_models: list[int]
     forecast_time_windows: list[int]
     observation_series_configurations: list[int]

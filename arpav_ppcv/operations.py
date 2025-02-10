@@ -33,7 +33,7 @@ from shapely.ops import transform
 import arpav_ppcv.db.legacy
 from . import (
     config,
-    database,
+    db,
 )
 from .schemas import (
     base,
@@ -153,7 +153,7 @@ def get_station_data(
     month: int,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
 ) -> Optional[pd.DataFrame]:
-    raw_measurements = database.collect_all_monthly_measurements(
+    raw_measurements = db.collect_all_monthly_measurements(
         session=session,
         station_id_filter=station.id,
         climatic_indicator_id_filter=climatic_indicator.id,
@@ -695,7 +695,7 @@ def extract_nearby_station_data(
     point_buffer_geom = _get_spatial_buffer(
         point_geom, settings.nearest_station_radius_meters
     )
-    nearby_stations = database.collect_all_stations(
+    nearby_stations = db.collect_all_stations(
         session, polygon_intersection_filter=point_buffer_geom
     )
     if len(nearby_stations) > 0:
@@ -705,14 +705,14 @@ def extract_nearby_station_data(
         aggregation_type = coverage_configuration.observation_variable_aggregation_type
         if aggregation_type == base.ObservationAggregationType.MONTHLY:
             retriever = functools.partial(
-                database.collect_all_monthly_measurements,
+                db.collect_all_monthly_measurements,
                 session,
                 **retriever_kwargs,
                 month_filter=None,
             )
         elif aggregation_type == base.ObservationAggregationType.SEASONAL:
             retriever = functools.partial(
-                database.collect_all_seasonal_measurements,
+                db.collect_all_seasonal_measurements,
                 session,
                 **retriever_kwargs,
                 season_filter=coverage_configuration.get_seasonal_aggregation_query_filter(
@@ -721,7 +721,7 @@ def extract_nearby_station_data(
             )
         else:  # ANNUAL
             retriever = functools.partial(
-                database.collect_all_yearly_measurements,
+                db.collect_all_yearly_measurements,
                 session,
                 **retriever_kwargs,
             )
@@ -1025,7 +1025,7 @@ def _list_possible_climatic_indicators(
     measure_types: Sequence[str],
     aggregation_periods: Sequence[str],
 ) -> list[climaticindicators.ClimaticIndicator]:
-    filtered = database.collect_all_climatic_indicators(session)
+    filtered = db.collect_all_climatic_indicators(session)
     if len(variable_names) > 0:
         filtered = [i for i in filtered if i.name in variable_names]
     if len(measure_types) > 0:
@@ -1079,7 +1079,7 @@ def convert_conf_params_filter(
         elif param_name == "archive":
             archive = param_value
         elif param_name == "climatological_model":
-            climatological_model = database.get_forecast_model_by_name(
+            climatological_model = db.get_forecast_model_by_name(
                 session, param_value
             )
             if climatological_model is None:
@@ -1113,7 +1113,7 @@ def convert_conf_params_filter(
                     f"Could not parse {param_value!r} as scenario, skipping..."
                 )
         elif param_name == "time_window":
-            time_window = database.get_forecast_time_window_by_name(
+            time_window = db.get_forecast_time_window_by_name(
                 session, param_value
             )
             if time_window is None:
@@ -1133,7 +1133,7 @@ def convert_conf_params_filter(
         elif param_name == "climatological_standard_normal":
             climatological_standard_normal = param_value
     if all((climatological_variable, measure, aggregation_period)):
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = db.get_climatic_indicator_by_identifier(
             session,
             "-".join(
                 (climatological_variable, measure.value, aggregation_period.value)

@@ -211,16 +211,6 @@ class HistoricalDataSeries:
                 self.historical_coverage.identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
-                (
-                    self.temporal_start.strftime("%Y%m%d")
-                    if self.temporal_start is not None
-                    else "*"
-                ),
-                (
-                    self.temporal_end.strftime("%Y%m%d")
-                    if self.temporal_end is not None
-                    else "*"
-                ),
                 self.processing_method.value,
             )
         )

@@ -1,14 +1,19 @@
 import logging
-from typing import Generator
+from typing import (
+    Generator,
+    TYPE_CHECKING,
+)
 
 import geojson_pydantic
 import httpx
 import shapely
 
 from .. import exceptions
-from ..schemas import (
-    climaticindicators,
-    observations,
+from ..schemas.observations import (
+    ObservationMeasurementCreate,
+    ObservationSeriesConfiguration,
+    ObservationStation,
+    ObservationStationCreate,
 )
 from ..schemas.static import (
     MeasurementAggregationType,
@@ -17,12 +22,15 @@ from ..schemas.static import (
 )
 from . import common
 
+if TYPE_CHECKING:
+    from ..schemas.climaticindicators import ClimaticIndicator
+
 logger = logging.getLogger(__name__)
 
 
 def fetch_remote_stations(
     client: httpx.Client,
-    series_configuration: observations.ObservationSeriesConfiguration,
+    series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
     auth_token: str,
 ) -> Generator[dict, None, None]:
@@ -64,9 +72,9 @@ def fetch_remote_stations(
 
 def parse_station(
     raw_station: dict,
-) -> observations.ObservationStationCreate:
+) -> ObservationStationCreate:
     pt_4326 = shapely.Point(raw_station["longitude"], raw_station["latitude"])
-    return observations.ObservationStationCreate(
+    return ObservationStationCreate(
         code="-".join(
             (
                 ObservationStationManager.ARPAFVG.value,
@@ -82,8 +90,8 @@ def parse_station(
 
 def fetch_station_measurements(
     client: httpx.Client,
-    observation_station: observations.ObservationStation,
-    series_configuration: observations.ObservationSeriesConfiguration,
+    observation_station: ObservationStation,
+    series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
     auth_token: str,
 ) -> Generator[tuple[ObservationYearPeriod, dict], None, None]:
@@ -144,13 +152,13 @@ def fetch_station_measurements(
 def parse_measurement(
     raw_measurement: dict,
     year_period: ObservationYearPeriod,
-    observation_station: observations.ObservationStation,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
-) -> observations.ObservationMeasurementCreate:
+    observation_station: ObservationStation,
+    climatic_indicator: "ClimaticIndicator",
+) -> ObservationMeasurementCreate:
     parsed_date, aggreg_type = common.parse_measurement_date(
         raw_measurement["anno"], year_period
     )
-    return observations.ObservationMeasurementCreate(
+    return ObservationMeasurementCreate(
         value=raw_measurement["valore"],
         date=parsed_date,
         measurement_aggregation_type=aggreg_type,

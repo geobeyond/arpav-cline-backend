@@ -5,7 +5,6 @@ import uuid
 from typing import (
     Annotated,
     Optional,
-    ClassVar,
     Final,
     TYPE_CHECKING,
     TypedDict,
@@ -1301,7 +1300,7 @@ class HistoricalCoverageInternal:
                     conf=self.configuration.identifier,
                 )
             )
-        if self.decade not in self.configuration.decades:
+        if self.decade is not None and self.decade not in self.configuration.decades:
             raise exceptions.InvalidHistoricalDecade(
                 error_message.format(
                     param="decade",
@@ -1344,6 +1343,10 @@ class HistoricalCoverageInternal:
             ),
             year_period=self.year_period.get_internal_value(),
             decade=self.decade.get_internal_value() if self.decade else "",
+            reference_period=(
+                self.configuration.reference_period.get_internal_value()
+                if self.configuration.reference_period is not None else ""
+            ),
             spatial_region=self.configuration.spatial_region.internal_value,
         )
 

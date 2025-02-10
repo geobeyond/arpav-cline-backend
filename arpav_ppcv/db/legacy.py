@@ -11,10 +11,7 @@ import sqlalchemy
 import sqlmodel
 from sqlalchemy import func
 
-from .. import (
-    config,
-    database,
-)
+from .. import config
 from ..schemas import (
     base,
     coverages,
@@ -26,6 +23,15 @@ from .base import (
     add_substring_filter,
     get_total_num_records,
     slugify_internal_value,
+)
+from .climaticindicators import (
+    collect_all_climatic_indicators,
+    get_climatic_indicator_by_identifier,
+)
+from .forecastcoverages import (
+    collect_all_forecast_models,
+    collect_all_forecast_time_windows,
+    generate_forecast_coverages_from_configuration,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,7 +53,7 @@ def legacy_list_forecast_coverages(
     )
     result = []
     for cov_conf in all_cov_confs:
-        result.extend(database.generate_forecast_coverages_from_configuration(cov_conf))
+        result.extend(generate_forecast_coverages_from_configuration(cov_conf))
     if name_filter is not None:
         for fragment in name_filter:
             result = [fc for fc in result if fragment in fc.identifier]
@@ -320,7 +326,7 @@ def _get_time_window_conf_param(
         description_italian="",
         allowed_values=[],
     )
-    all_time_windows = database.collect_all_forecast_time_windows(session)
+    all_time_windows = collect_all_forecast_time_windows(session)
     seen = set()
     for time_window in all_time_windows:
         if time_window.name not in seen:
@@ -358,7 +364,7 @@ def _get_climatological_model_conf_param(
         ),
         allowed_values=[],
     )
-    all_forecast_models = database.collect_all_forecast_models(session)
+    all_forecast_models = collect_all_forecast_models(session)
     seen = set()
     for forecast_model in all_forecast_models:
         if forecast_model.name not in seen:
@@ -632,7 +638,7 @@ def legacy_list_configuration_parameters(
     # - [ ] historical year period
     # - [ ] climatological standard normal
 
-    all_climatic_indicators = database.collect_all_climatic_indicators(session)
+    all_climatic_indicators = collect_all_climatic_indicators(session)
     configuration_parameters = [
         _get_climatological_variable_conf_param(all_climatic_indicators),
         _get_climatological_model_conf_param(session),
@@ -1249,7 +1255,7 @@ def _replace_conf_param_filters_with_climatic_indicator(
             new_possible_values.append(possible)
     result = (possible_values, None)
     if all((raw_name, raw_measure_type, raw_aggregation_period)):
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = get_climatic_indicator_by_identifier(
             session, f"{raw_name}-{raw_measure_type}-{raw_aggregation_period}"
         )
         if climatic_indicator is not None:

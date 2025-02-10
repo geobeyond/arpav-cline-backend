@@ -6,7 +6,7 @@ import pydantic
 import pytest
 
 import arpav_ppcv.db.legacy
-from arpav_ppcv import database
+from arpav_ppcv import db
 from arpav_ppcv.schemas import coverages
 
 
@@ -21,7 +21,7 @@ from arpav_ppcv.schemas import coverages
 def test_list_stations(arpav_db_session, sample_stations, limit, offset, include_total):
     ordered_stations = sorted(sample_stations, key=lambda station: station.code)
     expected_codes = [s.code for s in ordered_stations][offset : offset + limit]
-    db_stations, total = database.list_stations(
+    db_stations, total = db.list_stations(
         arpav_db_session, limit=limit, offset=offset, include_total=include_total
     )
     if include_total:
@@ -133,7 +133,7 @@ def test_list_climatic_indicators(
     expected_identifiers = [i.identifier for i in ordered_indicators][
         offset : offset + limit
     ]
-    db_climatic_indicators, total = database.list_climatic_indicators(
+    db_climatic_indicators, total = db.list_climatic_indicators(
         arpav_db_session, limit=limit, offset=offset, include_total=include_total
     )
     if include_total:
@@ -157,7 +157,7 @@ def test_list_monthly_measurements(
 ):
     ordered_measurements = sorted(sample_monthly_measurements, key=lambda m: m.date)
     expected_dates = [m.date for m in ordered_measurements][offset : offset + limit]
-    db_measurements, total = database.list_monthly_measurements(
+    db_measurements, total = db.list_monthly_measurements(
         arpav_db_session, limit=limit, offset=offset, include_total=include_total
     )
     if include_total:

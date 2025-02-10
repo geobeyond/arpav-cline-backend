@@ -15,7 +15,7 @@ from starlette.requests import Request
 from starlette_admin.contrib.sqlmodel import ModelView
 from starlette_admin.exceptions import FormValidationError
 
-from .... import database
+from .... import db
 from ....schemas import (
     observations,
     static,
@@ -78,7 +78,7 @@ class ObservationMeasurementView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ObservationMeasurementRead]:
         list_measurements = functools.partial(
-            database.list_observation_measurements,
+            db.list_observation_measurements,
             limit=limit,
             offset=skip,
             include_total=False,
@@ -167,7 +167,7 @@ class ObservationStationView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ObservationStationRead:
         db_station = await anyio.to_thread.run_sync(
-            database.get_observation_station, request.state.session, pk
+            db.get_observation_station, request.state.session, pk
         )
         return self._serialize_instance(db_station)
 
@@ -180,7 +180,7 @@ class ObservationStationView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ObservationStationRead]:
         list_observation_stations = functools.partial(
-            database.list_observation_stations,
+            db.list_observation_stations,
             limit=limit,
             offset=skip,
             include_total=False,
@@ -252,7 +252,7 @@ class ObservationSeriesConfigurationView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ObservationSeriesConfigurationRead:
         db_instance = await anyio.to_thread.run_sync(
-            database.get_observation_series_configuration, request.state.session, pk
+            db.get_observation_series_configuration, request.state.session, pk
         )
         return self._serialize_instance(db_instance)
 
@@ -265,7 +265,7 @@ class ObservationSeriesConfigurationView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ObservationSeriesConfigurationRead]:
         item_lister = functools.partial(
-            database.list_observation_series_configurations,
+            db.list_observation_series_configurations,
             limit=limit,
             offset=skip,
             include_total=False,
@@ -284,7 +284,7 @@ class ObservationSeriesConfigurationView(ModelView):
             logger.debug(f"{data=}")
             # FIXME: looks like this needs to be called with anyio.to_thread.run_sync
             climatic_indicator = await anyio.to_thread.run_sync(
-                database.get_climatic_indicator,
+                db.get_climatic_indicator,
                 session,
                 data["climatic_indicator"],
             )
@@ -295,7 +295,7 @@ class ObservationSeriesConfigurationView(ModelView):
                 station_owners=data["station_owners"],
             )
             db_item = await anyio.to_thread.run_sync(
-                database.create_observation_series_configuration, session, item_create
+                db.create_observation_series_configuration, session, item_create
             )
             return self._serialize_instance(db_item)
         except Exception as e:
@@ -309,7 +309,7 @@ class ObservationSeriesConfigurationView(ModelView):
 
             # FIXME: call this via anyio.to_thread.run_sync
             climatic_indicator = await anyio.to_thread.run_sync(
-                database.get_climatic_indicator, session, data["climatic_indicator"]
+                db.get_climatic_indicator, session, data["climatic_indicator"]
             )
             item_update = observations.ObservationSeriesConfigurationUpdate(
                 climatic_indicator_id=climatic_indicator.id,
@@ -318,10 +318,10 @@ class ObservationSeriesConfigurationView(ModelView):
                 station_owners=data["station_owners"],
             )
             db_item = await anyio.to_thread.run_sync(
-                database.get_observation_series_configuration, session, pk
+                db.get_observation_series_configuration, session, pk
             )
             db_item = await anyio.to_thread.run_sync(
-                database.update_observation_series_configuration,
+                db.update_observation_series_configuration,
                 session,
                 db_item,
                 item_update,

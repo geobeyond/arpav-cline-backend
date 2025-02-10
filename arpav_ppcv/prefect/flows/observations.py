@@ -7,7 +7,7 @@ import prefect.artifacts
 import pyproj
 
 from arpav_ppcv import (
-    database,
+    db,
     exceptions,
 )
 from arpav_ppcv.config import get_settings
@@ -30,7 +30,7 @@ from arpav_ppcv.prefect.static import PrefectTaskTag
 # this is a module global because we need to configure the prefect flow and
 # task with values from it
 _settings = get_settings()
-_db_engine = database.get_engine(_settings)
+_db_engine = db.get_engine(_settings)
 
 
 @prefect.task(
@@ -42,7 +42,7 @@ def refresh_stations_for_climatic_indicator(
     climatic_indicator_id: int, db_schema_name: str
 ):
     with sqlmodel.Session(_db_engine) as db_session:
-        climatic_indicator = database.get_climatic_indicator(
+        climatic_indicator = db.get_climatic_indicator(
             db_session, climatic_indicator_id
         )
         return refresh_station_climatic_indicator_database_view(
@@ -96,7 +96,7 @@ def harvest_arpav_stations(
     series_configuration_id: int,
 ) -> tuple[int, set[observations.ObservationStationCreate]]:
     with sqlmodel.Session(_db_engine) as session:
-        series_configuration = database.get_observation_series_configuration(
+        series_configuration = db.get_observation_series_configuration(
             session, series_configuration_id
         )
         if series_configuration is None:
@@ -130,7 +130,7 @@ def harvest_arpafvg_stations(
     series_configuration_id: int,
 ) -> tuple[int, set[observations.ObservationStationCreate]]:
     with sqlmodel.Session(_db_engine) as session:
-        series_configuration = database.get_observation_series_configuration(
+        series_configuration = db.get_observation_series_configuration(
             session, series_configuration_id
         )
         if series_configuration is None:
@@ -159,7 +159,7 @@ def find_new_stations(
     candidate_stations: Iterable[observations.ObservationStationCreate],
 ) -> list[observations.ObservationStationCreate]:
     with sqlmodel.Session(_db_engine) as session:
-        db_stations = database.collect_all_observation_stations(session)
+        db_stations = db.collect_all_observation_stations(session)
         existing_stations = {(s.managed_by, s.code): s for s in db_stations}
         possibly_new_stations = {(s.managed_by, s.code): s for s in candidate_stations}
         to_create = []
@@ -238,7 +238,7 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
             to_create = find_new_stations(candidate_stations)
             if len(to_create) > 0:
                 print(f"Found {len(to_create)} new stations. Creating them now...")
-                created = database.create_many_observation_stations(session, to_create)
+                created = db.create_many_observation_stations(session, to_create)
             else:
                 created = []
                 print("No new stations found.")
@@ -252,12 +252,12 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
             # now we need to associate stations with their respective climatic indicator
             for osc_id, series_harvested_stations in all_harvested_stations.items():
                 observation_series_configuration = (
-                    database.get_observation_series_configuration(session, osc_id)
+                    db.get_observation_series_configuration(session, osc_id)
                 )
                 if observation_series_configuration is not None:
                     for harvested_station in series_harvested_stations:
                         # by now all harvested stations should be present in the DB
-                        existing_db_station = database.get_observation_station_by_code(
+                        existing_db_station = db.get_observation_station_by_code(
                             session, harvested_station.code
                         )
                         if existing_db_station is not None:
@@ -267,7 +267,7 @@ def refresh_stations(observation_series_configuration_identifier: str | None = N
                             new_indicator_ids.add(
                                 observation_series_configuration.climatic_indicator_id
                             )
-                            database.update_observation_station(
+                            db.update_observation_station(
                                 session,
                                 existing_db_station,
                                 observations.ObservationStationUpdate(
@@ -357,9 +357,9 @@ def save_observation_station_measurements(
     station_id: int, measurements: list[observations.ObservationMeasurementCreate]
 ) -> list[observations.ObservationMeasurement] | None:
     with sqlmodel.Session(_db_engine) as session:
-        station = database.get_observation_station(session, station_id)
+        station = db.get_observation_station(session, station_id)
         if station is not None:
-            to_create = database.find_new_station_measurements(
+            to_create = db.find_new_station_measurements(
                 session,
                 station_id=station.id,
                 candidates=measurements,
@@ -369,7 +369,7 @@ def save_observation_station_measurements(
                     f"Found {len(to_create)} new measurements for station "
                     f"{station.code!r}. Creating them now..."
                 )
-                return database.create_many_observation_measurements(session, to_create)
+                return db.create_many_observation_measurements(session, to_create)
             else:
                 print(f"No new measurements found for station {station.code!r}.")
         else:
@@ -393,12 +393,12 @@ def harvest_arpafvg_station_measurements(
 ) -> list[observations.ObservationMeasurementCreate]:
     client = httpx.Client()
     with sqlmodel.Session(_db_engine) as session:
-        station = database.get_observation_station(session, station_id)
+        station = db.get_observation_station(session, station_id)
         if station is None:
             raise exceptions.InvalidObservationStationIdError(
                 f"Station {station_id!r} does not exist."
             )
-        series_configuration = database.get_observation_series_configuration(
+        series_configuration = db.get_observation_series_configuration(
             session, series_configuration_id
         )
         if series_configuration is None:
@@ -439,12 +439,12 @@ def harvest_arpav_station_measurements(
 ) -> list[observations.ObservationMeasurementCreate]:
     client = httpx.Client()
     with sqlmodel.Session(_db_engine) as session:
-        station = database.get_observation_station(session, station_id)
+        station = db.get_observation_station(session, station_id)
         if station is None:
             raise exceptions.InvalidObservationStationIdError(
                 f"Station {station_id!r} does not exist."
             )
-        series_configuration = database.get_observation_series_configuration(
+        series_configuration = db.get_observation_series_configuration(
             session, series_configuration_id
         )
         if series_configuration is None:
@@ -471,7 +471,7 @@ def _get_stations(
     db_session: sqlmodel.Session, station_code: str | None = None
 ) -> list[observations.ObservationStation]:
     if station_code is not None:
-        station = database.get_observation_station_by_code(db_session, station_code)
+        station = db.get_observation_station_by_code(db_session, station_code)
         if station is not None:
             result = [station]
         else:
@@ -479,7 +479,7 @@ def _get_stations(
                 f"station with code {station_code!r} not found"
             )
     else:
-        result = database.collect_all_observation_stations(db_session)
+        result = db.collect_all_observation_stations(db_session)
     return result
 
 
@@ -488,7 +488,7 @@ def _get_observation_series_configurations(
     observation_series_configuration_identifier: str | None = None,
 ) -> list[observations.ObservationSeriesConfiguration]:
     if observation_series_configuration_identifier is not None:
-        series_conf = database.get_observation_series_configuration_by_identifier(
+        series_conf = db.get_observation_series_configuration_by_identifier(
             db_session, observation_series_configuration_identifier
         )
         if series_conf is not None:
@@ -499,7 +499,7 @@ def _get_observation_series_configurations(
                 f"{observation_series_configuration_identifier!r} not found"
             )
     else:
-        result = database.collect_all_observation_series_configurations(db_session)
+        result = db.collect_all_observation_series_configurations(db_session)
     return result
 
 
@@ -507,10 +507,10 @@ def _get_climatic_indicators(
     db_session: sqlmodel.Session, climatic_indicator_identifier: str | None = None
 ) -> list[climaticindicators.ClimaticIndicator]:
     if climatic_indicator_identifier is not None:
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = db.get_climatic_indicator_by_identifier(
             db_session, climatic_indicator_identifier
         )
         result = [climatic_indicator] if climatic_indicator else []
     else:
-        result = database.collect_all_climatic_indicators(db_session)
+        result = db.collect_all_climatic_indicators(db_session)
     return result

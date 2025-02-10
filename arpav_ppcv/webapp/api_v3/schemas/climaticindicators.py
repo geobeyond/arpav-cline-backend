@@ -1,14 +1,18 @@
 import logging
 import pydantic
+import typing
 from fastapi import Request
 
 from .... import palette
 from ....config import ArpavPpcvSettings
-from ....schemas import (
-    climaticindicators as app_models,
-    static,
+from ....schemas.static import (
+    AggregationPeriod,
+    MeasureType,
 )
 from . import base
+
+if typing.TYPE_CHECKING:
+    from ....schemas.climaticindicators import ClimaticIndicator
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +21,8 @@ class ClimaticIndicatorReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
     identifier: str
     name: str
-    measure_type: static.MeasureType
-    aggregation_period: static.AggregationPeriod
+    measure_type: MeasureType
+    aggregation_period: AggregationPeriod
     display_name_english: str
     display_name_italian: str
     description_english: str
@@ -32,7 +36,7 @@ class ClimaticIndicatorReadListItem(pydantic.BaseModel):
     @classmethod
     def from_db_instance(
         cls,
-        instance: app_models.ClimaticIndicator,
+        instance: "ClimaticIndicator",
         settings: ArpavPpcvSettings,
         request: Request,
     ):

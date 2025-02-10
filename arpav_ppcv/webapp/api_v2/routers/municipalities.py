@@ -11,7 +11,7 @@ from fastapi import (
 )
 from sqlmodel import Session
 
-from .... import database as db
+from .... import db
 from ... import dependencies
 from ...responses import GeoJsonResponse
 from ..schemas.geojson import municipalities as municipalities_geojson

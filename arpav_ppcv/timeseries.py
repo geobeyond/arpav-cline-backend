@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     import sqlmodel
     from . import (
         config,
-        database,
     )
     from .schemas import (
         coverages,
@@ -187,7 +186,7 @@ def find_nearby_observation_station(
     Find close station that collects data for input series conf's climatic indicator.
     """
     point_buffer_geom = _get_spatial_buffer(location, distance_threshold_meters)
-    nearby_stations = database.collect_all_observation_stations(
+    nearby_stations = db.collect_all_observation_stations(
         session,
         polygon_intersection_filter=point_buffer_geom,
         climatic_indicator_id_filter=(
@@ -216,7 +215,7 @@ def get_nearby_observation_station_time_series(
             observation_station=nearby_station,
             processing_method=static.ObservationTimeSeriesProcessingMethod.NO_PROCESSING,
         )
-        raw_data = database.collect_all_observation_measurements(
+        raw_data = db.collect_all_observation_measurements(
             session,
             observation_station_id_filter=nearby_station.id,
             climatic_indicator_id_filter=observation_series_configuration.climatic_indicator_id,
@@ -391,7 +390,7 @@ def _get_forecast_coverage_coverage_time_series(
     for item in [i for i in cov_series if i is not None]:
         data_.append(item)
     if include_related_models:
-        for other_cov in database.generate_forecast_coverages_for_other_models(
+        for other_cov in db.generate_forecast_coverages_for_other_models(
             session, forecast_coverage
         ):
             other_cov_series = _retrieve_forecast_coverage_data(
@@ -428,7 +427,7 @@ def _get_forecast_coverage_observation_time_series(
     processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.ObservationStationDataSeries]:
-    result = {}
+    result = []
     for osc_link in coverage.configuration.observation_series_configuration_links:
         observation_series_conf = osc_link.observation_series_configuration
         observation_data_series = get_nearby_observation_station_time_series(
@@ -439,7 +438,7 @@ def _get_forecast_coverage_observation_time_series(
             temporal_range=temporal_range,
         )
         if observation_data_series is not None:
-            result[observation_data_series.identifier] = observation_data_series
+            result.append(observation_data_series)
             for processing_method in processing_methods:
                 if (
                     processing_method
@@ -458,7 +457,7 @@ def _get_forecast_coverage_observation_time_series(
                         derived_series_name=series.identifier,
                     )
                     series.data_ = smoothed_df[series.identifier].squeeze()
-                    result[series.identifier] = series
+                    result.append(series)
         else:
             logger.info("No station data found, skipping...")
     else:

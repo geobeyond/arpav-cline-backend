@@ -6,8 +6,8 @@ from starlette.templating import Jinja2Templates
 
 from .. import (
     config,
-    database,
 )
+from ..db import engine as db_engine
 from .api_v2.app import create_app as create_v2_app
 from .api_v3.app import create_app as create_v3_app
 from .admin.app import create_admin
@@ -18,8 +18,8 @@ from .routes import routes
 async def lifespan(app: Starlette):
     yield
     # ensure the database engine is properly disposed of, closing any connections
-    database._DB_ENGINE.dispose()  # noqa
-    database._DB_ENGINE = None
+    db_engine._DB_ENGINE.dispose()  # noqa
+    db_engine._DB_ENGINE = None
 
 
 def create_app_from_settings(settings: config.ArpavPpcvSettings) -> Starlette:

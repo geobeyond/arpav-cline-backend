@@ -1,4 +1,5 @@
 import logging
+import typing
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -10,16 +11,25 @@ from starlette_admin.views import (
     Link,
 )
 
-from ... import (
-    config,
-    database,
+from ...db import get_engine
+from ...schemas.base import SpatialRegion
+from ...schemas.climaticindicators import ClimaticIndicator
+from ...schemas.coverages import (
+    ConfigurationParameter,
+    CoverageConfiguration,
+    ForecastCoverageConfiguration,
+    ForecastModel,
+    ForecastTimeWindow,
+    HistoricalCoverageConfiguration,
 )
-from ...schemas import (
-    base,
-    climaticindicators,
-    coverages,
-    observations,
-    overviews,
+from ...schemas.observations import (
+    ObservationMeasurement,
+    ObservationSeriesConfiguration,
+    ObservationStation,
+)
+from ...schemas.overviews import (
+    ForecastOverviewSeriesConfiguration,
+    ObservationOverviewSeriesConfiguration,
 )
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
@@ -31,11 +41,14 @@ from .views import (
     overviews as overviews_views,
 )
 
+if typing.TYPE_CHECKING:
+    from ...config import ArpavPpcvSettings
+
 logger = logging.getLogger(__name__)
 
 
 class ArpavPpcvAdmin(Admin):
-    def mount_to(self, app: Starlette, settings: config.ArpavPpcvSettings) -> None:
+    def mount_to(self, app: Starlette, settings: "ArpavPpcvSettings") -> None:
         """Reimplemented in order to pass settings to the admin app."""
         admin_app = Starlette(
             routes=self.routes,
@@ -52,8 +65,8 @@ class ArpavPpcvAdmin(Admin):
         )
 
 
-def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
-    engine = database.get_engine(settings)
+def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
+    engine = get_engine(settings)
     admin = ArpavPpcvAdmin(
         engine,
         debug=settings.debug,
@@ -65,11 +78,9 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
         ],
     )
     admin.add_view(
-        climaticindicators_views.ClimaticIndicatorView(
-            climaticindicators.ClimaticIndicator
-        )
+        climaticindicators_views.ClimaticIndicatorView(ClimaticIndicator)
     )
-    admin.add_view(base_views.SpatialRegionView(base.SpatialRegion))
+    admin.add_view(base_views.SpatialRegionView(SpatialRegion))
     admin.add_view(
         DropDown(
             "Overviews",
@@ -77,10 +88,10 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             always_open=False,
             views=[
                 overviews_views.ForecastOverviewSeriesConfigurationView(
-                    overviews.ForecastOverviewSeriesConfiguration
+                    ForecastOverviewSeriesConfiguration
                 ),
                 overviews_views.ObservationOverviewSeriesConfigurationView(
-                    overviews.ObservationOverviewSeriesConfiguration
+                    ObservationOverviewSeriesConfiguration
                 ),
             ],
         )
@@ -92,10 +103,10 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             always_open=False,
             views=[
                 coverage_views.ForecastCoverageConfigurationView(
-                    coverages.ForecastCoverageConfiguration
+                    ForecastCoverageConfiguration
                 ),
-                coverage_views.ForecastModelView(coverages.ForecastModel),
-                coverage_views.ForecastTimeWindowView(coverages.ForecastTimeWindow),
+                coverage_views.ForecastModelView(ForecastModel),
+                coverage_views.ForecastTimeWindowView(ForecastTimeWindow),
             ],
         )
     )
@@ -106,7 +117,7 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             always_open=False,
             views=[
                 coverage_views.HistoricalCoverageConfigurationView(
-                    coverages.HistoricalCoverageConfiguration
+                    HistoricalCoverageConfiguration
                 ),
             ],
         )
@@ -117,14 +128,12 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             icon="fa-solid fa-ruler",
             always_open=False,
             views=[
-                observations_views.ObservationMeasurementView(
-                    observations.ObservationMeasurement
-                ),
+                observations_views.ObservationMeasurementView(ObservationMeasurement),
                 observations_views.ObservationSeriesConfigurationView(
-                    observations.ObservationSeriesConfiguration
+                    ObservationSeriesConfiguration
                 ),
                 observations_views.ObservationStationView(
-                    observations.ObservationStation
+                    ObservationStation
                 ),
             ],
         )
@@ -135,12 +144,8 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             icon="fa-solid fa-circle-xmark",
             always_open=False,
             views=[
-                coverage_views.ConfigurationParameterView(
-                    coverages.ConfigurationParameter
-                ),
-                coverage_views.CoverageConfigurationView(
-                    coverages.CoverageConfiguration
-                ),
+                coverage_views.ConfigurationParameterView(ConfigurationParameter),
+                coverage_views.CoverageConfigurationView(CoverageConfiguration),
             ],
         )
     )

@@ -4,15 +4,22 @@ from typing import (
 )
 import sqlmodel
 
-from .. import (
-    database,
-    exceptions,
+from .. import exceptions
+from ..schemas.overviews import (
+    ForecastOverviewSeriesConfiguration,
+    ForecastOverviewSeriesConfigurationCreate,
+    ForecastOverviewSeriesConfigurationUpdate,
+    ForecastOverviewSeriesInternal,
+    ObservationOverviewSeriesConfiguration,
+    ObservationOverviewSeriesConfigurationCreate,
+    ObservationOverviewSeriesConfigurationUpdate,
+    ObservationOverviewSeriesInternal,
 )
-from ..schemas import (
-    overviews,
-    static,
+from ..schemas.static import (
+    DataCategory,
 )
-from . import base
+from .base import get_total_num_records
+from .climaticindicators import get_climatic_indicator_by_identifier
 
 
 def list_forecast_overview_series_configurations(
@@ -21,21 +28,21 @@ def list_forecast_overview_series_configurations(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
-) -> tuple[Sequence[overviews.ForecastOverviewSeriesConfiguration], Optional[int]]:
+) -> tuple[Sequence[ForecastOverviewSeriesConfiguration], Optional[int]]:
     """List existing forecast overview series configurations."""
-    statement = sqlmodel.select(overviews.ForecastOverviewSeriesConfiguration).order_by(
-        overviews.ForecastOverviewSeriesConfiguration.id
+    statement = sqlmodel.select(ForecastOverviewSeriesConfiguration).order_by(
+        ForecastOverviewSeriesConfiguration.id  # noqa
     )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = (
-        base.get_total_num_records(session, statement) if include_total else None
+        get_total_num_records(session, statement) if include_total else None
     )
     return items, num_items
 
 
 def collect_all_forecast_overview_series_configurations(
     session: sqlmodel.Session,
-) -> Sequence[overviews.ForecastOverviewSeriesConfiguration]:
+) -> Sequence[ForecastOverviewSeriesConfiguration]:
     _, num_total = list_forecast_overview_series_configurations(
         session,
         limit=1,
@@ -52,9 +59,9 @@ def collect_all_forecast_overview_series_configurations(
 def get_forecast_overview_series_configuration(
     session: sqlmodel.Session,
     forecast_overview_series_configuration_id: int,
-) -> Optional[overviews.ForecastOverviewSeriesConfiguration]:
+) -> Optional[ForecastOverviewSeriesConfiguration]:
     return session.get(
-        overviews.ForecastOverviewSeriesConfiguration,
+        ForecastOverviewSeriesConfiguration,
         forecast_overview_series_configuration_id,
     )
 
@@ -62,21 +69,21 @@ def get_forecast_overview_series_configuration(
 def get_forecast_overview_series_configuration_by_identifier(
     session: sqlmodel.Session,
     forecast_overview_series_configuration_identifier: str,
-) -> Optional[overviews.ForecastOverviewSeriesConfiguration]:
+) -> Optional[ForecastOverviewSeriesConfiguration]:
     parts = forecast_overview_series_configuration_identifier.split("-")
-    if parts[0] == "overview" and parts[1] == static.DataCategory.FORECAST.value:
+    if parts[0] == "overview" and parts[1] == DataCategory.FORECAST.value:
         climatic_indicator_identifier = "-".join(parts[2:])
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = get_climatic_indicator_by_identifier(
             session, climatic_indicator_identifier
         )
         if climatic_indicator is not None:
             statement = sqlmodel.select(
-                overviews.ForecastOverviewSeriesConfiguration
+                ForecastOverviewSeriesConfiguration
             ).where(
-                overviews.ForecastOverviewSeriesConfiguration.climatic_indicator_id
+                ForecastOverviewSeriesConfiguration.climatic_indicator_id  # noqa
                 == climatic_indicator.id,
             )
-            result = session.exec(statement).first()
+            result = session.exec(statement).first()  # noqa
         else:
             raise exceptions.InvalidOverviewSeriesConfigurationIdentifierError(
                 f"Could not find a climatic indicator with identifier "
@@ -91,9 +98,9 @@ def get_forecast_overview_series_configuration_by_identifier(
 
 def create_forecast_overview_series_configuration(
     session: sqlmodel.Session,
-    forecast_overview_series_configuration_create: overviews.ForecastOverviewSeriesConfigurationCreate,
-) -> overviews.ForecastOverviewSeriesConfiguration:
-    db_overview_coverage_configuration = overviews.ForecastOverviewSeriesConfiguration(
+    forecast_overview_series_configuration_create: ForecastOverviewSeriesConfigurationCreate,
+) -> ForecastOverviewSeriesConfiguration:
+    db_overview_coverage_configuration = ForecastOverviewSeriesConfiguration(
         **forecast_overview_series_configuration_create.model_dump()
     )
     session.add(db_overview_coverage_configuration)
@@ -104,9 +111,9 @@ def create_forecast_overview_series_configuration(
 
 def update_forecast_overview_series_configuration(
     session: sqlmodel.Session,
-    db_forecast_overview_series_configuration: overviews.ForecastOverviewSeriesConfiguration,
-    forecast_overview_series_configuration_update: overviews.ForecastOverviewSeriesConfigurationUpdate,
-) -> overviews.ForecastOverviewSeriesConfiguration:
+    db_forecast_overview_series_configuration: ForecastOverviewSeriesConfiguration,
+    forecast_overview_series_configuration_update: ForecastOverviewSeriesConfigurationUpdate,
+) -> ForecastOverviewSeriesConfiguration:
     """Update a forecast overview series configuration."""
     data_ = forecast_overview_series_configuration_update.model_dump(
         exclude_unset=True,
@@ -139,21 +146,21 @@ def list_observation_overview_series_configurations(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
-) -> tuple[Sequence[overviews.ObservationOverviewSeriesConfiguration], Optional[int]]:
+) -> tuple[Sequence[ObservationOverviewSeriesConfiguration], Optional[int]]:
     """List existing observation overview series configurations."""
     statement = sqlmodel.select(
-        overviews.ObservationOverviewSeriesConfiguration
-    ).order_by(overviews.ObservationOverviewSeriesConfiguration.id)
+        ObservationOverviewSeriesConfiguration
+    ).order_by(ObservationOverviewSeriesConfiguration.id)  # noqa
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = (
-        base.get_total_num_records(session, statement) if include_total else None
+        get_total_num_records(session, statement) if include_total else None
     )
     return items, num_items
 
 
 def collect_all_observation_overview_series_configurations(
     session: sqlmodel.Session,
-) -> Sequence[overviews.ObservationOverviewSeriesConfiguration]:
+) -> Sequence[ObservationOverviewSeriesConfiguration]:
     _, num_total = list_observation_overview_series_configurations(
         session,
         limit=1,
@@ -170,9 +177,9 @@ def collect_all_observation_overview_series_configurations(
 def get_observation_overview_series_configuration(
     session: sqlmodel.Session,
     observation_overview_series_configuration_id: int,
-) -> Optional[overviews.ObservationOverviewSeriesConfiguration]:
+) -> Optional[ObservationOverviewSeriesConfiguration]:
     return session.get(
-        overviews.ObservationOverviewSeriesConfiguration,
+        ObservationOverviewSeriesConfiguration,
         observation_overview_series_configuration_id,
     )
 
@@ -180,21 +187,21 @@ def get_observation_overview_series_configuration(
 def get_observation_overview_series_configuration_by_identifier(
     session: sqlmodel.Session,
     observation_overview_series_configuration_identifier: str,
-) -> Optional[overviews.ForecastOverviewSeriesConfiguration]:
+) -> Optional[ForecastOverviewSeriesConfiguration]:
     parts = observation_overview_series_configuration_identifier.split("-")
-    if parts[0] == "overview" and parts[1] == static.DataCategory.HISTORICAL.value:
+    if parts[0] == "overview" and parts[1] == DataCategory.HISTORICAL.value:
         climatic_indicator_identifier = "-".join(parts[2:])
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = get_climatic_indicator_by_identifier(
             session, climatic_indicator_identifier
         )
         if climatic_indicator is not None:
             statement = sqlmodel.select(
-                overviews.ObservationOverviewSeriesConfiguration
+                ObservationOverviewSeriesConfiguration
             ).where(
-                overviews.ObservationOverviewSeriesConfiguration.climatic_indicator_id
+                ObservationOverviewSeriesConfiguration.climatic_indicator_id  # noqa
                 == climatic_indicator.id,
             )
-            result = session.exec(statement).first()
+            result = session.exec(statement).first()  # noqa
         else:
             raise exceptions.InvalidOverviewSeriesConfigurationIdentifierError(
                 f"Could not find a climatic indicator with identifier "
@@ -209,10 +216,10 @@ def get_observation_overview_series_configuration_by_identifier(
 
 def create_observation_overview_series_configuration(
     session: sqlmodel.Session,
-    observation_overview_series_configuration_create: overviews.ObservationOverviewSeriesConfigurationCreate,
-) -> overviews.ObservationOverviewSeriesConfiguration:
+    observation_overview_series_configuration_create: ObservationOverviewSeriesConfigurationCreate,
+) -> ObservationOverviewSeriesConfiguration:
     db_overview_coverage_configuration = (
-        overviews.ObservationOverviewSeriesConfiguration(
+        ObservationOverviewSeriesConfiguration(
             **observation_overview_series_configuration_create.model_dump()
         )
     )
@@ -224,9 +231,9 @@ def create_observation_overview_series_configuration(
 
 def update_observation_overview_series_configuration(
     session: sqlmodel.Session,
-    db_observation_overview_series_configuration: overviews.ObservationOverviewSeriesConfiguration,
-    observation_overview_series_configuration_update: overviews.ObservationOverviewSeriesConfigurationUpdate,
-) -> overviews.ObservationOverviewSeriesConfiguration:
+    db_observation_overview_series_configuration: ObservationOverviewSeriesConfiguration,
+    observation_overview_series_configuration_update: ObservationOverviewSeriesConfigurationUpdate,
+) -> ObservationOverviewSeriesConfiguration:
     """Update an observation overview series configuration."""
     data_ = observation_overview_series_configuration_update.model_dump(
         exclude_unset=True,
@@ -254,12 +261,12 @@ def delete_observation_overview_series_configuration(
 
 
 def generate_forecast_overview_series_from_configuration(
-    forecast_overview_series_configuration: overviews.ForecastOverviewSeriesConfiguration,
-) -> list[overviews.ForecastOverviewSeriesInternal]:
+    forecast_overview_series_configuration: ForecastOverviewSeriesConfiguration,
+) -> list[ForecastOverviewSeriesInternal]:
     result = []
     for scenario in forecast_overview_series_configuration.scenarios:
         result.append(
-            overviews.ForecastOverviewSeriesInternal(
+            ForecastOverviewSeriesInternal(
                 configuration=forecast_overview_series_configuration,
                 scenario=scenario,
             )
@@ -268,8 +275,8 @@ def generate_forecast_overview_series_from_configuration(
 
 
 def generate_observation_overview_series_from_configuration(
-    observation_overview_series_configuration: overviews.ObservationOverviewSeriesConfiguration,
-) -> overviews.ObservationOverviewSeriesInternal:
-    return overviews.ObservationOverviewSeriesInternal(
+    observation_overview_series_configuration: ObservationOverviewSeriesConfiguration,
+) -> ObservationOverviewSeriesInternal:
+    return ObservationOverviewSeriesInternal(
         configuration=observation_overview_series_configuration
     )

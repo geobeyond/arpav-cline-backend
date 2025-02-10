@@ -12,17 +12,22 @@ from ....config import (
     LOCALE_EN,
     LOCALE_IT,
 )
-from ....schemas import (
-    base as base_schemas,
-    climaticindicators as climaticindicators_schemas,
-    coverages as coverages_schemas,
-    legacy,
-    observations as observations_schemas,
-)
 from ....schemas.base import (
+    ObservationDerivedSeries,
+    ResourceList,
     StaticObservationSeriesParameter,
     StaticCoverageSeriesParameter,
+    TimeSeriesElaboration,
 )
+
+if typing.TYPE_CHECKING:
+    from ....schemas.climaticindicators import ClimaticIndicator
+    from ....schemas.coverages import CoverageInternal
+    from ....schemas.legacy import (
+        CoverageDataSmoothingStrategy,
+        ObservationDataSmoothingStrategy,
+    )
+    from ....schemas.observations import Station
 
 logger = logging.getLogger(__name__)
 R = typing.TypeVar("R", bound="ApiReadableModel")
@@ -93,14 +98,14 @@ class TimeSeries(pydantic.BaseModel):
     def from_observation_series(
         cls,
         series: pd.Series,
-        station: observations_schemas.Station,
-        climatic_indicator: climaticindicators_schemas.ClimaticIndicator,
-        smoothing_strategy: legacy.ObservationDataSmoothingStrategy,
+        station: "Station",
+        climatic_indicator: "ClimaticIndicator",
+        smoothing_strategy: "ObservationDataSmoothingStrategy",
         extra_info: typing.Optional[dict[str, str | int | float | dict]] = None,
-        derived_series: typing.Optional[base_schemas.ObservationDerivedSeries] = None,
+        derived_series: typing.Optional[ObservationDerivedSeries] = None,
     ):
         if derived_series is not None:
-            series_elaboration = base_schemas.TimeSeriesElaboration.DERIVED
+            series_elaboration = TimeSeriesElaboration.DERIVED
             name = "_".join((climatic_indicator.identifier.name, derived_series.value))
             translated_name = {
                 LOCALE_EN.language: " - ".join(
@@ -117,7 +122,7 @@ class TimeSeries(pydantic.BaseModel):
                 ),
             }
         else:
-            series_elaboration = base_schemas.TimeSeriesElaboration.ORIGINAL
+            series_elaboration = TimeSeriesElaboration.ORIGINAL
             name = climatic_indicator.identifier
             translated_name = {
                 LOCALE_EN.language: climatic_indicator.display_name_english,
@@ -257,8 +262,8 @@ class TimeSeries(pydantic.BaseModel):
     def from_coverage_series(
         cls,
         series: pd.Series,
-        coverage: coverages_schemas.CoverageInternal,
-        smoothing_strategy: legacy.CoverageDataSmoothingStrategy,
+        coverage: "CoverageInternal",
+        smoothing_strategy: "CoverageDataSmoothingStrategy",
     ):
         info = {}
         param_names_translations = {}
@@ -385,7 +390,7 @@ class TimeSeriesList(pydantic.BaseModel):
     series: list[TimeSeries]
 
 
-class WebResourceList(base_schemas.ResourceList):
+class WebResourceList(ResourceList):
     meta: ListMeta
     links: ListLinks
     list_item_type: typing.ClassVar[typing.Type[ApiReadableModel]]

@@ -1,6 +1,6 @@
 import sqlmodel
 
-from ... import database
+from ...db import collect_all_forecast_coverage_configurations
 from . import schemas
 
 
@@ -8,7 +8,7 @@ def get_forecast_advanced_section_navigation(
     session: sqlmodel.Session,
 ) -> list[schemas.ForecastCoverageNavigationSection]:
     sections = {}
-    for forecast_cov_conf in database.collect_all_forecast_coverage_configurations(
+    for forecast_cov_conf in collect_all_forecast_coverage_configurations(
         session
     ):
         indicator_section = sections.setdefault(

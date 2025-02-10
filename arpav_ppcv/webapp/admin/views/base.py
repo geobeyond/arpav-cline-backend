@@ -13,7 +13,7 @@ import starlette_admin
 from starlette.requests import Request
 from starlette_admin.contrib.sqlmodel import ModelView
 
-from .... import database
+from .... import db
 from ....schemas import base
 from .. import schemas as read_schemas
 
@@ -65,7 +65,7 @@ class SpatialRegionView(ModelView):
         self, request: Request, pk: int
     ) -> read_schemas.SpatialRegionRead:
         db_spatial_region = await anyio.to_thread.run_sync(
-            database.get_spatial_region, request.state.session, pk
+            db.get_spatial_region, request.state.session, pk
         )
         return self._serialize_instance(db_spatial_region)
 
@@ -78,7 +78,7 @@ class SpatialRegionView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.SpatialRegionRead]:
         list_params = functools.partial(
-            database.list_spatial_regions,
+            db.list_spatial_regions,
             limit=limit,
             offset=skip,
             include_total=False,

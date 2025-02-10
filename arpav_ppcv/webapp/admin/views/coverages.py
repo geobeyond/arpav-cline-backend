@@ -25,11 +25,7 @@ from starlette_admin import exceptions as starlette_admin_exceptions
 from starlette_admin.contrib.sqlmodel import ModelView
 
 import arpav_ppcv.db.legacy
-from .... import (
-    config,
-    database,
-    db,
-)
+from .... import db
 from ....schemas import (
     coverages,
     base,
@@ -62,7 +58,7 @@ def possible_values_choices_loader(request: Request) -> Sequence[tuple[str, str]
 def related_observation_variable_choices_loader(
     request: Request,
 ) -> Sequence[tuple[str, str]]:
-    all_obs_variables = database.collect_all_variables(request.state.session)
+    all_obs_variables = db.collect_all_variables(request.state.session)
     return [(v.name, v.name) for v in all_obs_variables]
 
 
@@ -590,10 +586,10 @@ class CoverageConfigurationView(ModelView):
                     )
                 )
             # FIXME: looks like this needs to be called with anyio.to_thread.run_sync
-            climatic_indicator = database.get_climatic_indicator(
+            climatic_indicator = db.get_climatic_indicator(
                 session, data["climatic_indicator"]
             )
-            related_obs_variable = database.get_variable_by_name(
+            related_obs_variable = db.get_variable_by_name(
                 session, data["observation_variable"]
             )
             if (
@@ -690,10 +686,10 @@ class CoverageConfigurationView(ModelView):
                     )
                 )
             # FIXME: call this via anyio.to_thread.run_sync
-            climatic_indicator = database.get_climatic_indicator(
+            climatic_indicator = db.get_climatic_indicator(
                 session, data["climatic_indicator"]
             )
-            related_obs_variable = database.get_variable_by_name(
+            related_obs_variable = db.get_variable_by_name(
                 session, data["observation_variable"]
             )
             if (
@@ -816,7 +812,7 @@ class ForecastTimeWindowView(ModelView):
             await self.validate(request, data)
             forecast_time_window_create = coverages.ForecastTimeWindowCreate(**data)
             db_forecast_time_window = await anyio.to_thread.run_sync(
-                database.create_forecast_time_window,
+                db.create_forecast_time_window,
                 request.state.session,
                 forecast_time_window_create,
             )
@@ -830,12 +826,12 @@ class ForecastTimeWindowView(ModelView):
             await self.validate(request, data)
             forecast_time_window_update = coverages.ForecastTimeWindowUpdate(**data)
             db_forecast_time_window = await anyio.to_thread.run_sync(
-                database.get_forecast_time_window,
+                db.get_forecast_time_window,
                 request.state.session,
                 pk,
             )
             db_forecast_time_window = await anyio.to_thread.run_sync(
-                database.update_forecast_time_window,
+                db.update_forecast_time_window,
                 request.state.session,
                 db_forecast_time_window,
                 forecast_time_window_update,
@@ -848,7 +844,7 @@ class ForecastTimeWindowView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ForecastTimeWindowRead:
         db_forecast_time_window = await anyio.to_thread.run_sync(
-            database.get_forecast_time_window, request.state.session, pk
+            db.get_forecast_time_window, request.state.session, pk
         )
         return self._serialize_instance(db_forecast_time_window)
 
@@ -861,7 +857,7 @@ class ForecastTimeWindowView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ForecastTimeWindowRead]:
         list_params = functools.partial(
-            database.list_forecast_time_windows,
+            db.list_forecast_time_windows,
             limit=limit,
             offset=skip,
             name_filter=str(where) if where not in (None, "") else None,
@@ -915,7 +911,7 @@ class ForecastModelView(ModelView):
             await self.validate(request, data)
             forecast_model_create = coverages.ForecastModelCreate(**data)
             db_forecast_model = await anyio.to_thread.run_sync(
-                database.create_forecast_model,
+                db.create_forecast_model,
                 request.state.session,
                 forecast_model_create,
             )
@@ -929,12 +925,12 @@ class ForecastModelView(ModelView):
             await self.validate(request, data)
             forecast_model_update = coverages.ForecastModelUpdate(**data)
             db_forecast_model = await anyio.to_thread.run_sync(
-                database.get_forecast_model,
+                db.get_forecast_model,
                 request.state.session,
                 pk,
             )
             db_forecast_model = await anyio.to_thread.run_sync(
-                database.update_forecast_model,
+                db.update_forecast_model,
                 request.state.session,
                 db_forecast_model,
                 forecast_model_update,
@@ -947,7 +943,7 @@ class ForecastModelView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ForecastModelRead:
         db_forecast_model = await anyio.to_thread.run_sync(
-            database.get_forecast_model, request.state.session, pk
+            db.get_forecast_model, request.state.session, pk
         )
         return self._serialize_instance(db_forecast_model)
 
@@ -960,7 +956,7 @@ class ForecastModelView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ForecastModelRead]:
         list_params = functools.partial(
-            database.list_forecast_models,
+            db.list_forecast_models,
             limit=limit,
             offset=skip,
             name_filter=str(where) if where not in (None, "") else None,
@@ -1161,7 +1157,7 @@ class ForecastCoverageConfigurationView(ModelView):
                 )
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
-                database.create_forecast_coverage_configuration,
+                db.create_forecast_coverage_configuration,
                 request.state.session,
                 forecast_coverage_configuration_create,
             )
@@ -1205,10 +1201,10 @@ class ForecastCoverageConfigurationView(ModelView):
                 )
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
-                database.get_forecast_coverage_configuration, request.state.session, pk
+                db.get_forecast_coverage_configuration, request.state.session, pk
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
-                database.update_forecast_coverage_configuration,
+                db.update_forecast_coverage_configuration,
                 request.state.session,
                 db_forecast_coverage_configuration,
                 forecast_coverage_configuration_create,
@@ -1221,7 +1217,7 @@ class ForecastCoverageConfigurationView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ForecastCoverageConfigurationRead:
         db_item = await anyio.to_thread.run_sync(
-            database.get_forecast_coverage_configuration, request.state.session, pk
+            db.get_forecast_coverage_configuration, request.state.session, pk
         )
         return self._serialize_instance(db_item)
 
@@ -1234,7 +1230,7 @@ class ForecastCoverageConfigurationView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ForecastCoverageConfigurationRead]:
         finder = functools.partial(
-            database.collect_all_forecast_coverage_configurations_with_identifier_filter,
+            db.collect_all_forecast_coverage_configurations_with_identifier_filter,
             identifier_filter=str(where) if where else None,
         )
         db_items = await anyio.to_thread.run_sync(finder, request.state.session)
@@ -1246,7 +1242,7 @@ class ForecastCoverageConfigurationView(ModelView):
         where: Union[Dict[str, Any], str, None] = None,
     ) -> int:
         finder = functools.partial(
-            database.collect_all_forecast_coverage_configurations_with_identifier_filter,
+            db.collect_all_forecast_coverage_configurations_with_identifier_filter,
             identifier_filter=str(where) if where else None,
         )
         found = await anyio.to_thread.run_sync(

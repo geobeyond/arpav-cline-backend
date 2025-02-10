@@ -553,6 +553,10 @@ class HistoricalReferencePeriod(str, enum.Enum):
             self.CLIMATE_STANDARD_NORMAL_1991_2020: _("1991-2020 description"),
         }.get(self, self.value)
 
+    def get_internal_value(self) -> str:
+        return self.value.replace(
+            "climate_standard_normal_", "").replace("_", "-")
+
     def get_sort_order(self) -> int:
         return {
             self.CLIMATE_STANDARD_NORMAL_1961_1990: 0,

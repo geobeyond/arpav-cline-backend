@@ -1,16 +1,19 @@
+import typing
 import datetime as dt
 
 from .. import exceptions
-from ..schemas import climaticindicators
 from ..schemas.static import (
     MeasurementAggregationType,
     ObservationStationManager,
     ObservationYearPeriod,
 )
 
+if typing.TYPE_CHECKING:
+    from ..schemas.climaticindicators import ClimaticIndicator
+
 
 def get_indicator_internal_name(
-    climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator: "ClimaticIndicator",
     station_manager: ObservationStationManager,
 ) -> str:
     try:

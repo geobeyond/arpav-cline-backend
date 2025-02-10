@@ -25,7 +25,6 @@ from sqlmodel import Session
 from starlette.background import BackgroundTask
 
 from .... import (
-    database,
     db,
     datadownloads,
     exceptions,
@@ -161,7 +160,7 @@ def list_forecast_coverage_configurations(
         (
             forecast_coverage_configurations,
             filtered_total,
-        ) = database.legacy_list_forecast_coverage_configurations(
+        ) = db.legacy_list_forecast_coverage_configurations(
             db_session,
             limit=list_params.limit,
             offset=list_params.offset,
@@ -191,10 +190,10 @@ def get_forecast_coverage_configuration(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     forecast_coverage_configuration_id: int,
 ):
-    db_forecast_coverage_configuration = database.get_forecast_coverage_configuration(
+    db_forecast_coverage_configuration = db.get_forecast_coverage_configuration(
         db_session, forecast_coverage_configuration_id
     )
-    forecast_coverages = database.generate_forecast_coverages_from_configuration(
+    forecast_coverages = db.generate_forecast_coverages_from_configuration(
         db_forecast_coverage_configuration
     )
 
@@ -310,7 +309,7 @@ async def wms_endpoint(
 
     if coverage_identifier.split("-")[0] == "forecast":
         cov = await anyio.to_thread.run_sync(
-            database.get_forecast_coverage,
+            db.get_forecast_coverage,
             db_session,
             coverage_identifier,
         )
@@ -611,7 +610,7 @@ def get_time_series(
 ):
     """Get dataset time series for a geographic location."""
     if coverage_identifier.split("-")[0] == "forecast":
-        coverage = database.get_forecast_coverage(db_session, coverage_identifier)
+        coverage = db.get_forecast_coverage(db_session, coverage_identifier)
     else:
         coverage = None
     if coverage is not None:
@@ -818,7 +817,7 @@ def _retrieve_climatic_indicator_filter(
         )
     )
     try:
-        climatic_indicator = database.get_climatic_indicator_by_identifier(
+        climatic_indicator = db.get_climatic_indicator_by_identifier(
             session, climatic_indicator_id
         )
     except exceptions.InvalidClimaticIndicatorIdentifierError as err:

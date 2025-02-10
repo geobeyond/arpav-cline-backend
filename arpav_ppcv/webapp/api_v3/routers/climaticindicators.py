@@ -10,9 +10,7 @@ from fastapi import (
 )
 from sqlmodel import Session
 
-from .... import (
-    database,
-)
+from .... import db
 from ....config import ArpavPpcvSettings
 from ... import dependencies
 from ..schemas import climaticindicators as read_schemas
@@ -35,7 +33,7 @@ def list_climatic_indicators(
     aggregation_period_contains: str | None = None,
 ):
     """List climatic indicators."""
-    climatic_indicators, filtered_total = database.list_climatic_indicators(
+    climatic_indicators, filtered_total = db.list_climatic_indicators(
         db_session,
         limit=list_params.limit,
         offset=list_params.offset,
@@ -44,7 +42,7 @@ def list_climatic_indicators(
         measure_type_filter=measure_type_contains,
         aggregation_period_filter=aggregation_period_contains,
     )
-    _, unfiltered_total = database.list_climatic_indicators(
+    _, unfiltered_total = db.list_climatic_indicators(
         db_session,
         limit=1,
         offset=0,
@@ -77,7 +75,7 @@ def get_climatic_indicator(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     climatic_indicator_identifier: str,
 ):
-    db_climatic_indicator = database.get_climatic_indicator_by_identifier(
+    db_climatic_indicator = db.get_climatic_indicator_by_identifier(
         db_session, climatic_indicator_identifier
     )
     return read_schemas.ClimaticIndicatorReadListItem.from_db_instance(

@@ -12,7 +12,7 @@ import starlette_admin
 from starlette.requests import Request
 from starlette_admin.contrib.sqlmodel import ModelView
 
-from .... import database
+from .... import db
 from ....schemas.static import (
     AggregationPeriod,
     MeasureType,
@@ -178,7 +178,7 @@ class ClimaticIndicatorView(ModelView):
                 ],
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(
-                database.create_climatic_indicator,
+                db.create_climatic_indicator,
                 request.state.session,
                 climatic_indicator_create,
             )
@@ -217,10 +217,10 @@ class ClimaticIndicatorView(ModelView):
                 ],
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(
-                database.get_climatic_indicator, request.state.session, pk
+                db.get_climatic_indicator, request.state.session, pk
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(
-                database.update_climatic_indicator,
+                db.update_climatic_indicator,
                 request.state.session,
                 db_climatic_indicator,
                 climatic_indicator_update,
@@ -233,7 +233,7 @@ class ClimaticIndicatorView(ModelView):
         self, request: Request, pk: Any
     ) -> read_schemas.ClimaticIndicatorRead:
         db_climatic_indicator = await anyio.to_thread.run_sync(
-            database.get_climatic_indicator, request.state.session, pk
+            db.get_climatic_indicator, request.state.session, pk
         )
         return self._serialize_instance(db_climatic_indicator)
 
@@ -246,7 +246,7 @@ class ClimaticIndicatorView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[read_schemas.ClimaticIndicatorRead]:
         list_params = functools.partial(
-            database.list_climatic_indicators,
+            db.list_climatic_indicators,
             limit=limit,
             offset=skip,
             name_filter=str(where) if where not in (None, "") else None,

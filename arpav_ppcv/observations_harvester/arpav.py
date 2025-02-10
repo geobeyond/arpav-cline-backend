@@ -3,6 +3,7 @@ import logging
 from typing import (
     Callable,
     Generator,
+    TYPE_CHECKING,
 )
 
 import geojson_pydantic
@@ -10,9 +11,11 @@ import httpx
 import shapely
 import shapely.ops
 
-from ..schemas import (
-    climaticindicators,
-    observations,
+from ..schemas.observations import (
+    ObservationMeasurementCreate,
+    ObservationSeriesConfiguration,
+    ObservationStation,
+    ObservationStationCreate,
 )
 from ..schemas.static import (
     MeasurementAggregationType,
@@ -21,12 +24,15 @@ from ..schemas.static import (
 )
 from . import common
 
+if TYPE_CHECKING:
+    from ..schemas.climaticindicators import ClimaticIndicator
+
 logger = logging.getLogger(__name__)
 
 
 def fetch_remote_stations(
     client: httpx.Client,
-    series_configuration: observations.ObservationSeriesConfiguration,
+    series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
 ) -> Generator[dict, None, None]:
     station_url = f"{observations_base_url}/clima_indicatori/staz_attive_lunghe"
@@ -91,7 +97,7 @@ def fetch_remote_stations(
 
 def parse_station(
     raw_station: dict, coord_converter: Callable
-) -> observations.ObservationStationCreate:
+) -> ObservationStationCreate:
     if raw_start := raw_station.get("iniziovalidita"):
         try:
             active_since = dt.date(*(int(i) for i in raw_start.split("-")))
@@ -112,7 +118,7 @@ def parse_station(
         active_until = None
     pt_4258 = shapely.Point(raw_station["EPSG4258_LON"], raw_station["EPSG4258_LAT"])
     pt_4326 = shapely.ops.transform(coord_converter, pt_4258)
-    return observations.ObservationStationCreate(
+    return ObservationStationCreate(
         code="-".join(
             (
                 ObservationStationManager.ARPAV.value,
@@ -130,8 +136,8 @@ def parse_station(
 
 def fetch_station_measurements(
     client: httpx.Client,
-    observation_station: observations.ObservationStation,
-    series_configuration: observations.ObservationSeriesConfiguration,
+    observation_station: ObservationStation,
+    series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
 ) -> Generator[tuple[ObservationYearPeriod, dict], None, None]:
     measurements_url = f"{observations_base_url}/clima_indicatori"
@@ -214,9 +220,9 @@ def fetch_station_measurements(
 def parse_measurement(
     raw_measurement: dict,
     year_period: ObservationYearPeriod,
-    observation_station: observations.ObservationStation,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
-) -> observations.ObservationMeasurementCreate:
+    observation_station: ObservationStation,
+    climatic_indicator: "ClimaticIndicator",
+) -> ObservationMeasurementCreate:
     """Parse a raw ARPAV measurement.
 
     Dates are set to the beginning of the corresponding yearly aggregation period.
@@ -224,7 +230,7 @@ def parse_measurement(
     parsed_date, aggreg_type = common.parse_measurement_date(
         raw_measurement["anno"], year_period
     )
-    return observations.ObservationMeasurementCreate(
+    return ObservationMeasurementCreate(
         value=raw_measurement["valore"],
         date=parsed_date,
         measurement_aggregation_type=aggreg_type,
