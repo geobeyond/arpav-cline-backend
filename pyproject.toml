@@ -1,0 +1,88 @@
+[tool.poetry]
+name = "arpav-ppcv-backend"
+version = "v2.0.0-dev"
+description = "Backend component of the ARPAV-PPCV platform"
+authors = ["Geobeyond <info@geobeyond.it>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    {include = "arpav_ppcv"},
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = {extras = ["standard"], version = "^0.12.3"}
+psycopg2-binary = "2.8.5"
+threddsclient = "0.4.2"
+pandas = "1.5.0"
+requests = "^2.31.0"
+python-dateutil = "^2.9.0.post0"
+pytz = "^2024.1"
+httpx = "^0.27.0"
+anyio = "^4.3.0"
+fastapi = "^0.112.0"
+pydantic-settings = "^2.2.1"
+uvicorn = "^0.30.5"
+sqlmodel = "^0.0.16"
+geoalchemy2 = "^0.14.7"
+sqlalchemy = "^2.0.29"
+alembic = "^1.13.1"
+geojson-pydantic = "^1.0.2"
+shapely = "^2.0.3"
+pyproj = "^3.6.1"
+starlette-admin = "^0.13.2"
+itsdangerous = "^2.2.0"
+jinja2 = "^3.1.4"
+pyyaml = "^6.0.1"
+alembic-postgresql-enum = "^1.2.0"
+pymannkendall = "^1.4.3"
+typing-extensions = "^4.12.1"
+netcdf4 = "<1.7"
+cftime = "^1.6.4"
+babel = "^2.15.0"
+pyloess = "^0.1.0"
+prefect = {version = "^3.0.0rc14", allow-prereleases = true}
+matplotlib = "^3.9.2"
+numpy = "<2"
+
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.1"
+coverage = "^7.4.1"
+pytest-cov = "^4.1.0"
+dagger-io = "^0.9.10"
+ruff = "^0.2.2"
+pre-commit = "^3.7.1"
+pytest-httpx = "^0.30.0"
+locust = "^2.31.4"
+
+
+[tool.poetry.group.jupyter]
+optional = true
+
+[tool.poetry.group.jupyter.dependencies]
+jupyterlab = "^4.2.0"
+matplotlib = "^3.8.4"
+ipympl = "^0.9.4"
+ipyleaflet = "^0.19.2"
+sidecar = "^0.7.0"
+
+[tool.poetry.scripts]
+arpav-ppcv = "arpav_ppcv.main:app"
+
+[tool.ruff]
+extend-exclude = ["backend", "arpav_ppcv/migrations"]
+
+[tool.pytest.ini_options]
+addopts = "--verbose --cov --cov-branch --log-level=warning"
+
+[tool.coverage.run]
+branch = true
+source = ["arpav_ppcv"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,10 @@
+[Unit]
+Description="Timer for the clean-docker-images service"
+
+[Timer]
+Unit=clean-docker-images.service
+OnCalendar=Sun *-*-* 01:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

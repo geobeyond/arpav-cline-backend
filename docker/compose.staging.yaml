@@ -1,0 +1,196 @@
+# docker compose file that can be used for deployment in the staging environment.
+# - do not use this in production!
+#
+# In this file, do this:
+#
+# - use the `env_file` property to provide sensitive environment variables
+#   from suitable .env file(s) which are kept off the code repository
+#
+# - pull the main services' images from the respective container registries
+#   and only use the `latest` docker tag - we want to take advantage of the
+#   fact that deployment will be triggered on each push to the `main`
+#   branch(es) (which would imply that CI has passed and a new docker image
+#   has been pushed to the registry)
+#
+# - do not mount source code inside any container - keep volume binds to the
+#   minimum, only for relevant configuration file(s) and data collections
+
+x-env-file-db: &env-file-db ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_DB_SERVICE:-/home/arpav/environment-files/db-service.env}
+x-env-file-webapp: &env-file-webapp ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_WEBAPP_SERVICE:-/home/arpav/environment-files/webapp-service.env}
+x-env-file-martin: &env-file-martin ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_MARTIN_SERVICE:-/home/arpav/environment-files/martin-service.env}
+x-env-file-frontend: &env-file-frontend ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_FRONTEND_SERVICE:-/home/arpav/environment-files/frontend-service.env}
+x-env-file-prefect-db: &env-file-prefect-db ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_PREFECT_DB_SERVICE:-/home/arpav/environment-files/prefect-db-service.env}
+x-env-file-prefect-server: &env-file-prefect-server ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_PREFECT_SERVER_SERVICE:-/home/arpav/environment-files/prefect-server-service.env}
+x-env-file-prefect-static-worker: &env-file-prefect-static-worker ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_PREFECT_STATIC_WORKER_SERVICE:-/home/arpav/environment-files/prefect-static-worker-service.env}
+x-env-file-tolgee-db: &env-file-tolgee-db ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_DB_SERVICE:-/home/arpav/environment-files/tolgee-db-service.env}
+x-env-file-tolgee-app: &env-file-tolgee-app ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_APP_SERVICE:-/home/arpav/environment-files/tolgee-app-service.env}
+
+name: arpav-ppcv-staging
+
+networks:
+
+  front:
+  back:
+
+services:
+
+  # NOTE: this traefik instance does not deal with TLS at all, as we assume there
+  # is another proxy running on top of this one, provided
+  # by the staging env
+  reverse-proxy:
+    command: --configFile /traefik.toml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.outside-router-arpav-backend.entrypoints=webSecure"
+      - "traefik.http.routers.outside-router-arpav-backend.tls=true"
+      - "traefik.http.routers.outside-router-arpav-backend.tls.certResolver=letsEncryptResolver"
+      - 'traefik.http.routers.outside-router-arpav-backend.rule=HostRegexp(`^(.+\.)?arpav\.geobeyond\.dev$`)'
+      - "exposed.outside=true"
+    networks:
+      - front
+      - back
+    configs:
+      - source: traefik-conf
+        target: /traefik.toml
+    restart: unless-stopped
+
+  frontend:
+    env_file:
+      - *env-file-frontend
+    networks:
+      - back
+    labels:
+      - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
+      - "traefik.http.routers.arpav-frontend-router.rule=Host(`arpav.geobeyond.dev`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+      - "exposed.inside=true"
+    restart: unless-stopped
+
+  webapp:
+    networks:
+      - back
+    env_file:
+      - *env-file-webapp
+    labels:
+      - "traefik.http.routers.arpav-backend-router.entrypoints=web"
+      - "traefik.http.routers.arpav-backend-router.rule=Host(`arpav.geobeyond.dev`) && PathRegexp(`^/(api|admin)`)"
+      - "exposed.inside=true"
+    volumes:
+      - type: bind
+        source: $HOME/data/arpav-ppcv/datasets
+        target: /home/appuser/data/datasets
+      - type: bind
+        source: $HOME/data/arpav-ppcv/netcdf-uncertainty-example
+        target: /home/appuser/data/additional
+    restart: unless-stopped
+
+  db:
+    networks:
+      - back
+    env_file:
+      - *env-file-db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  martin:
+    networks:
+      - back
+    env_file:
+      - *env-file-martin
+    labels:
+      - "traefik.http.routers.martin-router.entrypoints=web"
+      - "traefik.http.routers.martin-router.rule=Host(`arpav.geobeyond.dev`) && PathPrefix(`/vector-tiles`)"
+      - "exposed.inside=true"
+    restart: unless-stopped
+
+  thredds:
+    networks:
+      - back
+    image: unidata/thredds-docker:5.4
+    env_file:
+      - *env-file-webapp
+    volumes:
+      - type: bind
+        source: /home/arpav/docker/thredds/content-root/catalog.xml
+        target: /usr/local/tomcat/content/thredds/catalog.xml
+      - type: bind
+        source: /home/arpav/docker/thredds/content-root/catalog_rcm.xml
+        target: /usr/local/tomcat/content/thredds/catalog_rcm.xml
+      - type: bind
+        source: /home/arpav/docker/thredds/content-root/catalog_clima.xml
+        target: /usr/local/tomcat/content/thredds/catalog_clima.xml
+      - type: bind
+        source: /home/arpav/docker/thredds/content-root/threddsConfig.xml
+        target: /usr/local/tomcat/content/thredds/threddsConfig.xml
+      - type: bind
+        source: /home/arpav/docker/thredds/content-root/wmsConfig.xml
+        target: /usr/local/tomcat/content/thredds/wmsConfig.xml
+      - type: bind
+        source: /home/arpav/data/arpav-ppcv/datasets
+        target: /datasets
+      - type: bind
+        source: /home/arpav/data/arpav-ppcv/netcdf-uncertainty-example
+        target: /additional
+    restart: unless-stopped
+
+  prefect-server:
+    networks:
+      - back
+    labels:
+      - "traefik.http.routers.prefect-router.entrypoints=web"
+      - "exposed.inside=true"
+      - "traefik.http.routers.prefect-router.rule=Host(`arpav.geobeyond.dev`) && PathPrefix(`/prefect`)"
+    env_file:
+      - *env-file-prefect-server
+    restart: unless-stopped
+
+  prefect-static-worker:
+    networks:
+      - back
+    env_file:
+      - *env-file-prefect-static-worker
+    restart: unless-stopped
+
+  prefect-db:
+    networks:
+      - back
+    env_file:
+      - *env-file-prefect-db
+    volumes:
+      - prefect-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  tolgee-app:
+    labels:
+      - "traefik.http.routers.tolgee-app-router.entrypoints=web"
+      - "exposed.inside=true"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`tolgee.arpav.geobeyond.dev`) && PathPrefix(`/`)"
+    networks:
+      - back
+    env_file:
+      - *env-file-tolgee-app
+    restart: unless-stopped
+
+  tolgee-db:
+    networks:
+      - back
+    env_file:
+      - *env-file-tolgee-db
+    volumes:
+      - tolgee-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+
+volumes:
+  db-data:
+  prefect-db-data:
+  tolgee-db-data:
+
+
+configs:
+
+  traefik-conf:
+    file: /home/arpav/docker/traefik/staging-config.toml
+
+  martin-conf:
+    file: /home/arpav/docker/martin/config.yaml

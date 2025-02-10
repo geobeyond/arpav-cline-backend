@@ -1,0 +1,1127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog name="THREDDS ARPAV Clima Server Catalog"
+         xmlns="http://www.unidata.ucar.edu/namespaces/thredds/InvCatalog/v1.0"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.unidata.ucar.edu/namespaces/thredds/InvCatalog/v1.0
+           http://www.unidata.ucar.edu/schemas/thredds/InvCatalog.1.0.6.xsd">
+
+    <service name="all" base="" serviceType="compound">
+        <service name="odap" serviceType="OpenDAP" base="/thredds/dodsC/"/>
+        <service name="dap4" serviceType="DAP4" base="/thredds/dap4/"/>
+        <service name="http" serviceType="HTTPServer" base="/thredds/fileServer/"/>
+        <service name="wcs" serviceType="WCS" base="/thredds/wcs/"/>
+        <service name="wms" serviceType="WMS" base="/thredds/wms/"/>
+        <service name="ncssGrid" serviceType="NetcdfSubset" base="/thredds/ncss/grid/"/>
+    </service>
+
+    <dataset name="netcdf tests">
+        <metadata inherited="true">
+            <serviceName>all</serviceName>
+            <dataType>Grid</dataType>
+            <authority>Arpav</authority>
+        </metadata>
+
+        <datasetScan
+                name="Tests"
+                ID="tests"
+                path="tests"
+                location="/additional"
+        >
+            <metadata inherited="true">
+                <serviceName>all</serviceName>
+                <dataType>Grid</dataType>
+                <authority>Arpav</authority>
+            </metadata>
+        </datasetScan>
+
+    </dataset>
+
+    <dataset name="CORDEX RCM Triveneto">
+        <metadata inherited="true">
+            <serviceName>all</serviceName>
+            <dataType>Grid</dataType>
+            <authority>Arpav</authority>
+        </metadata>
+        <dataset name="test-data">
+
+            <datasetScan name="Ensemble 5rcm BC" ID="ensembletwbc"
+                         path="ensembletwbc"
+                         location="/datasets/ensembletwbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="Temperatura e precipitazione 5rcm" ID="taspr5rcm"
+                         path="taspr5rcm"
+                         location="/datasets/taspr5rcm">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="Indici climatici 5rcm" ID="indici5rcm"
+                         path="indici5rcm"
+                         location="/datasets/indici5rcm">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="Ensemble 5rcm" ID="ens5ym"
+                         path="ens5ym"
+                         location="/datasets/ens5ym">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="Ensemble 5rcm BC" ID="ensymbc"
+                         path="ensymbc"
+                         location="/datasets/ensymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="EC-EARTH_CCLM4-8-17" ID="EC-EARTH_CCLM4-8-17ym"
+                         path="EC-EARTH_CCLM4-8-17ym"
+                         location="/datasets/EC-EARTH_CCLM4-8-17ym">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="EC-EARTH_CCLM4-8-17bc" ID="EC-EARTH_CCLM4-8-17ymbc"
+                         path="EC-EARTH_CCLM4-8-17ymbc"
+                         location="/datasets/EC-EARTH_CCLM4-8-17ymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="EC-EARTH_RACMO22E" ID="EC-EARTH_RACMO22Eym"
+                         path="EC-EARTH_RACMO22Eym"
+                         location="/datasets/EC-EARTH_RACMO22Eym">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="EC-EARTH_RACMO22Ebc" ID="EC-EARTH_RACMO22Eymbc"
+                         path="EC-EARTH_RACMO22Eymbc"
+                         location="/datasets/EC-EARTH_RACMO22Eymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="EC-EARTH_RCA4" ID="EC-EARTH_RCA4ym"
+                         path="EC-EARTH_RCA4ym"
+                         location="/datasets/EC-EARTH_RCA4ym">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+
+            <datasetScan name="EC-EARTH_RCA4bc" ID="EC-EARTH_RCA4ymbc"
+                         path="EC-EARTH_RCA4ymbc"
+                         location="/datasets/EC-EARTH_RCA4ymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+
+                <filter>
+                    <include wildcard="*ts*.nc"/>
+                    <exclude wildcard="ecapd*.nc"/>
+                </filter>
+            </datasetScan>
+            <datasetScan name="HadGEM2-ES_RACMO22E" ID="HadGEM2-ES_RACMO22Eym"
+                         path="HadGEM2-ES_RACMO22Eym"
+                         location="/datasets/HadGEM2-ES_RACMO22Eym">
+
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="HadGEM2-ES_RACMO22Ebc" ID="HadGEM2-ES_RACMO22Eymbc"
+                         path="HadGEM2-ES_RACMO22Eymbc"
+                         location="/datasets/HadGEM2-ES_RACMO22Eymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="MPI-ESM-LR_REMO2009" ID="MPI-ESM-LR_REMO2009ym"
+                         path="MPI-ESM-LR_REMO2009ym"
+                         location="/datasets/MPI-ESM-LR_REMO2009ym">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+            <datasetScan name="MPI-ESM-LR_REMO2009bc" ID="MPI-ESM-LR_REMO2009ymbc"
+                         path="MPI-ESM-LR_REMO2009ymbc"
+                         location="/datasets/MPI-ESM-LR_REMO2009ymbc">
+                <metadata inherited="true">
+                    <serviceName>all</serviceName>
+                    <dataType>Grid</dataType>
+                    <authority>Arpav</authority>
+                </metadata>
+            </datasetScan>
+        </dataset>
+
+        <!--        <dataset name="Variabili giornaliere"> &lt;!&ndash; restrictAccess="dati_accordo">&ndash;&gt;-->
+
+        <!--            <datasetScan name="EC-EARTH_CCLM4-8-17" ID="EC-EARTH_CCLM4-8-17"-->
+        <!--                         path="EC-EARTH_CCLM4-8-17"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_CCLM4-8-17/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RACMO22E" ID="EC-EARTH_RACMO22E"-->
+        <!--                         path="EC-EARTH_RACMO22E"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_RACMO22E/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RCA4" ID="EC-EARTH_RCA4"-->
+        <!--                         path="EC-EARTH_RCA4"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_RCA4/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RACMO22E" ID="HadGEM2-ES_RACMO22E"-->
+        <!--                         path="HadGEM2-ES_RACMO22E"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_RACMO22E/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_REMO2009" ID="MPI-ESM-LR_REMO2009"-->
+        <!--                         path="MPI-ESM-LR_REMO2009"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_REMO2009/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+
+        <!--            <datasetScan name="CNRM-CM5_CCLM4-8-17" ID="CNRM-CM5_CCLM4-8-17"-->
+        <!--                         path="CNRM-CM5_CCLM4-8-17"-->
+        <!--                         location="/data/VM/clima_lavoro/CNRM-CM5_CCLM4-8-17/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="CNRM-CM5_RCA4" ID="CNRM-CM5_RCA4"-->
+        <!--                         path="CNRM-CM5_RCA4"-->
+        <!--                         location="/data/VM/clima_lavoro/CNRM-CM5_RCA4/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_HIRHAM5" ID="EC-EARTH_HIRHAM5"-->
+        <!--                         path="EC-EARTH_HIRHAM5"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_HIRHAM5/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_CCLM4-8-17" ID="HadGEM2-ES_CCLM4-8-17"-->
+        <!--                         path="HadGEM2-ES_CCLM4-8-17"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_CCLM4-8-17/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RCA4" ID="HadGEM2-ES_RCA4"-->
+        <!--                         path="HadGEM2-ES_RCA4"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_RCA4/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="IPSL-CM5A-MR_INERIS-WRF331F" ID="IPSL-CM5A-MR_INERIS-WRF331F"-->
+        <!--                         path="IPSL-CM5A-MR_INERIS-WRF331F"-->
+        <!--                         location="/data/VM/clima_lavoro/IPSL-CM5A-MR_INERIS-WRF331F/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="IPSL-CM5A-MR_RCA4" ID="IPSL-CM5A-MR_RCA4"-->
+        <!--                         path="IPSL-CM5A-MR_RCA4"-->
+        <!--                         location="/data/VM/clima_lavoro/IPSL-CM5A-MR_RCA4/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_CCLM4-8-17" ID="MPI-ESM-LR_CCLM4-8-17"-->
+        <!--                         path="MPI-ESM-LR_CCLM4-8-17"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_CCLM4-8-17/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_RCA4" ID="MPI-ESM-LR_RCA4"-->
+        <!--                         path="MPI-ESM-LR_RCA4"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_RCA4/triveneto2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="NCC-NorESM1-M_HIRHAM5" ID="NCC-NorESM1-M_HIRHAM5"-->
+        <!--                         path="NCC-NorESM1-M_HIRHAM5" location="/data/VM/clima_lavoro/NCC-NorESM1-M_HIRHAM5/triveneto2"-->
+        <!--                         restrictAccess="userA">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_19702100.nc"/>-->
+        <!--                    <exclude wildcard="pr*_19702100.nc"/>-->
+        <!--                    <include wildcard="*_mmday.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+
+        <!--        </dataset>-->
+
+        <!--        <dataset name="Variabili giornaliere BC"> &lt;!&ndash; restrictAccess="dati_accordo">&ndash;&gt;-->
+
+        <!--            <datasetScan name="EC-EARTH_CCLM4-8-17bc" ID="EC-EARTH_CCLM4-8-17bc"-->
+        <!--                         path="EC-EARTH_CCLM4-8-17bc"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_CCLM4-8-17/biascorr"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*19702100*_ls.nc"/>-->
+        <!--                    <exclude wildcard="*nonull*.nc"/>-->
+        <!--                    <exclude wildcard="VFVG_mask" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="fldmean" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RACMO22Ebc" ID="EC-EARTH_RACMO22Ebc"-->
+        <!--                         path="EC-EARTH_RACMO22Ebc"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_RACMO22E/biascorr"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*19702100*_ls.nc"/>-->
+        <!--                    <exclude wildcard="*nonull*.nc"/>-->
+        <!--                    <exclude wildcard="VFVG_mask" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="fldmean" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RCA4bc" ID="EC-EARTH_RCA4bc"-->
+        <!--                         path="EC-EARTH_RCA4bc"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_RCA4/biascorr"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*19702100*_ls.nc"/>-->
+        <!--                    <exclude wildcard="*nonull*.nc"/>-->
+        <!--                    <exclude wildcard="VFVG_mask" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="fldmean" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RACMO22Ebc" ID="HadGEM2-ES_RACMO22Ebc"-->
+        <!--                         path="HadGEM2-ES_RACMO22Ebc"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_RACMO22E/biascorr"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*19702100*_ls.nc"/>-->
+        <!--                    <exclude wildcard="*nonull*.nc"/>-->
+        <!--                    <exclude wildcard="VFVG_mask" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="fldmean" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_REMO2009bc" ID="MPI-ESM-LR_REMO2009bc"-->
+        <!--                         path="MPI-ESM-LR_REMO2009bc"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_REMO2009/biascorr"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*19702100*_ls.nc"/>-->
+        <!--                    <exclude wildcard="*nonull*.nc"/>-->
+        <!--                    <exclude wildcard="VFVG_mask" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="fldmean" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--        </dataset>-->
+
+
+        <!--        <dataset name="Serie annuali e stagionali"> &lt;!&ndash; restrictAccess="dati_accordo">&ndash;&gt;-->
+
+
+        <!--            <datasetScan name="Ensemble 14rcm" ID="ens14ym"-->
+        <!--                         path="ens14ym" location="/data/VM/ensemble_14m/pp"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_DJF.nc"/>-->
+        <!--                    <include wildcard="*_JJA.nc"/>-->
+        <!--                    <include wildcard="*_MAM.nc"/>-->
+        <!--                    <include wildcard="*_SON.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Ensemble 5rcm" ID="ens5ym"-->
+        <!--                         path="ens5ym" location="/data/VM/ensemble_5m/pp"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*_DJF*.nc"/>-->
+        <!--                    <include wildcard="*_JJA*.nc"/>-->
+        <!--                    <include wildcard="*_MAM*.nc"/>-->
+        <!--                    <include wildcard="*_SON*.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Ensemble 5rcm BC" ID="ensymbc"-->
+        <!--                         path="ensymbc" location="/data/VM/ensemble_5m/indiciens/ts"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                    <exclude wildcard="pp" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_CCLM4-8-17" ID="EC-EARTH_CCLM4-8-17ym"-->
+        <!--                         path="EC-EARTH_CCLM4-8-17ym"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_CCLM4-8-17/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp*.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage*.nc"/>-->
+        <!--                    <exclude wildcard="*ts19762100*"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_CCLM4-8-17bc" ID="EC-EARTH_CCLM4-8-17ymbc"-->
+        <!--                         path="EC-EARTH_CCLM4-8-17ymbc" location="/data/VM/clima_lavoro/EC-EARTH_CCLM4-8-17/indici_ts">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*ts*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RACMO22E" ID="EC-EARTH_RACMO22Eym"-->
+        <!--                         path="EC-EARTH_RACMO22Eym"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_RACMO22E/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp*.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage*.nc"/>-->
+        <!--                    <exclude wildcard="*ts19762100*"/>-->
+
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RACMO22Ebc" ID="EC-EARTH_RACMO22Eymbc"-->
+        <!--                         path="EC-EARTH_RACMO22Eymbc" location="/data/VM/clima_lavoro/EC-EARTH_RACMO22E/indici_ts">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*ts*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RCA4" ID="EC-EARTH_RCA4ym"-->
+        <!--                         path="EC-EARTH_RCA4ym" location="/data/VM/clima_lavoro/EC-EARTH_RCA4/anomalia2">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/clima_lavoro/EC-EARTH_RCA4/ymean"> &ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp*.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage*.nc"/>-->
+        <!--                    <exclude wildcard="*ts19762100*"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_RCA4bc" ID="EC-EARTH_RCA4ymbc"-->
+        <!--                         path="EC-EARTH_RCA4ymbc" location="/data/VM/clima_lavoro/EC-EARTH_RCA4/indici_ts">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*ts*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RACMO22E" ID="HadGEM2-ES_RACMO22Eym"-->
+        <!--                         path="HadGEM2-ES_RACMO22Eym" location="/data/VM/clima_lavoro/HadGEM2-ES_RACMO22E/anomalia2">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/clima_lavoro/HadGEM2-ES_RACMO22E/ymean"> &ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp*.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage*.nc"/>-->
+        <!--                    <exclude wildcard="*ts19762100*"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RACMO22Ebc" ID="HadGEM2-ES_RACMO22Eymbc"-->
+        <!--                         path="HadGEM2-ES_RACMO22Eymbc" location="/data/VM/clima_lavoro/HadGEM2-ES_RACMO22E/indici_ts">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*ts*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_REMO2009" ID="MPI-ESM-LR_REMO2009ym"-->
+        <!--                         path="MPI-ESM-LR_REMO2009ym" location="/data/VM/clima_lavoro/MPI-ESM-LR_REMO2009/anomalia2">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/clima_lavoro/MPI-ESM-LR_REMO2009/ymean">&ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp*.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage*.nc"/>-->
+        <!--                    <exclude wildcard="*ts19762100*"/>-->
+        <!--                </filter>-->
+
+
+        <!--                &lt;!&ndash;-->
+        <!--                <netcdf xmlns="http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2">-->
+        <!--                &ndash;&gt;-->
+
+        <!--                &lt;!&ndash;publish only the latidude/longitude with step 4 (step4:0.5° step1:0.125°)&ndash;&gt;-->
+        <!--                &lt;!&ndash;-->
+        <!--                <variable name="lat">-->
+        <!--                 <logicalSection section="0:10:1"/>-->
+        <!--                </variable>-->
+
+        <!--                <variable name="lon">-->
+        <!--                 <logicalSection section="0:20:1"/>-->
+        <!--                </variable>-->
+
+
+        <!--               </netcdf>-->
+        <!--               &ndash;&gt;-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_REMO2009bc" ID="MPI-ESM-LR_REMO2009ymbc"-->
+        <!--                         path="MPI-ESM-LR_REMO2009ymbc" location="/data/VM/clima_lavoro/MPI-ESM-LR_REMO2009/indici_ts">-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*ts*.nc"/>-->
+        <!--                    <exclude wildcard="ecapd*.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+
+        <!--            <datasetScan name="CNRM-CM5_CCLM4-8-17" ID="CNRM-CM5_CCLM4-8-17ym"-->
+        <!--                         path="CNRM-CM5_CCLM4-8-17ym"-->
+        <!--                         location="/data/VM/clima_lavoro/CNRM-CM5_CCLM4-8-17/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="CNRM-CM5_RCA4" ID="CNRM-CM5_RCA4ym"-->
+        <!--                         path="CNRM-CM5_RCA4ym"-->
+        <!--                         location="/data/VM/clima_lavoro/CNRM-CM5_RCA4/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="EC-EARTH_HIRHAM5" ID="EC-EARTH_HIRHAM5ym"-->
+        <!--                         path="EC-EARTH_HIRHAM5ym"-->
+        <!--                         location="/data/VM/clima_lavoro/EC-EARTH_HIRHAM5/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_CCLM4-8-17" ID="HadGEM2-ES_CCLM4-8-17ym"-->
+        <!--                         path="HadGEM2-ES_CCLM4-8-17ym"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_CCLM4-8-17/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="HadGEM2-ES_RCA4" ID="HadGEM2-ES_RCA4ym"-->
+        <!--                         path="HadGEM2-ES_RCA4ym"-->
+        <!--                         location="/data/VM/clima_lavoro/HadGEM2-ES_RCA4/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="IPSL-CM5A-MR_RCA4" ID="IPSL-CM5A-MR_RCA4ym"-->
+        <!--                         path="IPSL-CM5A-MR_RCA4ym"-->
+        <!--                         location="/data/VM/clima_lavoro/IPSL-CM5A-MR_RCA4/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_CCLM4-8-17" ID="MPI-ESM-LR_CCLM4-8-17ym"-->
+        <!--                         path="MPI-ESM-LR_CCLM4-8-17ym"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_CCLM4-8-17/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="MPI-ESM-LR_RCA4" ID="MPI-ESM-LR_RCA4ym"-->
+        <!--                         path="MPI-ESM-LR_RCA4ym"-->
+        <!--                         location="/data/VM/clima_lavoro/MPI-ESM-LR_RCA4/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="NCC-NorESM1-M_HIRHAM5" ID="NCC-NorESM1-M_HIRHAM5ym"-->
+        <!--                         path="NCC-NorESM1-M_HIRHAM5ym"-->
+        <!--                         location="/data/VM/clima_lavoro/NCC-NorESM1-M_HIRHAM5/anomalia2"> &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="tas*_anomaly_pp.nc"/>-->
+        <!--                    <include wildcard="pr*_anomaly_pp_percentage.nc"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--        </dataset>-->
+
+        <!--        <dataset name="Anomalie trentennali">  &lt;!&ndash;restrictAccess="dati_accordo">&ndash;&gt;-->
+
+        <!--            <datasetScan name="Ensemble 14rcm" ID="ensemble14"-->
+        <!--                         path="ensemble14" location="/data/VM/ensemble_14m/indiciens">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/ensemble_14m/indiciens">&ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    &lt;!&ndash;<include wildcard="*.nc" />&ndash;&gt;-->
+        <!--                    <exclude wildcard="heat_waves_avg_*.nc"/>-->
+        <!--                    <exclude wildcard="pp" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="thralert" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Ensemble 5rcm BC" ID="ensembletwbc"-->
+        <!--                         path="ensembletwbc" location="/data/VM/ensemble_5m/indiciens">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/ensemble_14m/indiciens">&ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    &lt;!&ndash;<include wildcard="*.nc" />&ndash;&gt;-->
+        <!--                    <exclude wildcard="heat_waves_avg_*.nc"/>-->
+        <!--                    <exclude wildcard="heat_waves_*DJF.nc"/>-->
+        <!--                    <exclude wildcard="ecasuan_25_*.nc"/>-->
+        <!--                    <exclude wildcard="ts" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="thralert" atomic="false" collection="true"/>-->
+        <!--                    <exclude wildcard="w_null" atomic="false" collection="true"/>-->
+        <!--                    &lt;!&ndash;<exclude wildcard="*tw0*.nc" />-->
+        <!--                    <include wildcard="sc_*tw0*.nc" />-->
+        <!--                    <include wildcard="snw*tw0*.nc" />-->
+        <!--                    <include wildcard="eca_cdd*tw0*.nc" />&ndash;&gt;-->
+        <!--                </filter>-->
+
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Temperatura e precipitazione 14rcm" ID="taspr14rcm"-->
+        <!--                         path="taspr14rcm" location="/data/VM/anomaly_tw_14m">-->
+        <!--                &lt;!&ndash;location="/media/giovanni/Elements/VM/anomaly_tw"> &ndash;&gt;-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*.nc"/>-->
+        <!--                    <exclude wildcard="nonusare" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Temperatura e precipitazione 5rcm" ID="taspr5rcm"-->
+        <!--                         path="taspr5rcm" location="/data/VM/anomaly_tw_5m">-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <include wildcard="*.nc"/>-->
+        <!--                    <exclude wildcard="nonusare" atomic="false" collection="true"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Indici climatici 14rcm" ID="indici14rcm"-->
+        <!--                         path="indici14rcm" location="/data/VM/indici_14m">-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <exclude wildcard="ecatr_*.nc"/>-->
+        <!--                    <exclude wildcard="ecatr_*_20_tw1.nc"/>-->
+        <!--                    <exclude wildcard="ecatr_*_20_tw2.nc"/>-->
+        <!--                    <exclude wildcard="ecasuan_25_*.nc"/>-->
+        <!--                    <exclude wildcard="*tw0*.nc"/>-->
+        <!--                    <exclude wildcard="heat_waves_anom_*ls.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--            <datasetScan name="Indici climatici 5rcm" ID="indici5rcm"-->
+        <!--                         path="indici5rcm" location="/data/VM/indici_5m">-->
+        <!--                &lt;!&ndash; restrictAccess="userA">&ndash;&gt;-->
+
+        <!--                <metadata inherited="true">-->
+        <!--                    <serviceName>all</serviceName>-->
+        <!--                    <dataType>Grid</dataType>-->
+        <!--                    <authority>Arpav</authority>-->
+        <!--                </metadata>-->
+
+        <!--                <filter>-->
+        <!--                    <exclude wildcard="ecatr_*.nc"/>-->
+        <!--                    <exclude wildcard="ecatr_*_20_tw1.nc"/>-->
+        <!--                    <exclude wildcard="ecatr_*_20_tw2.nc"/>-->
+        <!--                    <exclude wildcard="ecasuan_25_*.nc"/>-->
+        <!--                    <exclude wildcard="*tw0*.nc"/>-->
+        <!--                    <exclude wildcard="heat_waves_anom_*ls.nc"/>-->
+        <!--                    <exclude wildcard="heat_waves_*DJF*.nc"/>-->
+        <!--                </filter>-->
+
+        <!--            </datasetScan>-->
+
+        <!--        </dataset>-->
+
+        <!--    </dataset>-->
+
+
+    </dataset>
+</catalog>

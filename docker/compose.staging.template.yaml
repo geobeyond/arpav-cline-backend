@@ -1,0 +1,261 @@
+# docker compose file template that can be used to create a suitable staging deployment file.
+# This template file is meant to be processed via Python - the processor shall replace all
+# template strings with their respective values. A template string is denoted like this: <DOLLAR>{name}
+# with a dollar sign instead of <DOLLAR> - we are not writing it out here to avoid the processor trying
+# to perform a substitution in these comments.
+#
+# NOTE: BECAUSE THIS FILE IS PREPROCESSED, ALL PLACES WHERE A DOLLAR SIGN IS SIGNIFICANT, LIKE
+# IN TRAEFIK ROUTING RULES, MUST USE DOUBLE DOLLAR SIGNS INSTEAD. Check:
+#
+# https://docs.python.org/3/library/string.html#template-strings
+#
+#
+# - do not mount source code inside any container - keep volume binds to the
+#   minimum, only for relevant configuration file(s) and data collections
+
+x-postgres-db-healthcheck: &postgres-db-healthcheck
+  interval: 20s
+  timeout: 5s
+  start_period: 3m
+  retries: 20
+  test: |
+    export PGPASSWORD=$${POSTGRES_PASSWORD:-}
+    args="--host 127.0.0.1 --username $${POSTGRES_USER} --dbname $${POSTGRES_DB} --quiet --no-align --tuples-only"
+    response=$$(echo 'SELECT 1' | psql $${args})
+    if [ $${response} = '1' ];
+    then exit 0;
+    else echo "+++++++++++++ DB $${POSTGRES_DB} is not up+++++++++++++"; exit 1;
+    fi
+
+
+x-prefect-server-healthcheck: &prefect-server-healthcheck
+  interval: 20s
+  timeout: 5s
+  start_period: 3m
+  retries: 20
+  test: |
+    status=$$(python -c 'import httpx; print(httpx.get("http://127.0.0.1:4200/api/health").status_code)')
+    if [ $${status} = '200' ];
+    then exit 0;
+    else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
+    fi
+
+name: "${compose_project_name}"
+
+services:
+
+  reverse-proxy:
+    image: "traefik:${reverse_proxy_image_tag}"
+    command: --configFile /traefik.toml
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    configs:
+      - source: traefik-conf
+        target: /traefik.toml
+    secrets:
+      - traefik-users-file
+    ports:
+      - target: 443
+        published: 443
+    restart: unless-stopped
+
+  frontend:
+    image: "${frontend_image}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arpav-frontend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && !PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+      - "traefik.http.routers.arpav-frontend-router.entrypoints=webSecure"
+      - "traefik.http.routers.arpav-frontend-router.tls=true"
+      - "traefik.http.routers.arpav-frontend-router.tls.certResolver=letsEncryptResolver"
+      - "traefik.http.services.arpav-frontend-service.loadbalancer.server.port=80"
+    environment:
+      ARPAV_BACKEND_API_BASE_URL: "${frontend_env_arpav_backend_api_base_url}"
+      ARPAV_TOLGEE_BASE_URL: "${frontend_env_arpav_tolgee_base_url}"
+    restart: unless-stopped
+
+  webapp:
+    image: "${backend_image}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
+      - "traefik.http.routers.arpav-backend-router.entrypoints=webSecure"
+      - "traefik.http.routers.arpav-backend-router.tls=true"
+      - "traefik.http.routers.arpav-backend-router.tls.certResolver=letsEncryptResolver"
+      - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
+    environment:
+      ARPAV_PPCV__DEBUG: "${webapp_env_debug}"
+      ARPAV_PPCV__BIND_HOST: "${webapp_env_bind_host}"
+      ARPAV_PPCV__BIND_PORT: "${webapp_env_bind_port}"
+      ARPAV_PPCV__PUBLIC_URL: "${webapp_env_public_url}"
+      ARPAV_PPCV__NUM_UVICORN_WORKER_PROCESSES: "${webapp_env_num_uvicorn_worker_processes}"
+      ARPAV_PPCV__DB_DSN: "${webapp_env_db_dsn}"
+      ARPAV_PPCV__UVICORN_LOG_CONFIG_FILE: "${webapp_env_uvicorn_log_config_file}"
+      ARPAV_PPCV__SESSION_SECRET_KEY: "${webapp_env_session_secret_key}"
+      ARPAV_PPCV__ADMIN_USER__USERNAME: "${webapp_env_admin_user_username}"
+      ARPAV_PPCV__ADMIN_USER__PASSWORD: "${webapp_env_admin_user_password}"
+      ARPAV_PPCV__THREDDS_SERVER__BASE_URL: "${webapp_env_thredds_server_base_url}"
+      ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
+      ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
+      ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      PG_DATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_PASSWORD: "${db_password}"
+      POSTGRES_USER: "${db_user}"
+      POSTGRES_DB: "${db_name}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck: *postgres-db-healthcheck
+    restart: unless-stopped
+
+  martin:
+    image: "ghcr.io/maplibre/martin:${martin_image_tag}"
+    command: ["--config", "/martin-conf"]
+    environment:
+      DATABASE_URL: "${martin_env_database_url}"
+    configs:
+      - martin-conf
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.martin-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/vector-tiles`)"
+      - "traefik.http.routers.martin-router.entrypoints=webSecure"
+      - "traefik.http.routers.martin-router.tls=true"
+      - "traefik.http.routers.martin-router.tls.certResolver=letsEncryptResolver"
+      - "traefik.http.middlewares.strip-martin-prefix-middleware.stripprefix.prefixes=/vector-tiles"
+      - "traefik.http.routers.martin-router.middlewares=strip-martin-prefix-middleware@docker"
+      - "traefik.http.services.martin-service.loadbalancer.server.port=3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prefect-server:
+    image: "prefecthq/prefect:${prefect_server_image_tag}"
+    command: ["prefect", "server", "start"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.prefect-auth.basicauth.usersfile=/run/secrets/traefik-users-file"
+      - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.regex=/prefect/api"
+      - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.replacement=/api"
+      - "traefik.http.middlewares.middleware-chain.chain.middlewares=prefect-auth,replace-prefect-path-middleware"
+      - "traefik.http.routers.prefect-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathPrefix(`/prefect`)"
+      - "traefik.http.routers.prefect-router.entrypoints=webSecure"
+      - "traefik.http.routers.prefect-router.tls=true"
+      - "traefik.http.routers.prefect-router.tls.certResolver=letsEncryptResolver"
+      - "traefik.http.routers.prefect-router.middlewares=middleware-chain"
+      - "traefik.http.services.prefect-service.loadbalancer.server.port=4200"
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: "${prefect_server_env_api_database_connection_url}"
+      PREFECT_API_URL: "${prefect_server_env_api_url}"
+      PREFECT_CLI_PROMPT: "${prefect_server_env_cli_prompt}"
+      PREFECT_DEBUG_MODE: "${prefect_server_env_debug_mode}"
+      PREFECT_HOME: "${prefect_server_env_home}"
+      PREFECT_SERVER_ALLOW_EPHEMERAL_MODE: "${prefect_server_env_allow_ephemeral_mode}"
+      PREFECT_SERVER_API_HOST: "${prefect_server_env_api_host}"
+      PREFECT_SERVER_API_PORT: "${prefect_server_env_api_port}"
+      PREFECT_SERVER_CSRF_PROTECTION_ENABLED: "${prefect_server_env_csrf_protection_enabled}"
+      PREFECT_UI_API_URL: "${prefect_server_env_ui_api_url}"
+      PREFECT_UI_URL: "${prefect_server_env_ui_url}"
+      PREFECT_UI_SERVE_BASE: "${prefect_server_env_ui_serve_base}"
+    depends_on:
+      prefect-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prefect-static-worker:
+    image: "${backend_image}"
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    command: [
+      "start-periodic-tasks",
+      "--refresh-stations",
+      "--refresh-monthly-measurements",
+      "--refresh-seasonal-measurements",
+      "--refresh-yearly-measurements",
+      "--refresh-station-variables",
+    ]
+    environment:
+      ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_arpav_ppcv_debug}"
+      ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
+      PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
+      PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prefect-db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      PG_DATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_PASSWORD: "${prefect_db_password}"
+      POSTGRES_USER: "${prefect_db_user}"
+      POSTGRES_DB: "${prefect_db_name}"
+    volumes:
+      - prefect-db-data:/var/lib/postgresql/data
+    healthcheck: *postgres-db-healthcheck
+    restart: unless-stopped
+
+  tolgee-app:
+    image: "tolgee/tolgee:${tolgee_app_image_tag}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tolgee-app-router.rule=Host(`${reverse_proxy_tolgee_domain_name}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.tolgee-app-router.entrypoints=webSecure"
+      - "traefik.http.routers.tolgee-app-router.tls=true"
+      - "traefik.http.routers.tolgee-app-router.tls.certResolver=letsEncryptResolver"
+      - "traefik.http.services.tolgee-app-service.loadbalancer.server.port=8080"
+    environment:
+      SERVER_PORT: "${tolgee_app_env_server_port}"
+      SPRING_DATASOURCE_URL: "${tolgee_app_env_server_spring_datasource_url}"
+      SPRING_DATASOURCE_USERNAME: "${tolgee_app_env_spring_datasource_username}"
+      SPRING_DATASOURCE_PASSWORD: "${tolgee_app_env_spring_datasource_password}"
+      TOLGEE_AUTHENTICATION_CREATE_DEMO_FOR_INITIAL_USER: "${tolgee_app_env_tolgee_authentication_create_demo_for_initial_user}"
+      TOLGEE_AUTHENTICATION_ENABLED: "${tolgee_app_env_tolgee_authentication_enabled}"
+      TOLGEE_AUTHENTICATION_INITIAL_PASSWORD: "${tolgee_app_env_tolgee_authentication_initial_password}"
+      TOLGEE_AUTHENTICATION_JWT_SECRET: "${tolgee_app_env_tolgee_authentication_jwt_secret}"
+      TOLGEE_FILE_STORAGE_FS_DATA_PATH: "${tolgee_app_env_tolgee_file_storage_fs_data_path}"
+      TOLGEE_FRONTEND_URL: "${tolgee_app_env_tolgee_frontend_url}"
+      TOLGEE_POSTGRES_AUTOSTART_ENABLED: "${tolgee_app_env_tolgee_postgres_autostart_enabled}"
+      TOLGEE_TELEMETRY_ENABLED: "${tolgee_app_env_tolgee_telemetry_enabled}"
+    depends_on:
+      tolgee-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  tolgee-db:
+    image: "postgis/postgis:${db_image_tag}"
+    environment:
+      PG_DATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_PASSWORD: "${tolgee_db_password}"
+      POSTGRES_USER: "${tolgee_db_user}"
+      POSTGRES_DB: "${tolgee_db_name}"
+    volumes:
+      - tolgee-db-data:/var/lib/postgresql/data
+    healthcheck: *postgres-db-healthcheck
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  prefect-db-data:
+  tolgee-db-data:
+
+
+configs:
+  traefik-conf:
+    file: "${traefik_conf_path}"
+
+  martin-conf:
+    file: "${martin_conf_path}"
+
+
+secrets:
+  traefik-users-file:
+    file: "${traefik_users_file_path}"

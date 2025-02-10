@@ -1,0 +1,36 @@
+# Configuration of the hooks recognized by the webhook server
+#
+# This makes use of webhook's templating capabilities, so it requires that
+# the server be started with the `-template` CLI parameter
+#
+# Reference for the webhook hook rules:
+# https://github.com/adnanh/webhook/blob/master/docs/Hook-Rules.md
+#
+# Reference for github webhooks:
+# https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+
+- id: deploy-arpav-ppcv
+  execute-command: /usr/bin/python3
+  pass-arguments-to-command:
+    # location of the hook scripts
+    - source: string
+      name: /home/arpav/webhooks/hook-scripts/deploy.py
+    # deployment root dir
+    - source: string
+      name: /home/arpav
+    - source: entire-payload
+    # ensure the deployment script does not run in dry-mode
+    - source: string
+      name: '--confirm'
+    - source: string
+      name: '--auto-update'
+    - source: string
+      name: '--send-discord-notification'
+  command-working-directory: /home/arpav/webhooks/hook-scripts
+  trigger-rule:
+    match:
+      type: payload-hmac-sha256
+      secret: '{{ getenv "WEBHOOK_SECRET" | js }}'
+      parameter:
+        source: header
+        name: X-Hub-Signature-256

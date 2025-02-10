@@ -1,0 +1,37 @@
+# Static configuration file for traefik
+#
+# In this file we mostly configure providers, entrypoints and security.
+# Routers, the other major part of a traefik configuration,  form the
+# so-called 'dynamic configuration' and in this case are gotten from
+# the labels associated with the docker provider
+#
+# More info:
+#
+# https://doc.traefik.io/traefik/
+
+[accessLog]
+
+[entryPoints]
+
+[entryPoints.webSecure]
+address = ":443"
+[entryPoints.webSecure.forwardedHeaders]
+insecure = true
+
+[providers]
+
+[providers.docker]
+exposedByDefault = false
+network = "front"
+constraints = "Label(`exposed.outside`, `true`)"
+
+
+[certificatesResolvers.letsEncryptResolver.acme]
+email = "francesco.bartoli@geobeyond.it"
+storage = "/opt/traefik/certs/acme.json"
+
+# Default: "https://acme-v02.api.letsencrypt.org/directory"
+# the default is the production lets encrypt server
+# caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+[certificatesResolvers.letsEncryptResolver.acme.tlsChallenge]

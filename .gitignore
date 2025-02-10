@@ -58,7 +58,6 @@ coverage.xml
 # Django stuff:
 *.log
 local_settings.py
-*/*/dj*/*/migrations/0*.py
 
 # Flask stuff:
 instance/
@@ -121,21 +120,14 @@ celerybeat-schedule
 ## Plugin-specific files:
 
 # IntelliJ
-/out/
 .idea/
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
+.venv
 
-# Django
-backend/storage
-backend/static
-backend/.env
-#backend/djcore
+docker/traefik/basicauth-users.txt
 
-**/migrations/*.py
-/docker/basemap/data/
-/docker/basemap/gebco/
-/proxy/node_modules/
+arpav-cache
 
-/Arpav-PPCV
+prod-deployment.cfg

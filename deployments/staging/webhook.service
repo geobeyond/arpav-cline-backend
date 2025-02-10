@@ -1,0 +1,12 @@
+# systemd service file for the webhook server
+# - Create the `/etc/systemd/system/webhook.service` file with these contents
+# - Then modify the value of the WEBHOOK_SECRET environment variable
+# - Run `sudo systemctl daemon-relaod`
+# - Finally run sudo systemctl start webhook.conf
+
+[Service]
+Environment="WEBHOOK_SECRET=change-me"
+Environment="ARPAV_PPCV_DEPLOYMENT_STATUS_DISCORD_WEBHOOK_URL=change-me"
+ExecStart=/usr/bin/webhook -template -port 9001 -hooks /home/arpav/webhooks/hooks.yaml
+User=arpav
+Group=arpav

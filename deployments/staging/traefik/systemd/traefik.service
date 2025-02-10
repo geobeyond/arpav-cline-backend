@@ -1,0 +1,16 @@
+[Unit]
+Description=Traefik
+Documentation=https://doc.traefik.io/traefik/
+After=network-online.target
+AssertFileIsExecutable=/opt/traefik/traefik_v3.0.2/traefik
+AssertPathExists=/opt/traefik/traefik.toml
+
+
+[Service]
+Type=notify
+ExecStart=/opt/traefik/traefik_v3.0.2/traefik --configFile=/opt/traefik/traefik.toml
+Restart=always
+WatchdogSec=1s
+
+[Install]
+WantedBy=multi-user.target

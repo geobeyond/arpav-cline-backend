@@ -1,0 +1,54 @@
+listen_addresses: '0.0.0.0:3000'
+cache_size_mb: 512
+postgres:
+  connection_string: ${DATABASE_URL}
+
+  auto_publish:
+    from_schemas:
+      - stations
+    tables:
+      id_columns: id
+
+  tables:
+
+    stations:
+      schema: public
+      table: station
+      srid: 4326
+      geometry_column: geom
+      id_column: ~
+      geometry_type: POINT
+      properties:
+        name: varchar
+        code: varchar
+        id: uuid
+        active_since: date
+        active_until: date
+
+    municipalities:
+      schema: public
+      table: municipality
+      srid: 4326
+      geometry_column: geom
+      id_column: ~
+      geometry_type: MULTIPOLYGON
+      properties:
+        id: uuid
+        name: varchar
+        province_name: varchar
+        region_name: varchar
+        centroid_epsg_4326_lon: float
+        centroid_epsg_4326_lat: float
+
+    municipality-centroids:
+      schema: public
+      table: municipality_centroids
+      srid: 4326
+      geometry_column: geom
+      id_column: ~
+      geometry_type: POINT
+      properties:
+        id: uuid
+        name: varchar
+        province_name: varchar
+        region_name: varchar

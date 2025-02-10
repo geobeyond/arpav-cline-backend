@@ -1,0 +1,171 @@
+# THIS FILE IS NOT SUITABLE FOR RUNNING IN PRODUCTION BY ITSELF!
+#
+# Base docker compose file
+#
+# This file has the base compose configuration for running the project.
+# Specialize it into suitable `dev`, `ci`, etc. stacks in the respective
+# `compose.dev.yaml`, `compose.ci.yaml`, etc. files, as needed.
+#
+# Then use both this file and the specialized one together, like this:
+#
+# ```sh
+# docker compose -f docker/compose.yaml -f compose.dev.yaml up --detach
+# ```
+#
+# ---
+#
+# The definitions below, whose name starts with `x-` make use of
+# docker compose's extension fields, as defined in:
+#
+# https://docs.docker.com/compose/compose-file/11-extension/
+#
+# Briefly, it is a way to keep the docker compose file DRY. We define common
+# blocks with a name like `x-something`. Then we mark these as being YAML
+# anchors. Later in the file we refer to them using YAML aliases.
+
+x-prefect-image: &prefect-image "prefecthq/prefect:3.0.0rc17-python3.10"
+x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:latest"
+
+x-postgres-db-healthcheck: &postgres-db-healthcheck
+  interval: 20s
+  timeout: 5s
+  start_period: 3m
+  retries: 20
+  test: |
+    export PGPASSWORD=$${POSTGRES_PASSWORD:-}
+    args="--host 127.0.0.1 --username $${POSTGRES_USER} --dbname $${POSTGRES_DB} --quiet --no-align --tuples-only"
+    response=$$(echo 'SELECT 1' | psql $${args})
+    if [ $${response} = '1' ];
+    then exit 0;
+    else echo "+++++++++++++ DB $${POSTGRES_DB} is not up+++++++++++++"; exit 1;
+    fi
+
+
+x-prefect-server-healthcheck: &prefect-server-healthcheck
+  interval: 20s
+  timeout: 5s
+  start_period: 3m
+  retries: 20
+  test: |
+    status=$$(python -c 'import httpx; print(httpx.get("http://127.0.0.1:4200/api/health").status_code)')
+    if [ $${status} = '200' ];
+    then exit 0;
+    else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
+    fi
+
+name: arpav-ppcv
+
+services:
+
+  reverse-proxy:
+    image: traefik:3.0.2
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    secrets:
+      - traefik-users-file
+
+  frontend:
+    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:latest"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arpav-frontend-router.rule=!PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
+      - "traefik.http.services.arpav-frontend-service.loadbalancer.server.port=80"
+
+  webapp:
+    image: *backend-image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.arpav-backend-router.rule=PathRegexp(`^/(api|admin)`)"
+      - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: "postgis/postgis:16-3.4"
+    environment:
+      PG_DATA: /var/lib/postgresql/data/pgdata
+    healthcheck: *postgres-db-healthcheck
+
+  martin:
+    image: 'ghcr.io/maplibre/martin:v0.13.0'
+    command: ["--config", "/martin-conf"]
+    configs:
+      - martin-conf
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.martin-router.rule=PathPrefix(`/vector-tiles`)"
+      - "traefik.http.services.martin-service.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.strip-martin-prefix-middleware.stripprefix.prefixes=/vector-tiles"
+      - "traefik.http.routers.martin-router.middlewares=strip-martin-prefix-middleware@docker"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  prefect-server:
+    image: *prefect-image
+    command: ["prefect", "server", "start"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prefect-router.rule=PathPrefix(`/prefect`)"
+      - "traefik.http.services.prefect-service.loadbalancer.server.port=4200"
+      - "traefik.http.middlewares.middleware-chain.chain.middlewares=prefect-auth,replace-prefect-path-middleware"
+      - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.regex=/prefect/api"
+      - "traefik.http.middlewares.replace-prefect-path-middleware.replacepathregex.replacement=/api"
+      - "traefik.http.middlewares.prefect-auth.basicauth.usersfile=/run/secrets/traefik-users-file"
+      - "traefik.http.routers.prefect-router.middlewares=middleware-chain"
+    depends_on:
+      prefect-db:
+        condition: service_healthy
+    healthcheck: *prefect-server-healthcheck
+
+  prefect-static-worker:
+    image: *backend-image
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    command: [
+      "start-periodic-tasks",
+      "--refresh-stations",
+      "--refresh-monthly-measurements",
+      "--refresh-seasonal-measurements",
+      "--refresh-yearly-measurements",
+      "--refresh-station-variables",
+    ]
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+
+  prefect-db:
+    image: "postgis/postgis:16-3.4"
+    environment:
+      PG_DATA: /var/lib/postgresql/data/pgdata
+    healthcheck: *postgres-db-healthcheck
+
+  tolgee-app:
+    image: "tolgee/tolgee:v3.71.4"
+    depends_on:
+      tolgee-db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tolgee-app-router.rule=PathPrefix(`/`)"
+      - "traefik.http.services.tolgee-app-service.loadbalancer.server.port=8080"
+
+  tolgee-db:
+    image: "postgis/postgis:16-3.4"
+    environment:
+      PG_DATA: /var/lib/postgresql/data/pgdata
+    healthcheck: *postgres-db-healthcheck
+
+
+configs:
+
+  martin-conf:
+    file: $PWD/docker/martin/config.yaml
+
+
+secrets:
+
+  traefik-users-file:
+    file: ${ARPAV_PPCV_TRAEFIK_BASIC_AUTH_USERS_FILE:-$PWD/docker/traefik/basicauth-users.txt}

@@ -1,0 +1,264 @@
+# docker compose file that can be used for development purposes only
+# - do not use this in production!
+#
+# Modifications done:
+# - directly provides most of the environment variables in the file, not
+#   caring to protect potentially sensitive ones
+# - exposes some unneeded ports to the host system, which is useful for
+#   dev, testing and debugging
+# - mounts code repository inside the relevant container as a bind volume
+
+x-webapp-image: &webapp-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:${CURRENT_GIT_BRANCH:-latest}"
+
+x-common-env: &common-env
+  ARPAV_PPCV__DEBUG: true
+  ARPAV_PPCV__BIND_HOST: 0.0.0.0
+  ARPAV_PPCV__BIND_PORT: 5001
+  ARPAV_PPCV__PUBLIC_URL: http://localhost:8877
+  ARPAV_PPCV__DB_DSN: postgresql://arpav:arpavpassword@db:5432/arpav_ppcv
+  ARPAV_PPCV__TEST_DB_DSN: postgresql://arpavtest:arpavtestpassword@test-db:5432/arpav_ppcv_test
+  ARPAV_PPCV__SESSION_SECRET_KEY: some-key
+  ARPAV_PPCV__ADMIN_USER__USERNAME: admin
+  ARPAV_PPCV__ADMIN_USER__PASSWORD: 12345678
+  ARPAV_PPCV__LOG_CONFIG_FILE: /home/appuser/app/dev-log-config.yml
+  ARPAV_PPCV__THREDDS_SERVER__BASE_URL: http://thredds:8080/thredds
+  ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL: http://martin:3000
+
+x-common-volumes: &common-volumes
+  - type: bind
+    source: $PWD
+    target: /home/appuser/app
+  - type: bind
+    source: $HOME/data/geobeyond/arpav-ppcv/datasets
+    target: /home/appuser/data/datasets
+  - type: bind
+    source: $HOME/data/geobeyond/arpav-ppcv/netcdf-uncertainty-example
+    target: /home/appuser/data/additional
+
+services:
+
+  reverse-proxy:
+    ports:
+      - target: 80
+        published: 8877
+      - target: 81
+        published: 8899
+      - target: 8080
+        published: 8878
+    configs:
+      - source: traefik-conf
+        target: /traefik.toml
+    command: --configFile /traefik.toml
+
+  frontend:
+    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:${FRONTEND_GIT_BRANCH:-latest}"
+    labels:
+      - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
+    ports:
+      - target: 80
+        published: 5003
+
+  webapp:
+    image: *webapp-image
+    labels:
+      - "traefik.http.routers.arpav-backend-router.entrypoints=web"
+    environment:
+      <<: *common-env
+      ARPAV_PPCV__CORS_ORIGINS: '["*"]'
+      ARPAV_PPCV__CORS_METHODS: '["*"]'
+      ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: true
+      PREFECT_API_URL: "http://prefect-server:4200/api"
+      PREFECT_DEBUG_MODE: true
+    ports:
+      - target: 5001
+        published: 5001
+    volumes:
+      *common-volumes
+
+  jupyter:
+    image: *webapp-image
+    environment:
+      *common-env
+    ports:
+      - target: 5002
+        published: 5002
+    volumes:
+      *common-volumes
+    entrypoint: ['/bin/bash', '-c']
+    command:
+      - |
+        poetry install --with jupyter
+        poetry run jupyter lab --ip=0.0.0.0 --port=5002 --no-browser --LabApp.token= --LabApp.password=
+
+  db:
+    environment:
+      POSTGRES_USER: arpav
+      POSTGRES_PASSWORD: arpavpassword
+      POSTGRES_DB: arpav_ppcv
+    ports:
+      - target: 5432
+        published: 55432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # The below command adds a more verbose logging of operations - DON'T USE THIS IN PRODUCTION!
+    # The server's performance is impacted by this command. Moreover, logged statements may contain
+    # sensitive information
+    command: "-clog_statement=all"
+
+  test-db:
+    image: "postgis/postgis:16-3.4"
+    # The below command adds a more verbose logging of operations - DON'T USE THIS IN PRODUCTION!
+    # The server's performance is impacted by this command. Moreover, logged statements may contain
+    # sensitive information
+    command: "-clog_statement=all"
+    ports:
+      - target: 5432
+        published: 55434
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: arpavtest
+      POSTGRES_PASSWORD: arpavtestpassword
+      POSTGRES_DB: arpav_ppcv_test
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+
+  thredds:
+    image: unidata/thredds-docker:5.4
+    ports:
+      - target: "8080"
+        published: "8081"
+    environment:
+      TDS_CONTENT_ROOT_PATH: /usr/local/tomcat/content
+      TDS_PW: "arpavppcvthredds"
+      TDS_HOST: "http://localhost:8081"
+    volumes:
+      - type: bind
+        source: $PWD/docker/thredds/content-root/catalog.xml
+        target: /usr/local/tomcat/content/thredds/catalog.xml
+      - type: bind
+        source: $PWD/docker/thredds/content-root/catalog_rcm.xml
+        target: /usr/local/tomcat/content/thredds/catalog_rcm.xml
+      - type: bind
+        source: $PWD/docker/thredds/content-root/catalog_clima.xml
+        target: /usr/local/tomcat/content/thredds/catalog_clima.xml
+      - type: bind
+        source: $PWD/docker/thredds/content-root/threddsConfig.xml
+        target: /usr/local/tomcat/content/thredds/threddsConfig.xml
+      - type: bind
+        source: $PWD/docker/thredds/content-root/wmsConfig.xml
+        target: /usr/local/tomcat/content/thredds/wmsConfig.xml
+      - type: bind
+        source: $HOME/data/geobeyond/arpav-ppcv/datasets
+        target: /datasets
+      - type: bind
+        source: $HOME/data/geobeyond/arpav-ppcv/netcdf-uncertainty-example
+        target: /additional
+
+  martin:
+    labels:
+      - "traefik.http.routers.martin-router.entrypoints=web"
+    ports:
+      - target: 3000
+        published: 3000
+    environment:
+      DATABASE_URL: postgres://arpav:arpavpassword@db/arpav_ppcv
+      RUST_LOG: actix_web=info,martin=debug,tokio_postgres=debug
+
+  prefect-server:
+    labels:
+      - "traefik.http.routers.prefect-router.entrypoints=web"
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: "postgresql+asyncpg://prefect:prefectpassword@prefect-db/prefect"
+      PREFECT_API_URL: "http://0.0.0.0:4200/api"
+      PREFECT_CLI_PROMPT: false
+      PREFECT_DEBUG_MODE: true
+      PREFECT_HOME: "/prefect_home"
+      PREFECT_SERVER_ALLOW_EPHEMERAL_MODE: false
+      PREFECT_SERVER_API_HOST: "0.0.0.0"
+      PREFECT_SERVER_API_PORT: "4200"
+      PREFECT_SERVER_CSRF_PROTECTION_ENABLED: true
+      PREFECT_UI_API_URL: "http://localhost:8877/prefect/api"
+      PREFECT_UI_URL: "http://localhost:8877/prefect/ui"
+      PREFECT_UI_SERVE_BASE: "/prefect/ui"
+
+    volumes:
+      - prefect-server-home:/prefect_home
+
+  prefect-static-worker:
+    image: *webapp-image
+    environment:
+      PREFECT_API_URL: "http://prefect-server:4200/api"
+      PREFECT_DEBUG_MODE: true
+      <<: *common-env
+    volumes:
+      *common-volumes
+
+  prefect-db:
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: prefectpassword
+      POSTGRES_DB: prefect
+    volumes:
+      - prefect-db-data:/var/lib/postgresql/data
+    # The below command adds a more verbose logging of operations - DON'T USE THIS IN PRODUCTION!
+    # The server's performance is impacted by this command. Moreover, logged statements may contain
+    # sensitive information
+    command: "-clog_statement=all"
+
+  locust:
+    image: locustio/locust
+    ports:
+      - target: 8089
+        published: 8089
+    volumes:
+      - type: bind
+        source: $PWD/tests/loadtests
+        target: /mnt/locust
+    command: ["-f", "/mnt/locust/locustfile.py"]
+
+  tolgee-app:
+    labels:
+      - "traefik.http.routers.tolgee-app-router.entrypoints=webDifferentPort"
+    environment:
+      SERVER_PORT: "8080"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://tolgee-db:5432/tolgee"
+      SPRING_DATASOURCE_USERNAME: "tolgee_user"
+      SPRING_DATASOURCE_PASSWORD: "tolgeepass"
+      TOLGEE_AUTHENTICATION_ENABLED: "false"
+      TOLGEE_AUTHENTICATION_JWT_SECRET: "dxpw5w66th5sa53m2hbgazmxaases92nqwifjigi3j9owznoyuq6frbnppc7bo9tjmgm5e"
+      TOLGEE_FILE_STORAGE_FS_DATA_PATH: "/data"
+      TOLGEE_FRONTEND_URL: "http://localhost:8899"
+      TOLGEE_POSTGRES_AUTOSTART_ENABLED: "false"
+      TOLGEE_TELEMETRY_ENABLED: "false"
+    volumes:
+      - tolgee-app-data:/data
+#    ports:
+#      - target: 8080
+#        published: 6003
+
+  tolgee-db:
+    environment:
+      POSTGRES_USER: "tolgee_user"
+      POSTGRES_PASSWORD: "tolgeepass"
+      POSTGRES_DB: "tolgee"
+    ports:
+      - target: 5432
+        published: 55435
+    volumes:
+      - tolgee-db-data:/var/lib/postgresql/data
+
+
+volumes:
+  db-data:
+  test-db-data:
+  prefect-server-home:
+  prefect-worker-home:
+  prefect-db-data:
+  tolgee-app-data:
+  tolgee-db-data:
+
+
+configs:
+
+  traefik-conf:
+    file: $PWD/docker/traefik/dev-config.toml
