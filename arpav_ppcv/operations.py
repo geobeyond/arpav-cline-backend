@@ -1058,15 +1058,19 @@ def convert_conf_params_filter(
     aggregation_period = None
     archive = None
     climatological_model = None
-    climatological_standard_normal = None
     climatological_variable = None
+
+    historical_decade = None
+    historical_reference_period = None
     historical_variable = None
     historical_year_period = None
+
     measure = None
     scenario = None
     uncertainty_type = None
     time_window = None
     year_period = None
+
     climatic_indicator = None
     for raw_value in configuration_parameter_values:
         param_name, param_value = raw_value.partition(":")[::2]
@@ -1079,9 +1083,7 @@ def convert_conf_params_filter(
         elif param_name == "archive":
             archive = param_value
         elif param_name == "climatological_model":
-            climatological_model = db.get_forecast_model_by_name(
-                session, param_value
-            )
+            climatological_model = db.get_forecast_model_by_name(session, param_value)
             if climatological_model is None:
                 logger.warning(
                     f"Could not parse {param_value!r} as valid forecast model name, "
@@ -1089,6 +1091,23 @@ def convert_conf_params_filter(
                 )
         elif param_name == "climatological_variable":
             climatological_variable = param_value
+        elif param_name == historical_decade:
+            try:
+                historical_decade = static.HistoricalDecade(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an historical decade, skipping..."
+                )
+        elif param_name == "historical_reference_period":
+            try:
+                historical_reference_period = static.HistoricalReferencePeriod(
+                    param_value
+                )
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an historical reference "
+                    f"period, skipping..."
+                )
         elif param_name == "historical_variable":
             historical_variable = param_value
         elif param_name == "historical_year_period":
@@ -1113,9 +1132,7 @@ def convert_conf_params_filter(
                     f"Could not parse {param_value!r} as scenario, skipping..."
                 )
         elif param_name == "time_window":
-            time_window = db.get_forecast_time_window_by_name(
-                session, param_value
-            )
+            time_window = db.get_forecast_time_window_by_name(session, param_value)
             if time_window is None:
                 logger.warning(
                     f"Could not parse {param_value!r} as valid time window name, "
@@ -1130,8 +1147,6 @@ def convert_conf_params_filter(
                 )
         elif param_name == "uncertainty_type":
             uncertainty_type = param_value
-        elif param_name == "climatological_standard_normal":
-            climatological_standard_normal = param_value
     if all((climatological_variable, measure, aggregation_period)):
         climatic_indicator = db.get_climatic_indicator_by_identifier(
             session,
@@ -1142,8 +1157,11 @@ def convert_conf_params_filter(
     return coverages.LegacyConfParamFilterValues(
         aggregation_period=aggregation_period,
         archive=archive,
+        climatic_indicator=climatic_indicator,
         climatological_variable=climatological_variable,
         climatological_model=climatological_model,
+        historical_decade=historical_decade,
+        historical_reference_period=historical_reference_period,
         historical_year_period=historical_year_period,
         historical_variable=historical_variable,
         measure=measure,
@@ -1151,6 +1169,4 @@ def convert_conf_params_filter(
         time_window=time_window,
         year_period=year_period,
         uncertainty_type=uncertainty_type,
-        climatological_standard_normal=climatological_standard_normal,
-        climatic_indicator=climatic_indicator,
     )

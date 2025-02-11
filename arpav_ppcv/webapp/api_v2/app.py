@@ -23,6 +23,8 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
             "url": settings.contact.url,
             "email": settings.contact.email,
         },
+        servers=[{"url": "/".join((settings.public_url, "api/v2"))}],
+        root_path_in_servers=False,
     )
     app.add_middleware(
         CORSMiddleware,

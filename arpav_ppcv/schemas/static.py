@@ -507,8 +507,14 @@ class HistoricalDecade(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.CLIMATE_STANDARD_NORMAL_1961_1990.name: _("1961-1990 description"),
-            self.CLIMATE_STANDARD_NORMAL_1991_2020.name: _("1991-2020 description"),
+            self.DECADE_1961_1970: _("decade_1961_1970 description"),
+            self.DECADE_1971_1980: _("decade_1971_1980 description"),
+            self.DECADE_1981_1990: _("decade_1981_1990 description"),
+            self.DECADE_1991_2000: _("decade_1991_2000 description"),
+            self.DECADE_2001_2010: _("decade_2001_2010 description"),
+            self.DECADE_2011_2020: _("decade_2011_2020 description"),
+            self.DECADE_2021_2030: _("decade_2021_2030 description"),
+            self.DECADE_2031_2040: _("decade_2031_2040 description"),
         }.get(self, self.value)
 
     def get_internal_value(self) -> str:
@@ -516,8 +522,14 @@ class HistoricalDecade(str, enum.Enum):
 
     def get_sort_order(self) -> int:
         return {
-            self.CLIMATE_STANDARD_NORMAL_1961_1990: 0,
-            self.CLIMATE_STANDARD_NORMAL_1991_2020: 1,
+            self.DECADE_1961_1970: 0,
+            self.DECADE_1971_1980: 1,
+            self.DECADE_1981_1990: 2,
+            self.DECADE_1991_2000: 3,
+            self.DECADE_2001_2010: 4,
+            self.DECADE_2011_2020: 5,
+            self.DECADE_2021_2030: 6,
+            self.DECADE_2031_2040: 7,
         }.get(self, 0)
 
 
@@ -554,8 +566,7 @@ class HistoricalReferencePeriod(str, enum.Enum):
         }.get(self, self.value)
 
     def get_internal_value(self) -> str:
-        return self.value.replace(
-            "climate_standard_normal_", "").replace("_", "-")
+        return self.value.replace("climate_standard_normal_", "").replace("_", "-")
 
     def get_sort_order(self) -> int:
         return {

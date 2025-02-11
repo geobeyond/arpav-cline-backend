@@ -29,39 +29,40 @@ from .forecastcoverages import (
     get_forecast_model_by_name,  # noqa
     get_forecast_time_window,  # noqa
     get_forecast_time_window_by_name,  # noqa
+    legacy_collect_all_forecast_coverage_configurations,  # noqa
+    legacy_list_forecast_coverage_configurations,  # noqa
     list_forecast_coverage_configurations,  # noqa
     list_forecast_models,  # noqa
     list_forecast_time_windows,  # noqa
     update_forecast_coverage_configuration,  # noqa
     update_forecast_model,  # noqa
     update_forecast_time_window,  # noqa
+    legacy_list_forecast_coverage_configurations,  # noqa
 )
 
 from .historicalcoverages import (
-    list_historical_coverage_configurations,  # noqa
     collect_all_historical_coverage_configurations,  # noqa
     collect_all_historical_coverage_configurations_with_identifier_filter,  # noqa
     create_historical_coverage_configuration,  # noqa
+    delete_historical_coverage_configuration,  # noqa
     generate_historical_coverages_from_configuration,  # noqa
+    get_historical_coverage,  # noqa
     get_historical_coverage_configuration,  # noqa
     get_historical_coverage_configuration_by_identifier,  # noqa
+    legacy_collect_all_historical_coverage_configurations,  # noqa
+    legacy_list_historical_coverage_configurations,  # noqa
+    list_historical_coverage_configurations,  # noqa
     update_historical_coverage_configuration,  # noqa
-    delete_historical_coverage_configuration,  # noqa
 )
 
-from .legacy import (
-    legacy_collect_all_forecast_coverage_configurations,  # noqa
-    legacy_list_configuration_parameters,  # noqa
-    legacy_list_forecast_coverage_configurations,  # noqa
-    legacy_list_forecast_coverages,  # noqa
-)
+from .legacy import legacy_list_configuration_parameters  # noqa
 
 from .municipalities import (
-    collect_all_municipalities,
-    create_many_municipalities,
-    delete_all_municipalities,
-    list_municipalities,
-    list_municipality_centroids,
+    collect_all_municipalities,  # noqa
+    create_many_municipalities,  # noqa
+    delete_all_municipalities,  # noqa
+    list_municipalities,  # noqa
+    list_municipality_centroids,  # noqa
 )
 
 from .observationseries import (

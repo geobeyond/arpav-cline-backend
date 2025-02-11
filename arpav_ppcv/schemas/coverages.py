@@ -1111,7 +1111,9 @@ class ForecastCoverageInternal:
             result = None
         return result
 
-    def get_thredds_file_download_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+    def get_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
         return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
 
     def get_lower_uncertainty_thredds_file_download_url(
@@ -1228,7 +1230,7 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
         default=list,
         sa_column=sqlalchemy.Column(
             sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalYearPeriod))
-        )
+        ),
     )
 
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
@@ -1246,7 +1248,7 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
             data_category=static.DataCategory.HISTORICAL.value,
             climatic_indicator=self.climatic_indicator.identifier,
             spatial_region=self.spatial_region.name,
-            extra=extra
+            extra=extra,
         )
 
     @staticmethod
@@ -1320,7 +1322,9 @@ class HistoricalCoverageInternal:
     def get_netcdf_main_dataset_name(self) -> str:
         return self._render_templated_value(self.configuration.netcdf_main_dataset_name)
 
-    def get_thredds_file_download_url(self, settings: ThreddsServerSettings) -> Optional[str]:
+    def get_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
         return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
 
     def get_wms_base_url(self, settings: ThreddsServerSettings) -> Optional[str]:
@@ -1338,14 +1342,14 @@ class HistoricalCoverageInternal:
     def _render_templated_value(self, value: str) -> str:
         return value.format(
             climatic_indicator=(
-                self.configuration.climatic_indicator
-                .historical_coverages_internal_name
+                self.configuration.climatic_indicator.historical_coverages_internal_name
             ),
             year_period=self.year_period.get_internal_value(),
             decade=self.decade.get_internal_value() if self.decade else "",
             reference_period=(
                 self.configuration.reference_period.get_internal_value()
-                if self.configuration.reference_period is not None else ""
+                if self.configuration.reference_period is not None
+                else ""
             ),
             spatial_region=self.configuration.spatial_region.internal_value,
         )
@@ -1357,10 +1361,11 @@ class HistoricalCoverageInternal:
 @dataclasses.dataclass(frozen=True)
 class LegacyConfParamFilterValues:
     aggregation_period: Optional[static.AggregationPeriod]  # done
-    archive: Optional[str]  # done
-    climatological_model: Optional[ForecastModel]  #
-    climatological_standard_normal: Optional[str]
-    climatological_variable: Optional[str]  # done
+    archive: Optional[str]
+    climatological_model: Optional[ForecastModel]
+    climatological_variable: Optional[str]
+    historical_decade: Optional[static.HistoricalDecade]
+    historical_reference_period: Optional[static.HistoricalDecade]
     historical_variable: Optional[str]
     historical_year_period: Optional[static.HistoricalYearPeriod]
     measure: Optional[static.MeasureType]
@@ -1368,4 +1373,4 @@ class LegacyConfParamFilterValues:
     uncertainty_type: Optional[str]
     time_window: Optional[ForecastTimeWindow]
     year_period: Optional[static.ForecastYearPeriod]
-    climatic_indicator: Optional["climaticindicators.ClimaticIndicator"]  # done
+    climatic_indicator: Optional["climaticindicators.ClimaticIndicator"]

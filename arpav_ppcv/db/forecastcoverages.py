@@ -30,6 +30,7 @@ from ..schemas.coverages import (
     ForecastTimeWindow,
     ForecastTimeWindowCreate,
     ForecastTimeWindowUpdate,
+    LegacyConfParamFilterValues,
 )
 from ..schemas.dataseries import ForecastDataSeries
 from ..schemas.static import (
@@ -76,7 +77,7 @@ def list_forecast_coverage_configurations(
             ClimaticIndicator,  # noqa
             ClimaticIndicator.id  # noqa
             == ForecastCoverageConfiguration.climatic_indicator_id,  # noqa
-            ).where(ClimaticIndicator.name.ilike(filter_))  # noqa
+        ).where(ClimaticIndicator.name.ilike(filter_))  # noqa
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -134,7 +135,7 @@ def _get_five_part_fcc(
         ForecastCoverageConfiguration.climatic_indicator_id  # noqa
         == climatic_indicator.id,
         ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
-        )
+    )
     query_result = session.exec(statement).all()  # noqa
     # choose the item that has more than one forecast model and more than one
     # year period
@@ -173,7 +174,7 @@ def _get_six_part_fcc(
         ForecastCoverageConfiguration.climatic_indicator_id  # noqa
         == climatic_indicator.id,
         ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
-        )
+    )
     forecast_model_name = sixth_part
     forecast_model = get_forecast_model_by_name(session, forecast_model_name)
     result = None
@@ -181,8 +182,8 @@ def _get_six_part_fcc(
         statement = statement.join(
             ForecastCoverageConfigurationForecastModelLink,
             (  # noqa
-                    ForecastCoverageConfiguration.id  # noqa
-                    == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
+                ForecastCoverageConfiguration.id  # noqa
+                == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
             ),
         ).where(
             ForecastCoverageConfigurationForecastModelLink.forecast_model_id  # noqa
@@ -208,9 +209,9 @@ def _get_six_part_fcc(
                 year_period.name
                 == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
             )
-            query_result: Sequence[
-                ForecastCoverageConfiguration
-            ] = session.exec(statement).all()  # noqa
+            query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
+                statement
+            ).all()  # noqa
             for fcc in query_result:
                 if len(fcc.year_periods) == 1 and len(fcc.forecast_model_links) > 1:
                     result = fcc
@@ -252,8 +253,8 @@ def _get_seven_part_fcc(
         statement.join(
             ForecastCoverageConfigurationForecastModelLink,
             (  # noqa
-                    ForecastCoverageConfiguration.id  # noqa
-                    == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
+                ForecastCoverageConfiguration.id  # noqa
+                == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
             ),
         )
         .where(
@@ -311,12 +312,12 @@ def get_forecast_coverage_configuration_by_identifier(
                 )
             else:
                 raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
-                    error_message + "- identifier is too long"
+                    error_message + " - identifier is too long"
                 )
             return result
         else:
             raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
-                error_message + "- identifier is too short"
+                error_message + " - identifier is too short"
             )
     else:
         raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
@@ -348,7 +349,7 @@ def create_forecast_coverage_configuration(
         else:
             raise ValueError(f"Forecast model {forecast_model_id!r} not found")
     for forecast_time_window_id in (
-            forecast_coverage_configuration_create.forecast_time_windows or []
+        forecast_coverage_configuration_create.forecast_time_windows or []
     ):
         db_forecast_time_window = get_forecast_time_window(
             session, forecast_time_window_id
@@ -364,7 +365,7 @@ def create_forecast_coverage_configuration(
                 f"Forecast time window {forecast_time_window_id!r} not found"
             )
     for obs_series_conf_id in (
-            forecast_coverage_configuration_create.observation_series_configurations or []
+        forecast_coverage_configuration_create.observation_series_configurations or []
     ):
         db_obs_series_conf = get_observation_series_configuration(
             session, obs_series_conf_id
@@ -393,14 +394,14 @@ def update_forecast_coverage_configuration(
     existing_forecast_model_links_to_keep = []
     existing_forecast_model_links_discard = []
     for (
-            existing_forecast_model_link
+        existing_forecast_model_link
     ) in db_forecast_coverage_configuration.forecast_model_links:
         has_been_requested_to_remove = (
-                existing_forecast_model_link.forecast_model_id
-                not in [
-                    fm_id
-                    for fm_id in forecast_coverage_configuration_update.forecast_models
-                ]
+            existing_forecast_model_link.forecast_model_id
+            not in [
+                fm_id
+                for fm_id in forecast_coverage_configuration_update.forecast_models
+            ]
         )
         if not has_been_requested_to_remove:
             existing_forecast_model_links_to_keep.append(existing_forecast_model_link)
@@ -414,14 +415,14 @@ def update_forecast_coverage_configuration(
     existing_time_window_links_to_keep = []
     existing_time_window_links_discard = []
     for (
-            existing_time_window_link
+        existing_time_window_link
     ) in db_forecast_coverage_configuration.forecast_time_window_links:
         has_been_requested_to_remove = (
-                existing_time_window_link.forecast_time_window_id
-                not in [
-                    tw_id
-                    for tw_id in forecast_coverage_configuration_update.forecast_time_windows
-                ]
+            existing_time_window_link.forecast_time_window_id
+            not in [
+                tw_id
+                for tw_id in forecast_coverage_configuration_update.forecast_time_windows
+            ]
         )
         if not has_been_requested_to_remove:
             existing_time_window_links_to_keep.append(existing_time_window_link)
@@ -435,14 +436,14 @@ def update_forecast_coverage_configuration(
     existing_obs_series_conf_links_to_keep = []
     existing_obs_series_conf_links_discard = []
     for (
-            existing_obs_series_conf_link
+        existing_obs_series_conf_link
     ) in db_forecast_coverage_configuration.observation_series_configuration_links:
         has_been_requested_to_remove = (
-                existing_obs_series_conf_link.observation_series_configuration_id
-                not in [
-                    osc_id
-                    for osc_id in forecast_coverage_configuration_update.observation_series_configurations
-                ]
+            existing_obs_series_conf_link.observation_series_configuration_id
+            not in [
+                osc_id
+                for osc_id in forecast_coverage_configuration_update.observation_series_configurations
+            ]
         )
         if not has_been_requested_to_remove:
             existing_obs_series_conf_links_to_keep.append(existing_obs_series_conf_link)
@@ -460,10 +461,8 @@ def update_forecast_coverage_configuration(
             for fml in db_forecast_coverage_configuration.forecast_model_links
         )
         if not already_there:
-            db_forecast_model_link = (
-                ForecastCoverageConfigurationForecastModelLink(
-                    forecast_model_id=forecast_model_id,
-                )
+            db_forecast_model_link = ForecastCoverageConfigurationForecastModelLink(
+                forecast_model_id=forecast_model_id,
             )
             db_forecast_coverage_configuration.forecast_model_links.append(
                 db_forecast_model_link
@@ -474,24 +473,24 @@ def update_forecast_coverage_configuration(
             for twl in db_forecast_coverage_configuration.forecast_time_window_links
         )
         if not already_there:
-            db_time_window_link = (
-                ForecastCoverageConfigurationForecastTimeWindowLink(
-                    forecast_time_window_id=time_window_id
-                )
+            db_time_window_link = ForecastCoverageConfigurationForecastTimeWindowLink(
+                forecast_time_window_id=time_window_id
             )
             db_forecast_coverage_configuration.forecast_time_window_links.append(
                 db_time_window_link
             )
     for (
-            obs_series_conf_id
+        obs_series_conf_id
     ) in forecast_coverage_configuration_update.observation_series_configurations:
         already_there = obs_series_conf_id in (
             oscl.observation_series_configuration_id
             for oscl in db_forecast_coverage_configuration.observation_series_configuration_links
         )
         if not already_there:
-            db_obs_series_conf_link = ForecastCoverageConfigurationObservationSeriesConfigurationLink(
-                observation_series_configuration_id=obs_series_conf_id
+            db_obs_series_conf_link = (
+                ForecastCoverageConfigurationObservationSeriesConfigurationLink(
+                    observation_series_configuration_id=obs_series_conf_id
+                )
             )
             db_forecast_coverage_configuration.observation_series_configuration_links.append(
                 db_obs_series_conf_link
@@ -539,7 +538,9 @@ def list_forecast_models(
     )
     if name_filter is not None:
         statement = add_substring_filter(
-            statement, name_filter, ForecastModel.internal_value  # noqa
+            statement,
+            name_filter,
+            ForecastModel.internal_value,  # noqa
         )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
@@ -638,7 +639,9 @@ def list_forecast_time_windows(
     )
     if name_filter is not None:
         statement = add_substring_filter(
-            statement, name_filter, ForecastModel.internal_value  # noqa
+            statement,
+            name_filter,
+            ForecastModel.internal_value,  # noqa
         )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
@@ -735,7 +738,7 @@ def generate_forecast_coverages_from_configuration(
         forecast_coverage_configuration.forecast_model_links,
     ]
     has_time_window = (
-            len(forecast_coverage_configuration.forecast_time_window_links) > 0
+        len(forecast_coverage_configuration.forecast_time_window_links) > 0
     )
     if has_time_window:
         to_combine.append(forecast_coverage_configuration.forecast_time_window_links)
@@ -757,8 +760,8 @@ def generate_forecast_coverages_from_configuration(
                 )
             )
         except (
-                exceptions.InvalidForecastModelError,
-                exceptions.InvalidForecastTimeWindowError,
+            exceptions.InvalidForecastModelError,
+            exceptions.InvalidForecastTimeWindowError,
         ):
             logger.exception(
                 f"Could not generate forecast coverage from combination {combination}"
@@ -804,10 +807,10 @@ def generate_forecast_coverages_for_other_models(
     for candidate in candidate_forecast_coverages:
         same_scenario = candidate.scenario == forecast_coverage.scenario
         same_year_period = (
-                candidate.forecast_year_period == forecast_coverage.forecast_year_period
+            candidate.forecast_year_period == forecast_coverage.forecast_year_period
         )
         different_model = (
-                candidate.forecast_model.id != forecast_coverage.forecast_model.id
+            candidate.forecast_model.id != forecast_coverage.forecast_model.id
         )
         model_already_in_result = candidate.forecast_model.id in [
             f.forecast_model.id for f in result
@@ -870,9 +873,7 @@ def get_forecast_coverage_data_series(session: sqlmodel.Session, identifier: str
             f"temporal range start {raw_start!r} is invalid"
         )
     try:
-        processing_method = CoverageTimeSeriesProcessingMethod(
-            raw_processing_method
-        )
+        processing_method = CoverageTimeSeriesProcessingMethod(raw_processing_method)
     except ValueError:
         raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
             f"Processing method {raw_processing_method} does not exist"
@@ -923,8 +924,8 @@ def get_forecast_coverage(
         if forecast_cov_conf is not None:
             remaining_parts = parts[6:]
             forecast_model_or_scenario_value, scenario_or_year_period = remaining_parts[
-                                                                        :2
-                                                                        ]
+                :2
+            ]
             if len(forecast_cov_conf.forecast_model_links) == 1:
                 forecast_model_name = forecast_cov_conf.forecast_model_links[
                     0
@@ -976,3 +977,158 @@ def get_forecast_coverage(
             else None
         ),
     )
+
+
+def legacy_list_forecast_coverage_configurations(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    name_filter: Optional[str] = None,
+    conf_param_filter: Optional[LegacyConfParamFilterValues],
+):
+    """List forecast coverage configurations.
+
+    NOTE:
+
+    This function supports a bunch of search filters that were previously provided by
+    the more generic `configuration_parameter` instances, which were available in
+    an early version of the project. This is kept only for compatibility reasons -
+    newer code should use `list_forecast_coverage_configurations()` instead.
+    """
+    statement = (
+        sqlmodel.select(ForecastCoverageConfiguration)
+        .join(
+            ClimaticIndicator,
+            ClimaticIndicator.id == ForecastCoverageConfiguration.climatic_indicator_id,  # noqa
+        )
+        .order_by(ClimaticIndicator.sort_order)  # noqa
+    )
+    if name_filter is not None:
+        statement = add_substring_filter(
+            statement,
+            name_filter,
+            ClimaticIndicator.name,  # noqa
+        )
+    if conf_param_filter is not None:
+        if conf_param_filter.climatic_indicator is not None:
+            statement = statement.where(
+                ClimaticIndicator.id  # noqa
+                == conf_param_filter.climatic_indicator.id
+            )
+        else:
+            if conf_param_filter.climatological_variable is not None:
+                statement = statement.where(
+                    ClimaticIndicator.name  # noqa
+                    == conf_param_filter.climatological_variable
+                )
+            if conf_param_filter.measure is not None:
+                statement = statement.where(
+                    ClimaticIndicator.measure_type  # noqa
+                    == conf_param_filter.measure.name
+                )
+            if conf_param_filter.aggregation_period is not None:
+                statement = statement.where(
+                    ClimaticIndicator.aggregation_period  # noqa
+                    == conf_param_filter.aggregation_period.name
+                )
+        if conf_param_filter.climatological_model is not None:
+            statement = (
+                statement.join(
+                    ForecastCoverageConfigurationForecastModelLink,
+                    ForecastCoverageConfiguration.id  # noqa
+                    == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,  # noqa
+                )
+                .join(
+                    ForecastModel,
+                    ForecastModel.id  # noqa
+                    == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,  # noqa
+                )
+                .where(
+                    ForecastModel.id  # noqa
+                    == conf_param_filter.climatological_model.id
+                )
+            )
+        if conf_param_filter.scenario is not None:
+            statement = statement.where(
+                conf_param_filter.scenario.name
+                == sqlalchemy.any_(ForecastCoverageConfiguration.scenarios)  # noqa
+            )
+        if conf_param_filter.time_window is not None:
+            statement = (
+                statement.join(
+                    ForecastCoverageConfigurationForecastTimeWindowLink,
+                    ForecastCoverageConfiguration.id  # noqa
+                    == ForecastCoverageConfigurationForecastTimeWindowLink.forecast_coverage_configuration_id,  # noqa
+                )
+                .join(
+                    ForecastTimeWindow,
+                    ForecastTimeWindow.id  # noqa
+                    == ForecastCoverageConfigurationForecastTimeWindowLink.forecast_time_window_id,  # noqa
+                )
+                .where(
+                    ForecastTimeWindow.id == conf_param_filter.time_window.id  # noqa
+                )
+            )
+        if conf_param_filter.year_period is not None:
+            statement = statement.where(
+                conf_param_filter.year_period.name
+                == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+            )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def legacy_collect_all_forecast_coverage_configurations(
+    session: sqlmodel.Session,
+    *,
+    name_filter: Optional[str] = None,
+    conf_param_filter: Optional[LegacyConfParamFilterValues] = None,
+) -> Sequence[ForecastCoverageConfiguration]:
+    """Collect all forecast coverage configurations.
+
+    NOTE:
+
+    This function supports a bunch of search filters that were previously provided by
+    the more generic `configuration_parameter` instances, which were available in
+    an early version of the project. This is kept only for compatibility reasons -
+    newer code should use `collect_all_forecast_coverage_configurations()` instead.
+    """
+    _, num_total = legacy_list_forecast_coverage_configurations(
+        session,
+        limit=1,
+        include_total=True,
+        name_filter=name_filter,
+        conf_param_filter=conf_param_filter,
+    )
+    result, _ = legacy_list_forecast_coverage_configurations(
+        session,
+        limit=num_total,
+        include_total=False,
+        name_filter=name_filter,
+        conf_param_filter=conf_param_filter,
+    )
+    return result
+
+
+def legacy_list_forecast_coverages(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    name_filter: list[str] | None = None,
+    conf_param_filter: Optional[LegacyConfParamFilterValues] = None,
+) -> tuple[list[ForecastCoverageInternal], Optional[int]]:
+    all_cov_confs = legacy_collect_all_forecast_coverage_configurations(
+        session, conf_param_filter=conf_param_filter
+    )
+    result = []
+    for cov_conf in all_cov_confs:
+        result.extend(generate_forecast_coverages_from_configuration(cov_conf))
+    if name_filter is not None:
+        for fragment in name_filter:
+            result = [fc for fc in result if fragment in fc.identifier]
+    return result[offset : offset + limit], len(result) if include_total else None

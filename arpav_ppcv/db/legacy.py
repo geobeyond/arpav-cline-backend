@@ -7,17 +7,26 @@ from typing import (
     Sequence,
 )
 
-import sqlalchemy
 import sqlmodel
 from sqlalchemy import func
 
 from .. import config
+from ..config import (
+    LOCALE_EN,
+    LOCALE_IT,
+)
 from ..schemas import (
     base,
     coverages,
     climaticindicators,
     legacy as legacy_schemas,
     static,
+)
+from ..schemas.static import (
+    DataCategory,
+    HistoricalReferencePeriod,
+    HistoricalDecade,
+    HistoricalYearPeriod,
 )
 from .base import (
     add_substring_filter,
@@ -31,166 +40,11 @@ from .climaticindicators import (
 from .forecastcoverages import (
     collect_all_forecast_models,
     collect_all_forecast_time_windows,
-    generate_forecast_coverages_from_configuration,
 )
 
 logger = logging.getLogger(__name__)
 
 _FAKE_ID: Final[uuid.UUID] = uuid.UUID("06213c04-6872-4677-a149-a3b84f8da224")
-
-
-def legacy_list_forecast_coverages(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    include_total: bool = False,
-    name_filter: list[str] | None = None,
-    conf_param_filter: Optional[coverages.LegacyConfParamFilterValues] = None,
-) -> tuple[list[coverages.ForecastCoverageInternal], Optional[int]]:
-    all_cov_confs = legacy_collect_all_forecast_coverage_configurations(
-        session, conf_param_filter=conf_param_filter
-    )
-    result = []
-    for cov_conf in all_cov_confs:
-        result.extend(generate_forecast_coverages_from_configuration(cov_conf))
-    if name_filter is not None:
-        for fragment in name_filter:
-            result = [fc for fc in result if fragment in fc.identifier]
-    return result[offset : offset + limit], len(result) if include_total else None
-
-
-def legacy_collect_all_forecast_coverage_configurations(
-    session: sqlmodel.Session,
-    *,
-    name_filter: Optional[str] = None,
-    conf_param_filter: Optional[coverages.LegacyConfParamFilterValues],
-) -> Sequence[coverages.ForecastCoverageConfiguration]:
-    """Collect all forecast coverage configurations.
-
-    NOTE:
-
-    This function supports a bunch of search filters that were previously provided by
-    the more generic `configuration_parameter` instances, which were available in
-    an early version of the project. This is kept only for compatibility reasons -
-    newer code should use `collect_all_forecast_coverage_configurations()` instead.
-    """
-    _, num_total = legacy_list_forecast_coverage_configurations(
-        session,
-        limit=1,
-        include_total=True,
-        name_filter=name_filter,
-        conf_param_filter=conf_param_filter,
-    )
-    result, _ = legacy_list_forecast_coverage_configurations(
-        session,
-        limit=num_total,
-        include_total=False,
-        name_filter=name_filter,
-        conf_param_filter=conf_param_filter,
-    )
-    return result
-
-
-def legacy_list_forecast_coverage_configurations(
-    session: sqlmodel.Session,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-    include_total: bool = False,
-    name_filter: Optional[str] = None,
-    conf_param_filter: Optional[coverages.LegacyConfParamFilterValues],
-):
-    """List forecast coverage configurations.
-
-    NOTE:
-
-    This function supports a bunch of search filters that were previously provided by
-    the more generic `configuration_parameter` instances, which were available in
-    an early version of the project. This is kept only for compatibility reasons -
-    newer code should use `list_forecast_coverage_configurations()` instead.
-    """
-    statement = (
-        sqlmodel.select(coverages.ForecastCoverageConfiguration)
-        .join(
-            climaticindicators.ClimaticIndicator,
-            climaticindicators.ClimaticIndicator.id
-            == coverages.ForecastCoverageConfiguration.climatic_indicator_id,
-        )
-        .order_by(climaticindicators.ClimaticIndicator.sort_order)
-    )
-    if name_filter is not None:
-        statement = add_substring_filter(
-            statement, name_filter, climaticindicators.ClimaticIndicator.name
-        )
-    if conf_param_filter is not None:
-        if conf_param_filter.climatic_indicator is not None:
-            statement = statement.where(
-                climaticindicators.ClimaticIndicator.id
-                == conf_param_filter.climatic_indicator.id
-            )
-        else:
-            if conf_param_filter.climatological_variable is not None:
-                statement = statement.where(
-                    climaticindicators.ClimaticIndicator.name
-                    == conf_param_filter.climatological_variable
-                )
-            if conf_param_filter.measure is not None:
-                statement = statement.where(
-                    climaticindicators.ClimaticIndicator.measure_type
-                    == conf_param_filter.measure.name
-                )
-            if conf_param_filter.aggregation_period is not None:
-                statement = statement.where(
-                    climaticindicators.ClimaticIndicator.aggregation_period
-                    == conf_param_filter.aggregation_period.name
-                )
-        if conf_param_filter.climatological_model is not None:
-            statement = (
-                statement.join(
-                    coverages.ForecastCoverageConfigurationForecastModelLink,
-                    coverages.ForecastCoverageConfiguration.id
-                    == coverages.ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,
-                )
-                .join(
-                    coverages.ForecastModel,
-                    coverages.ForecastModel.id
-                    == coverages.ForecastCoverageConfigurationForecastModelLink.forecast_model_id,
-                )
-                .where(
-                    coverages.ForecastModel.id
-                    == conf_param_filter.climatological_model.id
-                )
-            )
-        if conf_param_filter.scenario is not None:
-            statement = statement.where(
-                conf_param_filter.scenario.name
-                == sqlalchemy.any_(coverages.ForecastCoverageConfiguration.scenarios)
-            )
-        if conf_param_filter.time_window is not None:
-            statement = (
-                statement.join(
-                    coverages.ForecastCoverageConfigurationForecastTimeWindowLink,
-                    coverages.ForecastCoverageConfiguration.id
-                    == coverages.ForecastCoverageConfigurationForecastTimeWindowLink.forecast_coverage_configuration_id,
-                )
-                .join(
-                    coverages.ForecastTimeWindow,
-                    coverages.ForecastTimeWindow.id
-                    == coverages.ForecastCoverageConfigurationForecastTimeWindowLink.forecast_time_window_id,
-                )
-                .where(
-                    coverages.ForecastTimeWindow.id == conf_param_filter.time_window.id
-                )
-            )
-        if conf_param_filter.year_period is not None:
-            statement = statement.where(
-                conf_param_filter.year_period.name
-                == sqlalchemy.any_(coverages.ForecastCoverageConfiguration.year_periods)
-            )
-    items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = get_total_num_records(session, statement) if include_total else None
-    return items, num_items
 
 
 def get_configuration_parameter_value(
@@ -282,6 +136,39 @@ def get_configuration_parameter_by_name(
     ).first()
 
 
+def _get_historical_variable_conf_param(
+    all_climatic_indicators: Sequence[climaticindicators.ClimaticIndicator],
+):
+    conf_param = coverages.ConfigurationParameter(
+        id=_FAKE_ID,
+        name="historical_variable",
+        display_name_english="Variable",
+        display_name_italian="Variabile",
+        description_english="Historical variable",
+        description_italian="Variabile historica",
+        allowed_values=[],
+    )
+    seen = set()
+    for indicator in all_climatic_indicators:
+        for historical_cov_conf in indicator.historical_coverage_configurations:
+            if indicator.name not in seen:
+                seen.add(indicator.name)
+                conf_param.allowed_values.append(
+                    coverages.ConfigurationParameterValue(
+                        id=_FAKE_ID,
+                        name=indicator.name,
+                        internal_value=indicator.name,
+                        display_name_english=indicator.display_name_english,
+                        display_name_italian=indicator.display_name_italian,
+                        description_english=indicator.description_english,
+                        description_italian=indicator.description_italian,
+                        sort_order=indicator.sort_order,
+                        configuration_parameter_id=_FAKE_ID,
+                    )
+                )
+    return conf_param
+
+
 def _get_climatological_variable_conf_param(
     all_climatic_indicators: Sequence[climaticindicators.ClimaticIndicator],
 ):
@@ -296,21 +183,22 @@ def _get_climatological_variable_conf_param(
     )
     seen = set()
     for indicator in all_climatic_indicators:
-        if indicator.name not in seen:
-            seen.add(indicator.name)
-            conf_param.allowed_values.append(
-                coverages.ConfigurationParameterValue(
-                    id=_FAKE_ID,
-                    name=indicator.name,
-                    internal_value=indicator.name,
-                    display_name_english=indicator.display_name_english,
-                    display_name_italian=indicator.display_name_italian,
-                    description_english=indicator.description_english,
-                    description_italian=indicator.description_italian,
-                    sort_order=indicator.sort_order,
-                    configuration_parameter_id=_FAKE_ID,
+        for forecast_cov_conf in indicator.forecast_coverage_configurations:
+            if indicator.name not in seen:
+                seen.add(indicator.name)
+                conf_param.allowed_values.append(
+                    coverages.ConfigurationParameterValue(
+                        id=_FAKE_ID,
+                        name=indicator.name,
+                        internal_value=indicator.name,
+                        display_name_english=indicator.display_name_english,
+                        display_name_italian=indicator.display_name_italian,
+                        description_english=indicator.description_english,
+                        description_italian=indicator.description_italian,
+                        sort_order=indicator.sort_order,
+                        configuration_parameter_id=_FAKE_ID,
+                    )
                 )
-            )
     return conf_param
 
 
@@ -570,6 +458,85 @@ def _get_uncertainty_type_conf_param() -> coverages.ConfigurationParameter:
     return conf_param
 
 
+def _get_historical_decade_conf_param() -> coverages.ConfigurationParameter:
+    return coverages.ConfigurationParameter(
+        id=_FAKE_ID,
+        name="historical_decade",
+        display_name_english=HistoricalDecade.get_param_display_name(LOCALE_EN),
+        display_name_italian=HistoricalDecade.get_param_display_name(LOCALE_IT),
+        description_english=HistoricalDecade.get_param_description(LOCALE_EN),
+        description_italian=HistoricalDecade.get_param_description(LOCALE_IT),
+        allowed_values=[
+            coverages.ConfigurationParameterValue(
+                id=_FAKE_ID,
+                name=member.value,
+                internal_value=member.get_internal_value(),
+                display_name_english=member.get_value_display_name(LOCALE_EN),
+                display_name_italian=member.get_value_display_name(LOCALE_IT),
+                description_english=member.get_value_description(LOCALE_EN),
+                description_italian=member.get_value_description(LOCALE_IT),
+                sort_order=member.get_sort_order(),
+                configuration_parameter_id=_FAKE_ID,
+            )
+            for member in HistoricalDecade.__members__.values()
+        ],
+    )
+
+
+def _get_historical_year_period_conf_param() -> coverages.ConfigurationParameter:
+    return coverages.ConfigurationParameter(
+        id=_FAKE_ID,
+        name="historical_year_period",
+        display_name_english=HistoricalYearPeriod.get_param_display_name(LOCALE_EN),
+        display_name_italian=HistoricalYearPeriod.get_param_display_name(LOCALE_IT),
+        description_english=HistoricalYearPeriod.get_param_description(LOCALE_EN),
+        description_italian=HistoricalYearPeriod.get_param_description(LOCALE_IT),
+        allowed_values=[
+            coverages.ConfigurationParameterValue(
+                id=_FAKE_ID,
+                name=member.value,
+                internal_value=member.get_internal_value(),
+                display_name_english=member.get_value_display_name(LOCALE_EN),
+                display_name_italian=member.get_value_display_name(LOCALE_IT),
+                description_english=member.get_value_description(LOCALE_EN),
+                description_italian=member.get_value_description(LOCALE_IT),
+                sort_order=member.get_sort_order(),
+                configuration_parameter_id=_FAKE_ID,
+            )
+            for member in HistoricalYearPeriod.__members__.values()
+        ],
+    )
+
+
+def _get_historical_reference_period_conf_param() -> coverages.ConfigurationParameter:
+    return coverages.ConfigurationParameter(
+        id=_FAKE_ID,
+        name="reference_period",
+        display_name_english=HistoricalReferencePeriod.get_param_display_name(
+            LOCALE_EN
+        ),
+        display_name_italian=HistoricalReferencePeriod.get_param_display_name(
+            LOCALE_IT
+        ),
+        description_english=HistoricalReferencePeriod.get_param_description(LOCALE_EN),
+        description_italian=HistoricalReferencePeriod.get_param_description(LOCALE_IT),
+        allowed_values=[
+            coverages.ConfigurationParameterValue(
+                id=_FAKE_ID,
+                name=member.value,
+                internal_value=member.get_internal_value(),
+                display_name_english=member.get_value_display_name(LOCALE_EN),
+                display_name_italian=member.get_value_display_name(LOCALE_IT),
+                description_english=member.get_value_description(LOCALE_EN),
+                description_italian=member.get_value_description(LOCALE_IT),
+                sort_order=member.get_sort_order(),
+                configuration_parameter_id=_FAKE_ID,
+            )
+            for member in HistoricalReferencePeriod.__members__.values()
+        ],
+    )
+
+
 def _get_archive_conf_param() -> coverages.ConfigurationParameter:
     return coverages.ConfigurationParameter(
         id=_FAKE_ID,
@@ -581,24 +548,40 @@ def _get_archive_conf_param() -> coverages.ConfigurationParameter:
         allowed_values=[
             coverages.ConfigurationParameterValue(
                 id=_FAKE_ID,
-                name="historical",
-                internal_value="historical",
-                display_name_english="Historical data",
-                display_name_italian="Dati storici",
-                description_english=("Datasets obtained from historical data"),
-                description_italian=("Set di dati ottenuti da dati storici"),
-                sort_order=0,
+                name=DataCategory.HISTORICAL.value,
+                internal_value=DataCategory.HISTORICAL.value,
+                display_name_english=DataCategory.HISTORICAL.get_param_display_name(
+                    LOCALE_EN
+                ),
+                display_name_italian=DataCategory.HISTORICAL.get_param_display_name(
+                    LOCALE_IT
+                ),
+                description_english=DataCategory.HISTORICAL.get_param_description(
+                    LOCALE_EN
+                ),
+                description_italian=DataCategory.HISTORICAL.get_param_description(
+                    LOCALE_IT
+                ),
+                sort_order=DataCategory.HISTORICAL.get_sort_order(),
                 configuration_parameter_id=_FAKE_ID,
             ),
             coverages.ConfigurationParameterValue(
                 id=_FAKE_ID,
-                name="forecast",
-                internal_value="forecast",
-                display_name_english="Forecast data",
-                display_name_italian="Dati di previsione",
-                description_english=("Datasets obtained from forecasts"),
-                description_italian=("Set di dati ottenuti dalle previsioni"),
-                sort_order=0,
+                name=DataCategory.FORECAST.value,
+                internal_value=DataCategory.FORECAST.value,
+                display_name_english=DataCategory.FORECAST.get_param_display_name(
+                    LOCALE_EN
+                ),
+                display_name_italian=DataCategory.FORECAST.get_param_display_name(
+                    LOCALE_IT
+                ),
+                description_english=DataCategory.FORECAST.get_param_description(
+                    LOCALE_EN
+                ),
+                description_italian=DataCategory.FORECAST.get_param_description(
+                    LOCALE_IT
+                ),
+                sort_order=DataCategory.FORECAST.get_sort_order(),
                 configuration_parameter_id=_FAKE_ID,
             ),
             coverages.ConfigurationParameterValue(
@@ -624,31 +607,36 @@ def legacy_list_configuration_parameters(
     include_total: bool = False,
     name_filter: str | None = None,
 ) -> tuple[Sequence[coverages.ConfigurationParameter], Optional[int]]:
-    """List existing configuration parameters."""
-    # - [x] climatological variable
-    # - [x] climatological model
-    # - [x] measure
+    """List existing configuration parameters"""
+    # - [x] archive
     # - [x] aggregation period
+    # - [x] climatological model
+    # - [x] climatological variable
+    # - [x] historical reference period
+    # - [x] historical variable
+    # - [x] historical year period
+    # - [x] historical decade
+    # - [x] measure
     # - [x] scenario
-    # - [x] year period
     # - [x] time window
     # - [x] uncertainty type
-    # - [x] archive
-    # - [ ] historical variable
-    # - [ ] historical year period
-    # - [ ] climatological standard normal
+    # - [x] year period
 
     all_climatic_indicators = collect_all_climatic_indicators(session)
     configuration_parameters = [
-        _get_climatological_variable_conf_param(all_climatic_indicators),
-        _get_climatological_model_conf_param(session),
-        _get_measure_conf_param(all_climatic_indicators),
         _get_aggregation_period_conf_param(all_climatic_indicators),
+        _get_archive_conf_param(),
+        _get_climatological_model_conf_param(session),
+        _get_climatological_variable_conf_param(all_climatic_indicators),
+        _get_historical_decade_conf_param(),
+        _get_historical_reference_period_conf_param(),
+        _get_historical_variable_conf_param(all_climatic_indicators),
+        _get_historical_year_period_conf_param(),
+        _get_measure_conf_param(all_climatic_indicators),
         _get_scenario_conf_param(),
         _get_year_period_conf_param(),
         _get_time_window_conf_param(session),
         _get_uncertainty_type_conf_param(),
-        _get_archive_conf_param(),
     ]
     if name_filter is not None:
         filtered = [cp for cp in configuration_parameters if name_filter in cp.name]

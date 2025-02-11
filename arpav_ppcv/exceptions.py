@@ -66,6 +66,10 @@ class InvalidForecastTimeWindowError(ArpavError):
     ...
 
 
+class InvalidArchiveError(ArpavError):
+    ...
+
+
 class InvalidForecastScenarioError(ArpavError):
     ...
 
