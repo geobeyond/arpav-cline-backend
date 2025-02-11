@@ -4,9 +4,9 @@ from xml.etree import ElementTree as et
 from typing import (
     Annotated,
     Optional,
+    Union,
 )
 
-import anyio.to_thread
 import httpx
 import pydantic
 import shapely.io
@@ -39,11 +39,17 @@ from ....schemas.legacy import (
 from ....schemas.static import (
     AggregationPeriod,
     CoverageTimeSeriesProcessingMethod,
-    ObservationTimeSeriesProcessingMethod,
     DataCategory,
+    ObservationTimeSeriesProcessingMethod,
 )
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
+from ..schemas.coverages import (
+    LegacyForecastCoverageConfigurationReadDetail,
+    LegacyHistoricalCoverageConfigurationReadDetail,
+    LegacyForecastCoverageReadDetail,
+    LegacyHistoricalCoverageReadDetail,
+)
 from ..schemas.timeseries import (
     LegacyTimeSeries,
     LegacyTimeSeriesList,
@@ -62,13 +68,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL = "Invalid coverage identifier"
+_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL = (
+    "Invalid coverage configuration identifier"
+)
 
 
 @router.get(
     "/configuration-parameters",
     response_model=coverage_schemas.LegacyConfigurationParameterList,
 )
-def list_legacy_configuration_parameters(
+def legacy_list_configuration_parameters(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
@@ -102,7 +111,7 @@ def list_legacy_configuration_parameters(
     "/coverage-configurations",
     response_model=coverage_schemas.LegacyCoverageConfigurationList,
 )
-def list_coverage_configurations(
+def legacy_list_coverage_configurations(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
@@ -118,7 +127,6 @@ def list_coverage_configurations(
 ):
     """List existing coverage configurations."""
     filter_values = operations.convert_conf_params_filter(session, possible_value or [])
-    logger.debug(f"{filter_values=}")
     include_forecasts = False
     include_historical = False
     if filter_values.archive is not None:
@@ -171,107 +179,89 @@ def list_coverage_configurations(
 
 
 @router.get(
-    "/forecast-coverage-configurations/{forecast_coverage_configuration_identifier}",
-    response_model=coverage_schemas.LegacyForecastCoverageConfigurationReadDetail,
+    "/coverage-configurations/{coverage_configuration_identifier}",
+    response_model=Union[
+        coverage_schemas.LegacyForecastCoverageConfigurationReadDetail,
+        coverage_schemas.LegacyHistoricalCoverageConfigurationReadDetail,
+    ],
 )
-def get_forecast_coverage_configuration(
+def legacy_get_coverage_configuration(
     request: Request,
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    forecast_coverage_configuration_identifier: str,
+    coverage_configuration_identifier: str,
 ):
-    cov_conf = db.get_forecast_coverage_configuration_by_identifier(
-        db_session, forecast_coverage_configuration_identifier
-    )
-    coverages = db.generate_forecast_coverages_from_configuration(cov_conf)
-
-    palette_colors = palette.parse_palette(
-        cov_conf.climatic_indicator.palette, settings.palettes_dir
-    )
-    applied_colors = []
-    if palette_colors is not None:
-        minimum = cov_conf.climatic_indicator.color_scale_min
-        maximum = cov_conf.climatic_indicator.color_scale_max
-        if abs(maximum - minimum) > 0.001:
-            applied_colors = palette.apply_palette(
-                palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
-            )
-        else:
-            logger.warning(
-                f"Cannot calculate applied colors for coverage "
-                f"configuration {cov_conf.identifier!r} - "
-                f"check the respective climatic indicator's colorscale min "
-                f"and max values"
-            )
+    try:
+        category = DataCategory(coverage_configuration_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(
+            400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
+        )
     else:
-        logger.warning(
-            f"Unable to parse palette " f"{cov_conf.climatic_indicator.palette!r}"
-        )
-    return (
-        coverage_schemas.LegacyForecastCoverageConfigurationReadDetail.from_db_instance(
-            cov_conf,
-            coverages,
-            applied_colors,
-            request,
-        )
-    )
+        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+            if category == DataCategory.FORECAST:
+                cov_conf = db.get_forecast_coverage_configuration_by_identifier(
+                    db_session, coverage_configuration_identifier
+                )
+                coverages = db.generate_forecast_coverages_from_configuration(cov_conf)
+                response_model = LegacyForecastCoverageConfigurationReadDetail
+            else:  # historical
+                cov_conf = db.get_historical_coverage_configuration_by_identifier(
+                    db_session, coverage_configuration_identifier
+                )
+                coverages = db.generate_historical_coverages_from_configuration(
+                    cov_conf
+                )
+                response_model = LegacyHistoricalCoverageConfigurationReadDetail
 
-
-@router.get(
-    "/historical-coverage-configurations/{historical_coverage_configuration_identifier}",
-    response_model=coverage_schemas.LegacyHistoricalCoverageConfigurationReadDetail,
-)
-def get_historical_coverage_configuration(
-    request: Request,
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    historical_coverage_configuration_identifier: str,
-):
-    cov_conf = db.get_historical_coverage_configuration_by_identifier(
-        db_session, historical_coverage_configuration_identifier
-    )
-    coverages = db.generate_historical_coverages_from_configuration(cov_conf)
-
-    palette_colors = palette.parse_palette(
-        cov_conf.climatic_indicator.palette, settings.palettes_dir
-    )
-    applied_colors = []
-    if palette_colors is not None:
-        minimum = cov_conf.climatic_indicator.color_scale_min
-        maximum = cov_conf.climatic_indicator.color_scale_max
-        if abs(maximum - minimum) > 0.001:
-            applied_colors = palette.apply_palette(
-                palette_colors, minimum, maximum, num_stops=settings.palette_num_stops
+            palette_colors = palette.parse_palette(
+                cov_conf.climatic_indicator.palette, settings.palettes_dir
             )
+            applied_colors = []
+            if palette_colors is not None:
+                minimum = cov_conf.climatic_indicator.color_scale_min
+                maximum = cov_conf.climatic_indicator.color_scale_max
+                if abs(maximum - minimum) > 0.001:
+                    applied_colors = palette.apply_palette(
+                        palette_colors,
+                        minimum,
+                        maximum,
+                        num_stops=settings.palette_num_stops,
+                    )
+                else:
+                    logger.warning(
+                        f"Cannot calculate applied colors for coverage "
+                        f"configuration {cov_conf.identifier!r} - "
+                        f"check the respective climatic indicator's colorscale min "
+                        f"and max values"
+                    )
+            else:
+                logger.warning(
+                    f"Unable to parse palette "
+                    f"{cov_conf.climatic_indicator.palette!r}"
+                )
+
+            return response_model.from_db_instance(
+                cov_conf,
+                coverages,
+                applied_colors,
+                request,
+            )
+
         else:
-            logger.warning(
-                f"Cannot calculate applied colors for coverage "
-                f"configuration {cov_conf.identifier!r} - "
-                f"check the respective climatic indicator's colorscale min "
-                f"and max values"
+            raise HTTPException(
+                400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
             )
-    else:
-        logger.warning(
-            f"Unable to parse palette " f"{cov_conf.climatic_indicator.palette!r}"
-        )
-    return coverage_schemas.LegacyHistoricalCoverageConfigurationReadDetail.from_db_instance(
-        cov_conf,
-        coverages,
-        applied_colors,
-        request,
-    )
 
 
 @router.get(
     "/coverage-identifiers",
     response_model=coverage_schemas.LegacyForecastCoverageList,
 )
-def legacy_list_forecast_coverage_identifiers(
+def legacy_list_coverage_identifiers(
     request: Request,
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
-    name_contains: Annotated[list[str], Query()] = None,
     possible_value: Annotated[
         list[
             Annotated[
@@ -282,88 +272,164 @@ def legacy_list_forecast_coverage_identifiers(
         Query(),
     ] = None,
 ):
-    conf_param_filter = operations.convert_conf_params_filter(
-        db_session, possible_value or []
-    )
-    logger.debug(f"{conf_param_filter=}")
-    cov_internals, filtered_total = db.legacy_list_forecast_coverages(
-        db_session,
-        limit=list_params.limit,
-        offset=list_params.offset,
-        include_total=True,
-        name_filter=name_contains,
-        conf_param_filter=conf_param_filter,
-    )
-    _, unfiltered_total = db.legacy_list_forecast_coverages(
-        db_session, limit=1, offset=0, include_total=True
-    )
-    return coverage_schemas.LegacyForecastCoverageList.from_items(
-        cov_internals,
+    filter_values = operations.convert_conf_params_filter(session, possible_value or [])
+    include_forecasts = False
+    include_historical = False
+    if filter_values.archive is not None:
+        if filter_values.archive == DataCategory.FORECAST.value:
+            include_forecasts = True
+        elif filter_values.archive == DataCategory.HISTORICAL.value:
+            include_historical = True
+        else:
+            raise exceptions.InvalidArchiveError()
+    else:
+        include_forecasts = True
+        include_historical = True
+
+    filtered_forecast_cov_confs = []
+    filtered_historical_cov_confs = []
+    unfiltered_forecast_cov_confs = []
+    unfiltered_historical_cov_confs = []
+    if include_forecasts:
+        filtered_forecast_cov_confs = db.legacy_list_forecast_coverages(
+            session, conf_param_filter=filter_values
+        )
+        unfiltered_forecast_cov_confs = db.legacy_list_forecast_coverages(session)
+    if include_historical:
+        filtered_historical_cov_confs = db.legacy_list_historical_coverages(
+            session, conf_param_filter=filter_values
+        )
+        unfiltered_historical_cov_confs = db.legacy_list_historical_coverages(session)
+    return coverage_schemas.LegacyCoverageList.from_items(
+        filtered_forecast_cov_confs,
+        filtered_historical_cov_confs,
         request,
         limit=list_params.limit,
         offset=list_params.offset,
-        filtered_total=filtered_total,
-        unfiltered_total=unfiltered_total,
+        unfiltered_total_forecast_coverages=len(unfiltered_forecast_cov_confs),
+        unfiltered_total_historical_coverages=len(unfiltered_historical_cov_confs),
     )
-
-
-@router.get(
-    "/historical-coverages/{coverage_identifier}",
-    response_model=coverage_schemas.LegacyHistoricalCoverageReadDetail,
-)
-def get_historical_coverage(
-    request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
-):
-    coverage = db.get_historical_coverage(db_session, coverage_identifier)
-    if coverage is not None:
-        return coverage_schemas.LegacyHistoricalCoverageReadDetail.from_db_instance(
-            coverage, request
-        )
-    else:
-        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-
-
-@router.get(
-    "/forecast-coverages/{coverage_identifier}",
-    response_model=coverage_schemas.LegacyForecastCoverageReadDetail,
-)
-def get_forecast_coverage(
-    request: Request,
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
-):
-    coverage = db.get_forecast_coverage(session, coverage_identifier)
-    if coverage is not None:
-        return coverage_schemas.LegacyForecastCoverageReadDetail.from_db_instance(
-            coverage, request
-        )
-    else:
-        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
 
 
 @router.get(
     "/coverage-identifiers/{coverage_identifier}",
-    response_model=coverage_schemas.LegacyForecastCoverageReadDetail,
+    response_model=Union[
+        LegacyHistoricalCoverageReadDetail,
+        LegacyForecastCoverageReadDetail,
+    ],
     deprecated=True,
 )
-def get_coverage_identifier(
+def legacy_get_coverage_identifier(
     request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
 ):
-    """Returns forecast coverages
+    """Retrieve coverages by their identifier.
 
-    Use /forecast-coverages/{coverage_identifier} instead
+    Use the /coverages/{coverage_identifier} endpoint instead.
     """
-    return get_forecast_coverage(request, db_session, coverage_identifier)
+    try:
+        category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    else:
+        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+            if category == DataCategory.FORECAST:
+                cov = db.get_forecast_coverage(session, coverage_identifier)
+                response_model = LegacyForecastCoverageReadDetail
+            else:  # historical
+                cov = db.get_historical_coverage(session, coverage_identifier)
+                response_model = LegacyHistoricalCoverageReadDetail
+            if cov is not None:
+                return response_model.from_db_instance(cov, request)
+            else:
+                raise HTTPException(
+                    400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+                )
+        else:
+            raise HTTPException(
+                400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
+            )
+
+
+@router.get(
+    "/coverages/{coverage_identifier}",
+    response_model=Union[
+        LegacyHistoricalCoverageReadDetail,
+        LegacyForecastCoverageReadDetail,
+    ],
+)
+def legacy_get_coverage(
+    request: Request,
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    coverage_identifier: str,
+):
+    try:
+        category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    else:
+        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+            if category == DataCategory.FORECAST:
+                cov = db.get_forecast_coverage(session, coverage_identifier)
+                response_model = LegacyForecastCoverageReadDetail
+            else:  # historical
+                cov = db.get_historical_coverage(session, coverage_identifier)
+                response_model = LegacyHistoricalCoverageReadDetail
+            if cov is not None:
+                return response_model.from_db_instance(cov, request)
+            else:
+                raise HTTPException(
+                    400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+                )
+        else:
+            raise HTTPException(
+                400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
+            )
+
+
+#
+#
+# @router.get(
+#     "/historical-coverages/{coverage_identifier}",
+#     response_model=coverage_schemas.LegacyHistoricalCoverageReadDetail,
+# )
+# def get_historical_coverage(
+#     request: Request,
+#     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+#     coverage_identifier: str,
+# ):
+#     coverage = db.get_historical_coverage(db_session, coverage_identifier)
+#     if coverage is not None:
+#         return coverage_schemas.LegacyHistoricalCoverageReadDetail.from_db_instance(
+#             coverage, request
+#         )
+#     else:
+#         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+#
+#
+# @router.get(
+#     "/forecast-coverages/{coverage_identifier}",
+#     response_model=coverage_schemas.LegacyForecastCoverageReadDetail,
+# )
+# def get_forecast_coverage(
+#     request: Request,
+#     session: Annotated[Session, Depends(dependencies.get_db_session)],
+#     coverage_identifier: str,
+# ):
+#     coverage = db.get_forecast_coverage(session, coverage_identifier)
+#     if coverage is not None:
+#         return coverage_schemas.LegacyForecastCoverageReadDetail.from_db_instance(
+#             coverage, request
+#         )
+#     else:
+#         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
 
 
 @router.get("/wms/{coverage_identifier}")
 async def wms_endpoint(
     request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     coverage_identifier: str,
@@ -373,76 +439,78 @@ async def wms_endpoint(
 
     Pass additional relevant WMS query parameters directly to this endpoint.
     """
-
-    if coverage_identifier.split("-")[0] == "forecast":
-        cov = await anyio.to_thread.run_sync(
-            db.get_forecast_coverage,
-            db_session,
-            coverage_identifier,
-        )
+    try:
+        category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
     else:
-        cov = None
-
-    if cov is not None:
-        base_wms_url = cov.get_wms_base_url(settings.thredds_server)
-        parsed_url = urllib.parse.urlparse(base_wms_url)
-        logger.info(f"{base_wms_url=}")
-        query_params = {k.lower(): v for k, v in request.query_params.items()}
-        logger.debug(f"original query params: {query_params=}")
-        if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
-            query_params = thredds_utils.tweak_wms_get_map_request(
-                query_params,
-                ncwms_palette=cov.configuration.climatic_indicator.palette,
-                ncwms_color_scale_range=(
-                    cov.configuration.climatic_indicator.color_scale_min,
-                    cov.configuration.climatic_indicator.color_scale_max,
-                ),
-                uncertainty_visualization_scale_range=(
-                    settings.thredds_server.uncertainty_visualization_scale_range
-                ),
-            )
-        logger.debug(f"{query_params=}")
-        wms_url = parsed_url._replace(
-            query=urllib.parse.urlencode(
-                {
-                    **query_params,
-                    "service": "WMS",
-                    "version": version,
-                }
-            )
-        ).geturl()
-        logger.info(f"{wms_url=}")
-        try:
-            wms_response = await thredds_utils.proxy_request(wms_url, http_client)
-        except httpx.HTTPStatusError as err:
-            logger.exception(
-                msg=f"THREDDS server replied with an error: {err.response.text}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY, detail=err.response.text
-            )
-        except httpx.HTTPError as err:
-            logger.exception(msg="THREDDS server replied with an error")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-            ) from err
+        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+            if category == DataCategory.FORECAST:
+                cov = db.get_forecast_coverage(session, coverage_identifier)
+            else:  # historical
+                cov = db.get_historical_coverage(session, coverage_identifier)
         else:
-            if query_params.get("request") == "GetCapabilities":
-                response_content = _modify_capabilities_response(
-                    wms_response.text, str(request.url).partition("?")[0]
+            raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+        if cov is not None:
+            base_wms_url = cov.get_wms_base_url(settings.thredds_server)
+            parsed_url = urllib.parse.urlparse(base_wms_url)
+            logger.info(f"{base_wms_url=}")
+            query_params = {k.lower(): v for k, v in request.query_params.items()}
+            logger.debug(f"original query params: {query_params=}")
+            if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
+                query_params = thredds_utils.tweak_wms_get_map_request(
+                    query_params,
+                    ncwms_palette=cov.configuration.climatic_indicator.palette,
+                    ncwms_color_scale_range=(
+                        cov.configuration.climatic_indicator.color_scale_min,
+                        cov.configuration.climatic_indicator.color_scale_max,
+                    ),
+                    uncertainty_visualization_scale_range=(
+                        settings.thredds_server.uncertainty_visualization_scale_range
+                    ),
                 )
+            logger.debug(f"{query_params=}")
+            wms_url = parsed_url._replace(
+                query=urllib.parse.urlencode(
+                    {
+                        **query_params,
+                        "service": "WMS",
+                        "version": version,
+                    }
+                )
+            ).geturl()
+            logger.info(f"{wms_url=}")
+            try:
+                wms_response = await thredds_utils.proxy_request(wms_url, http_client)
+            except httpx.HTTPStatusError as err:
+                logger.exception(
+                    msg=f"THREDDS server replied with an error: {err.response.text}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY, detail=err.response.text
+                )
+            except httpx.HTTPError as err:
+                logger.exception(msg="THREDDS server replied with an error")
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                ) from err
             else:
-                response_content = wms_response.content
-            response = Response(
-                content=response_content,
-                status_code=wms_response.status_code,
-                headers=dict(wms_response.headers),
+                if query_params.get("request") == "GetCapabilities":
+                    response_content = _modify_capabilities_response(
+                        wms_response.text, str(request.url).partition("?")[0]
+                    )
+                else:
+                    response_content = wms_response.content
+                response = Response(
+                    content=response_content,
+                    status_code=wms_response.status_code,
+                    headers=dict(wms_response.headers),
+                )
+            return response
+        else:
+            raise HTTPException(
+                status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
             )
-        return response
-    else:
-        raise HTTPException(
-            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-        )
 
 
 @router.get("/forecast-data")

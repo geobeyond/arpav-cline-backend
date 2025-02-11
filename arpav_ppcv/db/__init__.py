@@ -31,13 +31,13 @@ from .forecastcoverages import (
     get_forecast_time_window_by_name,  # noqa
     legacy_collect_all_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverage_configurations,  # noqa
+    legacy_list_forecast_coverages,  # noqa
     list_forecast_coverage_configurations,  # noqa
     list_forecast_models,  # noqa
     list_forecast_time_windows,  # noqa
     update_forecast_coverage_configuration,  # noqa
     update_forecast_model,  # noqa
     update_forecast_time_window,  # noqa
-    legacy_list_forecast_coverage_configurations,  # noqa
 )
 
 from .historicalcoverages import (
@@ -51,6 +51,7 @@ from .historicalcoverages import (
     get_historical_coverage_configuration_by_identifier,  # noqa
     legacy_collect_all_historical_coverage_configurations,  # noqa
     legacy_list_historical_coverage_configurations,  # noqa
+    legacy_list_historical_coverages,  # noqa
     list_historical_coverage_configurations,  # noqa
     update_historical_coverage_configuration,  # noqa
 )

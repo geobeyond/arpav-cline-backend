@@ -435,3 +435,24 @@ def get_historical_coverage(
     else:
         logger.warning("Identifier is too short to represent a historical coverage")
     return result
+
+
+def legacy_list_historical_coverages(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    name_filter: list[str] | None = None,
+    conf_param_filter: Optional[LegacyConfParamFilterValues] = None,
+) -> tuple[list[HistoricalCoverageInternal], Optional[int]]:
+    all_cov_confs = legacy_collect_all_historical_coverage_configurations(
+        session, conf_param_filter=conf_param_filter
+    )
+    result = []
+    for cov_conf in all_cov_confs:
+        result.extend(generate_historical_coverages_from_configuration(cov_conf))
+    if name_filter is not None:
+        for fragment in name_filter:
+            result = [fc for fc in result if fragment in fc.identifier]
+    return result[offset : offset + limit], len(result) if include_total else None
