@@ -295,7 +295,7 @@ def bootstrap_observation_series_configurations(ctx: typer.Context):
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_climatic_indicators = db.collect_all_climatic_indicators(session)
         to_generate = generate_observation_series_configurations(
-            {ind.identifier: ind for ind in all_climatic_indicators}
+            {ind.identifier: ind.id for ind in all_climatic_indicators}
         )
         for obs_series_create in to_generate:
             try:

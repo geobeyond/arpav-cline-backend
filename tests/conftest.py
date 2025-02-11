@@ -2,6 +2,7 @@ import csv
 import datetime as dt
 import io
 import random
+from pathlib import Path
 
 import geojson_pydantic
 import pytest
@@ -21,6 +22,7 @@ from arpav_ppcv import (
     main,
 )
 from arpav_ppcv.schemas import (
+    base,
     climaticindicators,
     coverages,
     observations,
@@ -31,9 +33,55 @@ from arpav_ppcv.webapp.api_v2.app import create_app as create_v2_app
 from arpav_ppcv.bootstrapper.configurationparameters import (
     generate_configuration_parameters as bootstrappable_configuration_parameters,
 )
-from arpav_ppcv.bootstrapper.climaticindicators.tas import (
-    generate_climatic_indicators as generate_tas_climatic_indicators,
+from arpav_ppcv.bootstrapper.forecastmodels import generate_forecast_models
+from arpav_ppcv.bootstrapper.forecasttimewindows import generate_forecast_time_windows
+from arpav_ppcv.bootstrapper.spatialregions import generate_spatial_regions
+from arpav_ppcv.bootstrapper.climaticindicators.cdd import generate_climatic_indicators as generate_cdd_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.cdds import generate_climatic_indicators as generate_cdds_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.fd import generate_climatic_indicators as generate_fd_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.hdds import generate_climatic_indicators as generate_hdds_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.hwdi import generate_climatic_indicators as generate_hwdi_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.pr import generate_climatic_indicators as generate_pr_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.r95ptot import generate_climatic_indicators as generate_r95ptot_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.snwdays import generate_climatic_indicators as generate_snwdays_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.su30 import generate_climatic_indicators as generate_su30_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.tas import generate_climatic_indicators as generate_tas_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.tasmax import generate_climatic_indicators as generate_tasmax_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.tasmin import generate_climatic_indicators as generate_tasmin_climatic_indicators
+from arpav_ppcv.bootstrapper.climaticindicators.tr import generate_climatic_indicators as generate_tr_climatic_indicators
+
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.cdd import generate_forecast_coverage_configurations as generate_cdd_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.cdds import generate_forecast_coverage_configurations as generate_cdds_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.fd import generate_forecast_coverage_configurations as generate_fd_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.hdds import generate_forecast_coverage_configurations as generate_hdds_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.fd import generate_forecast_coverage_configurations as generate_fd_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.hdds import generate_forecast_coverage_configurations as generate_hdds_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.hwdi import generate_forecast_coverage_configurations as generate_hwdi_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.pr import generate_forecast_coverage_configurations as generate_pr_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.r95ptot import generate_forecast_coverage_configurations as generate_r95ptot_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.snwdays import generate_forecast_coverage_configurations as generate_snwdays_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.su30 import generate_forecast_coverage_configurations as generate_su30_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.tas import generate_forecast_coverage_configurations as generate_tas_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.tasmax import generate_forecast_coverage_configurations as generate_tasmax_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.tasmin import generate_forecast_coverage_configurations as generate_tasmin_forecast_coverage_configurations
+from arpav_ppcv.bootstrapper.forecast_coverage_configurations.tr import generate_forecast_coverage_configurations as generate_tr_forecast_coverage_configurations
+
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.cdds import generate_historical_coverage_configurations as generate_cdds_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.fd import generate_historical_coverage_configurations as generate_fd_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.hdds import generate_historical_coverage_configurations as generate_hdds_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.fd import generate_historical_coverage_configurations as generate_fd_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.hdds import generate_historical_coverage_configurations as generate_hdds_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.pr import generate_historical_coverage_configurations as generate_pr_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.su30 import generate_historical_coverage_configurations as generate_su30_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.tas import generate_historical_coverage_configurations as generate_tas_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.tasmax import generate_historical_coverage_configurations as generate_tasmax_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.tasmin import generate_historical_coverage_configurations as generate_tasmin_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.historical_coverage_configurations.tr import generate_historical_coverage_configurations as generate_tr_historical_coverage_configurations
+from arpav_ppcv.bootstrapper.overview_series_configurations import (
+    generate_forecast_overview_series_configurations,
+    generate_observation_overview_series_configurations,
 )
+from arpav_ppcv.bootstrapper.observation_series_configurations import generate_observation_series_configurations
 from arpav_ppcv.bootstrapper.coverage_configurations.forecast import (
     tas as tas_forecast_bootstrappable_configurations,
 )
@@ -165,11 +213,65 @@ def sample_stations(arpav_db_session) -> list[observations.Station]:
 
 
 @pytest.fixture()
+def sample_real_spatial_regions(
+    arpav_db_session,
+) -> list[base.SpatialRegion]:
+    created = []
+    geoms_base_path = Path(__file__).parent / "data/spatial-regions"
+    for spatial_region_to_create in generate_spatial_regions(geoms_base_path):
+        created.append(
+            db.create_spatial_region(arpav_db_session, spatial_region_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_models(
+    arpav_db_session,
+) -> list[coverages.ForecastModel]:
+    created = []
+    for forecast_model_to_create in generate_forecast_models():
+        created.append(
+            db.create_forecast_model(arpav_db_session, forecast_model_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_time_windows(
+    arpav_db_session,
+) -> list[coverages.ForecastTimeWindow]:
+    created = []
+    for time_window_to_create in generate_forecast_time_windows():
+        created.append(
+            db.create_forecast_time_window(arpav_db_session, time_window_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
 def sample_real_climatic_indicators(
     arpav_db_session,
+    sample_real_forecast_models,
 ) -> list[climaticindicators.ClimaticIndicator]:
+    forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
+    to_create = [
+        *generate_cdd_climatic_indicators(forecast_model_ids),
+        *generate_cdds_climatic_indicators(forecast_model_ids),
+        *generate_fd_climatic_indicators(forecast_model_ids),
+        *generate_hdds_climatic_indicators(forecast_model_ids),
+        *generate_hwdi_climatic_indicators(forecast_model_ids),
+        *generate_pr_climatic_indicators(forecast_model_ids),
+        *generate_r95ptot_climatic_indicators(forecast_model_ids),
+        *generate_snwdays_climatic_indicators(forecast_model_ids),
+        *generate_su30_climatic_indicators(forecast_model_ids),
+        *generate_tas_climatic_indicators(forecast_model_ids),
+        *generate_tasmax_climatic_indicators(forecast_model_ids),
+        *generate_tasmin_climatic_indicators(forecast_model_ids),
+        *generate_tr_climatic_indicators(forecast_model_ids),
+    ]
     created = []
-    for indicator_to_create in generate_tas_climatic_indicators():
+    for indicator_to_create in to_create:
         created.append(
             db.create_climatic_indicator(arpav_db_session, indicator_to_create)
         )
@@ -285,6 +387,100 @@ def sample_coverage_configurations(
     for db_cov_conf in db_cov_confs:
         arpav_db_session.refresh(db_cov_conf)
     return db_cov_confs
+
+
+@pytest.fixture()
+def sample_real_observation_series_configurations(
+    arpav_db_session,
+    sample_real_climatic_indicators,
+):
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators}
+    to_create = generate_observation_series_configurations(climatic_indicator_ids)
+    created = []
+    for observation_series_conf_to_create in to_create:
+        created.append(
+            db.create_observation_series_configuration(
+                arpav_db_session, observation_series_conf_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_coverage_configurations(
+    arpav_db_session,
+    sample_real_spatial_regions,
+    sample_real_climatic_indicators,
+    sample_real_forecast_models,
+    sample_real_forecast_time_windows,
+    sample_real_observation_series_configurations,
+):
+    spatial_region_ids = {
+        sr.name: sr.id for sr in sample_real_spatial_regions}
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators}
+    forecast_model_ids = {
+        fm.name: fm.id for fm in sample_real_forecast_models}
+    time_window_ids = {
+        tw.name: tw.id for tw in sample_real_forecast_time_windows}
+    obs_series_confs_ids = {
+        osc.identifier: osc.id for osc in sample_real_observation_series_configurations}
+    to_create = [
+        *generate_cdd_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_cdds_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_fd_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_hdds_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_fd_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_hdds_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_hwdi_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_pr_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_r95ptot_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_snwdays_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_su30_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_tas_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_tasmax_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_tasmin_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+        *generate_tr_forecast_coverage_configurations(climatic_indicator_ids, spatial_region_ids, forecast_model_ids, time_window_ids, obs_series_confs_ids),
+    ]
+    created = []
+    for forecast_cov_conf_to_create in to_create:
+        created.append(
+            db.create_forecast_coverage_configuration(
+                arpav_db_session, forecast_cov_conf_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_historical_coverage_configurations(
+    arpav_db_session,
+    sample_real_spatial_regions,
+    sample_real_climatic_indicators,
+):
+    spatial_region_ids = {
+        sr.name: sr.id for sr in sample_real_spatial_regions}
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators}
+    to_create = [
+        generate_cdds_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_fd_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_hdds_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_fd_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_hdds_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_pr_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_su30_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_tas_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_tasmax_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_tasmin_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+        generate_tr_historical_coverage_configurations(climatic_indicator_ids, spatial_region_ids),
+    ]
+    created = []
+    for cov_conf_to_create in to_create:
+        created.append(
+            db.create_historical_coverage_configuration(
+                arpav_db_session, cov_conf_to_create)
+        )
+    return created
 
 
 @pytest.fixture()
