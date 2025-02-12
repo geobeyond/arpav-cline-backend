@@ -4,6 +4,7 @@ import logging
 from typing import (
     Optional,
     Sequence,
+    Union,
 )
 
 import geohashr
@@ -39,9 +40,12 @@ from ..schemas.static import (
     DatasetType,
     ForecastScenario,
     ForecastYearPeriod,
+    AggregationPeriod,
+    MeasureType,
 )
 
 from .base import (
+    add_multiple_values_filter,
     add_substring_filter,
     get_total_num_records,
 )
@@ -60,6 +64,13 @@ def list_forecast_coverage_configurations(
     include_total: bool = False,
     climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[ClimaticIndicator] = None,
+    forecast_model_name_filter: Optional[Union[list[str], str]] = None,
+    scenario_filter: Optional[Union[list[ForecastScenario], ForecastScenario]] = None,
+    year_period_filter: Optional[
+        Union[list[ForecastYearPeriod], ForecastYearPeriod]
+    ] = None,
+    time_window_name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
 ) -> tuple[Sequence[ForecastCoverageConfiguration], Optional[int]]:
     """List existing forecast coverage configurations."""
     statement = sqlmodel.select(ForecastCoverageConfiguration).order_by(
@@ -70,6 +81,80 @@ def list_forecast_coverage_configurations(
             ForecastCoverageConfiguration.climatic_indicator_id  # noqa
             == climatic_indicator_filter.id
         )
+    if forecast_model_name_filter is not None:
+        statement = statement.join(
+            ForecastCoverageConfigurationForecastModelLink,
+            ForecastCoverageConfiguration.id
+            == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,
+        ).join(
+            ForecastModel,
+            ForecastModel.id
+            == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,
+        )
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement, forecast_model_name_filter, ForecastModel.name
+            )
+        else:
+            statement = add_substring_filter(
+                statement, forecast_model_name_filter, ForecastModel.name
+            )
+    if scenario_filter is not None:
+        if not isinstance(scenario_filter, list):
+            scenarios = [scenario_filter.name]
+        else:
+            scenarios = [s.name for s in scenario_filter]
+        if len(scenarios) == 1:
+            statement = statement.where(
+                scenarios[0] == sqlalchemy.any_(ForecastCoverageConfiguration.scenarios)  # noqa
+            )
+        else:
+            statement = statement.where(
+                sqlalchemy.or_(
+                    *[
+                        s == sqlalchemy.any_(ForecastCoverageConfiguration.scenarios)
+                        for s in scenarios
+                    ]
+                )
+            )
+    if year_period_filter is not None:
+        if not isinstance(year_period_filter, list):
+            year_periods = [year_period_filter.name]
+        else:
+            year_periods = [yp.name for yp in year_period_filter]
+        if len(year_periods) == 1:
+            statement = statement.where(
+                year_periods[0]
+                == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+            )
+        else:
+            statement = statement.where(
+                sqlalchemy.or_(
+                    *[
+                        yp
+                        == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)
+                        for yp in year_periods
+                    ]
+                )
+            )
+    if time_window_name_filter is not None:
+        statement = statement.join(
+            ForecastCoverageConfigurationForecastTimeWindowLink,
+            ForecastCoverageConfiguration.id
+            == ForecastCoverageConfigurationForecastTimeWindowLink.forecast_coverage_configuration_id,
+        ).join(
+            ForecastTimeWindow,
+            ForecastTimeWindow.id
+            == ForecastCoverageConfigurationForecastTimeWindowLink.forecast_time_window_id,
+        )
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement, time_window_name_filter, ForecastTimeWindow.name
+            )
+        else:
+            statement = add_substring_filter(
+                statement, time_window_name_filter, ForecastTimeWindow.name
+            )
     if climatic_indicator_name_filter is not None:
         filter_ = climatic_indicator_name_filter.replace("%", "")
         filter_ = f"%{filter_}%"
@@ -87,6 +172,13 @@ def collect_all_forecast_coverage_configurations(
     session: sqlmodel.Session,
     climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[ClimaticIndicator] = None,
+    forecast_model_name_filter: Optional[Union[list[str], str]] = None,
+    scenario_filter: Optional[Union[list[ForecastScenario], ForecastScenario]] = None,
+    year_period_filter: Optional[
+        Union[list[ForecastYearPeriod], ForecastYearPeriod]
+    ] = None,
+    time_window_name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
 ) -> Sequence[ForecastCoverageConfiguration]:
     _, num_total = list_forecast_coverage_configurations(
         session,
@@ -94,6 +186,11 @@ def collect_all_forecast_coverage_configurations(
         include_total=True,
         climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
+        forecast_model_name_filter=forecast_model_name_filter,
+        scenario_filter=scenario_filter,
+        year_period_filter=year_period_filter,
+        time_window_name_filter=time_window_name_filter,
+        perform_exact_matches=perform_exact_matches,
     )
     result, _ = list_forecast_coverage_configurations(
         session,
@@ -101,6 +198,11 @@ def collect_all_forecast_coverage_configurations(
         include_total=False,
         climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
+        forecast_model_name_filter=forecast_model_name_filter,
+        scenario_filter=scenario_filter,
+        year_period_filter=year_period_filter,
+        time_window_name_filter=time_window_name_filter,
+        perform_exact_matches=perform_exact_matches,
     )
     return result
 
@@ -529,19 +631,27 @@ def list_forecast_models(
     *,
     limit: int = 20,
     offset: int = 0,
-    name_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
     include_total: bool = False,
+    perform_exact_matches: bool = False,
 ) -> tuple[Sequence[ForecastModel], Optional[int]]:
     """List existing forecast models."""
     statement = sqlmodel.select(ForecastModel).order_by(
         ForecastModel.sort_order  # noqa
     )
     if name_filter is not None:
-        statement = add_substring_filter(
-            statement,
-            name_filter,
-            ForecastModel.internal_value,  # noqa
-        )
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement,
+                name_filter,
+                ForecastModel.internal_value,  # noqa
+            )
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                ForecastModel.internal_value,  # noqa
+            )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -549,19 +659,22 @@ def list_forecast_models(
 
 def collect_all_forecast_models(
     session: sqlmodel.Session,
-    name_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
 ) -> Sequence[ForecastModel]:
     _, num_total = list_forecast_models(
         session,
         limit=1,
         name_filter=name_filter,
         include_total=True,
+        perform_exact_matches=perform_exact_matches,
     )
     result, _ = list_forecast_models(
         session,
         limit=num_total,
         name_filter=name_filter,
         include_total=False,
+        perform_exact_matches=perform_exact_matches,
     )
     return result
 
@@ -630,7 +743,8 @@ def list_forecast_time_windows(
     *,
     limit: int = 20,
     offset: int = 0,
-    name_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
     include_total: bool = False,
 ) -> tuple[Sequence[ForecastTimeWindow], Optional[int]]:
     """List existing forecast time windows."""
@@ -638,11 +752,18 @@ def list_forecast_time_windows(
         ForecastTimeWindow.sort_order  # noqa
     )
     if name_filter is not None:
-        statement = add_substring_filter(
-            statement,
-            name_filter,
-            ForecastModel.internal_value,  # noqa
-        )
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement,
+                name_filter,
+                ForecastModel.internal_value,  # noqa
+            )
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                ForecastModel.internal_value,  # noqa
+            )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -650,18 +771,21 @@ def list_forecast_time_windows(
 
 def collect_all_forecast_time_windows(
     session: sqlmodel.Session,
-    name_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
 ) -> Sequence[ForecastTimeWindow]:
     _, num_total = list_forecast_time_windows(
         session,
         limit=1,
         name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
         include_total=True,
     )
     result, _ = list_forecast_time_windows(
         session,
         limit=num_total,
         name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
         include_total=False,
     )
     return result
@@ -1132,3 +1256,19 @@ def legacy_list_forecast_coverages(
         for fragment in name_filter:
             result = [fc for fc in result if fragment in fc.identifier]
     return result[offset : offset + limit], len(result) if include_total else None
+
+
+def list_forecast_coverages(
+    session: sqlmodel.Session,
+    limit: int = 20,
+    offset: int = 0,
+    climatic_indicator_names: list[str] | None = None,
+    aggregation_periods: list[AggregationPeriod] | None = None,
+    measure_types: list[MeasureType] | None = None,
+    forecast_model_names: list[str] | None = None,
+    time_windows: list[str] | None = None,
+    year_periods: list[ForecastYearPeriod] | None = None,
+):
+    # list the respective forecast coverage configurations and then filter by
+    # their coverages
+    ...

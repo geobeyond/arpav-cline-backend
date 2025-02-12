@@ -1,6 +1,7 @@
 from typing import (
     Optional,
     Sequence,
+    Union,
 )
 
 import sqlalchemy
@@ -21,6 +22,7 @@ from ..schemas.static import (
     MeasureType,
 )
 from .base import (
+    add_multiple_values_filter,
     add_substring_filter,
     get_total_num_records,
 )
@@ -49,7 +51,7 @@ def get_climatic_indicator_by_identifier(
             ClimaticIndicator.name == name,  # noqa
             ClimaticIndicator.measure_type == measure_type,  # noqa
             ClimaticIndicator.aggregation_period == aggregation_period,  # noqa
-            )
+        )
         return session.exec(statement).first()  # noqa
 
 
@@ -59,9 +61,12 @@ def list_climatic_indicators(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
-    name_filter: str | None = None,
-    measure_type_filter: str | None = None,
-    aggregation_period_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
+    measure_type_filter: Optional[Union[list[MeasureType], MeasureType]] = None,
+    aggregation_period_filter: Optional[
+        Union[list[AggregationPeriod], AggregationPeriod]
+    ] = None,
+    perform_exact_matches: bool = False,
 ) -> tuple[Sequence[ClimaticIndicator], Optional[int]]:
     """List existing climatic indicators."""
     statement = sqlmodel.select(ClimaticIndicator).order_by(
@@ -71,17 +76,24 @@ def list_climatic_indicators(
         ClimaticIndicator.measure_type,  # noqa
     )
     if name_filter is not None:
-        statement = add_substring_filter(
-            statement, name_filter, ClimaticIndicator.name  # noqa
-        )
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement, name_filter, ClimaticIndicator.name
+            )  # noqa
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                ClimaticIndicator.name,  # noqa
+            )
     if measure_type_filter is not None:
-        statement = add_substring_filter(
+        statement = add_multiple_values_filter(
             statement,
             measure_type_filter,
             ClimaticIndicator.measure_type,  # noqa
         )
     if aggregation_period_filter is not None:
-        statement = add_substring_filter(
+        statement = add_multiple_values_filter(
             statement,
             aggregation_period_filter,
             ClimaticIndicator.aggregation_period,  # noqa
@@ -93,9 +105,12 @@ def list_climatic_indicators(
 
 def collect_all_climatic_indicators(
     session: sqlmodel.Session,
-    name_filter: Optional[str] = None,
-    measure_type_filter: str | None = None,
-    aggregation_period_filter: str | None = None,
+    name_filter: Optional[Union[list[str], str]] = None,
+    measure_type_filter: Optional[Union[list[MeasureType], MeasureType]] = None,
+    aggregation_period_filter: Optional[
+        Union[list[AggregationPeriod], AggregationPeriod]
+    ] = None,
+    perform_exact_matches: bool = False,
 ) -> Sequence[ClimaticIndicator]:
     _, num_total = list_climatic_indicators(
         session,
@@ -104,6 +119,7 @@ def collect_all_climatic_indicators(
         name_filter=name_filter,
         measure_type_filter=measure_type_filter,
         aggregation_period_filter=aggregation_period_filter,
+        perform_exact_matches=perform_exact_matches,
     )
     result, _ = list_climatic_indicators(
         session,
@@ -112,6 +128,7 @@ def collect_all_climatic_indicators(
         name_filter=name_filter,
         measure_type_filter=measure_type_filter,
         aggregation_period_filter=aggregation_period_filter,
+        perform_exact_matches=perform_exact_matches,
     )
     return result
 
@@ -203,13 +220,13 @@ def update_climatic_indicator(
     }
     for existing_fm_id, existing_fm_link in existing_forecast_model_links.items():
         has_been_requested_to_remove = (
-                existing_fm_id not in requested_forecast_model_links
+            existing_fm_id not in requested_forecast_model_links
         )
         if has_been_requested_to_remove:
             session.delete(existing_fm_link)
     for requested_fm_id, requested_fm in requested_forecast_model_links:
         if (
-                requested_fm_id not in existing_forecast_model_links
+            requested_fm_id not in existing_forecast_model_links
         ):  # need to create this one
             db_fm_link = ForecastModelClimaticIndicatorLink(
                 forecast_model_id=requested_fm_id,

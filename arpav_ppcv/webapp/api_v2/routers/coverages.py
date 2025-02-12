@@ -255,10 +255,10 @@ def legacy_get_coverage_configuration(
 
 
 @router.get(
-    "/coverage-identifiers",
-    response_model=coverage_schemas.LegacyForecastCoverageList,
+    "/coverages",
+    response_model=coverage_schemas.LegacyCoverageList,
 )
-def legacy_list_coverage_identifiers(
+def legacy_list_coverages(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
@@ -272,6 +272,7 @@ def legacy_list_coverage_identifiers(
         Query(),
     ] = None,
 ):
+    """List coverages"""
     filter_values = operations.convert_conf_params_filter(session, possible_value or [])
     include_forecasts = False
     include_historical = False
@@ -286,70 +287,43 @@ def legacy_list_coverage_identifiers(
         include_forecasts = True
         include_historical = True
 
-    filtered_forecast_cov_confs = []
-    filtered_historical_cov_confs = []
-    unfiltered_forecast_cov_confs = []
-    unfiltered_historical_cov_confs = []
+    filtered_forecast_covs = []
+    filtered_historical_covs = []
+    total_filtered_forecast_covs = 0
+    total_filtered_historical_covs = 0
+    total_unfiltered_forecast_covs = 0
+    total_unfiltered_historical_covs = 0
     if include_forecasts:
-        filtered_forecast_cov_confs = db.legacy_list_forecast_coverages(
-            session, conf_param_filter=filter_values
+        (
+            filtered_forecast_covs,
+            total_filtered_forecast_covs,
+        ) = db.legacy_list_forecast_coverages(
+            session, conf_param_filter=filter_values, include_total=True
         )
-        unfiltered_forecast_cov_confs = db.legacy_list_forecast_coverages(session)
+        _, total_unfiltered_forecast_covs = db.legacy_list_forecast_coverages(
+            session, include_total=True
+        )
     if include_historical:
-        filtered_historical_cov_confs = db.legacy_list_historical_coverages(
-            session, conf_param_filter=filter_values
+        (
+            filtered_historical_covs,
+            total_filtered_historical_covs,
+        ) = db.legacy_list_historical_coverages(
+            session, conf_param_filter=filter_values, include_total=True
         )
-        unfiltered_historical_cov_confs = db.legacy_list_historical_coverages(session)
+        _, total_unfiltered_historical_covs = db.legacy_list_historical_coverages(
+            session, include_total=True
+        )
     return coverage_schemas.LegacyCoverageList.from_items(
-        filtered_forecast_cov_confs,
-        filtered_historical_cov_confs,
+        filtered_forecast_covs,
+        filtered_historical_covs,
         request,
         limit=list_params.limit,
         offset=list_params.offset,
-        unfiltered_total_forecast_coverages=len(unfiltered_forecast_cov_confs),
-        unfiltered_total_historical_coverages=len(unfiltered_historical_cov_confs),
+        filtered_total_forecast_coverages=total_filtered_forecast_covs,
+        filtered_total_historical_coverages=total_filtered_historical_covs,
+        unfiltered_total_forecast_coverages=total_unfiltered_forecast_covs,
+        unfiltered_total_historical_coverages=total_unfiltered_historical_covs,
     )
-
-
-@router.get(
-    "/coverage-identifiers/{coverage_identifier}",
-    response_model=Union[
-        LegacyHistoricalCoverageReadDetail,
-        LegacyForecastCoverageReadDetail,
-    ],
-    deprecated=True,
-)
-def legacy_get_coverage_identifier(
-    request: Request,
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
-):
-    """Retrieve coverages by their identifier.
-
-    Use the /coverages/{coverage_identifier} endpoint instead.
-    """
-    try:
-        category = DataCategory(coverage_identifier.partition("-")[0])
-    except ValueError:
-        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-    else:
-        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
-            if category == DataCategory.FORECAST:
-                cov = db.get_forecast_coverage(session, coverage_identifier)
-                response_model = LegacyForecastCoverageReadDetail
-            else:  # historical
-                cov = db.get_historical_coverage(session, coverage_identifier)
-                response_model = LegacyHistoricalCoverageReadDetail
-            if cov is not None:
-                return response_model.from_db_instance(cov, request)
-            else:
-                raise HTTPException(
-                    400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-                )
-        else:
-            raise HTTPException(
-                400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
-            )
 
 
 @router.get(
@@ -364,6 +338,7 @@ def legacy_get_coverage(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
 ):
+    """Get coverage details"""
     try:
         category = DataCategory(coverage_identifier.partition("-")[0])
     except ValueError:
@@ -388,42 +363,50 @@ def legacy_get_coverage(
             )
 
 
-#
-#
-# @router.get(
-#     "/historical-coverages/{coverage_identifier}",
-#     response_model=coverage_schemas.LegacyHistoricalCoverageReadDetail,
-# )
-# def get_historical_coverage(
-#     request: Request,
-#     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-#     coverage_identifier: str,
-# ):
-#     coverage = db.get_historical_coverage(db_session, coverage_identifier)
-#     if coverage is not None:
-#         return coverage_schemas.LegacyHistoricalCoverageReadDetail.from_db_instance(
-#             coverage, request
-#         )
-#     else:
-#         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-#
-#
-# @router.get(
-#     "/forecast-coverages/{coverage_identifier}",
-#     response_model=coverage_schemas.LegacyForecastCoverageReadDetail,
-# )
-# def get_forecast_coverage(
-#     request: Request,
-#     session: Annotated[Session, Depends(dependencies.get_db_session)],
-#     coverage_identifier: str,
-# ):
-#     coverage = db.get_forecast_coverage(session, coverage_identifier)
-#     if coverage is not None:
-#         return coverage_schemas.LegacyForecastCoverageReadDetail.from_db_instance(
-#             coverage, request
-#         )
-#     else:
-#         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+@router.get(
+    "/coverage-identifiers",
+    response_model=coverage_schemas.LegacyCoverageList,
+    deprecated=True,
+)
+def deprecated_list_coverage_identifiers(
+    request: Request,
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
+    possible_value: Annotated[
+        list[
+            Annotated[
+                str,
+                pydantic.StringConstraints(pattern=r"^[0-9a-zA-Z_]+:[0-9a-zA-Z_]+$"),
+            ]
+        ],
+        Query(),
+    ] = None,
+):
+    """List coverages.
+
+    Use the `/coverages/coverages` endpoint instead
+    """
+    return legacy_list_coverages(request, session, list_params, possible_value)
+
+
+@router.get(
+    "/coverage-identifiers/{coverage_identifier}",
+    response_model=Union[
+        LegacyHistoricalCoverageReadDetail,
+        LegacyForecastCoverageReadDetail,
+    ],
+    deprecated=True,
+)
+def deprecated_get_coverage_identifier(
+    request: Request,
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    coverage_identifier: str,
+):
+    """Get coverage details.
+
+    Use the /coverages/coverages/{coverage_identifier} endpoint instead.
+    """
+    return legacy_get_coverage(request, session, coverage_identifier)
 
 
 @router.get("/wms/{coverage_identifier}")
@@ -520,9 +503,9 @@ def list_forecast_data_download_links(
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
     climatological_variable: Annotated[list[str], Query()] = None,
     aggregation_period: Annotated[list[str], Query()] = None,
+    measure: Annotated[list[str], Query()] = None,
     climatological_model: Annotated[list[str], Query()] = None,
     scenario: Annotated[list[str], Query()] = None,
-    measure: Annotated[list[str], Query()] = None,
     year_period: Annotated[list[str], Query()] = None,
     time_window: Annotated[list[str], Query()] = None,
 ) -> coverage_schemas.CoverageDownloadList:

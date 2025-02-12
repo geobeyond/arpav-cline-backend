@@ -238,13 +238,8 @@ class LegacyHistoricalCoverageReadListItem(pydantic.BaseModel):
             **{"coverage_identifier": instance.identifier},
         )
         return cls(
-            **instance.model_dump(
-                exclude={
-                    "display_name_english",
-                    "display_name_italian",
-                }
-            ),
             url=str(url),
+            identifier=instance.identifier,
             name=instance.identifier,
             related_coverage_configuration_url=str(
                 request.url_for(
@@ -705,12 +700,6 @@ class LegacyCoverageConfigurationList(pydantic.BaseModel):
         )
 
 
-# class CoverageConfigurationList(WebResourceList):
-#     items: list[CoverageConfigurationReadListItem]
-#     list_item_type = CoverageConfigurationReadListItem
-#     path_operation_name = "list_coverage_configurations"
-
-
 class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
     identifier: str
@@ -757,7 +746,7 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
             related_coverage_configuration_url=str(
                 request.url_for(
                     "legacy_get_coverage_configuration",
-                    coverage_configuration_id=instance.configuration.id,
+                    coverage_configuration_identifier=instance.configuration.identifier,
                 )
             ),
             possible_values=cls.prepare_possible_values(instance),
@@ -1111,64 +1100,6 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
         )
 
 
-#
-#
-# class LegacyCoverageIdentifierReadListItem(pydantic.BaseModel):
-#     identifier: str
-#     related_coverage_configuration_url: str
-#     wms_base_url: str
-#     wms_main_layer_name: str | None = None
-#     wms_secondary_layer_name: str | None = None
-#     possible_values: list[ConfigurationParameterPossibleValueRead]
-#
-#     @classmethod
-#     def from_db_instance(
-#         cls,
-#         instance: CoverageInternal,
-#         request: Request,
-#     ) -> "LegacyCoverageIdentifierReadListItem":
-#         wms_base_url = request.url_for(
-#             "wms_endpoint", coverage_identifier=instance.identifier
-#         )
-#         return cls(
-#             identifier=instance.identifier,
-#             wms_base_url=str(wms_base_url),
-#             wms_main_layer_name=(
-#                 instance.configuration.get_wms_main_layer_name(instance.identifier)
-#                 if instance.configuration.wms_main_layer_name is not None
-#                 else None
-#             ),
-#             wms_secondary_layer_name=(
-#                 instance.configuration.get_wms_secondary_layer_name(instance.identifier)
-#                 if instance.configuration.wms_secondary_layer_name is not None
-#                 else None
-#             ),
-#             related_coverage_configuration_url=str(
-#                 request.url_for(
-#                     "get_coverage_configuration",
-#                     coverage_configuration_id=instance.configuration.id,
-#                 )
-#             ),
-#             possible_values=[
-#                 ConfigurationParameterPossibleValueRead(
-#                     configuration_parameter_name=pv.configuration_parameter_value.configuration_parameter.name,
-#                     configuration_parameter_display_name_english=(
-#                         pv.configuration_parameter_value.configuration_parameter.display_name_english
-#                         or pv.configuration_parameter_value.configuration_parameter.name
-#                     ),
-#                     configuration_parameter_display_name_italian=(
-#                         pv.configuration_parameter_value.configuration_parameter.display_name_italian
-#                         or pv.configuration_parameter_value.configuration_parameter.name
-#                     ),
-#                     configuration_parameter_value=pv.configuration_parameter_value.name,
-#                 )
-#                 for pv in instance.configuration.retrieve_used_values(
-#                     instance.identifier
-#                 )
-#             ],
-#         )
-
-
 class LegacyCoverageList(pydantic.BaseModel):
     items: list[
         typing.Union[
@@ -1183,12 +1114,14 @@ class LegacyCoverageList(pydantic.BaseModel):
     @classmethod
     def from_items(
         cls,
-        forecast_coverages: typing.Sequence[ForecastCoverageInternal,],
+        forecast_coverages: typing.Sequence[ForecastCoverageInternal],
         historical_coverages: typing.Sequence[HistoricalCoverageInternal],
         request: Request,
         *,
         limit: int,
         offset: int,
+        filtered_total_forecast_coverages: int,
+        filtered_total_historical_coverages: int,
         unfiltered_total_forecast_coverages: int,
         unfiltered_total_historical_coverages: int,
     ):
@@ -1208,16 +1141,18 @@ class LegacyCoverageList(pydantic.BaseModel):
             ]
         )
         relevant = all_items[offset : offset + limit]
-        filtered_total = len(forecast_coverages) + len(historical_coverages)
+        filtered_total = (
+            filtered_total_forecast_coverages + filtered_total_historical_coverages
+        )
 
         return cls(
             meta=get_meta(
-                len(relevant),
-                (
+                num_returned_records=len(relevant),
+                unfiltered_total=(
                     unfiltered_total_forecast_coverages
                     + unfiltered_total_historical_coverages
                 ),
-                filtered_total,
+                filtered_total=filtered_total,
             ),
             links=get_list_links(
                 request,

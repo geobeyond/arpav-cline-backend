@@ -925,6 +925,7 @@ def _filter_configuration_parameter_values(
 
 def list_coverage_identifiers_by_param_values(
     session: sqlmodel.Session,
+    archive_filter: Optional[list[static.DataCategory]] = None,
     climatological_variable_filter: Optional[list[str]] = None,
     aggregation_period_filter: Optional[list[str]] = None,
     climatological_model_filter: Optional[list[str]] = None,
