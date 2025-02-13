@@ -9,6 +9,7 @@ from .climaticindicators import (
 )
 
 from .forecastcoverages import (
+    collect_all_forecast_coverages,  # noqa
     collect_all_forecast_coverage_configurations,  # noqa
     collect_all_forecast_coverage_configurations_with_identifier_filter,  # noqa
     collect_all_forecast_models,  # noqa
@@ -32,6 +33,7 @@ from .forecastcoverages import (
     legacy_collect_all_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverages,  # noqa
+    list_forecast_coverages,  # noqa
     list_forecast_coverage_configurations,  # noqa
     list_forecast_models,  # noqa
     list_forecast_time_windows,  # noqa
@@ -41,6 +43,7 @@ from .forecastcoverages import (
 )
 
 from .historicalcoverages import (
+    collect_all_historical_coverages,  # noqa
     collect_all_historical_coverage_configurations,  # noqa
     collect_all_historical_coverage_configurations_with_identifier_filter,  # noqa
     create_historical_coverage_configuration,  # noqa
@@ -52,6 +55,7 @@ from .historicalcoverages import (
     legacy_collect_all_historical_coverage_configurations,  # noqa
     legacy_list_historical_coverage_configurations,  # noqa
     legacy_list_historical_coverages,  # noqa
+    list_historical_coverages,  # noqa
     list_historical_coverage_configurations,  # noqa
     update_historical_coverage_configuration,  # noqa
 )

@@ -104,6 +104,11 @@ def generate_forecast_coverage_configurations(
             forecast_models=[
                 forecast_model_ids["model_ensemble"],
             ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v:arpa_fvg-yearly"
+                ]
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-absolute-annual"],

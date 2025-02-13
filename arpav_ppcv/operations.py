@@ -1,12 +1,12 @@
 import datetime as dt
 import functools
 import io
-import itertools
 import logging
 import warnings
 from typing import (
     Optional,
     Sequence,
+    TYPE_CHECKING,
 )
 
 import anyio
@@ -37,7 +37,6 @@ from . import (
 )
 from .schemas import (
     base,
-    climaticindicators,
     coverages,
     legacy,
     observations,
@@ -49,6 +48,10 @@ from .thredds import (
     ncss,
 )
 
+if TYPE_CHECKING:
+    from .schemas.climaticindicators import ClimaticIndicator
+    from .schemas.coverages import CoverageInternal
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +61,7 @@ def get_climate_barometer_time_series(
     smoothing_strategies: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
 ) -> dict[
-    tuple[coverages.CoverageInternal, static.CoverageTimeSeriesProcessingMethod],
+    tuple["CoverageInternal", static.CoverageTimeSeriesProcessingMethod],
     pd.Series,
 ]:
     covs = arpav_ppcv.db.legacy.collect_all_coverages(
@@ -112,7 +115,7 @@ def get_climate_barometer_time_series(
 
 def _get_climate_barometer_data(
     settings: config.ArpavPpcvSettings,
-    coverage: coverages.CoverageInternal,
+    coverage: "CoverageInternal",
 ) -> pd.DataFrame:
     opendap_url = "/".join(
         (
@@ -148,7 +151,7 @@ def _get_climate_barometer_data(
 
 def get_station_data(
     session: sqlmodel.Session,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator: "ClimaticIndicator",
     station: observations.Station,
     month: int,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
@@ -179,7 +182,7 @@ def get_station_data(
 
 
 def aggregate_decade_data(
-    climatic_indicator: climaticindicators.ClimaticIndicator, measurements: pd.DataFrame
+    climatic_indicator: "ClimaticIndicator", measurements: pd.DataFrame
 ) -> pd.DataFrame:
     # group values by climatological decade, which starts at year 1 and ends at year 10
     decade_grouper = measurements.groupby(((measurements.index.year - 1) // 10) * 10)
@@ -198,7 +201,7 @@ def aggregate_decade_data(
 
 
 def generate_mann_kendall_data(
-    climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator: "ClimaticIndicator",
     measurements: pd.DataFrame,
     parameters: base.MannKendallParameters,
 ) -> tuple[pd.DataFrame, dict[str, str | int | float]]:
@@ -232,7 +235,7 @@ def generate_mann_kendall_data(
 
 def get_observation_time_series(
     session: sqlmodel.Session,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator: "ClimaticIndicator",
     station: observations.Station,
     month: int,
     temporal_range: str,
@@ -294,7 +297,7 @@ def get_observation_time_series(
 
 async def async_retrieve_data_via_ncss(
     settings: config.ArpavPpcvSettings,
-    coverage: coverages.CoverageInternal,
+    coverage: "CoverageInternal",
     point_geom: shapely.geometry.Point,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
     http_client: httpx.AsyncClient,
@@ -328,7 +331,7 @@ async def async_retrieve_data_via_ncss(
 async def retrieve_multiple_ncss_datasets(
     settings: config.ArpavPpcvSettings,
     client: httpx.AsyncClient,
-    datasets_to_retrieve: list[coverages.CoverageInternal],
+    datasets_to_retrieve: list["CoverageInternal"],
     point_geom: shapely.Point,
     temporal_range: tuple[dt.datetime | None, dt.datetime | None],
 ):
@@ -543,7 +546,7 @@ def get_coverage_time_series(
         dict[
             tuple[
                 observations.Station,
-                climaticindicators.ClimaticIndicator,
+                "ClimaticIndicator",
                 static.ObservationTimeSeriesProcessingMethod,
             ],
             pd.Series,
@@ -864,7 +867,7 @@ def create_db_schema(session: sqlmodel.Session, schema_name: str):
 
 def refresh_station_climatic_indicator_database_view(
     session: sqlmodel.Session,
-    climatic_indicator: climaticindicators.ClimaticIndicator,
+    climatic_indicator: "ClimaticIndicator",
     db_schema_name: Optional[str] = "public",
 ):
     """Refresh DB view with stations that have data for input climatic indicator."""
@@ -923,109 +926,12 @@ def _filter_configuration_parameter_values(
     return result
 
 
-def list_coverage_identifiers_by_param_values(
-    session: sqlmodel.Session,
-    archive_filter: Optional[list[static.DataCategory]] = None,
-    climatological_variable_filter: Optional[list[str]] = None,
-    aggregation_period_filter: Optional[list[str]] = None,
-    climatological_model_filter: Optional[list[str]] = None,
-    scenario_filter: Optional[list[str]] = None,
-    measure_filter: Optional[list[str]] = None,
-    year_period_filter: Optional[list[str]] = None,
-    time_window_filter: Optional[list[str]] = None,
-    *,
-    limit: int = 20,
-    offset: int = 0,
-) -> list[str]:
-    valid_climatic_indicators = _list_possible_climatic_indicators(
-        session,
-        climatological_variable_filter or [],
-        measure_filter or [],
-        aggregation_period_filter or [],
-    )
-    logger.debug(f"{locals()=}")
-    valid_climatological_models = _filter_configuration_parameter_values(
-        session,
-        climatological_model_filter or [],
-        CoreConfParamName.CLIMATOLOGICAL_MODEL.value,
-    )
-    valid_scenarios = _filter_configuration_parameter_values(
-        session, scenario_filter or [], CoreConfParamName.SCENARIO.value
-    )
-    valid_year_periods = _filter_configuration_parameter_values(
-        session, year_period_filter or [], CoreConfParamName.YEAR_PERIOD.value
-    )
-    valid_time_windows = _filter_configuration_parameter_values(
-        session,
-        time_window_filter or [],
-        "time_window",
-        return_all_if_filter_empty=False,
-    )
-    if len(valid_time_windows) == 0:
-        valid_time_windows.insert(0, None)
-    valid_time_window_names = [tw.name for tw in valid_time_windows if tw is not None]
-    coverage_identifiers = set()
-    for combination in itertools.product(
-        valid_climatic_indicators,
-        valid_climatological_models,
-        valid_scenarios,
-        valid_year_periods,
-        valid_time_windows,
-    ):
-        climatic_indicator, model, scenario, year_period, time_window = combination
-        logger.debug(
-            f"getting links for climatic_indicator: {climatic_indicator.identifier!r}, "
-            f"model: {model.name!r}, scenario: {scenario.name!r}, "
-            f"year_period: {year_period.name!r}, "
-            f"time_window: {time_window.name if time_window else time_window!r}..."
-        )
-        param_values_filter = [
-            arpav_ppcv.db.legacy.get_configuration_parameter_value_by_names(
-                session, CoreConfParamName.ARCHIVE.value, "forecast"
-            ),
-            model,
-            scenario,
-            year_period,
-            time_window,
-        ]
-        filter_ = [i for i in param_values_filter if i is not None]
-        cov_confs, _ = arpav_ppcv.db.legacy.list_coverage_configurations(
-            session,
-            limit=limit,
-            offset=offset,
-            configuration_parameter_values_filter=filter_,
-            climatic_indicator_filter=climatic_indicator,
-        )
-        for cov_conf in cov_confs:
-            identifiers = arpav_ppcv.db.legacy.generate_coverage_identifiers(
-                cov_conf, configuration_parameter_values_filter=filter_
-            )
-            for cov_id in identifiers:
-                if time_window is None:
-                    used_values = cov_conf.retrieve_configuration_parameters(cov_id)
-                    used_time_window = used_values.get("time_window")
-                    if used_time_window is None:
-                        coverage_identifiers.add(cov_id)
-                    elif (
-                        len(valid_time_window_names) == 0
-                        or used_time_window in valid_time_window_names
-                    ):
-                        coverage_identifiers.add(cov_id)
-                else:
-                    coverage_identifiers.add(cov_id)
-            if len(coverage_identifiers) > (offset + limit):
-                break
-        if len(coverage_identifiers) > (offset + limit):
-            break
-    return sorted(coverage_identifiers)[offset : offset + limit]
-
-
 def _list_possible_climatic_indicators(
     session: sqlmodel.Session,
     variable_names: Sequence[str],
     measure_types: Sequence[str],
     aggregation_periods: Sequence[str],
-) -> list[climaticindicators.ClimaticIndicator]:
+) -> list["ClimaticIndicator"]:
     filtered = db.collect_all_climatic_indicators(session)
     if len(variable_names) > 0:
         filtered = [i for i in filtered if i.name in variable_names]

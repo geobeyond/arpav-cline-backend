@@ -183,6 +183,7 @@ class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
     reference_period: Optional[HistoricalReferencePeriod]
     year_periods: list[HistoricalYearPeriod]
     decades: list[HistoricalDecade]
+    observation_series_configurations: list[int]
 
 
 class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):

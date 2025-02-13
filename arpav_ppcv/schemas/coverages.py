@@ -892,6 +892,52 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
     )
 
 
+class HistoricalCoverageConfigurationObservationSeriesConfigurationLink(
+    sqlmodel.SQLModel, table=True
+):
+    __table_args__ = (
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "historical_coverage_configuration_id",
+            ],
+            [
+                "historicalcoverageconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+        ),
+        sqlalchemy.ForeignKeyConstraint(
+            [
+                "observation_series_configuration_id",
+            ],
+            [
+                "observationseriesconfiguration.id",
+            ],
+            onupdate="CASCADE",
+            ondelete="CASCADE",  # i.e. delete all possible values if the related observation series configuration gets deleted
+        ),
+    )
+    historical_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+    observation_series_configuration_id: Optional[int] = sqlmodel.Field(
+        # NOTE: foreign key already defined in __table_args__ in order to be able to
+        # specify the ondelete behavior
+        default=None,
+        primary_key=True,
+    )
+
+    historical_coverage_configuration: "HistoricalCoverageConfiguration" = (
+        sqlmodel.Relationship(back_populates="observation_series_configuration_links")
+    )
+    observation_series_configuration: "observations.ObservationSeriesConfiguration" = (
+        sqlmodel.Relationship(back_populates="historical_coverage_configuration_links")
+    )
+
+
 class BaseCoverageConfiguration(sqlmodel.SQLModel):
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     netcdf_main_dataset_name: str
@@ -1239,6 +1285,11 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
     climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="historical_coverage_configurations"
     )
+    observation_series_configuration_links: list[
+        HistoricalCoverageConfigurationObservationSeriesConfigurationLink
+    ] = sqlmodel.Relationship(
+        back_populates="historical_coverage_configuration",
+    )
 
     @pydantic.computed_field
     @property
@@ -1273,6 +1324,7 @@ class HistoricalCoverageConfigurationCreate(sqlmodel.SQLModel):
     reference_period: Optional[static.HistoricalReferencePeriod] = None
     decades: Optional[list[static.HistoricalDecade]] = None
     year_periods: list[static.HistoricalYearPeriod]
+    observation_series_configurations: Optional[list[int]] = None
 
 
 class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
@@ -1284,6 +1336,7 @@ class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
     reference_period: Optional[static.HistoricalReferencePeriod] = None
     decades: Optional[list[static.HistoricalDecade]] = None
     year_periods: Optional[list[static.HistoricalYearPeriod]] = None
+    observation_series_configurations: Optional[list[int]] = None
 
 
 @dataclasses.dataclass(frozen=True)

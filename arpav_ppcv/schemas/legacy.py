@@ -15,10 +15,14 @@ if typing.TYPE_CHECKING:
 def parse_legacy_aggregation_period(
     legacy_value: str,
 ) -> Optional[static.AggregationPeriod]:
-    return {
+    parsed = {
         "30yr": static.AggregationPeriod.THIRTY_YEAR,
-        "annual": static.AggregationPeriod.ANNUAL,
     }.get(legacy_value)
+    if parsed is not None:
+        result = parsed
+    else:
+        result = static.AggregationPeriod(legacy_value)
+    return result
 
 
 def convert_to_aggregation_period(
@@ -88,3 +92,18 @@ class ObservationDataSmoothingStrategy(enum.Enum):
             self.NO_SMOOTHING.name: _("no processing"),
             self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
         }[self.name] or self.name
+
+    def to_processing_method(self):
+        return {
+            self.NO_SMOOTHING: static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+            self.MOVING_AVERAGE_5_YEARS: static.ObservationTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS,
+        }[self]
+
+    @classmethod
+    def from_processing_method(
+        cls, processing_method: static.ObservationTimeSeriesProcessingMethod
+    ) -> "ObservationDataSmoothingStrategy":
+        return {
+            processing_method.NO_PROCESSING: cls.NO_SMOOTHING,
+            processing_method.MOVING_AVERAGE_5_YEARS: cls.MOVING_AVERAGE_5_YEARS,
+        }[processing_method]

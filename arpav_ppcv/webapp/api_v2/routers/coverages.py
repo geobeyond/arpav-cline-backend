@@ -9,6 +9,7 @@ from typing import (
 
 import httpx
 import pydantic
+import shapely
 import shapely.io
 from fastapi import (
     APIRouter,
@@ -33,18 +34,32 @@ from .... import (
 )
 from ....config import ArpavPpcvSettings
 from ....thredds import utils as thredds_utils
+from ....schemas.coverages import (
+    HistoricalCoverageInternal,
+    ForecastCoverageInternal,
+)
 from ....schemas.legacy import (
+    parse_legacy_aggregation_period,
     CoverageDataSmoothingStrategy,
+    ObservationDataSmoothingStrategy,
 )
 from ....schemas.static import (
     AggregationPeriod,
     CoverageTimeSeriesProcessingMethod,
     DataCategory,
+    ForecastScenario,
+    ForecastYearPeriod,
+    HistoricalDecade,
+    HistoricalReferencePeriod,
+    HistoricalYearPeriod,
     ObservationTimeSeriesProcessingMethod,
+    MeasureType,
 )
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
 from ..schemas.coverages import (
+    ForecastCoverageDownloadList,
+    HistoricalCoverageDownloadList,
     LegacyForecastCoverageConfigurationReadDetail,
     LegacyHistoricalCoverageConfigurationReadDetail,
     LegacyForecastCoverageReadDetail,
@@ -53,7 +68,6 @@ from ..schemas.coverages import (
 from ..schemas.timeseries import (
     LegacyTimeSeries,
     LegacyTimeSeriesList,
-    TimeSeries,
     TimeSeriesList,
 )
 from ...frontendutils.schemas import (
@@ -496,38 +510,82 @@ async def wms_endpoint(
             )
 
 
-@router.get("/forecast-data")
+@router.get("/forecast-data", response_model=ForecastCoverageDownloadList)
 def list_forecast_data_download_links(
     request: Request,
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
     climatological_variable: Annotated[list[str], Query()] = None,
     aggregation_period: Annotated[list[str], Query()] = None,
-    measure: Annotated[list[str], Query()] = None,
+    measure: Annotated[list[MeasureType], Query()] = None,
     climatological_model: Annotated[list[str], Query()] = None,
-    scenario: Annotated[list[str], Query()] = None,
-    year_period: Annotated[list[str], Query()] = None,
+    scenario: Annotated[list[ForecastScenario], Query()] = None,
+    year_period: Annotated[list[ForecastYearPeriod], Query()] = None,
     time_window: Annotated[list[str], Query()] = None,
-) -> coverage_schemas.CoverageDownloadList:
+) -> coverage_schemas.ForecastCoverageDownloadList:
     """Get download links forecast data"""
-    coverage_identifiers = operations.list_coverage_identifiers_by_param_values(
-        db_session,
-        climatological_variable,
-        aggregation_period,
-        climatological_model,
-        scenario,
-        measure,
-        year_period,
-        time_window,
-        limit=list_params.limit,
-        offset=list_params.offset,
+    aggregation_period_filter = (
+        [parse_legacy_aggregation_period(ap) for ap in aggregation_period]
+        if aggregation_period
+        else None
     )
-    return coverage_schemas.CoverageDownloadList.from_items(
-        coverage_identifiers=coverage_identifiers,
+    coverages = db.collect_all_forecast_coverages(
+        session,
+        climatological_variable_filter=climatological_variable,
+        aggregation_period_filter=aggregation_period_filter,
+        climatological_model_filter=climatological_model,
+        scenario_filter=scenario,
+        measure_filter=measure,
+        year_period_filter=year_period,
+        time_window_filter=time_window,
+    )
+
+    return coverage_schemas.ForecastCoverageDownloadList.from_items(
+        coverages=coverages,
         request=request,
         limit=list_params.limit,
         offset=list_params.offset,
-        total=len(coverage_identifiers),
+        total=len(coverages),
+    )
+
+
+@router.get(
+    "/historical-data",
+    response_model=HistoricalCoverageDownloadList,
+)
+def list_historical_data_download_links(
+    request: Request,
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    list_params: Annotated[dependencies.CommonListFilterParameters, Depends()],
+    climatological_variable: Annotated[list[str], Query()] = None,
+    aggregation_period: Annotated[list[str], Query()] = None,
+    measure: Annotated[list[MeasureType], Query()] = None,
+    year_period: Annotated[list[HistoricalYearPeriod], Query()] = None,
+    decade: Annotated[list[HistoricalDecade], Query()] = None,
+    reference_period: Annotated[list[HistoricalReferencePeriod], Query()] = None,
+) -> coverage_schemas.HistoricalCoverageDownloadList:
+    """Get download links for historical data"""
+    aggregation_period_filter = (
+        [parse_legacy_aggregation_period(ap) for ap in aggregation_period]
+        if aggregation_period
+        else None
+    )
+    coverages = db.collect_all_historical_coverages(
+        session,
+        climatological_variable_filter=climatological_variable,
+        aggregation_period_filter=aggregation_period_filter,
+        measure_filter=measure,
+        year_period_filter=year_period,
+        reference_period_filter=reference_period,
+        decade_filter=decade,
+    )
+
+    return coverage_schemas.HistoricalCoverageDownloadList.from_items(
+        coverages=coverages,
+        request=request,
+        limit=list_params.limit,
+        offset=list_params.offset,
+        total=len(coverages),
     )
 
 
@@ -535,64 +593,92 @@ def list_forecast_data_download_links(
 async def get_forecast_data(
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
-    if (
-        coverage := db.get_forecast_coverage(db_session, coverage_identifier)
-    ) is not None:
-        if (
-            coverage.configuration.climatic_indicator.aggregation_period
-            == AggregationPeriod.THIRTY_YEAR.value
-        ):
-            # Strip datetime query param if the underlying coverage has the
-            # 30yr aggregation period because the upstream THREDDS NCSS
-            # response is somehow returning an error if these datasets are
-            # requested with a temporal range, even if the underlying NetCDF
-            # temporal range is within the requested range.
-            temporal_range = (None, None)
-        else:
-            temporal_range = operations.parse_temporal_range(datetime)
-        if coords is not None:
-            # FIXME - deal with invalid WKT errors
-            geom = shapely.io.from_wkt(coords)
-            if geom.geom_type == "Polygon":
-                grid = datadownloads.CoverageDownloadGrid.from_config(
-                    settings.coverage_download_settings.spatial_grid
-                )
-                try:
-                    fitted_bbox = grid.fit_bbox(geom)
-                except exceptions.CoverageDataRetrievalError as exc:
-                    raise HTTPException(
-                        status_code=400, detail=f"Invalid coords - {exc}"
-                    )
-            else:
-                raise HTTPException(
-                    status_code=400, detail="Invalid coords - Must be a WKT Polygon"
-                )
-        else:
-            fitted_bbox = None
-
-        cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
-        response_to_stream = await datadownloads.retrieve_coverage_data(
-            settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
-        )
-        filename = cache_key.rpartition("/")[-1]
-        return StreamingResponse(
-            response_to_stream.aiter_bytes(),
-            status_code=response_to_stream.status_code,
-            media_type="application/netcdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-            },
-            background=BackgroundTask(response_to_stream.aclose),
+    if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
+        return await _get_coverage_data(
+            settings, http_client, coverage, coords, datetime
         )
     else:
         raise HTTPException(
             status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
         )
+
+
+@router.get("/historical-data/{coverage_identifier}")
+async def get_historical_data(
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    coverage_identifier: str,
+    coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
+    datetime: Optional[str] = "../..",
+):
+    if (
+        coverage := db.get_historical_coverage(session, coverage_identifier)
+    ) is not None:
+        return await _get_coverage_data(
+            settings, http_client, coverage, coords, datetime
+        )
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
+
+
+async def _get_coverage_data(
+    settings: ArpavPpcvSettings,
+    http_client: httpx.AsyncClient,
+    coverage: Union[ForecastCoverageInternal, HistoricalCoverageInternal],
+    coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
+    datetime: Optional[str] = "../..",
+):
+    if coverage.configuration.climatic_indicator.aggregation_period in (
+        AggregationPeriod.THIRTY_YEAR,
+        AggregationPeriod.TEN_YEAR,
+    ):
+        # Strip datetime query param if the underlying coverage has the
+        # 30yr aggregation period because the upstream THREDDS NCSS
+        # response is somehow returning an error if these datasets are
+        # requested with a temporal range, even if the underlying NetCDF
+        # temporal range is within the requested range.
+        temporal_range = (None, None)
+    else:
+        temporal_range = operations.parse_temporal_range(datetime)
+    if coords is not None:
+        # FIXME - deal with invalid WKT errors
+        geom = shapely.io.from_wkt(coords)
+        if geom.geom_type == "Polygon":
+            grid = datadownloads.CoverageDownloadGrid.from_config(
+                settings.coverage_download_settings.spatial_grid
+            )
+            try:
+                fitted_bbox = grid.fit_bbox(geom)
+            except exceptions.CoverageDataRetrievalError as exc:
+                raise HTTPException(status_code=400, detail=f"Invalid coords - {exc}")
+        else:
+            raise HTTPException(
+                status_code=400, detail="Invalid coords - Must be a WKT Polygon"
+            )
+    else:
+        fitted_bbox = None
+    cache_key = datadownloads.get_cache_key(coverage, fitted_bbox, temporal_range)
+    response_to_stream = await datadownloads.retrieve_coverage_data(
+        settings, http_client, cache_key, coverage, fitted_bbox, temporal_range
+    )
+    filename = cache_key.rpartition("/")[-1]
+    return StreamingResponse(
+        response_to_stream.aiter_bytes(),
+        status_code=response_to_stream.status_code,
+        media_type="application/netcdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+        background=BackgroundTask(response_to_stream.aclose),
+    )
 
 
 def _modify_capabilities_response(
@@ -701,9 +787,11 @@ def get_overview_time_series(
         return LegacyTimeSeriesList(series=series)
 
 
-@router.get("/time-series/{coverage_identifier}", response_model=TimeSeriesList)
-def get_time_series(
-    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+@router.get(
+    "/time-series/{coverage_identifier}", response_model=TimeSeriesList, deprecated=True
+)
+def legacy_get_time_series(
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
     coverage_identifier: str,
@@ -719,51 +807,101 @@ def get_time_series(
             )
         ),
     ] = False,
-    coverage_data_smoothing: Annotated[
-        list[CoverageTimeSeriesProcessingMethod], Query()
-    ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+    coverage_data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
+        CoverageDataSmoothingStrategy.NO_SMOOTHING
+    ],  # noqa
     observation_data_smoothing: Annotated[
-        list[ObservationTimeSeriesProcessingMethod], Query()
-    ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+        list[ObservationDataSmoothingStrategy], Query()
+    ] = [ObservationDataSmoothingStrategy.NO_SMOOTHING],  # noqa
     include_coverage_uncertainty: bool = False,
     include_coverage_related_data: bool = False,
 ):
-    """Get dataset time series for a geographic location."""
-    if coverage_identifier.split("-")[0] == "forecast":
-        coverage = db.get_forecast_coverage(db_session, coverage_identifier)
-    else:
-        coverage = None
-    if coverage is not None:
-        # TODO: catch errors with invalid geom
-        geom = shapely.io.from_wkt(coords)
-        if geom.geom_type == "MultiPoint":
-            logger.warning(
-                f"Expected coords parameter to be a WKT Point but "
-                f"got {geom.geom_type!r} instead - Using the first point"
+    """Get forecast dataset time series for a geographic location.
+
+    Use the `/coverages/forecast-time-series/{coverage_identifier}` endpoint instead.
+    """
+    return get_forecast_time_series(
+        session=session,
+        settings=settings,
+        http_client=http_client,
+        coverage_identifier=coverage_identifier,
+        coords=coords,
+        datetime=datetime,
+        include_coverage_data=include_coverage_data,
+        include_observation_data=include_observation_data,
+        coverage_data_smoothing=coverage_data_smoothing,
+        observation_data_smoothing=observation_data_smoothing,
+        include_coverage_uncertainty=include_coverage_uncertainty,
+        include_coverage_related_data=include_coverage_related_data,
+    )
+
+
+@router.get(
+    "/forecast-time-series/{coverage_identifier}",
+    response_model=TimeSeriesList,
+    deprecated=True,
+)
+def get_forecast_time_series(
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
+    coverage_identifier: str,
+    coords: str,
+    datetime: Optional[str] = "../..",
+    include_coverage_data: bool = True,
+    include_observation_data: Annotated[
+        bool,
+        Query(
+            description=(
+                "Whether data from the nearest observation station (if any) "
+                "should be included in the response."
             )
-            point_geom = geom.geoms[0]
-        elif geom.geom_type == "Point":
-            point_geom = geom
-        else:
-            logger.warning(
-                f"Expected coords parameter to be a WKT Point but "
-                f"got {geom.geom_type!r} instead - Using the centroid instead"
-            )
-            point_geom = geom.centroid
+        ),
+    ] = False,
+    coverage_data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
+        CoverageDataSmoothingStrategy.NO_SMOOTHING
+    ],  # noqa
+    observation_data_smoothing: Annotated[
+        list[ObservationDataSmoothingStrategy], Query()
+    ] = [ObservationDataSmoothingStrategy.NO_SMOOTHING],  # noqa
+    include_coverage_uncertainty: bool = False,
+    include_coverage_related_data: bool = False,
+):
+    """Get forecast dataset time series for a geographic location.
+
+    This is deprecated, use the
+    `/coverages/forecast-time-series/{coverage_identifier}` endpoint instead.
+    """
+    try:
+        data_category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    if data_category != DataCategory.FORECAST:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
+        # converting from legacy data_smoothing enum
+        coverage_processing_methods = [
+            cs.to_processing_method() for cs in coverage_data_smoothing
+        ]
+        observation_processing_methods = [
+            os.to_processing_method() for os in observation_data_smoothing
+        ]
+
+        point_geom = _get_point_location(coords)
+        temporal_range = operations.parse_temporal_range(datetime)
         try:
-            temporal_range = operations.parse_temporal_range(datetime)
             (
                 coverage_series,
                 observations_series,
             ) = timeseries.get_forecast_coverage_time_series(
                 settings=settings,
-                session=db_session,
+                session=session,
                 http_client=http_client,
                 coverage=coverage,
                 point_geom=point_geom,
                 temporal_range=temporal_range,
-                forecast_coverage_processing_methods=coverage_data_smoothing,
-                observation_processing_methods=observation_data_smoothing,
+                coverage_processing_methods=coverage_processing_methods,
+                observation_processing_methods=observation_processing_methods,
                 include_coverage_data=include_coverage_data,
                 include_observation_data=include_observation_data,
                 include_coverage_uncertainty=include_coverage_uncertainty,
@@ -777,19 +915,122 @@ def get_time_series(
         else:
             series = []
             for forecast_cov_series in coverage_series:
-                series.append(TimeSeries.from_forecast_data_series(forecast_cov_series))
+                series.append(
+                    LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
+                )
             if observations_series is not None:
                 for obs_station_series in observations_series:
                     series.append(
-                        TimeSeries.from_observation_station_data_series(
+                        LegacyTimeSeries.from_observation_station_data_series(
                             obs_station_series
                         )
                     )
-            return TimeSeriesList(series=series)
+            return LegacyTimeSeriesList(series=series)
     else:
         raise HTTPException(
             status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
         )
+
+
+@router.get(
+    "/historical-time-series/{coverage_identifier}",
+    response_model=TimeSeriesList,
+    deprecated=True,
+)
+def get_historical_time_series(
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
+    coverage_identifier: str,
+    coords: str,
+    datetime: Optional[str] = "../..",
+    include_coverage_data: bool = True,
+    include_observation_data: Annotated[
+        bool,
+        Query(
+            description=(
+                "Whether data from the nearest observation station (if any) "
+                "should be included in the response."
+            )
+        ),
+    ] = False,
+    coverage_processing_methods: Annotated[
+        list[CoverageTimeSeriesProcessingMethod], Query()
+    ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+    observation_processing_methods: Annotated[
+        list[ObservationTimeSeriesProcessingMethod], Query()
+    ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+):
+    """Get historical dataset time series for a geographic location."""
+    try:
+        data_category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    if data_category != DataCategory.HISTORICAL:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    if (
+        coverage := db.get_historical_coverage(session, coverage_identifier)
+    ) is not None:
+        point_geom = _get_point_location(coords)
+        temporal_range = operations.parse_temporal_range(datetime)
+        try:
+            (
+                coverage_series,
+                observations_series,
+            ) = timeseries.get_historical_coverage_time_series(
+                settings=settings,
+                session=session,
+                http_client=http_client,
+                coverage=coverage,
+                point_geom=point_geom,
+                temporal_range=temporal_range,
+                coverage_processing_methods=coverage_processing_methods,
+                observation_processing_methods=observation_processing_methods,
+                include_coverage_data=include_coverage_data,
+                include_observation_data=include_observation_data,
+            )
+        except exceptions.CoverageDataRetrievalError as err:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not retrieve data",
+            ) from err
+        else:
+            series = []
+            for forecast_cov_series in coverage_series:
+                series.append(
+                    LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
+                )
+            if observations_series is not None:
+                for obs_station_series in observations_series:
+                    series.append(
+                        LegacyTimeSeries.from_observation_station_data_series(
+                            obs_station_series
+                        )
+                    )
+            return LegacyTimeSeriesList(series=series)
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
+
+
+def _get_point_location(raw_coords: str) -> shapely.Point:
+    geom = shapely.io.from_wkt(raw_coords)
+    if geom.geom_type == "MultiPoint":
+        logger.warning(
+            f"Expected coords parameter to be a WKT Point but "
+            f"got {geom.geom_type!r} instead - Using the first point"
+        )
+        point_geom = geom.geoms[0].centroid
+    elif geom.geom_type == "Point":
+        point_geom = geom
+    else:
+        logger.warning(
+            f"Expected coords parameter to be a WKT Point but "
+            f"got {geom.geom_type!r} instead - Using the centroid instead"
+        )
+        point_geom = geom.centroid
+    return point_geom
 
 
 @router.get(

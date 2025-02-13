@@ -3,8 +3,10 @@ import logging
 from typing import (
     Optional,
     Sequence,
+    Union,
 )
 
+import sqlalchemy
 import sqlmodel
 
 from .. import exceptions
@@ -16,20 +18,27 @@ from ..schemas.coverages import (
     HistoricalCoverageInternal,
     HistoricalCoverageConfiguration,
     HistoricalCoverageConfigurationCreate,
+    HistoricalCoverageConfigurationObservationSeriesConfigurationLink,
     HistoricalCoverageConfigurationUpdate,
     LegacyConfParamFilterValues,
 )
 from ..schemas.static import (
+    AggregationPeriod,
     DataCategory,
     HistoricalReferencePeriod,
     HistoricalYearPeriod,
     HistoricalDecade,
+    MeasureType,
 )
 from .base import (
     add_substring_filter,
     get_total_num_records,
 )
-from .climaticindicators import get_climatic_indicator_by_identifier
+from .climaticindicators import (
+    collect_all_climatic_indicators,
+    get_climatic_indicator_by_identifier,
+)
+from .observationseries import get_observation_series_configuration
 from .spatialregions import get_spatial_region_by_name
 
 logger = logging.getLogger(__name__)
@@ -43,6 +52,13 @@ def list_historical_coverage_configurations(
     include_total: bool = False,
     climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[ClimaticIndicator] = None,
+    year_period_filter: Optional[
+        Union[list[HistoricalYearPeriod], HistoricalYearPeriod]
+    ] = None,
+    reference_period_filter: Optional[
+        Union[list[HistoricalReferencePeriod], HistoricalReferencePeriod]
+    ] = None,
+    decade_filter: Optional[Union[list[HistoricalDecade], HistoricalDecade]] = None,
 ) -> tuple[Sequence[HistoricalCoverageConfiguration], Optional[int]]:
     """List existing historical coverage configurations."""
     statement = sqlmodel.select(HistoricalCoverageConfiguration).order_by(
@@ -61,6 +77,57 @@ def list_historical_coverage_configurations(
             ClimaticIndicator.id
             == HistoricalCoverageConfiguration.climatic_indicator_id,
         ).where(ClimaticIndicator.name.ilike(filter_))
+    if reference_period_filter is not None:
+        if not isinstance(reference_period_filter, list):
+            reference_periods = [reference_period_filter.name]
+        else:
+            reference_periods = [rp.name for rp in reference_period_filter]
+        if len(reference_periods) == 1:
+            statement = statement.where(
+                HistoricalCoverageConfiguration.reference_period == reference_periods[0]
+            )
+        else:
+            statement = statement.where(
+                HistoricalCoverageConfiguration.reference_period.in_(reference_periods)
+            )
+    if year_period_filter is not None:
+        if not isinstance(year_period_filter, list):
+            year_periods = [year_period_filter.name]
+        else:
+            year_periods = [yp.name for yp in year_period_filter]
+        if len(year_periods) == 1:
+            statement = statement.where(
+                year_periods[0]
+                == sqlalchemy.any_(HistoricalCoverageConfiguration.year_periods)
+            )
+        else:
+            statement = statement.where(
+                sqlalchemy.or_(
+                    *[
+                        yp
+                        == sqlalchemy.any_(HistoricalCoverageConfiguration.year_periods)
+                        for yp in year_periods
+                    ]
+                )
+            )
+    if decade_filter is not None:
+        if not isinstance(decade_filter, list):
+            decades = [decade_filter.name]
+        else:
+            decades = [d.name for d in decade_filter]
+        if len(decades) == 1:
+            statement = statement.where(
+                decades[0] == sqlalchemy.any_(HistoricalCoverageConfiguration.decades)
+            )
+        else:
+            statement = statement.where(
+                sqlalchemy.or_(
+                    *[
+                        d == sqlalchemy.any_(HistoricalCoverageConfiguration.decades)
+                        for d in decades
+                    ]
+                )
+            )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
@@ -70,6 +137,13 @@ def collect_all_historical_coverage_configurations(
     session: sqlmodel.Session,
     climatic_indicator_name_filter: Optional[str] = None,
     climatic_indicator_filter: Optional[ClimaticIndicator] = None,
+    year_period_filter: Optional[
+        Union[list[HistoricalYearPeriod], HistoricalYearPeriod]
+    ] = None,
+    reference_period_filter: Optional[
+        Union[list[HistoricalReferencePeriod], HistoricalReferencePeriod]
+    ] = None,
+    decade_filter: Optional[Union[list[HistoricalDecade], HistoricalDecade]] = None,
 ) -> Sequence[HistoricalCoverageConfiguration]:
     _, num_total = list_historical_coverage_configurations(
         session,
@@ -77,6 +151,9 @@ def collect_all_historical_coverage_configurations(
         include_total=True,
         climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
+        year_period_filter=year_period_filter,
+        reference_period_filter=reference_period_filter,
+        decade_filter=decade_filter,
     )
     result, _ = list_historical_coverage_configurations(
         session,
@@ -84,6 +161,9 @@ def collect_all_historical_coverage_configurations(
         include_total=False,
         climatic_indicator_name_filter=climatic_indicator_name_filter,
         climatic_indicator_filter=climatic_indicator_filter,
+        year_period_filter=year_period_filter,
+        reference_period_filter=reference_period_filter,
+        decade_filter=decade_filter,
     )
     return result
 
@@ -200,6 +280,22 @@ def create_historical_coverage_configuration(
         **historical_coverage_configuration_create.model_dump()
     )
     session.add(db_historical_coverage_configuration)
+    for obs_series_conf_id in (
+        historical_coverage_configuration_create.observation_series_configurations or []
+    ):
+        db_obs_series_conf = get_observation_series_configuration(
+            session, obs_series_conf_id
+        )
+        if db_obs_series_conf is not None:
+            db_historical_coverage_configuration.observation_series_configuration_links.append(
+                HistoricalCoverageConfigurationObservationSeriesConfigurationLink(
+                    observation_series_configuration=db_obs_series_conf
+                )
+            )
+        else:
+            raise ValueError(
+                f"observation series configuration {obs_series_conf_id!r} not found"
+            )
     session.commit()
     session.refresh(db_historical_coverage_configuration)
     return db_historical_coverage_configuration
@@ -211,6 +307,43 @@ def update_historical_coverage_configuration(
     historical_coverage_configuration_update: HistoricalCoverageConfigurationUpdate,
 ) -> HistoricalCoverageConfiguration:
     """Update a historical coverage configuration."""
+    existing_obs_series_conf_links_to_keep = []
+    existing_obs_series_conf_links_discard = []
+    for (
+        existing_obs_series_conf_link
+    ) in db_historical_coverage_configuration.observation_series_configuration_links:
+        has_been_requested_to_remove = (
+            existing_obs_series_conf_link.observation_series_configuration_id
+            not in [
+                osc_id
+                for osc_id in historical_coverage_configuration_update.observation_series_configurations
+            ]
+        )
+        if not has_been_requested_to_remove:
+            existing_obs_series_conf_links_to_keep.append(existing_obs_series_conf_link)
+        else:
+            existing_obs_series_conf_links_discard.append(existing_obs_series_conf_link)
+    db_historical_coverage_configuration.observation_series_configuration_links = (
+        existing_obs_series_conf_links_to_keep
+    )
+    for to_discard in existing_obs_series_conf_links_discard:
+        session.delete(to_discard)
+    for (
+        obs_series_conf_id
+    ) in historical_coverage_configuration_update.observation_series_configurations:
+        already_there = obs_series_conf_id in (
+            oscl.observation_series_configuration_id
+            for oscl in db_historical_coverage_configuration.observation_series_configuration_links
+        )
+        if not already_there:
+            db_obs_series_conf_link = (
+                HistoricalCoverageConfigurationObservationSeriesConfigurationLink(
+                    observation_series_configuration_id=obs_series_conf_id
+                )
+            )
+            db_historical_coverage_configuration.observation_series_configuration_links.append(
+                db_obs_series_conf_link
+            )
     data_ = historical_coverage_configuration_update.model_dump(
         exclude_unset=True,
         exclude_none=True,
@@ -456,3 +589,121 @@ def legacy_list_historical_coverages(
         for fragment in name_filter:
             result = [fc for fc in result if fragment in fc.identifier]
     return result[offset : offset + limit], len(result) if include_total else None
+
+
+def list_historical_coverages(
+    session: sqlmodel.Session,
+    *,
+    climatological_variable_filter: Optional[list[str]] = None,
+    aggregation_period_filter: Optional[list[AggregationPeriod]] = None,
+    measure_filter: Optional[list[MeasureType]] = None,
+    year_period_filter: Optional[list[HistoricalYearPeriod]] = None,
+    reference_period_filter: Optional[list[HistoricalReferencePeriod]] = None,
+    decade_filter: Optional[list[HistoricalDecade]] = None,
+    limit: Optional[int] = 20,
+    offset: Optional[int] = 0,
+    include_total: bool = False,
+) -> tuple[list[HistoricalCoverageInternal], int]:
+    logger.debug(f"{climatological_variable_filter=}")
+    logger.debug(f"{aggregation_period_filter=}")
+    logger.debug(f"{measure_filter=}")
+    logger.debug(f"{year_period_filter=}")
+    climatic_indicators = collect_all_climatic_indicators(
+        session,
+        name_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        measure_type_filter=measure_filter,
+    )
+    logger.debug(f"{[ci.identifier for ci in climatic_indicators]=}")
+    relevant_indicators = []
+    for climatic_indicator in climatic_indicators:
+        is_eligible = True
+        if (
+            climatological_variable_filter
+            and climatic_indicator.name not in climatological_variable_filter
+        ):
+            is_eligible = False
+        if measure_filter and climatic_indicator.measure_type not in measure_filter:
+            is_eligible = False
+        if (
+            aggregation_period_filter
+            and climatic_indicator.aggregation_period not in aggregation_period_filter
+        ):
+            is_eligible = False
+        if is_eligible:
+            relevant_indicators.append(climatic_indicator)
+    logger.debug(f"{[ci.identifier for ci in relevant_indicators]=}")
+    result = []
+    if len(relevant_indicators) > 0:
+        for climatic_indicator in relevant_indicators:
+            cov_confs = collect_all_historical_coverage_configurations(
+                session,
+                climatic_indicator_filter=climatic_indicator,
+                year_period_filter=year_period_filter,
+                reference_period_filter=reference_period_filter,
+                decade_filter=decade_filter,
+            )
+            for cov_conf in cov_confs:
+                candidates = generate_historical_coverages_from_configuration(cov_conf)
+                for candidate in candidates:
+                    is_eligible = True
+                    if (
+                        reference_period_filter
+                        and candidate.configuration.reference_period
+                        not in reference_period_filter
+                    ):
+                        logger.debug(
+                            f"\t\tReference period {candidate.configuration.reference_period} outside of filter {reference_period_filter}"
+                        )
+                        is_eligible = False
+                    if decade_filter and candidate.decade not in decade_filter:
+                        logger.debug(
+                            f"\t\tDecade {candidate.decade} outside of filter {decade_filter}"
+                        )
+                        is_eligible = False
+                    if (
+                        year_period_filter
+                        and candidate.year_period not in year_period_filter
+                    ):
+                        logger.debug(
+                            f"\t\tYear period {candidate.year_period} outside of filter {year_period_filter}"
+                        )
+                        is_eligible = False
+                    if is_eligible:
+                        result.append(candidate)
+    return result[offset : offset + limit], len(result) if include_total else None
+
+
+def collect_all_historical_coverages(
+    session: sqlmodel.Session,
+    *,
+    climatological_variable_filter: Optional[list[str]] = None,
+    aggregation_period_filter: Optional[list[AggregationPeriod]] = None,
+    measure_filter: Optional[list[MeasureType]] = None,
+    year_period_filter: Optional[list[HistoricalYearPeriod]] = None,
+    reference_period_filter: Optional[list[HistoricalReferencePeriod]] = None,
+    decade_filter: Optional[list[HistoricalDecade]] = None,
+):
+    _, num_total = list_historical_coverages(
+        session,
+        limit=1,
+        include_total=True,
+        climatological_variable_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        measure_filter=measure_filter,
+        year_period_filter=year_period_filter,
+        reference_period_filter=reference_period_filter,
+        decade_filter=decade_filter,
+    )
+    result, _ = list_historical_coverages(
+        session,
+        limit=num_total,
+        include_total=False,
+        climatological_variable_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        measure_filter=measure_filter,
+        year_period_filter=year_period_filter,
+        reference_period_filter=reference_period_filter,
+        decade_filter=decade_filter,
+    )
+    return result

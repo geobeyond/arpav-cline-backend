@@ -2,6 +2,10 @@ class ArpavError(Exception):
     ...
 
 
+class InvalidAggregationPeriod(ArpavError):
+    ...
+
+
 class InvalidCoverageIdentifierException(ArpavError):
     ...
 

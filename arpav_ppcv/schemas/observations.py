@@ -655,6 +655,9 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     forecast_coverage_configuration_links: list[
         "coverages.ForecastCoverageConfigurationObservationSeriesConfigurationLink"
     ] = sqlmodel.Relationship(back_populates="observation_series_configuration")
+    historical_coverage_configuration_links: list[
+        "coverages.HistoricalCoverageConfigurationObservationSeriesConfigurationLink"
+    ] = sqlmodel.Relationship(back_populates="observation_series_configuration")
 
     @pydantic.computed_field
     @property

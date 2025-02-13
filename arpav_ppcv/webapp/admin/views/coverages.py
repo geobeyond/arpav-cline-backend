@@ -1266,6 +1266,7 @@ class HistoricalCoverageConfigurationView(ModelView):
         "reference_period",
         "year_periods",
         "decades",
+        "observation_series_configurations",
     )
     exclude_fields_from_detail = ("id",)
     exclude_fields_from_edit = ("identifier",)
@@ -1322,6 +1323,13 @@ class HistoricalCoverageConfigurationView(ModelView):
             enum=static.HistoricalYearPeriod,
             required=True,
         ),
+        starlette_admin.ListField(
+            field=fields.RelatedObservationSeriesConfigurationField(
+                "observation_series_configurations",
+                multiple=True,
+                required=True,
+            )
+        ),
     )
 
     def __init__(self, *args, **kwargs) -> None:
@@ -1338,11 +1346,16 @@ class HistoricalCoverageConfigurationView(ModelView):
                     "climatic_indicator",
                     "spatial_region",
                     "decades",
+                    "observation_series_configurations",
                 }
             ),
             climatic_indicator=instance.climatic_indicator_id,
             spatial_region=instance.spatial_region_id,
             decades=instance.decades or [],
+            observation_series_configurations=[
+                oscl.observation_series_configuration_id
+                for oscl in instance.observation_series_configuration_links
+            ],
         )
 
     async def create(self, request: Request, data: dict[str, Any]) -> Any:
@@ -1359,6 +1372,9 @@ class HistoricalCoverageConfigurationView(ModelView):
                     reference_period=data.get("reference_period"),
                     decades=data.get("decades", []),
                     year_periods=data.get("year_periods", []),
+                    observation_series_configurations=data[
+                        "observation_series_configurations"
+                    ],
                 )
             )
             db_historical_coverage_configuration = await anyio.to_thread.run_sync(
@@ -1384,6 +1400,9 @@ class HistoricalCoverageConfigurationView(ModelView):
                     reference_period=data.get("reference_period"),
                     decades=data.get("decades", []),
                     year_periods=data.get("year_periods", []),
+                    observation_series_configurations=data[
+                        "observation_series_configurations"
+                    ],
                 )
             )
             db_historical_coverage_configuration = await anyio.to_thread.run_sync(

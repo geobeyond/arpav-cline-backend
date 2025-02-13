@@ -1208,7 +1208,7 @@ class CoverageDataDownloadListMeta(pydantic.BaseModel):
     returned_records: int
 
 
-class CoverageDownloadList(pydantic.BaseModel):
+class ForecastCoverageDownloadList(pydantic.BaseModel):
     meta: CoverageDataDownloadListMeta
     links: ListLinks
     coverage_download_links: list[str]
@@ -1216,7 +1216,7 @@ class CoverageDownloadList(pydantic.BaseModel):
     @classmethod
     def from_items(
         cls,
-        coverage_identifiers: list[str],
+        coverages: list[ForecastCoverageInternal],
         request: Request,
         *,
         limit: int,
@@ -1225,20 +1225,55 @@ class CoverageDownloadList(pydantic.BaseModel):
     ):
         pagination_urls = get_pagination_urls(
             request.url_for("list_forecast_data_download_links"),
-            len(coverage_identifiers),
+            len(coverages),
             total_records=total,
             limit=limit,
             offset=offset,
         )
         return cls(
             meta=CoverageDataDownloadListMeta(
-                returned_records=len(coverage_identifiers),
+                returned_records=len(coverages),
                 total_records=total,
             ),
             links=ListLinks(**pagination_urls),
             coverage_download_links=[
-                f"{request.url_for('get_forecast_data', coverage_identifier=c)}"
-                for c in coverage_identifiers
+                f"{request.url_for('get_forecast_data', coverage_identifier=c.identifier)}"
+                for c in coverages
+            ],
+        )
+
+
+class HistoricalCoverageDownloadList(pydantic.BaseModel):
+    meta: CoverageDataDownloadListMeta
+    links: ListLinks
+    coverage_download_links: list[str]
+
+    @classmethod
+    def from_items(
+        cls,
+        coverages: list[HistoricalCoverageInternal],
+        request: Request,
+        *,
+        limit: int,
+        offset: int,
+        total: int,
+    ):
+        pagination_urls = get_pagination_urls(
+            request.url_for("list_historical_data_download_links"),
+            len(coverages),
+            total_records=total,
+            limit=limit,
+            offset=offset,
+        )
+        return cls(
+            meta=CoverageDataDownloadListMeta(
+                returned_records=len(coverages),
+                total_records=total,
+            ),
+            links=ListLinks(**pagination_urls),
+            coverage_download_links=[
+                f"{request.url_for('get_historical_data', coverage_identifier=c.identifier)}"
+                for c in coverages
             ],
         )
 

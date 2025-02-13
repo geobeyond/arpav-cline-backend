@@ -49,7 +49,10 @@ from .base import (
     add_substring_filter,
     get_total_num_records,
 )
-from .climaticindicators import get_climatic_indicator_by_identifier
+from .climaticindicators import (
+    collect_all_climatic_indicators,
+    get_climatic_indicator_by_identifier,
+)
 from .observationseries import get_observation_series_configuration
 from .spatialregions import get_spatial_region_by_name
 
@@ -1260,15 +1263,149 @@ def legacy_list_forecast_coverages(
 
 def list_forecast_coverages(
     session: sqlmodel.Session,
-    limit: int = 20,
-    offset: int = 0,
-    climatic_indicator_names: list[str] | None = None,
-    aggregation_periods: list[AggregationPeriod] | None = None,
-    measure_types: list[MeasureType] | None = None,
-    forecast_model_names: list[str] | None = None,
-    time_windows: list[str] | None = None,
-    year_periods: list[ForecastYearPeriod] | None = None,
+    *,
+    climatological_variable_filter: Optional[list[str]] = None,
+    aggregation_period_filter: Optional[list[AggregationPeriod]] = None,
+    climatological_model_filter: Optional[list[str]] = None,
+    scenario_filter: Optional[list[ForecastScenario]] = None,
+    measure_filter: Optional[list[MeasureType]] = None,
+    year_period_filter: Optional[list[ForecastYearPeriod]] = None,
+    time_window_filter: Optional[list[str]] = None,
+    limit: Optional[int] = 20,
+    offset: Optional[int] = 0,
+    include_total: bool = False,
+) -> tuple[list[ForecastCoverageInternal], int]:
+    logger.debug(f"{climatological_variable_filter=}")
+    logger.debug(f"{aggregation_period_filter=}")
+    logger.debug(f"{scenario_filter=}")
+    logger.debug(f"{measure_filter=}")
+    logger.debug(f"{year_period_filter=}")
+    logger.debug(f"{time_window_filter=}")
+    climatic_indicators = collect_all_climatic_indicators(
+        session,
+        name_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        measure_type_filter=measure_filter,
+    )
+    logger.debug(f"{[ci.identifier for ci in climatic_indicators]=}")
+    relevant_indicators = []
+    for climatic_indicator in climatic_indicators:
+        is_eligible = True
+        if (
+            climatological_variable_filter
+            and climatic_indicator.name not in climatological_variable_filter
+        ):
+            is_eligible = False
+        if measure_filter and climatic_indicator.measure_type not in measure_filter:
+            is_eligible = False
+        if (
+            aggregation_period_filter
+            and climatic_indicator.aggregation_period not in aggregation_period_filter
+        ):
+            is_eligible = False
+        if is_eligible:
+            relevant_indicators.append(climatic_indicator)
+    logger.debug(f"{[ci.identifier for ci in relevant_indicators]=}")
+    result = []
+    if len(relevant_indicators) > 0:
+        forecast_model_names = None
+        if climatological_model_filter is not None:
+            forecast_model_names = [
+                fm.name
+                for fm in collect_all_forecast_models(
+                    session,
+                    name_filter=climatological_model_filter,
+                    perform_exact_matches=True,
+                )
+            ]
+        time_window_names = None
+        if time_window_filter is not None:
+            time_window_names = [
+                tw.name
+                for tw in collect_all_forecast_time_windows(
+                    session, name_filter=time_window_filter, perform_exact_matches=True
+                )
+            ]
+        for climatic_indicator in relevant_indicators:
+            cov_confs = collect_all_forecast_coverage_configurations(
+                session,
+                climatic_indicator_filter=climatic_indicator,
+                forecast_model_name_filter=forecast_model_names,
+                scenario_filter=scenario_filter,
+                year_period_filter=year_period_filter,
+                time_window_name_filter=time_window_names,
+            )
+            for cov_conf in cov_confs:
+                candidates = generate_forecast_coverages_from_configuration(cov_conf)
+                for candidate in candidates:
+                    is_eligible = True
+                    if scenario_filter and candidate.scenario not in scenario_filter:
+                        logger.debug(
+                            f"\t\tScenario {candidate.scenario} outside of filter {scenario_filter}"
+                        )
+                        is_eligible = False
+                    elif (
+                        year_period_filter
+                        and candidate.forecast_year_period not in year_period_filter
+                    ):
+                        logger.debug(
+                            f"\t\tYear period {candidate.forecast_year_period} outside of filter {year_period_filter}"
+                        )
+                        is_eligible = False
+                    elif (
+                        forecast_model_names
+                        and candidate.forecast_model.name not in forecast_model_names
+                    ):
+                        logger.debug(
+                            f"\t\tForecast model {candidate.forecast_model.name!r} outside of filter {forecast_model_names}"
+                        )
+                        is_eligible = False
+                    elif (
+                        time_window_names
+                        and candidate.forecast_time_window.name not in time_window_names
+                    ):
+                        logger.debug(
+                            f"\t\tTime window {candidate.forecast_time_window.name if candidate.forecast_time_window else None!r} outside of filter {time_window_names}"
+                        )
+                        is_eligible = False
+                    if is_eligible:
+                        result.append(candidate)
+    return result[offset : offset + limit], len(result) if include_total else None
+
+
+def collect_all_forecast_coverages(
+    session: sqlmodel.Session,
+    *,
+    climatological_variable_filter: Optional[list[str]] = None,
+    aggregation_period_filter: Optional[list[AggregationPeriod]] = None,
+    climatological_model_filter: Optional[list[str]] = None,
+    scenario_filter: Optional[list[ForecastScenario]] = None,
+    measure_filter: Optional[list[MeasureType]] = None,
+    year_period_filter: Optional[list[ForecastYearPeriod]] = None,
+    time_window_filter: Optional[list[str]] = None,
 ):
-    # list the respective forecast coverage configurations and then filter by
-    # their coverages
-    ...
+    _, num_total = list_forecast_coverages(
+        session,
+        limit=1,
+        include_total=True,
+        climatological_variable_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        climatological_model_filter=climatological_model_filter,
+        scenario_filter=scenario_filter,
+        measure_filter=measure_filter,
+        year_period_filter=year_period_filter,
+        time_window_filter=time_window_filter,
+    )
+    result, _ = list_forecast_coverages(
+        session,
+        limit=num_total,
+        include_total=False,
+        climatological_variable_filter=climatological_variable_filter,
+        aggregation_period_filter=aggregation_period_filter,
+        climatological_model_filter=climatological_model_filter,
+        scenario_filter=scenario_filter,
+        measure_filter=measure_filter,
+        year_period_filter=year_period_filter,
+        time_window_filter=time_window_filter,
+    )
+    return result

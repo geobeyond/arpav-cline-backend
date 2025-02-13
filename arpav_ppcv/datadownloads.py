@@ -1,7 +1,10 @@
 import dataclasses
 import datetime as dt
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 import httpx
 import numpy as np
@@ -11,11 +14,11 @@ from . import (
     config,
     exceptions,
 )
-from .schemas import coverages
-from .thredds import (
-    crawler,
-    ncss,
+from .schemas.coverages import (
+    ForecastCoverageInternal,
+    HistoricalCoverageInternal,
 )
+from .thredds import ncss
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ async def retrieve_coverage_data(
     settings: config.ArpavPpcvSettings,
     http_client: httpx.AsyncClient,
     cache_key: str,
-    coverage: coverages.CoverageInternal,
+    coverage: Union[ForecastCoverageInternal, HistoricalCoverageInternal],
     bbox: shapely.Polygon | None,
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ):
@@ -34,16 +37,7 @@ async def retrieve_coverage_data(
         logger.debug(f"Found cached data at {cache_path!r}...")
     else:
         logger.debug("Retrieving data from THREDDS server...")
-        ds_fragment = crawler.get_thredds_url_fragment(
-            coverage, settings.thredds_server.base_url
-        )
-        ncss_url = "/".join(
-            (
-                settings.thredds_server.base_url,
-                settings.thredds_server.netcdf_subset_service_url_fragment,
-                ds_fragment,
-            )
-        )
+        ncss_url = coverage.get_thredds_ncss_url(settings.thredds_server)
         logger.debug(f"{ncss_url=}")
         return await ncss.async_query_dataset_area(
             http_client,
@@ -54,10 +48,11 @@ async def retrieve_coverage_data(
 
 
 def get_cache_key(
-    coverage: coverages.CoverageInternal,
+    coverage: Union[ForecastCoverageInternal, HistoricalCoverageInternal],
     bbox: Optional[shapely.Polygon],
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> str:
+    """Returns a unique identifier that can be used as a cache key."""
     if bbox is not None:
         bbox_fragment = "-".join(f"{int(v * 10e4)}" for v in bbox.bounds)
     else:
@@ -65,7 +60,7 @@ def get_cache_key(
     temporal_range_fragment = "-".join(
         t.strftime("%Y%m%d") if t is not None else "open" for t in temporal_range
     )
-    result = f"{coverage.configuration.name}/"
+    result = f"{coverage.configuration.identifier}/"
     result += "___".join((coverage.identifier, bbox_fragment, temporal_range_fragment))
     result += ".nc"
     return result

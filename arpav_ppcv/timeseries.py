@@ -87,8 +87,8 @@ def generate_derived_historical_series(
             df, data_series.identifier, ignore_warnings=True
         )
     elif (
-            processing_method
-            == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
+        processing_method
+        == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
     ):
         df[derived_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
@@ -265,18 +265,55 @@ def parse_observation_station_data(
 def get_historical_coverage_time_series(
     *,
     settings: "config.ArpavPpcvSettings",
+    session: "sqlmodel.Session",
     http_client: "httpx.Client",
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: "shapely.Point",
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
-    processing_methods: list[
-        "static.CoverageTimeSeriesProcessingMethod"
-    ],
+    coverage_processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
+    include_coverage_data: bool = True,
+    include_observation_data: bool = False,
+) -> tuple[
+    Optional[list[dataseries.HistoricalDataSeries]],
+    Optional[list[dataseries.ObservationStationDataSeries]],
+]:
+    coverage_series = []
+    observation_series = []
+    if include_coverage_data:
+        coverage_series = _get_historical_coverage_coverage_time_series(
+            settings.thredds_server,
+            session,
+            http_client,
+            coverage,
+            point_geom,
+            coverage_processing_methods,
+            temporal_range=temporal_range,
+        )
+    if include_observation_data:
+        observation_series = _get_forecast_coverage_observation_time_series(
+            settings,
+            session,
+            coverage,
+            point_geom,
+            observation_processing_methods,
+            temporal_range=temporal_range,
+        )
+    return coverage_series, observation_series
+
+
+def _get_historical_coverage_coverage_time_series(
+    thredds_settings: "config.ThreddsServerSettings",
+    http_client: "httpx.Client",
+    coverage: "coverages.HistoricalCoverageInternal",
+    point_geom: shapely.Point,
+    processing_methods: Sequence[static.CoverageTimeSeriesProcessingMethod],
+    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.HistoricalDataSeries]:
     result = []
     cov_main_series = _retrieve_historical_coverage_data(
         http_client,
-        settings.thredds_server,
+        thredds_settings,
         coverage,
         point_geom,
         temporal_range,
@@ -284,7 +321,8 @@ def get_historical_coverage_time_series(
     if cov_main_series is not None:
         result.append(cov_main_series)
         for processing_method in [
-            pm for pm in processing_methods
+            pm
+            for pm in processing_methods
             if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
         ]:
             derived_series = generate_derived_historical_series(
@@ -303,12 +341,8 @@ def get_forecast_coverage_time_series(
     coverage: "coverages.ForecastCoverageInternal",
     point_geom: "shapely.Point",
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
-    forecast_coverage_processing_methods: list[
-        "static.CoverageTimeSeriesProcessingMethod"
-    ],
-    observation_processing_methods: list[
-        "static.ObservationTimeSeriesProcessingMethod"
-    ],
+    coverage_processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     include_coverage_data: bool = True,
     include_observation_data: bool = False,
     include_coverage_uncertainty: bool = False,
@@ -326,7 +360,7 @@ def get_forecast_coverage_time_series(
             http_client,
             coverage,
             point_geom,
-            forecast_coverage_processing_methods,
+            coverage_processing_methods,
             include_coverage_uncertainty,
             include_coverage_related_models,
             temporal_range=temporal_range,
@@ -478,7 +512,7 @@ def _retrieve_historical_coverage_data(
     retriever = ncss.SimpleCoverageDataRetriever(
         settings=settings,
         http_client=http_client,
-        coverage=cast(ncss.RetrievableCoverageProtocol, coverage)
+        coverage=cast(ncss.RetrievableCoverageProtocol, coverage),
     )
     main_series = dataseries.HistoricalDataSeries(
         historical_coverage=coverage,

@@ -32,7 +32,6 @@ def add_substring_filter(statement, value: typing.Union[list[str], str], *column
             prepared_values.append(f'%{v.replace("%", "")}%')
     else:
         prepared_values.append(f'%{value.replace("%", "")}%')
-    print(f"{prepared_values=}")
 
     if len(columns) == 1:
         if len(prepared_values) == 1:

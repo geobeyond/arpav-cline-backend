@@ -211,14 +211,12 @@ def import_thredds_datasets(
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         relevant_forecast_cov_confs = (
             db.collect_all_forecast_coverage_configurations_with_identifier_filter(
-                session,
-                identifier_filter=coverage_configuration_identifier_filter
+                session, identifier_filter=coverage_configuration_identifier_filter
             )
         )
         relevant_historical_cov_confs = (
             db.collect_all_historical_coverage_configurations_with_identifier_filter(
-                session,
-                identifier_filter=coverage_configuration_identifier_filter
+                session, identifier_filter=coverage_configuration_identifier_filter
             )
         )
         # TODO: Implement also overviews
@@ -232,26 +230,26 @@ def import_thredds_datasets(
 
         for forecast_cov_conf in relevant_forecast_cov_confs:
             forecast_covs = db.generate_forecast_coverages_from_configuration(
-                forecast_cov_conf)
+                forecast_cov_conf
+            )
             for cov in forecast_covs:
-                urls.append(
-                    cov.get_thredds_file_download_url(settings.thredds_server)
-                )
+                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
                 lower_uncert_url = cov.get_lower_uncertainty_thredds_file_download_url(
-                    settings.thredds_server)
+                    settings.thredds_server
+                )
                 if lower_uncert_url is not None:
                     urls.append(lower_uncert_url)
                 upper_uncert_url = cov.get_upper_uncertainty_thredds_file_download_url(
-                    settings.thredds_server)
+                    settings.thredds_server
+                )
                 if upper_uncert_url is not None:
                     urls.append(upper_uncert_url)
         for historical_cov_conf in relevant_historical_cov_confs:
             historical_covs = db.generate_historical_coverages_from_configuration(
-                historical_cov_conf)
+                historical_cov_conf
+            )
             for cov in historical_covs:
-                urls.append(
-                    cov.get_thredds_file_download_url(settings.thredds_server)
-                )
+                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
         # restore THREDDS base url
         settings.thredds_server.base_url = old_thredds_base_url
     # remote_urls = [
@@ -259,6 +257,8 @@ def import_thredds_datasets(
     #     for url in urls
     # ]
     print(f"Trying to download {len(urls)} datasets...")
+    # for url in urls:
+    #     print(url)
     anyio.run(
         crawler.download_datasets,  # noqa
         urls,
