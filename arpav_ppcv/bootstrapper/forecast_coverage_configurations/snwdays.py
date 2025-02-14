@@ -104,6 +104,11 @@ def generate_forecast_coverage_configurations(
             forecast_models=[
                 forecast_model_ids["model_ensemble"],
             ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "snwdays-absolute-annual-arpa_fvg-yearly"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["snwdays-absolute-annual"],
@@ -128,6 +133,11 @@ def generate_forecast_coverage_configurations(
                 forecast_model_ids["ec_earth_rca4"],
                 forecast_model_ids["hadgem2_racmo22e"],
                 forecast_model_ids["mpi_esm_lr_remo2009"],
+            ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "snwdays-absolute-annual-arpa_fvg-yearly"
+                ],
             ],
         ),
     ]

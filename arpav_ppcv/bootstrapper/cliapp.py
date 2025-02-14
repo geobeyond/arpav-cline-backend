@@ -91,7 +91,10 @@ from .climaticindicators import (
     tasmin as tasmin_climatic_indicators,
     tr as tr_climatic_indicators,
 )
-from .forecastmodels import generate_forecast_models
+from .forecastmodels import (
+    generate_forecast_models,
+    generate_forecast_model_groups,
+)
 from .forecasttimewindows import generate_forecast_time_windows
 from .observation_series_configurations import (
     generate_observation_series_configurations,
@@ -866,6 +869,19 @@ def bootstrap_forecast_models(ctx: typer.Context):
                     f"Forecast model {forecast_model_create.name!r} already "
                     f"exists - skipping",
                 )
+        now_existing = db.collect_all_forecast_models(session)
+        now_existing_ids = {fm.name: fm.id for fm in now_existing}
+        for model_group_create in generate_forecast_model_groups(now_existing_ids):
+            try:
+                db_forecast_model_group = db.create_forecast_model_group(
+                    session, model_group_create
+                )
+                print(f"Created forecast model group {db_forecast_model_group.name!r}")
+            except IntegrityError as err:
+                print(
+                    f"Could not create forecast model group {model_group_create!r}: {err}"
+                )
+                session.rollback()
 
 
 @app.command("forecast-time-windows")

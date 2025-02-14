@@ -58,3 +58,34 @@ def generate_forecast_models() -> list[coverages.ForecastModelCreate]:
             sort_order=5,
         ),
     ]
+
+
+def generate_forecast_model_groups(
+    forecast_model_ids: dict[str, int],
+) -> list[coverages.ForecastModelGroupCreate]:
+    return [
+        coverages.ForecastModelGroupCreate(
+            name="ensemble",
+            display_name_english="Ensemble",
+            display_name_italian="Insieme",
+            description_english="Ensemble description",
+            description_italian="descrizione dell'insieme",
+            sort_order=0,
+            forecast_models=[forecast_model_ids["model_ensemble"]],
+        ),
+        coverages.ForecastModelGroupCreate(
+            name="five_models",
+            display_name_english="Five models",
+            display_name_italian="Cinque modelli",
+            description_english="Five models description",
+            description_italian="descrizione dei cinque modelli",
+            sort_order=0,
+            forecast_models=[
+                forecast_model_ids["ec_earth_cclm_4_8_17"],
+                forecast_model_ids["ec_earth_racmo22e"],
+                forecast_model_ids["ec_earth_rca4"],
+                forecast_model_ids["hadgem2_racmo22e"],
+                forecast_model_ids["mpi_esm_lr_remo2009"],
+            ],
+        ),
+    ]

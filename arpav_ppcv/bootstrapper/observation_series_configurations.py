@@ -1,4 +1,3 @@
-from ..schemas.climaticindicators import ClimaticIndicator
 from ..schemas.observations import ObservationSeriesConfigurationCreate
 from ..schemas.static import (
     MeasurementAggregationType,
@@ -121,6 +120,14 @@ def generate_observation_series_configurations(
         ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["pr-absolute-annual"],
             measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[
+                ObservationStationManager.ARPAV,
+                ObservationStationManager.ARPAFVG,
+            ],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["pr-absolute-annual"],
+            measurement_aggregation_type=MeasurementAggregationType.MONTHLY,
             station_managers=[
                 ObservationStationManager.ARPAV,
                 ObservationStationManager.ARPAFVG,

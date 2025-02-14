@@ -148,6 +148,11 @@ def generate_forecast_coverage_configurations(
                 forecast_model_ids["hadgem2_racmo22e"],
                 forecast_model_ids["mpi_esm_lr_remo2009"],
             ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "tasmin-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["tasmin-absolute-annual"],

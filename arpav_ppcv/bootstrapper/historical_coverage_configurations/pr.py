@@ -9,6 +9,7 @@ from ...schemas.static import (
 def generate_historical_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
+    observation_series_configuration_ids: dict[str, int],
 ) -> list[HistoricalCoverageConfigurationCreate]:
     return [
         HistoricalCoverageConfigurationCreate(
@@ -17,10 +18,38 @@ def generate_historical_coverage_configurations(
             netcdf_main_dataset_name="{climatic_indicator}",
             year_periods=[
                 HistoricalYearPeriod.ALL_YEAR,
+            ],
+            thredds_url_pattern="cline_yr/{climatic_indicator}_{year_period}_????-????_py85.nc",
+            wms_main_layer_name="{climatic_indicator}",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "tas-absolute-annual-arpa_v:arpa_fvg-yearly"
+                ],
+            ],
+        ),
+        HistoricalCoverageConfigurationCreate(
+            climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
+            spatial_region_id=spatial_region_ids["arpa_v"],
+            netcdf_main_dataset_name="{climatic_indicator}",
+            year_periods=[
                 HistoricalYearPeriod.WINTER,
                 HistoricalYearPeriod.SPRING,
                 HistoricalYearPeriod.SUMMER,
                 HistoricalYearPeriod.AUTUMN,
+            ],
+            thredds_url_pattern="cline_yr/{climatic_indicator}_{year_period}_????-????_py85.nc",
+            wms_main_layer_name="{climatic_indicator}",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "tas-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
+            ],
+        ),
+        HistoricalCoverageConfigurationCreate(
+            climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
+            spatial_region_id=spatial_region_ids["arpa_v"],
+            netcdf_main_dataset_name="{climatic_indicator}",
+            year_periods=[
                 HistoricalYearPeriod.JANUARY,
                 HistoricalYearPeriod.FEBRUARY,
                 HistoricalYearPeriod.MARCH,
@@ -36,6 +65,11 @@ def generate_historical_coverage_configurations(
             ],
             thredds_url_pattern="cline_yr/{climatic_indicator}_{year_period}_????-????_py85.nc",
             wms_main_layer_name="{climatic_indicator}",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "tas-absolute-annual-arpa_v:arpa_fvg-monthly"
+                ],
+            ],
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-annual"],

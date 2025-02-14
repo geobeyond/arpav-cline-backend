@@ -9,6 +9,7 @@ from ...schemas.static import (
 def generate_historical_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
+    observation_series_configuration_ids: dict[str, int],
 ) -> list[HistoricalCoverageConfigurationCreate]:
     return [
         HistoricalCoverageConfigurationCreate(

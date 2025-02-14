@@ -13,13 +13,19 @@ from .forecastcoverages import (
     collect_all_forecast_coverage_configurations,  # noqa
     collect_all_forecast_coverage_configurations_with_identifier_filter,  # noqa
     collect_all_forecast_models,  # noqa
+    collect_all_forecast_model_groups,  # noqa
     collect_all_forecast_time_windows,  # noqa
+    collect_all_forecast_year_period_groups,  # noqa
     create_forecast_coverage_configuration,  # noqa
     create_forecast_model,  # noqa
+    create_forecast_model_group,  # noqa
     create_forecast_time_window,  # noqa
+    create_forecast_year_period_group,  # noqa
     delete_forecast_coverage_configuration,  # noqa
     delete_forecast_model,  # noqa
+    delete_forecast_model_group,  # noqa
     delete_forecast_time_window,  # noqa
+    delete_forecast_year_period_group,  # noqa
     generate_forecast_coverages_for_other_models,  # noqa
     generate_forecast_coverages_from_configuration,  # noqa
     get_forecast_coverage,  # noqa
@@ -28,36 +34,51 @@ from .forecastcoverages import (
     get_forecast_coverage_data_series,  # noqa
     get_forecast_model,  # noqa
     get_forecast_model_by_name,  # noqa
+    get_forecast_model_group,  # noqa
+    get_forecast_model_group_by_name,  # noqa
     get_forecast_time_window,  # noqa
     get_forecast_time_window_by_name,  # noqa
+    get_forecast_year_period_group,  # noqa
+    get_forecast_year_period_group_by_name,  # noqa
     legacy_collect_all_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverage_configurations,  # noqa
     legacy_list_forecast_coverages,  # noqa
     list_forecast_coverages,  # noqa
     list_forecast_coverage_configurations,  # noqa
     list_forecast_models,  # noqa
+    list_forecast_model_groups,  # noqa
     list_forecast_time_windows,  # noqa
+    list_forecast_year_period_groups,  # noqa
     update_forecast_coverage_configuration,  # noqa
     update_forecast_model,  # noqa
+    update_forecast_model_group,  # noqa
     update_forecast_time_window,  # noqa
+    update_forecast_year_period_group,  # noqa
 )
 
 from .historicalcoverages import (
     collect_all_historical_coverages,  # noqa
     collect_all_historical_coverage_configurations,  # noqa
     collect_all_historical_coverage_configurations_with_identifier_filter,  # noqa
+    collect_all_historical_year_period_groups,  # noqa
     create_historical_coverage_configuration,  # noqa
+    create_historical_year_period_group,  # noqa
     delete_historical_coverage_configuration,  # noqa
+    delete_historical_year_period_group,  # noqa
     generate_historical_coverages_from_configuration,  # noqa
     get_historical_coverage,  # noqa
     get_historical_coverage_configuration,  # noqa
     get_historical_coverage_configuration_by_identifier,  # noqa
+    get_historical_year_period_group,  # noqa
+    get_historical_year_period_group_by_name,  # noqa
     legacy_collect_all_historical_coverage_configurations,  # noqa
     legacy_list_historical_coverage_configurations,  # noqa
     legacy_list_historical_coverages,  # noqa
     list_historical_coverages,  # noqa
     list_historical_coverage_configurations,  # noqa
+    list_historical_year_period_groups,  # noqa
     update_historical_coverage_configuration,  # noqa
+    update_historical_year_period_group,  # noqa
 )
 
 from .legacy import legacy_list_configuration_parameters  # noqa

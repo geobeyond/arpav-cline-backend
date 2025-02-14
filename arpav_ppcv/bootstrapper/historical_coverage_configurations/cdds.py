@@ -9,6 +9,7 @@ from ...schemas.static import (
 def generate_historical_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
+    observation_series_configuration_ids: dict[str, int],
 ) -> list[HistoricalCoverageConfigurationCreate]:
     return [
         HistoricalCoverageConfigurationCreate(
@@ -18,6 +19,11 @@ def generate_historical_coverage_configurations(
             year_periods=[HistoricalYearPeriod.ALL_YEAR],
             thredds_url_pattern="cline_yr/{climatic_indicator}_{year_period}_????-????_py85.nc",
             wms_main_layer_name="{climatic_indicator}",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v:arpa_fvg-yearly"
+                ]
+            ],
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-anomaly-annual"],

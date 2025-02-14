@@ -20,6 +20,9 @@ from ..schemas.coverages import (
     HistoricalCoverageConfigurationCreate,
     HistoricalCoverageConfigurationObservationSeriesConfigurationLink,
     HistoricalCoverageConfigurationUpdate,
+    HistoricalYearPeriodGroup,
+    HistoricalYearPeriodGroupCreate,
+    HistoricalYearPeriodGroupUpdate,
     LegacyConfParamFilterValues,
 )
 from ..schemas.static import (
@@ -31,6 +34,7 @@ from ..schemas.static import (
     MeasureType,
 )
 from .base import (
+    add_multiple_values_filter,
     add_substring_filter,
     get_total_num_records,
 )
@@ -707,3 +711,114 @@ def collect_all_historical_coverages(
         decade_filter=decade_filter,
     )
     return result
+
+
+def list_historical_year_period_groups(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+    include_total: bool = False,
+) -> tuple[Sequence[HistoricalYearPeriodGroup], Optional[int]]:
+    """List existing historical year period groups."""
+    statement = sqlmodel.select(HistoricalYearPeriodGroup).order_by(
+        HistoricalYearPeriodGroup.sort_order  # noqa
+    )
+    if name_filter is not None:
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement,
+                name_filter,
+                HistoricalYearPeriodGroup.name,  # noqa
+            )
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                HistoricalYearPeriodGroup.name,  # noqa
+            )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_historical_year_period_groups(
+    session: sqlmodel.Session,
+    *,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+):
+    _, num_total = list_historical_year_period_groups(
+        session,
+        limit=1,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=True,
+    )
+    result, _ = list_historical_year_period_groups(
+        session,
+        limit=num_total,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=False,
+    )
+    return result
+
+
+def get_historical_year_period_group(
+    session: sqlmodel.Session, historical_year_period_group_id: int
+) -> Optional[HistoricalYearPeriodGroup]:
+    return session.get(HistoricalYearPeriodGroup, historical_year_period_group_id)
+
+
+def get_historical_year_period_group_by_name(
+    session: sqlmodel.Session, name: str
+) -> Optional[HistoricalYearPeriodGroup]:
+    return session.exec(
+        sqlmodel.select(HistoricalYearPeriodGroup).where(  # noqa
+            HistoricalYearPeriodGroup.name == name  # noqa
+        )
+    ).first()
+
+
+def create_historical_year_period_group(
+    session: sqlmodel.Session,
+    historical_year_period_group_create: HistoricalYearPeriodGroupCreate,
+) -> HistoricalYearPeriodGroup:
+    db_group = HistoricalYearPeriodGroup(
+        **historical_year_period_group_create.model_dump()
+    )
+    session.add(db_group)
+    session.commit()
+    session.refresh(db_group)
+    return db_group
+
+
+def update_historical_year_period_group(
+    session: sqlmodel.Session,
+    db_historical_year_period_group: HistoricalYearPeriodGroup,
+    historical_year_period_group_update: HistoricalYearPeriodGroupUpdate,
+) -> HistoricalYearPeriodGroup:
+    data_ = historical_year_period_group_update.model_dump(
+        exclude_unset=True,
+        exclude_none=True,
+    )
+    for key, value in data_.items():
+        setattr(db_historical_year_period_group, key, value)
+    session.add(db_historical_year_period_group)
+    session.commit()
+    session.refresh(db_historical_year_period_group)
+    return db_historical_year_period_group
+
+
+def delete_historical_year_period_group(
+    session: sqlmodel.Session, historical_year_period_group_id: int
+) -> None:
+    db_item = get_historical_year_period_group(session, historical_year_period_group_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Historical year period group not found")

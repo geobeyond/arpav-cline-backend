@@ -11,6 +11,7 @@ import geohashr
 import shapely
 import sqlalchemy
 import sqlmodel
+from arpav_ppcv.schemas.coverages import ForecastModelForecastModelGroupLink
 
 from .. import exceptions
 from ..schemas.base import SpatialRegion
@@ -21,16 +22,22 @@ from ..schemas.coverages import (
     ForecastCoverageConfiguration,
     ForecastCoverageConfigurationCreate,
     ForecastCoverageConfigurationUpdate,
-    ForecastCoverageConfigurationForecastModelLink,
+    ForecastCoverageConfigurationForecastModelGroupLink,
     ForecastCoverageConfigurationForecastTimeWindowLink,
     ForecastCoverageConfigurationObservationSeriesConfigurationLink,
     ForecastCoverageInternal,
     ForecastModel,
     ForecastModelCreate,
+    ForecastModelGroup,
+    ForecastModelGroupCreate,
+    ForecastModelGroupUpdate,
     ForecastModelUpdate,
     ForecastTimeWindow,
     ForecastTimeWindowCreate,
     ForecastTimeWindowUpdate,
+    ForecastYearPeriodGroup,
+    ForecastYearPeriodGroupCreate,
+    ForecastYearPeriodGroupUpdate,
     LegacyConfParamFilterValues,
 )
 from ..schemas.dataseries import ForecastDataSeries
@@ -86,13 +93,13 @@ def list_forecast_coverage_configurations(
         )
     if forecast_model_name_filter is not None:
         statement = statement.join(
-            ForecastCoverageConfigurationForecastModelLink,
+            ForecastCoverageConfigurationForecastModelGroupLink,
             ForecastCoverageConfiguration.id
-            == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,
+            == ForecastCoverageConfigurationForecastModelGroupLink.forecast_coverage_configuration_id,
         ).join(
             ForecastModel,
             ForecastModel.id
-            == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,
+            == ForecastCoverageConfigurationForecastModelGroupLink.forecast_model_id,
         )
         if perform_exact_matches:
             statement = add_multiple_values_filter(
@@ -275,53 +282,54 @@ def _get_six_part_fcc(
     function we start by checking whether thhe sixth partt is a forecast model and
     then we check if it is a year period.
     """
-    statement = sqlmodel.select(ForecastCoverageConfiguration).where(
-        ForecastCoverageConfiguration.climatic_indicator_id  # noqa
-        == climatic_indicator.id,
-        ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
-    )
-    forecast_model_name = sixth_part
-    forecast_model = get_forecast_model_by_name(session, forecast_model_name)
-    result = None
-    if forecast_model is not None:
-        statement = statement.join(
-            ForecastCoverageConfigurationForecastModelLink,
-            (  # noqa
-                ForecastCoverageConfiguration.id  # noqa
-                == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
-            ),
-        ).where(
-            ForecastCoverageConfigurationForecastModelLink.forecast_model_id  # noqa
-            == forecast_model.id
-        )
-        query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
-            statement
-        ).all()
-        for fcc in query_result:
-            if len(fcc.forecast_model_links) == 1 and len(fcc.year_periods) > 1:
-                result = fcc
-                break
-    else:
-        year_period_value = sixth_part
-        try:
-            year_period = ForecastYearPeriod(year_period_value)
-        except ValueError:
-            raise exceptions.InvalidForecastYearPeriodError(
-                f"{year_period_value!r} is not a valid forecast year period"
-            )
-        else:
-            statement = statement.where(
-                year_period.name
-                == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
-            )
-            query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
-                statement
-            ).all()  # noqa
-            for fcc in query_result:
-                if len(fcc.year_periods) == 1 and len(fcc.forecast_model_links) > 1:
-                    result = fcc
-                    break
-    return result
+    return None
+    # statement = sqlmodel.select(ForecastCoverageConfiguration).where(
+    #     ForecastCoverageConfiguration.climatic_indicator_id  # noqa
+    #     == climatic_indicator.id,
+    #     ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
+    # )
+    # forecast_model_name = sixth_part
+    # forecast_model = get_forecast_model_by_name(session, forecast_model_name)
+    # result = None
+    # if forecast_model is not None:
+    #     statement = statement.join(
+    #         ForecastCoverageConfigurationForecastModelLink,
+    #         (  # noqa
+    #             ForecastCoverageConfiguration.id  # noqa
+    #             == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
+    #         ),
+    #     ).where(
+    #         ForecastCoverageConfigurationForecastModelLink.forecast_model_id  # noqa
+    #         == forecast_model.id
+    #     )
+    #     query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
+    #         statement
+    #     ).all()
+    #     for fcc in query_result:
+    #         if len(fcc.forecast_model_links) == 1 and len(fcc.year_periods) > 1:
+    #             result = fcc
+    #             break
+    # else:
+    #     year_period_value = sixth_part
+    #     try:
+    #         year_period = ForecastYearPeriod(year_period_value)
+    #     except ValueError:
+    #         raise exceptions.InvalidForecastYearPeriodError(
+    #             f"{year_period_value!r} is not a valid forecast year period"
+    #         )
+    #     else:
+    #         statement = statement.where(
+    #             year_period.name
+    #             == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+    #         )
+    #         query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
+    #             statement
+    #         ).all()  # noqa
+    #         for fcc in query_result:
+    #             if len(fcc.year_periods) == 1 and len(fcc.forecast_model_links) > 1:
+    #                 result = fcc
+    #                 break
+    # return result
 
 
 def _get_seven_part_fcc(
@@ -347,30 +355,30 @@ def _get_seven_part_fcc(
         raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
             f"{forecast_model_name!r} is not a valid forecast model"
         )
-    year_period_value = seventh_part
-    try:
-        year_period = ForecastYearPeriod(year_period_value)
-    except ValueError:
-        raise exceptions.InvalidForecastYearPeriodError(
-            f"{year_period_value!r} is not a valid forecast year period"
-        )
-    statement = (
-        statement.join(
-            ForecastCoverageConfigurationForecastModelLink,
-            (  # noqa
-                ForecastCoverageConfiguration.id  # noqa
-                == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
-            ),
-        )
-        .where(
-            ForecastCoverageConfigurationForecastModelLink.forecast_model_id  # noqa
-            == forecast_model.id
-        )
-        .where(
-            year_period.name
-            == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
-        )
-    )
+    # year_period_value = seventh_part
+    # try:
+    #     year_period = ForecastYearPeriod(year_period_value)
+    # except ValueError:
+    #     raise exceptions.InvalidForecastYearPeriodError(
+    #         f"{year_period_value!r} is not a valid forecast year period"
+    #     )
+    # statement = (
+    #     statement.join(
+    #         ForecastCoverageConfigurationForecastModelLink,
+    #         (  # noqa
+    #             ForecastCoverageConfiguration.id  # noqa
+    #             == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id  # noqa
+    #         ),
+    #     )
+    #     .where(
+    #         ForecastCoverageConfigurationForecastModelLink.forecast_model_id  # noqa
+    #         == forecast_model.id
+    #     )
+    #     .where(
+    #         year_period.name
+    #         == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+    #     )
+    # )
     query_result: Sequence[ForecastCoverageConfiguration] = session.exec(
         statement
     ).all()
@@ -443,16 +451,6 @@ def create_forecast_coverage_configuration(
         )
     )
     session.add(db_forecast_coverage_configuration)
-    for forecast_model_id in forecast_coverage_configuration_create.forecast_models:
-        db_forecast_model = get_forecast_model(session, forecast_model_id)
-        if db_forecast_model is not None:
-            db_forecast_coverage_configuration.forecast_model_links.append(
-                ForecastCoverageConfigurationForecastModelLink(
-                    forecast_model_id=forecast_model_id,
-                )
-            )
-        else:
-            raise ValueError(f"Forecast model {forecast_model_id!r} not found")
     for forecast_time_window_id in (
         forecast_coverage_configuration_create.forecast_time_windows or []
     ):
@@ -560,18 +558,18 @@ def update_forecast_coverage_configuration(
     for to_discard in existing_obs_series_conf_links_discard:
         session.delete(to_discard)
 
-    for forecast_model_id in forecast_coverage_configuration_update.forecast_models:
-        already_there = forecast_model_id in (
-            fml.forecast_model_id
-            for fml in db_forecast_coverage_configuration.forecast_model_links
-        )
-        if not already_there:
-            db_forecast_model_link = ForecastCoverageConfigurationForecastModelLink(
-                forecast_model_id=forecast_model_id,
-            )
-            db_forecast_coverage_configuration.forecast_model_links.append(
-                db_forecast_model_link
-            )
+    # for forecast_model_id in forecast_coverage_configuration_update.forecast_models:
+    #     already_there = forecast_model_id in (
+    #         fml.forecast_model_id
+    #         for fml in db_forecast_coverage_configuration.forecast_model_links
+    #     )
+    #     if not already_there:
+    #         db_forecast_model_link = ForecastCoverageConfigurationForecastModelLink(
+    #             forecast_model_id=forecast_model_id,
+    #         )
+    #         db_forecast_coverage_configuration.forecast_model_links.append(
+    #             db_forecast_model_link
+    #         )
     for time_window_id in forecast_coverage_configuration_update.forecast_time_windows:
         already_there = time_window_id in (
             twl.forecast_time_window_id
@@ -739,6 +737,155 @@ def delete_forecast_model(session: sqlmodel.Session, forecast_model_id: int) -> 
         session.commit()
     else:
         raise RuntimeError("Forecast model not found")
+
+
+def list_forecast_model_groups(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+    include_total: bool = False,
+) -> tuple[Sequence[ForecastModelGroup], Optional[int]]:
+    """List existing forecast model groups."""
+    statement = sqlmodel.select(ForecastModelGroup).order_by(
+        ForecastModelGroup.sort_order  # noqa
+    )
+    if name_filter is not None:
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement,
+                name_filter,
+                ForecastModelGroup.name,  # noqa
+            )
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                ForecastModelGroup.name,  # noqa
+            )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_forecast_model_groups(
+    session: sqlmodel.Session,
+    *,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+):
+    _, num_total = list_forecast_model_groups(
+        session,
+        limit=1,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=True,
+    )
+    result, _ = list_forecast_model_groups(
+        session,
+        limit=num_total,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=False,
+    )
+    return result
+
+
+def get_forecast_model_group(
+    session: sqlmodel.Session, forecast_model_group_id: int
+) -> Optional[ForecastModelGroup]:
+    return session.get(ForecastModelGroup, forecast_model_group_id)
+
+
+def get_forecast_model_group_by_name(
+    session: sqlmodel.Session, name: str
+) -> Optional[ForecastModelGroup]:
+    return session.exec(
+        sqlmodel.select(ForecastModelGroup).where(  # noqa
+            ForecastModelGroup.name == name  # noqa
+        )
+    ).first()
+
+
+def create_forecast_model_group(
+    session: sqlmodel.Session,
+    forecast_model_group_create: ForecastModelGroupCreate,
+) -> ForecastModelGroup:
+    db_group = ForecastModelGroup(
+        **forecast_model_group_create.model_dump(
+            exclude={
+                "forecast_models",
+            }
+        ),
+    )
+    for forecast_model_id in forecast_model_group_create.forecast_models:
+        db_forecast_model = get_forecast_model(session, forecast_model_id)
+        if db_forecast_model is not None:
+            db_group.forecast_model_links.append(
+                ForecastModelForecastModelGroupLink(
+                    forecast_model_id=forecast_model_id,
+                )
+            )
+        else:
+            raise ValueError(f"Forecast model {forecast_model_id!r} not found")
+    session.add(db_group)
+    session.commit()
+    session.refresh(db_group)
+    return db_group
+
+
+def update_forecast_model_group(
+    session: sqlmodel.Session,
+    db_forecast_model_group: ForecastModelGroup,
+    forecast_model_group_update: ForecastModelGroupUpdate,
+) -> ForecastModelGroup:
+    existing_forecast_model_links_to_keep = []
+    existing_forecast_model_links_discard = []
+    for existing_forecast_model_link in db_forecast_model_group.forecast_model_links:
+        has_been_requested_to_remove = (
+            existing_forecast_model_link.forecast_model_id
+            not in [fm_id for fm_id in forecast_model_group_update.forecast_models]
+        )
+        if not has_been_requested_to_remove:
+            existing_forecast_model_links_to_keep.append(existing_forecast_model_link)
+        else:
+            existing_forecast_model_links_discard.append(existing_forecast_model_link)
+    db_forecast_model_group.forecast_model_links = existing_forecast_model_links_to_keep
+    for to_discard in existing_forecast_model_links_discard:
+        session.delete(to_discard)
+    for forecast_model_id in forecast_model_group_update.forecast_models:
+        already_there = forecast_model_id in (
+            fml.forecast_model_id
+            for fml in db_forecast_model_group.forecast_model_links
+        )
+        if not already_there:
+            db_forecast_model_link = ForecastModelForecastModelGroupLink(
+                forecast_model_id=forecast_model_id,
+            )
+            db_forecast_model_group.forecast_model_links.append(db_forecast_model_link)
+    data_ = forecast_model_group_update.model_dump(
+        exclude_unset=True,
+        exclude_none=True,
+    )
+    for key, value in data_.items():
+        setattr(db_forecast_model_group, key, value)
+    session.add(db_forecast_model_group)
+    session.commit()
+    session.refresh(db_forecast_model_group)
+    return db_forecast_model_group
+
+
+def delete_forecast_model_group(
+    session: sqlmodel.Session, forecast_model_group_id: int
+) -> None:
+    db_item = get_forecast_model_group(session, forecast_model_group_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Forecast model group not found")
 
 
 def list_forecast_time_windows(
@@ -1160,23 +1307,23 @@ def legacy_list_forecast_coverage_configurations(
                     ClimaticIndicator.aggregation_period  # noqa
                     == conf_param_filter.aggregation_period.name
                 )
-        if conf_param_filter.climatological_model is not None:
-            statement = (
-                statement.join(
-                    ForecastCoverageConfigurationForecastModelLink,
-                    ForecastCoverageConfiguration.id  # noqa
-                    == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,  # noqa
-                )
-                .join(
-                    ForecastModel,
-                    ForecastModel.id  # noqa
-                    == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,  # noqa
-                )
-                .where(
-                    ForecastModel.id  # noqa
-                    == conf_param_filter.climatological_model.id
-                )
-            )
+        # if conf_param_filter.climatological_model is not None:
+        #     statement = (
+        #         statement.join(
+        #             ForecastCoverageConfigurationForecastModelLink,
+        #             ForecastCoverageConfiguration.id  # noqa
+        #             == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,  # noqa
+        #         )
+        #         .join(
+        #             ForecastModel,
+        #             ForecastModel.id  # noqa
+        #             == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,  # noqa
+        #         )
+        #         .where(
+        #             ForecastModel.id  # noqa
+        #             == conf_param_filter.climatological_model.id
+        #         )
+        #     )
         if conf_param_filter.scenario is not None:
             statement = statement.where(
                 conf_param_filter.scenario.name
@@ -1409,3 +1556,112 @@ def collect_all_forecast_coverages(
         time_window_filter=time_window_filter,
     )
     return result
+
+
+def list_forecast_year_period_groups(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+    include_total: bool = False,
+) -> tuple[Sequence[ForecastYearPeriodGroup], Optional[int]]:
+    """List existing forecast year period groups."""
+    statement = sqlmodel.select(ForecastYearPeriodGroup).order_by(
+        ForecastYearPeriodGroup.sort_order  # noqa
+    )
+    if name_filter is not None:
+        if perform_exact_matches:
+            statement = add_multiple_values_filter(
+                statement,
+                name_filter,
+                ForecastYearPeriodGroup.name,  # noqa
+            )
+        else:
+            statement = add_substring_filter(
+                statement,
+                name_filter,
+                ForecastYearPeriodGroup.name,  # noqa
+            )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_forecast_year_period_groups(
+    session: sqlmodel.Session,
+    *,
+    name_filter: Optional[Union[list[str], str]] = None,
+    perform_exact_matches: bool = False,
+):
+    _, num_total = list_forecast_year_period_groups(
+        session,
+        limit=1,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=True,
+    )
+    result, _ = list_forecast_year_period_groups(
+        session,
+        limit=num_total,
+        name_filter=name_filter,
+        perform_exact_matches=perform_exact_matches,
+        include_total=False,
+    )
+    return result
+
+
+def get_forecast_year_period_group(
+    session: sqlmodel.Session, forecast_year_period_group_id: int
+) -> Optional[ForecastYearPeriodGroup]:
+    return session.get(ForecastYearPeriodGroup, forecast_year_period_group_id)
+
+
+def get_forecast_year_period_group_by_name(
+    session: sqlmodel.Session, name: str
+) -> Optional[ForecastYearPeriodGroup]:
+    return session.exec(
+        sqlmodel.select(ForecastYearPeriodGroup).where(  # noqa
+            ForecastYearPeriodGroup.name == name  # noqa
+        )
+    ).first()
+
+
+def create_forecast_year_period_group(
+    session: sqlmodel.Session,
+    forecast_year_period_group_create: ForecastYearPeriodGroupCreate,
+) -> ForecastYearPeriodGroup:
+    db_group = ForecastYearPeriodGroup(**forecast_year_period_group_create.model_dump())
+    session.add(db_group)
+    session.commit()
+    session.refresh(db_group)
+    return db_group
+
+
+def update_forecast_year_period_group(
+    session: sqlmodel.Session,
+    db_forecast_year_period_group: ForecastYearPeriodGroup,
+    forecast_year_period_group_update: ForecastYearPeriodGroupUpdate,
+) -> ForecastYearPeriodGroup:
+    data_ = forecast_year_period_group_update.model_dump(
+        exclude_unset=True,
+        exclude_none=True,
+    )
+    for key, value in data_.items():
+        setattr(db_forecast_year_period_group, key, value)
+    session.add(db_forecast_year_period_group)
+    session.commit()
+    session.refresh(db_forecast_year_period_group)
+    return db_forecast_year_period_group
+
+
+def delete_forecast_year_period_group(
+    session: sqlmodel.Session, forecast_year_period_group_id: int
+) -> None:
+    db_item = get_forecast_year_period_group(session, forecast_year_period_group_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Forecast year period group not found")
