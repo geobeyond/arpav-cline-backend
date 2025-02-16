@@ -100,8 +100,11 @@ from .observation_series_configurations import (
     generate_observation_series_configurations,
 )
 from .spatialregions import generate_spatial_regions
-
 from .configurationparameters import generate_configuration_parameters
+from .yearperiods import (
+    generate_forecast_year_period_groups,
+    generate_historical_year_period_groups
+)
 
 app = typer.Typer()
 
@@ -882,6 +885,29 @@ def bootstrap_forecast_models(ctx: typer.Context):
                     f"Could not create forecast model group {model_group_create!r}: {err}"
                 )
                 session.rollback()
+
+
+@app.command("year-periods")
+def bootstrap_year_periods(ctx: typer.Context):
+    """Create initial year period groups."""
+    with sqlmodel.Session(ctx.obj["engine"]) as session:
+        existing_forecast_names = [
+            ypg.name for ypg in db.collect_all_forecast_year_period_groups(session)]
+        for item_create in generate_forecast_year_period_groups():
+            if item_create.name not in existing_forecast_names:
+                db_item = db.create_forecast_year_period_group(session, item_create)
+                print(
+                    f"Created forecast year period group {db_item.name!r}"
+                )
+        existing_historical_names = [
+            ypg.name for ypg in db.collect_all_historical_year_period_groups(session)
+        ]
+        for item_create in generate_historical_year_period_groups():
+            if item_create.name not in existing_historical_names:
+                db_item = db.create_historical_year_period_group(session, item_create)
+                print(
+                    f"Created historical year period group {db_item.name!r}"
+                )
 
 
 @app.command("forecast-time-windows")

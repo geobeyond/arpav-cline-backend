@@ -186,8 +186,8 @@ class _BaseGroupUpdate(sqlmodel.SQLModel):
 
 
 class ForecastModelGroup(_BaseGroup, table=True):
-    forecast_coverage_configuration_links: list[
-        "ForecastCoverageConfigurationForecastModelGroupLink"
+    forecast_coverage_configurations: list[
+        "ForecastCoverageConfiguration"
     ] = sqlmodel.Relationship(back_populates="forecast_model_group")
     forecast_model_links: list[
         "ForecastModelForecastModelGroupLink"
@@ -258,56 +258,67 @@ class ForecastModelForecastModelGroupLink(sqlmodel.SQLModel, table=True):
     )
 
 
-class ForecastCoverageConfigurationForecastModelGroupLink(
-    sqlmodel.SQLModel, table=True
-):
-    __table_args__ = (
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "forecast_coverage_configuration_id",
-            ],
-            [
-                "forecastcoverageconfiguration.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-        ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "forecast_model_group_id",
-            ],
-            [
-                "forecastmodelgroup.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model group gets deleted
-        ),
-    )
-    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-    forecast_model_group_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-
-    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-        sqlmodel.Relationship(back_populates="forecast_model_group_links")
-    )
-    forecast_model_group: ForecastModelGroup = sqlmodel.Relationship(
-        back_populates="forecast_coverage_configuration_links"
-    )
+# class ForecastCoverageConfigurationForecastModelGroupLink(
+#     sqlmodel.SQLModel, table=True
+# ):
+#     __table_args__ = (
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "forecast_coverage_configuration_id",
+#             ],
+#             [
+#                 "forecastcoverageconfiguration.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+#         ),
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "forecast_model_group_id",
+#             ],
+#             [
+#                 "forecastmodelgroup.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model group gets deleted
+#         ),
+#     )
+#     forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#     forecast_model_group_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#
+#     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+#         sqlmodel.Relationship(back_populates="forecast_model_group_links")
+#     )
+#     forecast_model_group: ForecastModelGroup = sqlmodel.Relationship(
+#         back_populates="forecast_coverage_configuration_links"
+#     )
 
 
 class ForecastYearPeriodGroup(_BaseGroup, table=True):
-    forecast_coverage_configuration_links: list[
-        "ForecastCoverageConfigurationForecastYearPeriodGroupLink"
-    ] = sqlmodel.Relationship(back_populates="forecast_year_period_group")
+    # forecast_coverage_configuration_links: list[
+    #     "ForecastCoverageConfigurationForecastYearPeriodGroupLink"
+    # ] = sqlmodel.Relationship(back_populates="forecast_year_period_group")
+
+    year_periods: list[static.ForecastYearPeriod] = sqlmodel.Field(
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastYearPeriod))
+        ),
+    )
+
+    forecast_coverage_configurations: list[
+        "ForecastCoverageConfiguration"
+    ] = sqlmodel.Relationship(back_populates="year_period_group")
 
     @staticmethod
     def get_display_name(locale: babel.Locale) -> str:
@@ -330,57 +341,69 @@ class ForecastYearPeriodGroupUpdate(_BaseGroupUpdate):
     year_periods: list[static.ForecastYearPeriod] | None = None
 
 
-class ForecastCoverageConfigurationForecastYearPeriodGroupLink(
-    sqlmodel.SQLModel, table=True
-):
-    __table_args__ = (
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "forecast_coverage_configuration_id",
-            ],
-            [
-                "forecastcoverageconfiguration.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-        ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "forecast_year_period_group_id",
-            ],
-            [
-                "forecastyearperiodgroup.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",
-            # i.e. delete all possible values if the related forecast year period group gets deleted
-        ),
-    )
-    forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-    forecast_year_period_group_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-
-    forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-        sqlmodel.Relationship(back_populates="forecast_year_period_group_links")
-    )
-    forecast_year_period_group: ForecastYearPeriodGroup = sqlmodel.Relationship(
-        back_populates="forecast_coverage_configuration_links"
-    )
+# class ForecastCoverageConfigurationForecastYearPeriodGroupLink(
+#     sqlmodel.SQLModel, table=True
+# ):
+#     __table_args__ = (
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "forecast_coverage_configuration_id",
+#             ],
+#             [
+#                 "forecastcoverageconfiguration.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+#         ),
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "forecast_year_period_group_id",
+#             ],
+#             [
+#                 "forecastyearperiodgroup.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",
+#             # i.e. delete all possible values if the related forecast year period group gets deleted
+#         ),
+#     )
+#     forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#     forecast_year_period_group_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#
+#     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
+#         sqlmodel.Relationship(back_populates="forecast_year_period_group_links")
+#     )
+#     forecast_year_period_group: ForecastYearPeriodGroup = sqlmodel.Relationship(
+#         back_populates="forecast_coverage_configuration_links"
+#     )
 
 
 class HistoricalYearPeriodGroup(_BaseGroup, table=True):
-    historical_coverage_configuration_links: list[
-        "HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink"
-    ] = sqlmodel.Relationship(back_populates="historical_year_period_group")
+    # historical_coverage_configuration_links: list[
+    #     "HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink"
+    # ] = sqlmodel.Relationship(back_populates="historical_year_period_group")
+
+    year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
+        default=list,
+        sa_column=sqlalchemy.Column(
+            sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalYearPeriod))
+        ),
+    )
+
+
+    historical_coverage_configurations: list[
+        "HistoricalCoverageConfiguration"
+    ] = sqlmodel.Relationship(back_populates="year_period_group")
 
     @staticmethod
     def get_display_name(locale: babel.Locale) -> str:
@@ -403,51 +426,51 @@ class HistoricalYearPeriodGroupUpdate(_BaseGroupUpdate):
     year_periods: list[static.HistoricalYearPeriod] | None = None
 
 
-class HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink(
-    sqlmodel.SQLModel, table=True
-):
-    __table_args__ = (
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "historical_coverage_configuration_id",
-            ],
-            [
-                "historicalcoverageconfiguration.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-        ),
-        sqlalchemy.ForeignKeyConstraint(
-            [
-                "historical_year_period_group_id",
-            ],
-            [
-                "historicalyearperiodgroup.id",
-            ],
-            onupdate="CASCADE",
-            ondelete="CASCADE",
-            # i.e. delete all possible values if the related historical year period group gets deleted
-        ),
-    )
-    historical_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-    historical_year_period_group_id: Optional[int] = sqlmodel.Field(
-        # NOTE: foreign key already defined in __table_args__ in order to be able to
-        # specify the ondelete behavior
-        default=None,
-        primary_key=True,
-    )
-
-    historical_coverage_configuration: "HistoricalCoverageConfiguration" = (
-        sqlmodel.Relationship(back_populates="historical_year_period_group_links")
-    )
-    historical_year_period_group: HistoricalYearPeriodGroup = sqlmodel.Relationship(
-        back_populates="historical_coverage_configuration_links"
-    )
+# class HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink(
+#     sqlmodel.SQLModel, table=True
+# ):
+#     __table_args__ = (
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "historical_coverage_configuration_id",
+#             ],
+#             [
+#                 "historicalcoverageconfiguration.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
+#         ),
+#         sqlalchemy.ForeignKeyConstraint(
+#             [
+#                 "historical_year_period_group_id",
+#             ],
+#             [
+#                 "historicalyearperiodgroup.id",
+#             ],
+#             onupdate="CASCADE",
+#             ondelete="CASCADE",
+#             # i.e. delete all possible values if the related historical year period group gets deleted
+#         ),
+#     )
+#     historical_coverage_configuration_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#     historical_year_period_group_id: Optional[int] = sqlmodel.Field(
+#         # NOTE: foreign key already defined in __table_args__ in order to be able to
+#         # specify the ondelete behavior
+#         default=None,
+#         primary_key=True,
+#     )
+#
+#     historical_coverage_configuration: "HistoricalCoverageConfiguration" = (
+#         sqlmodel.Relationship(back_populates="historical_year_period_group_links")
+#     )
+#     historical_year_period_group: HistoricalYearPeriodGroup = sqlmodel.Relationship(
+#         back_populates="historical_coverage_configuration_links"
+#     )
 
 
 class ConfigurationParameterValue(sqlmodel.SQLModel, table=True):
@@ -1249,6 +1272,12 @@ class BaseCoverageConfiguration(sqlmodel.SQLModel):
 
 
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    forecast_model_group_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="forecastmodelgroup.id"
+    )
+    year_period_group_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="forecastyearperiodgroup.id"
+    )
     wms_main_layer_name: str
     wms_secondary_layer_name: Optional[str] = None
     lower_uncertainty_thredds_url_pattern: Optional[str] = None
@@ -1267,9 +1296,9 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     #         sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastYearPeriod))
     #     ),
     # )
-    year_period_group_links: list[
-        ForecastCoverageConfigurationForecastYearPeriodGroupLink
-    ] = sqlmodel.Relationship(back_populates="forecast_coverage_configurations")
+    # year_period_group_links: list[
+    #     ForecastCoverageConfigurationForecastYearPeriodGroupLink
+    # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configurations")
 
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
         back_populates="forecast_coverage_configurations"
@@ -1282,9 +1311,16 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     #     ForecastCoverageConfigurationForecastModelLink
     # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
 
-    forecast_model_group_links: list[
-        ForecastCoverageConfigurationForecastModelGroupLink
-    ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
+    # forecast_model_group_links: list[
+    #     ForecastCoverageConfigurationForecastModelGroupLink
+    # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
+
+    year_period_group: ForecastYearPeriodGroup = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configurations"
+    )
+    forecast_model_group: ForecastModelGroup = sqlmodel.Relationship(
+        back_populates="forecast_coverage_configurations"
+    )
 
     forecast_time_window_links: list[
         ForecastCoverageConfigurationForecastTimeWindowLink
@@ -1300,21 +1336,15 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        identifier_extra_parts = []
-        if len(self.forecast_model_links) == 1:
-            identifier_extra_parts.append(
-                self.forecast_model_links[0].forecast_model.name
+        return (
+            "{data_category}-{climatic_indicator}-{spatial_region}-"
+            "{year_period_group}-{forecast_model_group}".format(
+                data_category=static.DataCategory.FORECAST.value,
+                climatic_indicator=self.climatic_indicator.identifier,
+                spatial_region=self.spatial_region.name,
+                year_period_group=self.year_period_group.name,
+                forecast_model_group=self.forecast_model_group.name,
             )
-        if len(self.year_periods) == 1:
-            identifier_extra_parts.append(self.year_periods[0].value)
-        extra_parts_fragment = ""
-        if len(identifier_extra_parts) > 0:
-            extra_parts_fragment = f"-{'-'.join(identifier_extra_parts)}"
-        return "{data_category}-{climatic_indicator}-{spatial_region}{extra}".format(
-            data_category=static.DataCategory.FORECAST.value,
-            climatic_indicator=self.climatic_indicator.identifier,
-            spatial_region=self.spatial_region.name,
-            extra=extra_parts_fragment,
         )
 
     @staticmethod
@@ -1342,7 +1372,8 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
     upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     scenarios: list[static.ForecastScenario]
-    year_periods: list[static.ForecastYearPeriod]
+    # year_periods: list[static.ForecastYearPeriod]
+    year_period_group: int
     forecast_model_group: int
     forecast_time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
@@ -1360,7 +1391,8 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str] = None
     upper_uncertainty_netcdf_main_dataset_name: Optional[str] = None
     scenarios: Optional[list[static.ForecastScenario]] = None
-    year_periods: Optional[list[static.ForecastYearPeriod]] = None
+    # year_periods: Optional[list[static.ForecastYearPeriod]] = None
+    year_period_group: Optional[int] = None
     forecast_model_group: Optional[int] = None
     forecast_time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
@@ -1371,7 +1403,7 @@ class ForecastCoverageInternal:
     configuration: ForecastCoverageConfiguration
     scenario: static.ForecastScenario
     forecast_model: ForecastModel
-    forecast_year_period: static.ForecastYearPeriod
+    year_period: static.ForecastYearPeriod
     forecast_time_window: Optional[ForecastTimeWindow] = None
 
     def __post_init__(self):
@@ -1385,7 +1417,7 @@ class ForecastCoverageInternal:
                 )
             )
         if self.forecast_model.id not in (
-            fml.forecast_model_id for fml in self.configuration.forecast_model_links
+            fml.forecast_model_id for fml in self.configuration.forecast_model_group.forecast_model_links
         ):
             raise exceptions.InvalidForecastModelError(
                 error_message.format(
@@ -1394,11 +1426,11 @@ class ForecastCoverageInternal:
                     conf=self.configuration.identifier,
                 )
             )
-        if self.forecast_year_period not in self.configuration.year_periods:
+        if self.year_period not in self.configuration.year_period_group.year_periods:
             raise exceptions.InvalidForecastYearPeriodError(
                 error_message.format(
-                    param="forecast year period",
-                    value=self.forecast_year_period.value,
+                    param="year period",
+                    value=self.year_period.value,
                     conf=self.configuration.identifier,
                 )
             )
@@ -1417,12 +1449,12 @@ class ForecastCoverageInternal:
 
     @property
     def identifier(self) -> str:
-        pattern_parts = [self.configuration.identifier]
-        if len(self.configuration.forecast_model_links) > 1:
-            pattern_parts.append(self.forecast_model.name)
-        pattern_parts.append(self.scenario.value)
-        if len(self.configuration.year_periods) > 1:
-            pattern_parts.append(self.forecast_year_period.value)
+        pattern_parts = [
+            self.configuration.identifier,
+            self.forecast_model.name,
+            self.scenario.value,
+            self.year_period.value,
+        ]
         if self.forecast_time_window is not None:
             pattern_parts.append(self.forecast_time_window.name)
         return "-".join(pattern_parts)
@@ -1560,7 +1592,7 @@ class ForecastCoverageInternal:
                 else ""
             ),
             scenario=self.scenario.get_internal_value(),
-            year_period=self.forecast_year_period.get_internal_value(),
+            year_period=self.year_period.get_internal_value(),
             spatial_region=self.configuration.spatial_region.internal_value,
         )
 
@@ -1569,6 +1601,9 @@ class ForecastCoverageInternal:
 
 
 class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
+    year_period_group_id: Optional[int] = sqlmodel.Field(
+        default=None, foreign_key="historicalyearperiodgroup.id"
+    )
     reference_period: Optional[static.HistoricalReferencePeriod]
     wms_main_layer_name: str
     decades: list[static.HistoricalDecade] = sqlmodel.Field(
@@ -1583,9 +1618,9 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
     #         sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalYearPeriod))
     #     ),
     # )
-    historical_year_period_group_links: list[
-        HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink
-    ] = sqlmodel.Relationship(back_populates="historical_coverage_configurations")
+    # historical_year_period_group_links: list[
+    #     HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink
+    # ] = sqlmodel.Relationship(back_populates="historical_coverage_configurations")
 
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
         back_populates="historical_coverage_configurations"
@@ -1593,6 +1628,11 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
     climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="historical_coverage_configurations"
     )
+
+    year_period_group: HistoricalYearPeriodGroup = sqlmodel.Relationship(
+        back_populates="historical_coverage_configurations"
+    )
+
     observation_series_configuration_links: list[
         HistoricalCoverageConfigurationObservationSeriesConfigurationLink
     ] = sqlmodel.Relationship(
@@ -1602,12 +1642,18 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
     @pydantic.computed_field
     @property
     def identifier(self) -> str:
-        extra = f"-{self.reference_period.value}" if self.reference_period else ""
-        return "{data_category}-{climatic_indicator}-{spatial_region}{extra}".format(
-            data_category=static.DataCategory.HISTORICAL.value,
-            climatic_indicator=self.climatic_indicator.identifier,
-            spatial_region=self.spatial_region.name,
-            extra=extra,
+        return (
+            "{data_category}-{climatic_indicator}-"
+            "{spatial_region}-{year_period_group}{extra}".format(
+                data_category=static.DataCategory.HISTORICAL.value,
+                climatic_indicator=self.climatic_indicator.identifier,
+                spatial_region=self.spatial_region.name,
+                year_period_group=self.year_period_group.name,
+                extra=(
+                    f"-{self.reference_period.value}"
+                    if self.reference_period is not None else ""
+                )
+            )
         )
 
     @staticmethod
@@ -1655,10 +1701,10 @@ class HistoricalCoverageInternal:
 
     def __post_init__(self):
         error_message = "{param} {value!r} is not part of the historical coverage configuration {conf!r}"
-        if self.year_period not in self.configuration.year_periods:
-            raise exceptions.InvalidHistoricalYearPeriod(
+        if self.year_period not in self.configuration.year_period_group.year_periods:
+            raise exceptions.InvalidForecastYearPeriodError(
                 error_message.format(
-                    param="year_period",
+                    param="year period",
                     value=self.year_period.value,
                     conf=self.configuration.identifier,
                 )
@@ -1674,8 +1720,10 @@ class HistoricalCoverageInternal:
 
     @property
     def identifier(self) -> str:
-        pattern_parts = [self.configuration.identifier]
-        pattern_parts.append(self.year_period.value)
+        pattern_parts = [
+            self.configuration.identifier,
+            self.year_period.value,
+        ]
         if self.decade is not None:
             pattern_parts.append(self.decade.value)
         return "-".join(pattern_parts)

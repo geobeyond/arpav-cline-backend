@@ -968,6 +968,306 @@ class ForecastModelView(ModelView):
         return [self._serialize_instance(fm) for fm in db_forecast_models]
 
 
+class ForecastModelGroupView(ModelView):
+    identity = "forecast_model_groups"
+    name = "Forecast Model Group"
+    label = "Model Groups"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "display_name_english",
+        "display_name_italian",
+        "description_english",
+        "description_italian",
+    )
+    exclude_fields_from_detail = ("id",)
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("name", required=True),
+        starlette_admin.StringField("display_name_english", required=True),
+        starlette_admin.StringField("display_name_italian", required=True),
+        starlette_admin.StringField("description_english"),
+        starlette_admin.StringField("description_italian"),
+        starlette_admin.IntegerField("sort_order"),
+        fields.RelatedForecastModelField("forecast_models", required=True),
+    )
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.ForecastModelGroup,
+    ) -> read_schemas.ForecastModelGroupRead:
+        return read_schemas.ForecastModelGroupRead(
+            **instance.model_dump()
+        )
+
+    async def create(self, request: Request, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            forecast_model_group_create = coverages.ForecastModelGroupCreate(**data)
+            db_forecast_model_group = await anyio.to_thread.run_sync(
+                db.create_forecast_model_group,
+                request.state.session,
+                forecast_model_group_create,
+            )
+            return self._serialize_instance(db_forecast_model_group)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            forecast_model_group_update = coverages.ForecastModelGroupUpdate(**data)
+            db_forecast_model_group = await anyio.to_thread.run_sync(
+                db.get_forecast_model_group,
+                request.state.session,
+                pk,
+            )
+            db_forecast_model_group = await anyio.to_thread.run_sync(
+                db.update_forecast_model_group,
+                request.state.session,
+                db_forecast_model_group,
+                forecast_model_group_update,
+            )
+            return self._serialize_instance(db_forecast_model_group)
+        except Exception as e:
+            self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.ForecastModelGroupRead:
+        db_forecast_model_group = await anyio.to_thread.run_sync(
+            db.get_forecast_model_group, request.state.session, pk
+        )
+        return self._serialize_instance(db_forecast_model_group)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.ForecastModelGroupRead]:
+        list_params = functools.partial(
+            db.list_forecast_model_groups,
+            limit=limit,
+            offset=skip,
+            name_filter=str(where) if where not in (None, "") else None,
+            include_total=False,
+        )
+        db_forecast_model_groups, _ = await anyio.to_thread.run_sync(
+            list_params, request.state.session
+        )
+        return [self._serialize_instance(fm) for fm in db_forecast_model_groups]
+
+
+class ForecastYearPeriodGroupView(ModelView):
+    identity = "forecast_year_period_groups"
+    name = "Forecast Year Period Group"
+    label = "Year Period Groups"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "display_name_english",
+        "display_name_italian",
+        "description_english",
+        "description_italian",
+    )
+    exclude_fields_from_detail = ("id",)
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("name", required=True),
+        starlette_admin.StringField("display_name_english", required=True),
+        starlette_admin.StringField("display_name_italian", required=True),
+        starlette_admin.StringField("description_english"),
+        starlette_admin.StringField("description_italian"),
+        starlette_admin.IntegerField("sort_order"),
+        starlette_admin.EnumField(
+            "year_periods",
+            multiple=True,
+            enum=static.ForecastYearPeriod,
+            required=True
+        ),
+    )
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.ForecastYearPeriodGroup,
+    ) -> read_schemas.ForecastYearPeriodGroupRead:
+        return read_schemas.ForecastYearPeriodGroupRead(
+            **instance.model_dump()
+        )
+
+    async def create(self, request: Request, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            forecast_year_period_group_create = coverages.ForecastYearPeriodGroupCreate(**data)
+            db_forecast_year_period_group = await anyio.to_thread.run_sync(
+                db.create_forecast_year_period_group,
+                request.state.session,
+                forecast_year_period_group_create,
+            )
+            return self._serialize_instance(db_forecast_year_period_group)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            forecast_year_period_group_update = coverages.ForecastYearPeriodGroupUpdate(
+                **data)
+            db_forecast_year_period_group = await anyio.to_thread.run_sync(
+                db.get_forecast_year_period_group,
+                request.state.session,
+                pk,
+            )
+            db_forecast_year_period_group = await anyio.to_thread.run_sync(
+                db.update_forecast_year_period_group,
+                request.state.session,
+                db_forecast_year_period_group,
+                forecast_year_period_group_update,
+            )
+            return self._serialize_instance(db_forecast_year_period_group)
+        except Exception as e:
+            self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.ForecastYearPeriodGroupRead:
+        db_forecast_year_period_group = await anyio.to_thread.run_sync(
+            db.get_forecast_year_period_group, request.state.session, pk
+        )
+        return self._serialize_instance(db_forecast_year_period_group)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.ForecastYearPeriodGroupRead]:
+        list_params = functools.partial(
+            db.list_forecast_year_period_groups,
+            limit=limit,
+            offset=skip,
+            name_filter=str(where) if where not in (None, "") else None,
+            include_total=False,
+        )
+        db_forecast_year_period_groups, _ = await anyio.to_thread.run_sync(
+            list_params, request.state.session
+        )
+        return [self._serialize_instance(fm) for fm in db_forecast_year_period_groups]
+
+
+class HistoricalYearPeriodGroupView(ModelView):
+    identity = "historical_year_period_groups"
+    name = "Historical Year Period Group"
+    label = "Year Period Groups"
+    pk_attr = "id"
+
+    exclude_fields_from_list = (
+        "id",
+        "display_name_english",
+        "display_name_italian",
+        "description_english",
+        "description_italian",
+    )
+    exclude_fields_from_detail = ("id",)
+    fields = (
+        starlette_admin.IntegerField("id"),
+        starlette_admin.StringField("name", required=True),
+        starlette_admin.StringField("display_name_english", required=True),
+        starlette_admin.StringField("display_name_italian", required=True),
+        starlette_admin.StringField("description_english"),
+        starlette_admin.StringField("description_italian"),
+        starlette_admin.IntegerField("sort_order"),
+        starlette_admin.EnumField(
+            "year_periods",
+            multiple=True,
+            enum=static.HistoricalYearPeriod,
+            required=True
+        ),
+    )
+
+    @staticmethod
+    def _serialize_instance(
+        instance: coverages.HistoricalYearPeriodGroup,
+    ) -> read_schemas.HistoricalYearPeriodGroupRead:
+        return read_schemas.HistoricalYearPeriodGroupRead(
+            **instance.model_dump()
+        )
+
+    async def create(self, request: Request, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data)
+            await self.validate(request, data)
+            historical_year_period_group_create = coverages.HistoricalYearPeriodGroupCreate(**data)
+            db_historical_year_period_group = await anyio.to_thread.run_sync(
+                db.create_historical_year_period_group,
+                request.state.session,
+                historical_year_period_group_create,
+            )
+            return self._serialize_instance(db_historical_year_period_group)
+        except Exception as e:
+            return self.handle_exception(e)
+
+    async def edit(self, request: Request, pk: Any, data: Dict[str, Any]) -> Any:
+        try:
+            data = await self._arrange_data(request, data, True)
+            await self.validate(request, data)
+            historical_year_period_group_update = coverages.HistoricalYearPeriodGroupUpdate(
+                **data)
+            db_historical_year_period_group = await anyio.to_thread.run_sync(
+                db.get_historical_year_period_group,
+                request.state.session,
+                pk,
+            )
+            db_historical_year_period_group = await anyio.to_thread.run_sync(
+                db.update_historical_year_period_group,
+                request.state.session,
+                db_historical_year_period_group,
+                historical_year_period_group_update,
+            )
+            return self._serialize_instance(db_historical_year_period_group)
+        except Exception as e:
+            self.handle_exception(e)
+
+    async def find_by_pk(
+        self, request: Request, pk: Any
+    ) -> read_schemas.HistoricalYearPeriodGroupRead:
+        db_historical_year_period_group = await anyio.to_thread.run_sync(
+            db.get_historical_year_period_group, request.state.session, pk
+        )
+        return self._serialize_instance(db_historical_year_period_group)
+
+    async def find_all(
+        self,
+        request: Request,
+        skip: int = 0,
+        limit: int = 100,
+        where: Union[dict[str, Any], str, None] = None,
+        order_by: Optional[list[str]] = None,
+    ) -> Sequence[read_schemas.HistoricalYearPeriodGroupRead]:
+        list_params = functools.partial(
+            db.list_historical_year_period_groups,
+            limit=limit,
+            offset=skip,
+            name_filter=str(where) if where not in (None, "") else None,
+            include_total=False,
+        )
+        db_historical_year_period_groups, _ = await anyio.to_thread.run_sync(
+            list_params, request.state.session
+        )
+        return [self._serialize_instance(fm) for fm in db_historical_year_period_groups]
+
+
 class ForecastCoverageConfigurationView(ModelView):
     identity = "forecast_coverage_configurations"
     name = "Forecast Coverage Configuration"
@@ -985,8 +1285,8 @@ class ForecastCoverageConfigurationView(ModelView):
         "upper_uncertainty_thredds_url_pattern",
         "upper_uncertainty_netcdf_main_dataset_name",
         "scenarios",
-        "year_periods",
-        "forecast_models",
+        "year_period_group",
+        "forecast_model_group",
         "time_windows",
         "observation_series_configurations",
     )
@@ -1061,19 +1361,8 @@ class ForecastCoverageConfigurationView(ModelView):
         starlette_admin.EnumField(
             "scenarios", multiple=True, enum=static.ForecastScenario, required=True
         ),
-        starlette_admin.EnumField(
-            "year_periods",
-            multiple=True,
-            enum=static.ForecastYearPeriod,
-            required=True,
-        ),
-        starlette_admin.ListField(
-            field=fields.RelatedForecastModelField(
-                "forecast_models",
-                multiple=True,
-                required=True,
-            )
-        ),
+        fields.RelatedForecastYearPeriodGroupField("year_period_group"),
+        fields.RelatedForecastModelGroupField("forecast_model_group"),
         starlette_admin.ListField(
             field=fields.RelatedForecastTimeWindowField(
                 "time_windows",
@@ -1100,17 +1389,17 @@ class ForecastCoverageConfigurationView(ModelView):
             **instance.model_dump(
                 exclude={
                     "climatic_indicator",
-                    "forecast_models",
                     "time_windows",
                     "observation_series_configurations",
                     "spatial_region",
+                    "forecast_model_group",
+                    "year_period_group",
                 }
             ),
             climatic_indicator=instance.climatic_indicator_id,
+            forecast_model_group=instance.forecast_model_group_id,
+            year_period_group=instance.year_period_group_id,
             spatial_region=instance.spatial_region_id,
-            forecast_models=[
-                fml.forecast_model_id for fml in instance.forecast_model_links
-            ],
             forecast_time_windows=[
                 twl.forecast_time_window_id
                 for twl in instance.forecast_time_window_links
@@ -1148,8 +1437,8 @@ class ForecastCoverageConfigurationView(ModelView):
                         "upper_uncertainty_netcdf_main_dataset_name"
                     ),
                     scenarios=data.get("scenarios", []),
-                    year_periods=data.get("year_periods", []),
-                    forecast_models=data["forecast_models"],
+                    year_period_group=data["year_period_group"],
+                    forecast_model_group=data["forecast_model_group"],
                     forecast_time_windows=data["forecast_time_windows"],
                     observation_series_configurations=data[
                         "observation_series_configurations"
@@ -1192,8 +1481,8 @@ class ForecastCoverageConfigurationView(ModelView):
                         "upper_uncertainty_netcdf_main_dataset_name"
                     ),
                     scenarios=data.get("scenarios", []),
-                    year_periods=data.get("year_periods", []),
-                    forecast_models=data["forecast_models"],
+                    year_period_group=data.get("year_period_group"),
+                    forecast_model_group=data.get("forecast_model_group"),
                     forecast_time_windows=data["forecast_time_windows"],
                     observation_series_configurations=data[
                         "observation_series_configurations"
@@ -1264,7 +1553,7 @@ class HistoricalCoverageConfigurationView(ModelView):
         "thredds_url_pattern",
         "wms_main_layer_name",
         "reference_period",
-        "year_periods",
+        "year_period_group",
         "decades",
         "observation_series_configurations",
     )
@@ -1317,12 +1606,7 @@ class HistoricalCoverageConfigurationView(ModelView):
         starlette_admin.EnumField(
             "decades", multiple=True, enum=static.HistoricalDecade, required=False
         ),
-        starlette_admin.EnumField(
-            "year_periods",
-            multiple=True,
-            enum=static.HistoricalYearPeriod,
-            required=True,
-        ),
+        fields.RelatedHistoricalYearPeriodGroupField("year_period_group"),
         starlette_admin.ListField(
             field=fields.RelatedObservationSeriesConfigurationField(
                 "observation_series_configurations",
@@ -1347,11 +1631,13 @@ class HistoricalCoverageConfigurationView(ModelView):
                     "spatial_region",
                     "decades",
                     "observation_series_configurations",
+                    "year_period_group",
                 }
             ),
             climatic_indicator=instance.climatic_indicator_id,
             spatial_region=instance.spatial_region_id,
             decades=instance.decades or [],
+            year_period_group=instance.year_period_group_id,
             observation_series_configurations=[
                 oscl.observation_series_configuration_id
                 for oscl in instance.observation_series_configuration_links
@@ -1371,7 +1657,7 @@ class HistoricalCoverageConfigurationView(ModelView):
                     spatial_region_id=data["spatial_region"],
                     reference_period=data.get("reference_period"),
                     decades=data.get("decades", []),
-                    year_periods=data.get("year_periods", []),
+                    year_period_group=data["year_period_group"],
                     observation_series_configurations=data[
                         "observation_series_configurations"
                     ],
@@ -1399,7 +1685,7 @@ class HistoricalCoverageConfigurationView(ModelView):
                     spatial_region_id=data["spatial_region"],
                     reference_period=data.get("reference_period"),
                     decades=data.get("decades", []),
-                    year_periods=data.get("year_periods", []),
+                    year_period_group=data.get("year_period_group"),
                     observation_series_configurations=data[
                         "observation_series_configurations"
                     ],

@@ -15,6 +15,8 @@ def generate_forecast_coverage_configurations(
     forecast_model_ids: dict[str, int],
     forecast_time_window_ids: dict[str, int],
     observation_series_configuration_ids: dict[str, int],
+    year_period_groups: dict[str, int],
+    forecast_model_groups: dict[str, int],
 ) -> list[ForecastCoverageConfigurationCreate]:
     return [
         ForecastCoverageConfigurationCreate(
@@ -32,19 +34,12 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.WINTER,
-                ForecastYearPeriod.SPRING,
-                ForecastYearPeriod.SUMMER,
-                ForecastYearPeriod.AUTUMN,
-            ],
+            year_period_group=year_period_groups["all_seasons"],
             forecast_time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
-            forecast_models=[
-                forecast_model_ids["model_ensemble"],
-            ],
+            forecast_model_group=forecast_model_groups["ensemble"],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdd-anomaly-thirty_year"],
@@ -61,22 +56,11 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.WINTER,
-                ForecastYearPeriod.SPRING,
-                ForecastYearPeriod.SUMMER,
-                ForecastYearPeriod.AUTUMN,
-            ],
+            year_period_group=year_period_groups["all_seasons"],
             forecast_time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
-            forecast_models=[
-                forecast_model_ids["ec_earth_cclm_4_8_17"],
-                forecast_model_ids["ec_earth_racmo22e"],
-                forecast_model_ids["ec_earth_rca4"],
-                forecast_model_ids["hadgem2_racmo22e"],
-                forecast_model_ids["mpi_esm_lr_remo2009"],
-            ],
+            forecast_model_group=forecast_model_groups["five_models"],
         ),
     ]

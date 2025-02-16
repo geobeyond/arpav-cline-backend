@@ -159,6 +159,33 @@ class ObservationOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
     climatic_indicator: Optional[int]
 
 
+class ForecastModelGroupRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    display_name_english: str
+    display_name_italian: str
+    sort_order: int
+    forecast_models: list[int]
+
+
+class ForecastYearPeriodGroupRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    display_name_english: str
+    display_name_italian: str
+    sort_order: int
+    year_periods: list[ForecastYearPeriod]
+
+
+class HistoricalYearPeriodGroupRead(sqlmodel.SQLModel):
+    id: int
+    name: str
+    display_name_english: str
+    display_name_italian: str
+    sort_order: int
+    year_periods: list[HistoricalYearPeriod]
+
+
 class ForecastOverviewSeriesConfigurationRead(sqlmodel.SQLModel):
     id: int
     identifier: str
@@ -178,10 +205,10 @@ class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
     netcdf_main_dataset_name: str
     thredds_url_pattern: str
     wms_main_layer_name: str
+    year_period_group: int
     climatic_indicator: Optional[int]
     spatial_region: Optional[int]
     reference_period: Optional[HistoricalReferencePeriod]
-    year_periods: list[HistoricalYearPeriod]
     decades: list[HistoricalDecade]
     observation_series_configurations: list[int]
 
@@ -195,13 +222,13 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     wms_secondary_layer_name: Optional[str]
     climatic_indicator: Optional[int]
     spatial_region: Optional[int]
+    year_period_group: int
+    forecast_model_group: int
     lower_uncertainty_thredds_url_pattern: Optional[str]
     lower_uncertainty_netcdf_main_dataset_name: Optional[str]
     upper_uncertainty_thredds_url_pattern: Optional[str]
     upper_uncertainty_netcdf_main_dataset_name: Optional[str]
     scenarios: list[ForecastScenario]
-    year_periods: list[ForecastYearPeriod]
-    forecast_models: list[int]
     forecast_time_windows: list[int]
     observation_series_configurations: list[int]
 
@@ -235,38 +262,3 @@ class SpatialRegionRead(sqlmodel.SQLModel):
     display_name_italian: str
     sort_order: int
     geom: pydantic.Json
-
-
-#
-# class StationRead(sqlmodel.SQLModel):
-#     id: uuid.UUID
-#     name: str
-#     code: str
-#     type: str
-#     longitude: float
-#     latitude: float
-#     active_since: Optional[dt.date]
-#     active_until: Optional[dt.date]
-#     altitude_m: Optional[float]
-#
-#
-# class MonthlyMeasurementRead(sqlmodel.SQLModel):
-#     station: str
-#     variable: str
-#     date: dt.date
-#     value: float
-#
-#
-# class SeasonalMeasurementRead(sqlmodel.SQLModel):
-#     station: str
-#     variable: str
-#     year: int
-#     season: Season
-#     value: float
-#
-#
-# class YearlyMeasurementRead(sqlmodel.SQLModel):
-#     station: str
-#     variable: str
-#     year: int
-#     value: float

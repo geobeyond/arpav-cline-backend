@@ -198,66 +198,45 @@ def get_historical_coverage_configuration_by_identifier(
 ) -> Optional[HistoricalCoverageConfiguration]:
     error_message = f"{identifier!r} is not a valid historical coverage identifier"
     parts = identifier.split("-")
-    if parts[0] == DataCategory.HISTORICAL.value:
-        if len(parts) >= 5:
-            climatic_indicator_identifier = "-".join(parts[1:4])
-            climatic_indicator = get_climatic_indicator_by_identifier(
-                session, climatic_indicator_identifier
-            )
-            if climatic_indicator is None:
-                raise exceptions.InvalidClimaticIndicatorIdentifierError(
-                    f"{climatic_indicator_identifier!r} is not a valid climatic "
-                    f"indicator identifier"
-                )
-            spatial_region_name = parts[4]
-            spatial_region = get_spatial_region_by_name(session, spatial_region_name)
-            if spatial_region is None:
-                raise exceptions.InvalidSpatialRegionNameError(
-                    f"{spatial_region_name!r} is not a valid spatial region name"
-                )
-
-            if len(parts) == 5:
-                result = _get_five_part_hcc(session, climatic_indicator, spatial_region)
-            elif len(parts) == 6:
-                try:
-                    reference_period = HistoricalReferencePeriod(parts[5])
-                except ValueError:
-                    raise exceptions.InvalidHistoricalCoverageConfigurationIdentifierError(
-                        error_message + "- invalid reference period"
-                    )
-                result = _get_six_part_hcc(
-                    session, climatic_indicator, spatial_region, reference_period
-                )
-            else:
-                raise exceptions.InvalidHistoricalCoverageConfigurationIdentifierError(
-                    error_message + "- identifier is too long"
-                )
-            return result
-        else:
-            raise exceptions.InvalidHistoricalCoverageConfigurationIdentifierError(
-                error_message + "- identifier is too short"
-            )
-    else:
+    if len(parts) not in (6, 7) or parts[0] != DataCategory.HISTORICAL.value:
         raise exceptions.InvalidHistoricalCoverageConfigurationIdentifierError(
             error_message
         )
-
-
-def _get_five_part_hcc(
-    session: sqlmodel.Session,
-    climatic_indicator: ClimaticIndicator,
-    spatial_region: SpatialRegion,
-) -> Optional[HistoricalCoverageConfiguration]:
-    statement = sqlmodel.select(HistoricalCoverageConfiguration).where(
-        HistoricalCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,
-        HistoricalCoverageConfiguration.spatial_region_id == spatial_region.id,
+    climatic_indicator_identifier = "-".join(parts[1:4])
+    climatic_indicator = get_climatic_indicator_by_identifier(
+        session, climatic_indicator_identifier
     )
-    query_result = session.exec(statement).all()
-    result = None
-    for hcc in query_result:
-        if len(hcc.identifier.split("-")) == 5:
-            result = hcc
-            break
+    if climatic_indicator is None:
+        raise exceptions.InvalidClimaticIndicatorIdentifierError(
+            f"{climatic_indicator_identifier!r} is not a valid climatic "
+            f"indicator identifier"
+        )
+    spatial_region_name = parts[4]
+    spatial_region = get_spatial_region_by_name(session, spatial_region_name)
+    if spatial_region is None:
+        raise exceptions.InvalidSpatialRegionNameError(
+            f"{spatial_region_name!r} is not a valid spatial region name"
+        )
+    year_period_group_name = parts[5]
+    year_period_group = get_historical_year_period_group_by_name(
+        session, year_period_group_name)
+    if year_period_group is None:
+        raise exceptions.InvalidHistoricalYearPeriodGroupNameError(
+            f"{year_period_group_name!r} is not a valid historical year period group name"
+        )
+    if len(parts) == 6:
+        result = _get_six_part_hcc(session, climatic_indicator, spatial_region)
+    else:
+        try:
+            reference_period = HistoricalReferencePeriod(parts[6])
+        except ValueError:
+            raise exceptions.InvalidHistoricalCoverageConfigurationIdentifierError(
+                error_message + "- invalid reference period"
+            )
+        result = _get_seven_part_hcc(
+            session, climatic_indicator, spatial_region,
+            year_period_group, reference_period
+        )
     return result
 
 
@@ -265,12 +244,33 @@ def _get_six_part_hcc(
     session: sqlmodel.Session,
     climatic_indicator: ClimaticIndicator,
     spatial_region: SpatialRegion,
-    reference_period: HistoricalReferencePeriod,
+    year_period_group: HistoricalYearPeriodGroup,
 ) -> Optional[HistoricalCoverageConfiguration]:
-    """Try to find a historical coverage identifier made up of six parts."""
     statement = sqlmodel.select(HistoricalCoverageConfiguration).where(
         HistoricalCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,
         HistoricalCoverageConfiguration.spatial_region_id == spatial_region.id,
+        HistoricalCoverageConfiguration.year_period_group_id == year_period_group.id,
+    )
+    query_result = session.exec(statement).all()
+    result = None
+    for hcc in query_result:
+        if len(hcc.identifier.split("-")) == 6:
+            result = hcc
+            break
+    return result
+
+
+def _get_seven_part_hcc(
+    session: sqlmodel.Session,
+    climatic_indicator: ClimaticIndicator,
+    spatial_region: SpatialRegion,
+    year_period_group: HistoricalYearPeriodGroup,
+    reference_period: HistoricalReferencePeriod,
+) -> Optional[HistoricalCoverageConfiguration]:
+    statement = sqlmodel.select(HistoricalCoverageConfiguration).where(
+        HistoricalCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,
+        HistoricalCoverageConfiguration.spatial_region_id == spatial_region.id,
+        HistoricalCoverageConfiguration.year_period_group_id == year_period_group.id,
         reference_period.name == HistoricalCoverageConfiguration.reference_period,
     )
     return session.exec(statement).first()
@@ -508,69 +508,65 @@ def get_historical_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[HistoricalCoverageInternal]:
     parts = identifier.split("-")
-    result = None
     historical_cov_conf = None
-    year_period = None
     decade = None
-    # historical cov conf has either 5 or 6 parts, then we have the year period and maybe a decade
-    if len(parts) >= 6:
-        possible_six_part_cov_conf_identifier = "-".join((parts[:6]))
+    # historical cov conv has either 6 or 7 parts, then we have the year period and maybe a decade
+    # so we can have
+    # - 6 + 1 = 7
+    # - 6 + 1 + 1 = 8
+    # - 7 + 1 = 8
+    # - 7 + 1 + 1 = 9
+    if len(parts) < 7 or parts[0] != DataCategory.HISTORICAL.value:
+        raise exceptions.InvalidHistoricalCoverageIdentifierError()
+
+    possible_seven_part_historical_cov_conf_identifier = "-".join(parts[:7])
+    cov_conf = get_historical_coverage_configuration_by_identifier(
+        session, possible_seven_part_historical_cov_conf_identifier)
+    if cov_conf is not None:
+        year_period_value = parts[8]
         try:
-            historical_cov_conf = get_historical_coverage_configuration_by_identifier(
-                session, possible_six_part_cov_conf_identifier
-            )
-        except exceptions.ArpavError:
-            logger.info(
-                f"Could not extract six-part historical coverage configuration "
-                f"from {possible_six_part_cov_conf_identifier!r}"
-            )
-
-        if historical_cov_conf is not None:
+            year_period = HistoricalYearPeriod(year_period_value)
+        except ValueError as err:
+            raise exceptions.InvalidHistoricalCoverageIdentifierError(
+                f"Invalid year period value: {year_period_value!r}"
+            ) from err
+        if len(parts) > 8:
+            decade_value = parts[9]
             try:
-                year_period = HistoricalYearPeriod(parts[6])
-            except ValueError:
-                logger.warning(
-                    f"Could not extract historical year period from {parts[6]!r}"
-                )
-            try:
-                decade = HistoricalDecade(parts[7]) if len(parts) > 7 else None
-            except ValueError:
-                logger.warning(f"Could not extract historical decade from {parts[7]!r}")
-        else:
-            possible_five_part_cov_conf_identifier = "-".join((parts[:5]))
-            try:
-                historical_cov_conf = (
-                    get_historical_coverage_configuration_by_identifier(
-                        session, possible_five_part_cov_conf_identifier
-                    )
-                )
-            except exceptions.ArpavError:
-                logger.info(
-                    f"Could not extract five-part historical coverage configuration "
-                    f"from {possible_five_part_cov_conf_identifier!r}"
-                )
-
-            if historical_cov_conf is not None:
-                try:
-                    year_period = HistoricalYearPeriod(parts[5])
-                except ValueError:
-                    logger.warning(
-                        f"Could not extract historical year period from {parts[5]!r}"
-                    )
-                try:
-                    decade = HistoricalDecade(parts[6]) if len(parts) > 6 else None
-                except ValueError:
-                    logger.warning(
-                        f"Could not extract historical decade from {parts[6]!r}"
-                    )
-        if all((historical_cov_conf, year_period)):
-            result = HistoricalCoverageInternal(
-                configuration=historical_cov_conf,
-                year_period=year_period,
-                decade=decade,
-            )
+                decade = HistoricalDecade(decade_value)
+            except ValueError as err:
+                raise exceptions.InvalidHistoricalCoverageIdentifierError(
+                    f"Invalid decade: {decade_value!r}"
+                ) from err
     else:
-        logger.warning("Identifier is too short to represent a historical coverage")
+        possible_six_part_historical_cov_conf_identifier = "-".join(parts[:6])
+        cov_conf = get_historical_coverage_configuration_by_identifier(
+            session, possible_six_part_historical_cov_conf_identifier)
+        if cov_conf is not None:
+            year_period_value = parts[7]
+            try:
+                year_period = HistoricalYearPeriod(year_period_value)
+            except ValueError as err:
+                raise exceptions.InvalidHistoricalCoverageIdentifierError(
+                    f"Invalid year period value: {year_period_value!r}"
+                ) from err
+            if len(parts) > 7:
+                decade_value = parts[8]
+                try:
+                    decade = HistoricalDecade(decade_value)
+                except ValueError as err:
+                    raise exceptions.InvalidHistoricalCoverageIdentifierError(
+                        f"Invalid decade: {decade_value!r}"
+                    ) from err
+        else:
+            raise exceptions.InvalidHistoricalCoverageIdentifierError(
+                f"Could not find historical coverage configuration")
+
+    result = HistoricalCoverageInternal(
+        configuration=cov_conf,
+        year_period=year_period,
+        decade=decade,
+    )
     return result
 
 

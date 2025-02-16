@@ -55,6 +55,84 @@ class PossibleConfigurationParameterValuesField(starlette_admin.EnumField):
         return self._get_label(value, request)
 
 
+class RelatedForecastModelGroupField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedForecastModelGroupField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_forecast_model_group = db.get_forecast_model_group(session, value)
+        return db_forecast_model_group.name
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_forecast_model_groups = db.collect_all_forecast_model_groups(
+            request.state.session
+        )
+        return [(str(fmg.id), fmg.name) for fmg in all_forecast_model_groups]
+
+
+class RelatedForecastYearPeriodGroupField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedForecastYearPeriodGroupField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_year_period_group = db.get_forecast_year_period_group(session, value)
+        return db_year_period_group.name
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_year_period_groups = db.collect_all_forecast_year_period_groups(
+            request.state.session
+        )
+        return [(str(ypg.id), ypg.name) for ypg in all_year_period_groups]
+
+
+class RelatedHistoricalYearPeriodGroupField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedHistoricalYearPeriodGroupField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        session = request.state.session
+        db_year_period_group = db.get_historical_year_period_group(session, value)
+        return db_year_period_group.name
+
+    async def serialize_value(
+        self,
+        request: Request,
+        value: int,
+        action: starlette_admin.RequestAction,
+    ) -> Any:
+        return self._get_label(value, request)
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_year_period_groups = db.collect_all_historical_year_period_groups(
+            request.state.session
+        )
+        return [(str(ypg.id), ypg.name) for ypg in all_year_period_groups]
+
+
 class RelatedForecastModelField(starlette_admin.EnumField):
     def __post_init__(self) -> None:
         self.choices_loader = RelatedForecastModelField.choices_loader

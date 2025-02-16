@@ -2,6 +2,18 @@ class ArpavError(Exception):
     ...
 
 
+class InvalidForecastYearPeriodGroupNameError(ArpavError):
+    ...
+
+
+class InvalidHistoricalYearPeriodGroupNameError(ArpavError):
+    ...
+
+
+class InvalidForecastModelGroupNameError(ArpavError):
+    ...
+
+
 class InvalidAggregationPeriod(ArpavError):
     ...
 
