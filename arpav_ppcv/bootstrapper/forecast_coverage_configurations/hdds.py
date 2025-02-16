@@ -14,8 +14,9 @@ from ...schemas.static import (
 def generate_forecast_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
-    forecast_model_ids: dict[str, int],
     forecast_time_window_ids: dict[str, int],
+    year_period_groups: dict[str, int],
+    forecast_model_groups: dict[str, int],
     observation_series_configuration_ids: dict[str, int],
 ) -> list[ForecastCoverageConfigurationCreate]:
     return [
@@ -34,15 +35,11 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.ALL_YEAR,
-            ],
+            year_period_group=year_period_groups["only_year"],
+            forecast_model_group=forecast_model_groups["ensemble"],
             forecast_time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
-            ],
-            forecast_models=[
-                forecast_model_ids["model_ensemble"],
             ],
         ),
         ForecastCoverageConfigurationCreate(
@@ -59,19 +56,11 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.ALL_YEAR,
-            ],
+            year_period_group=year_period_groups["only_year"],
+            forecast_model_group=forecast_model_groups["five_models"],
             forecast_time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
-            ],
-            forecast_models=[
-                forecast_model_ids["ec_earth_cclm_4_8_17"],
-                forecast_model_ids["ec_earth_racmo22e"],
-                forecast_model_ids["ec_earth_rca4"],
-                forecast_model_ids["hadgem2_racmo22e"],
-                forecast_model_ids["mpi_esm_lr_remo2009"],
             ],
         ),
         ForecastCoverageConfigurationCreate(
@@ -98,12 +87,8 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.ALL_YEAR,
-            ],
-            forecast_models=[
-                forecast_model_ids["model_ensemble"],
-            ],
+            year_period_group=year_period_groups["only_year"],
+            forecast_model_group=forecast_model_groups["ensemble"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
                     "hdds-absolute-annual-arpa_v-yearly"
@@ -124,16 +109,8 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP45,
                 ForecastScenario.RCP85,
             ],
-            year_periods=[
-                ForecastYearPeriod.ALL_YEAR,
-            ],
-            forecast_models=[
-                forecast_model_ids["ec_earth_cclm_4_8_17"],
-                forecast_model_ids["ec_earth_racmo22e"],
-                forecast_model_ids["ec_earth_rca4"],
-                forecast_model_ids["hadgem2_racmo22e"],
-                forecast_model_ids["mpi_esm_lr_remo2009"],
-            ],
+            year_period_group=year_period_groups["only_year"],
+            forecast_model_group=forecast_model_groups["five_models"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
                     "hdds-absolute-annual-arpa_v-yearly"

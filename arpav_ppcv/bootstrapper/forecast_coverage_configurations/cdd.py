@@ -12,7 +12,6 @@ from ...schemas.static import (
 def generate_forecast_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
-    forecast_model_ids: dict[str, int],
     forecast_time_window_ids: dict[str, int],
     observation_series_configuration_ids: dict[str, int],
     year_period_groups: dict[str, int],

@@ -35,6 +35,17 @@ def generate_forecast_year_period_groups() -> list[ForecastYearPeriodGroupCreate
                 ForecastYearPeriod.AUTUMN,
             ],
         ),
+        ForecastYearPeriodGroupCreate(
+            name="only_summer",
+            display_name_english="Only summer",
+            display_name_italian="Solo estate",
+            description_english="Only summer description",
+            description_italian="Solo estate descrizione",
+            sort_order=2,
+            year_periods=[
+                ForecastYearPeriod.SUMMER,
+            ],
+        ),
     ]
 
 
