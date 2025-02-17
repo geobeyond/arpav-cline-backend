@@ -231,6 +231,28 @@ dev environment is located at individual devs machine(s). In order to get a work
   order to check which env variables are set and how to further interact with the system
 
 
+##### Standing up the frontend for development
+
+The frontend uses another code repository:
+
+https://github.com/geobeyond/arpav-cline-frontend
+
+It can be useful to have it running in dev mode alongside the backend, for development purposes. More
+detailed instructions are available in the project's README file, but in a nutshell:
+
+```shell
+
+# 1. put these in the environment and then run the `inject-env` command
+ARPAV_BACKEND_API_BASE_URL=http://localhost:8877 \
+ARPAV_TOLGEE_BASE_URL=http://localhost:8899 \
+yarn inject-env public
+
+# 2. launch the frontend
+yarn start
+```
+
+
+
 ##### Building the docker image locally
 
 Build the docker image by running this command:
