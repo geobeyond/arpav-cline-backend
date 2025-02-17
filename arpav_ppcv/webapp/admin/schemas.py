@@ -164,6 +164,8 @@ class ForecastModelGroupRead(sqlmodel.SQLModel):
     name: str
     display_name_english: str
     display_name_italian: str
+    description_english: str
+    description_italian: str
     sort_order: int
     forecast_models: list[int]
 
@@ -173,6 +175,8 @@ class ForecastYearPeriodGroupRead(sqlmodel.SQLModel):
     name: str
     display_name_english: str
     display_name_italian: str
+    description_english: str
+    description_italian: str
     sort_order: int
     year_periods: list[ForecastYearPeriod]
 
@@ -182,6 +186,8 @@ class HistoricalYearPeriodGroupRead(sqlmodel.SQLModel):
     name: str
     display_name_english: str
     display_name_italian: str
+    description_english: str
+    description_italian: str
     sort_order: int
     year_periods: list[HistoricalYearPeriod]
 

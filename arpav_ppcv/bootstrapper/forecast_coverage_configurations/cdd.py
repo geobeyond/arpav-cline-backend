@@ -1,8 +1,5 @@
 from ...schemas.coverages import ForecastCoverageConfigurationCreate
-from ...schemas.static import (
-    ForecastScenario,
-    ForecastYearPeriod,
-)
+from ...schemas.static import ForecastScenario
 
 # below are configurations for:
 # 1. cdd anomaly 30 year (model ensemble) (all seasons)
@@ -13,9 +10,9 @@ def generate_forecast_coverage_configurations(
     climatic_indicator_ids: dict[str, int],
     spatial_region_ids: dict[str, int],
     forecast_time_window_ids: dict[str, int],
-    observation_series_configuration_ids: dict[str, int],
     year_period_groups: dict[str, int],
     forecast_model_groups: dict[str, int],
+    observation_series_configuration_ids: dict[str, int],
 ) -> list[ForecastCoverageConfigurationCreate]:
     return [
         ForecastCoverageConfigurationCreate(

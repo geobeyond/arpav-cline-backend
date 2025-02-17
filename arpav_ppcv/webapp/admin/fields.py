@@ -149,14 +149,46 @@ class RelatedForecastModelField(starlette_admin.EnumField):
         value: int,
         action: starlette_admin.RequestAction,
     ) -> Any:
+        logger.debug(f"{value=}")
         return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):
-        all_forecast_models = db.collect_all_forecast_models(
-            request.state.session
-        )
+        all_forecast_models = db.collect_all_forecast_models(request.state.session)
         return [(str(fm.id), fm.name) for fm in all_forecast_models]
+
+
+class RelatedForecastModelsField(starlette_admin.EnumField):
+    def __post_init__(self) -> None:
+        self.choices_loader = RelatedForecastModelsField.choices_loader
+        super().__post_init__()
+
+    def _get_label(self, value: int, request: Request) -> str:
+        result = None
+        for v, label in self._get_choices(request):
+            if value == v:
+                result = label
+                break
+        return result
+
+    async def serialize_value(
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
+    ) -> Any:
+        labels = [
+            (
+                self._get_label(v, request)
+                if action != starlette_admin.RequestAction.EDIT
+                else v
+            )
+            for v in (value if self.multiple else [value])
+        ]
+        return labels if self.multiple else labels[0]
+
+    @staticmethod
+    def choices_loader(request: Request):
+        all_forecast_models = db.collect_all_forecast_models(request.state.session)
+        result = [(fm.id, fm.name) for fm in all_forecast_models]
+        return result
 
 
 class RelatedForecastTimeWindowField(starlette_admin.EnumField):
@@ -192,8 +224,8 @@ class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
 
     def _get_label(self, value: int, request: Request) -> str:
         session = request.state.session
-        db_observation_series_configuration = (
-            db.get_observation_series_configuration(session, value)
+        db_observation_series_configuration = db.get_observation_series_configuration(
+            session, value
         )
         return db_observation_series_configuration.identifier
 
@@ -257,9 +289,7 @@ class RelatedSpatialRegionField(starlette_admin.EnumField):
 
     @staticmethod
     def choices_loader(request: Request):
-        all_spatial_regions = db.collect_all_spatial_regions(
-            request.state.session
-        )
+        all_spatial_regions = db.collect_all_spatial_regions(request.state.session)
         return [(sr.id, sr.name) for sr in all_spatial_regions]
 
 

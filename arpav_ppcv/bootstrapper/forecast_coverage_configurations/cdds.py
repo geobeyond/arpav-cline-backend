@@ -1,8 +1,5 @@
 from ...schemas.coverages import ForecastCoverageConfigurationCreate
-from ...schemas.static import (
-    ForecastScenario,
-    ForecastYearPeriod,
-)
+from ...schemas.static import ForecastScenario
 
 # below are configurations for:
 # 1. cdds anomaly 30 year (model ensemble) (all year)
@@ -91,7 +88,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["ensemble"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "cdds-absolute-annual-arpa_v:arpa_fvg-yearly"
+                    "cdds-absolute-annual-arpa_v-yearly"
                 ]
             ],
         ),
@@ -113,7 +110,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["five_models"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "cdds-absolute-annual-arpa_v:arpa_fvg-yearly"
+                    "cdds-absolute-annual-arpa_v-yearly"
                 ]
             ],
         ),

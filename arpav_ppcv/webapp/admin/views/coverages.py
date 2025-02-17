@@ -990,7 +990,9 @@ class ForecastModelGroupView(ModelView):
         starlette_admin.StringField("description_english"),
         starlette_admin.StringField("description_italian"),
         starlette_admin.IntegerField("sort_order"),
-        fields.RelatedForecastModelField("forecast_models", required=True),
+        fields.RelatedForecastModelsField(
+            "forecast_models", multiple=True, required=True
+        ),
     )
 
     @staticmethod
@@ -998,7 +1000,10 @@ class ForecastModelGroupView(ModelView):
         instance: coverages.ForecastModelGroup,
     ) -> read_schemas.ForecastModelGroupRead:
         return read_schemas.ForecastModelGroupRead(
-            **instance.model_dump()
+            **instance.model_dump(),
+            forecast_models=[
+                fml.forecast_model_id for fml in instance.forecast_model_links
+            ],
         )
 
     async def create(self, request: Request, data: Dict[str, Any]) -> Any:
@@ -1087,10 +1092,7 @@ class ForecastYearPeriodGroupView(ModelView):
         starlette_admin.StringField("description_italian"),
         starlette_admin.IntegerField("sort_order"),
         starlette_admin.EnumField(
-            "year_periods",
-            multiple=True,
-            enum=static.ForecastYearPeriod,
-            required=True
+            "year_periods", multiple=True, enum=static.ForecastYearPeriod, required=True
         ),
     )
 
@@ -1098,15 +1100,15 @@ class ForecastYearPeriodGroupView(ModelView):
     def _serialize_instance(
         instance: coverages.ForecastYearPeriodGroup,
     ) -> read_schemas.ForecastYearPeriodGroupRead:
-        return read_schemas.ForecastYearPeriodGroupRead(
-            **instance.model_dump()
-        )
+        return read_schemas.ForecastYearPeriodGroupRead(**instance.model_dump())
 
     async def create(self, request: Request, data: Dict[str, Any]) -> Any:
         try:
             data = await self._arrange_data(request, data)
             await self.validate(request, data)
-            forecast_year_period_group_create = coverages.ForecastYearPeriodGroupCreate(**data)
+            forecast_year_period_group_create = coverages.ForecastYearPeriodGroupCreate(
+                **data
+            )
             db_forecast_year_period_group = await anyio.to_thread.run_sync(
                 db.create_forecast_year_period_group,
                 request.state.session,
@@ -1121,7 +1123,8 @@ class ForecastYearPeriodGroupView(ModelView):
             data = await self._arrange_data(request, data, True)
             await self.validate(request, data)
             forecast_year_period_group_update = coverages.ForecastYearPeriodGroupUpdate(
-                **data)
+                **data
+            )
             db_forecast_year_period_group = await anyio.to_thread.run_sync(
                 db.get_forecast_year_period_group,
                 request.state.session,
@@ -1192,7 +1195,7 @@ class HistoricalYearPeriodGroupView(ModelView):
             "year_periods",
             multiple=True,
             enum=static.HistoricalYearPeriod,
-            required=True
+            required=True,
         ),
     )
 
@@ -1200,15 +1203,15 @@ class HistoricalYearPeriodGroupView(ModelView):
     def _serialize_instance(
         instance: coverages.HistoricalYearPeriodGroup,
     ) -> read_schemas.HistoricalYearPeriodGroupRead:
-        return read_schemas.HistoricalYearPeriodGroupRead(
-            **instance.model_dump()
-        )
+        return read_schemas.HistoricalYearPeriodGroupRead(**instance.model_dump())
 
     async def create(self, request: Request, data: Dict[str, Any]) -> Any:
         try:
             data = await self._arrange_data(request, data)
             await self.validate(request, data)
-            historical_year_period_group_create = coverages.HistoricalYearPeriodGroupCreate(**data)
+            historical_year_period_group_create = (
+                coverages.HistoricalYearPeriodGroupCreate(**data)
+            )
             db_historical_year_period_group = await anyio.to_thread.run_sync(
                 db.create_historical_year_period_group,
                 request.state.session,
@@ -1222,8 +1225,9 @@ class HistoricalYearPeriodGroupView(ModelView):
         try:
             data = await self._arrange_data(request, data, True)
             await self.validate(request, data)
-            historical_year_period_group_update = coverages.HistoricalYearPeriodGroupUpdate(
-                **data)
+            historical_year_period_group_update = (
+                coverages.HistoricalYearPeriodGroupUpdate(**data)
+            )
             db_historical_year_period_group = await anyio.to_thread.run_sync(
                 db.get_historical_year_period_group,
                 request.state.session,

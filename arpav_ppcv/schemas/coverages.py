@@ -400,7 +400,6 @@ class HistoricalYearPeriodGroup(_BaseGroup, table=True):
         ),
     )
 
-
     historical_coverage_configurations: list[
         "HistoricalCoverageConfiguration"
     ] = sqlmodel.Relationship(back_populates="year_period_group")
@@ -1417,7 +1416,8 @@ class ForecastCoverageInternal:
                 )
             )
         if self.forecast_model.id not in (
-            fml.forecast_model_id for fml in self.configuration.forecast_model_group.forecast_model_links
+            fml.forecast_model_id
+            for fml in self.configuration.forecast_model_group.forecast_model_links
         ):
             raise exceptions.InvalidForecastModelError(
                 error_message.format(
@@ -1651,8 +1651,9 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
                 year_period_group=self.year_period_group.name,
                 extra=(
                     f"-{self.reference_period.value}"
-                    if self.reference_period is not None else ""
-                )
+                    if self.reference_period is not None
+                    else ""
+                ),
             )
         )
 
@@ -1677,7 +1678,7 @@ class HistoricalCoverageConfigurationCreate(sqlmodel.SQLModel):
     spatial_region_id: int
     reference_period: Optional[static.HistoricalReferencePeriod] = None
     decades: Optional[list[static.HistoricalDecade]] = None
-    year_periods: list[static.HistoricalYearPeriod]
+    year_period_group: int
     observation_series_configurations: Optional[list[int]] = None
 
 
@@ -1689,7 +1690,7 @@ class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
     spatial_region_id: Optional[int] = None
     reference_period: Optional[static.HistoricalReferencePeriod] = None
     decades: Optional[list[static.HistoricalDecade]] = None
-    year_periods: Optional[list[static.HistoricalYearPeriod]] = None
+    year_period_group: Optional[int] = None
     observation_series_configurations: Optional[list[int]] = None
 
 

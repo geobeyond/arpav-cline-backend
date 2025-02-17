@@ -103,7 +103,7 @@ from .spatialregions import generate_spatial_regions
 from .configurationparameters import generate_configuration_parameters
 from .yearperiods import (
     generate_forecast_year_period_groups,
-    generate_historical_year_period_groups
+    generate_historical_year_period_groups,
 )
 
 app = typer.Typer()
@@ -585,134 +585,47 @@ def bootstrap_forecast_coverage_configurations(ctx: typer.Context):
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_climatic_indicators = db.collect_all_climatic_indicators(session)
         all_spatial_regions = db.collect_all_spatial_regions(session)
-        all_forecast_models = db.collect_all_forecast_models(session)
+        all_year_period_groups = db.collect_all_forecast_year_period_groups(session)
+        all_model_groups = db.collect_all_forecast_model_groups(session)
         all_forecast_time_windows = db.collect_all_forecast_time_windows(session)
         all_observation_series_configurations = (
             db.collect_all_observation_series_configurations(session)
         )
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
         region_ids = {sr.name: sr.id for sr in all_spatial_regions}
-        forecast_model_ids = {fm.name: fm.id for fm in all_forecast_models}
+        model_group_ids = {fmg.name: fmg.id for fmg in all_model_groups}
+        year_period_group_ids = {ypg.name: ypg.id for ypg in all_year_period_groups}
         time_window_ids = {tw.name: tw.id for tw in all_forecast_time_windows}
         observation_series_configuration_ids = {
             osc.identifier: osc.id for osc in all_observation_series_configurations
         }
 
-        to_create = cdd_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-            climatic_indicator_ids=clim_ind_ids,
-            spatial_region_ids=region_ids,
-            forecast_model_ids=forecast_model_ids,
-            forecast_time_window_ids=time_window_ids,
-            observation_series_configuration_ids=observation_series_configuration_ids,
-        )
-        to_create.extend(
-            cdds_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
+        to_create = []
+        for handler in (
+            cdd_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            cdds_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            fd_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            hdds_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            hwdi_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            pr_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            r95ptot_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            snwdays_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            su30_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            tas_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            tasmax_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            tasmin_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+            tr_forecast_coverage_configurations.generate_forecast_coverage_configurations,
+        ):
+            to_create.extend(
+                handler(
+                    climatic_indicator_ids=clim_ind_ids,
+                    spatial_region_ids=region_ids,
+                    forecast_time_window_ids=time_window_ids,
+                    year_period_groups=year_period_group_ids,
+                    forecast_model_groups=model_group_ids,
+                    observation_series_configuration_ids=observation_series_configuration_ids,
+                )
             )
-        )
-        to_create.extend(
-            fd_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            hdds_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            hwdi_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            pr_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            r95ptot_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            snwdays_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            su30_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            tas_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            tasmax_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            tasmin_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
-        to_create.extend(
-            tr_forecast_coverage_configurations.generate_forecast_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-                forecast_model_ids=forecast_model_ids,
-                forecast_time_window_ids=time_window_ids,
-                observation_series_configuration_ids=observation_series_configuration_ids,
-            )
-        )
         for forecast_coverage_configuration_create in to_create:
             try:
                 db_forecast_cov_conf = db.create_forecast_coverage_configuration(
@@ -736,61 +649,37 @@ def bootstrap_historical_coverage_configurations(ctx: typer.Context):
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         all_climatic_indicators = db.collect_all_climatic_indicators(session)
         all_spatial_regions = db.collect_all_spatial_regions(session)
+        all_year_period_groups = db.collect_all_historical_year_period_groups(session)
+        all_observation_series_confs = db.collect_all_observation_series_configurations(
+            session
+        )
         clim_ind_ids = {ind.identifier: ind.id for ind in all_climatic_indicators}
         region_ids = {sr.name: sr.id for sr in all_spatial_regions}
+        year_period_group_ids = {ypg.name: ypg.id for ypg in all_year_period_groups}
+        observation_series_configuration_ids = {
+            osc.identifier: osc.id for osc in all_observation_series_confs
+        }
+        to_create = []
+        for handler in (
+            cdds_historical_coverage_configurations.generate_historical_coverage_configurations,
+            fd_historical_coverage_configurations.generate_historical_coverage_configurations,
+            hdds_historical_coverage_configurations.generate_historical_coverage_configurations,
+            pr_historical_coverage_configurations.generate_historical_coverage_configurations,
+            su30_historical_coverage_configurations.generate_historical_coverage_configurations,
+            tas_historical_coverage_configurations.generate_historical_coverage_configurations,
+            tasmax_historical_coverage_configurations.generate_historical_coverage_configurations,
+            tasmin_historical_coverage_configurations.generate_historical_coverage_configurations,
+            tr_historical_coverage_configurations.generate_historical_coverage_configurations,
+        ):
+            to_create.extend(
+                handler(
+                    climatic_indicator_ids=clim_ind_ids,
+                    spatial_region_ids=region_ids,
+                    year_period_groups=year_period_group_ids,
+                    observation_series_configuration_ids=observation_series_configuration_ids,
+                )
+            )
 
-        to_create = cdds_historical_coverage_configurations.generate_historical_coverage_configurations(
-            climatic_indicator_ids=clim_ind_ids,
-            spatial_region_ids=region_ids,
-        )
-        to_create.extend(
-            fd_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            hdds_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            pr_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            su30_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            tas_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            tasmax_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            tasmin_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
-        to_create.extend(
-            tr_historical_coverage_configurations.generate_historical_coverage_configurations(
-                climatic_indicator_ids=clim_ind_ids,
-                spatial_region_ids=region_ids,
-            )
-        )
         for historical_coverage_configuration_create in to_create:
             try:
                 db_historical_cov_conf = db.create_historical_coverage_configuration(
@@ -892,22 +781,19 @@ def bootstrap_year_periods(ctx: typer.Context):
     """Create initial year period groups."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
         existing_forecast_names = [
-            ypg.name for ypg in db.collect_all_forecast_year_period_groups(session)]
+            ypg.name for ypg in db.collect_all_forecast_year_period_groups(session)
+        ]
         for item_create in generate_forecast_year_period_groups():
             if item_create.name not in existing_forecast_names:
                 db_item = db.create_forecast_year_period_group(session, item_create)
-                print(
-                    f"Created forecast year period group {db_item.name!r}"
-                )
+                print(f"Created forecast year period group {db_item.name!r}")
         existing_historical_names = [
             ypg.name for ypg in db.collect_all_historical_year_period_groups(session)
         ]
         for item_create in generate_historical_year_period_groups():
             if item_create.name not in existing_historical_names:
                 db_item = db.create_historical_year_period_group(session, item_create)
-                print(
-                    f"Created historical year period group {db_item.name!r}"
-                )
+                print(f"Created historical year period group {db_item.name!r}")
 
 
 @app.command("forecast-time-windows")
@@ -979,6 +865,7 @@ def perform_full_bootstrap(
         municipalities_dataset=municipalities_dataset,
         force=True,
     )
+    ctx.invoke(bootstrap_year_periods, ctx=ctx)
     ctx.invoke(bootstrap_forecast_models, ctx=ctx)
     ctx.invoke(bootstrap_forecast_time_windows, ctx=ctx)
     ctx.invoke(bootstrap_climatic_indicators, ctx=ctx)

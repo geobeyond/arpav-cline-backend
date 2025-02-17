@@ -219,7 +219,8 @@ def get_historical_coverage_configuration_by_identifier(
         )
     year_period_group_name = parts[5]
     year_period_group = get_historical_year_period_group_by_name(
-        session, year_period_group_name)
+        session, year_period_group_name
+    )
     if year_period_group is None:
         raise exceptions.InvalidHistoricalYearPeriodGroupNameError(
             f"{year_period_group_name!r} is not a valid historical year period group name"
@@ -234,8 +235,11 @@ def get_historical_coverage_configuration_by_identifier(
                 error_message + "- invalid reference period"
             )
         result = _get_seven_part_hcc(
-            session, climatic_indicator, spatial_region,
-            year_period_group, reference_period
+            session,
+            climatic_indicator,
+            spatial_region,
+            year_period_group,
+            reference_period,
         )
     return result
 
@@ -278,20 +282,21 @@ def _get_seven_part_hcc(
 
 def create_historical_coverage_configuration(
     session: sqlmodel.Session,
-    historical_coverage_configuration_create: HistoricalCoverageConfigurationCreate,
+    coverage_configuration_create: HistoricalCoverageConfigurationCreate,
 ) -> HistoricalCoverageConfiguration:
-    db_historical_coverage_configuration = HistoricalCoverageConfiguration(
-        **historical_coverage_configuration_create.model_dump()
+    db_coverage_configuration = HistoricalCoverageConfiguration(
+        **coverage_configuration_create.model_dump(exclude={"year_period_group"}),
+        year_period_group_id=coverage_configuration_create.year_period_group,
     )
-    session.add(db_historical_coverage_configuration)
+    session.add(db_coverage_configuration)
     for obs_series_conf_id in (
-        historical_coverage_configuration_create.observation_series_configurations or []
+        coverage_configuration_create.observation_series_configurations or []
     ):
         db_obs_series_conf = get_observation_series_configuration(
             session, obs_series_conf_id
         )
         if db_obs_series_conf is not None:
-            db_historical_coverage_configuration.observation_series_configuration_links.append(
+            db_coverage_configuration.observation_series_configuration_links.append(
                 HistoricalCoverageConfigurationObservationSeriesConfigurationLink(
                     observation_series_configuration=db_obs_series_conf
                 )
@@ -301,43 +306,43 @@ def create_historical_coverage_configuration(
                 f"observation series configuration {obs_series_conf_id!r} not found"
             )
     session.commit()
-    session.refresh(db_historical_coverage_configuration)
-    return db_historical_coverage_configuration
+    session.refresh(db_coverage_configuration)
+    return db_coverage_configuration
 
 
 def update_historical_coverage_configuration(
     session: sqlmodel.Session,
-    db_historical_coverage_configuration: HistoricalCoverageConfiguration,
-    historical_coverage_configuration_update: HistoricalCoverageConfigurationUpdate,
+    db_coverage_configuration: HistoricalCoverageConfiguration,
+    coverage_configuration_update: HistoricalCoverageConfigurationUpdate,
 ) -> HistoricalCoverageConfiguration:
     """Update a historical coverage configuration."""
     existing_obs_series_conf_links_to_keep = []
     existing_obs_series_conf_links_discard = []
     for (
         existing_obs_series_conf_link
-    ) in db_historical_coverage_configuration.observation_series_configuration_links:
+    ) in db_coverage_configuration.observation_series_configuration_links:
         has_been_requested_to_remove = (
             existing_obs_series_conf_link.observation_series_configuration_id
             not in [
                 osc_id
-                for osc_id in historical_coverage_configuration_update.observation_series_configurations
+                for osc_id in coverage_configuration_update.observation_series_configurations
             ]
         )
         if not has_been_requested_to_remove:
             existing_obs_series_conf_links_to_keep.append(existing_obs_series_conf_link)
         else:
             existing_obs_series_conf_links_discard.append(existing_obs_series_conf_link)
-    db_historical_coverage_configuration.observation_series_configuration_links = (
+    db_coverage_configuration.observation_series_configuration_links = (
         existing_obs_series_conf_links_to_keep
     )
     for to_discard in existing_obs_series_conf_links_discard:
         session.delete(to_discard)
     for (
         obs_series_conf_id
-    ) in historical_coverage_configuration_update.observation_series_configurations:
+    ) in coverage_configuration_update.observation_series_configurations:
         already_there = obs_series_conf_id in (
             oscl.observation_series_configuration_id
-            for oscl in db_historical_coverage_configuration.observation_series_configuration_links
+            for oscl in db_coverage_configuration.observation_series_configuration_links
         )
         if not already_there:
             db_obs_series_conf_link = (
@@ -345,19 +350,24 @@ def update_historical_coverage_configuration(
                     observation_series_configuration_id=obs_series_conf_id
                 )
             )
-            db_historical_coverage_configuration.observation_series_configuration_links.append(
+            db_coverage_configuration.observation_series_configuration_links.append(
                 db_obs_series_conf_link
             )
-    data_ = historical_coverage_configuration_update.model_dump(
+    data_ = coverage_configuration_update.model_dump(
+        exclude={"year_period_group"},
         exclude_unset=True,
         exclude_none=True,
     )
+    if (
+        year_period_group_id := coverage_configuration_update.year_period_group
+    ) is not None:
+        data_["year_period_group_id"] = year_period_group_id
     for key, value in data_.items():
-        setattr(db_historical_coverage_configuration, key, value)
-    session.add(db_historical_coverage_configuration)
+        setattr(db_coverage_configuration, key, value)
+    session.add(db_coverage_configuration)
     session.commit()
-    session.refresh(db_historical_coverage_configuration)
-    return db_historical_coverage_configuration
+    session.refresh(db_coverage_configuration)
+    return db_coverage_configuration
 
 
 def delete_historical_coverage_configuration(
@@ -508,7 +518,6 @@ def get_historical_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[HistoricalCoverageInternal]:
     parts = identifier.split("-")
-    historical_cov_conf = None
     decade = None
     # historical cov conv has either 6 or 7 parts, then we have the year period and maybe a decade
     # so we can have
@@ -521,7 +530,8 @@ def get_historical_coverage(
 
     possible_seven_part_historical_cov_conf_identifier = "-".join(parts[:7])
     cov_conf = get_historical_coverage_configuration_by_identifier(
-        session, possible_seven_part_historical_cov_conf_identifier)
+        session, possible_seven_part_historical_cov_conf_identifier
+    )
     if cov_conf is not None:
         year_period_value = parts[8]
         try:
@@ -541,7 +551,8 @@ def get_historical_coverage(
     else:
         possible_six_part_historical_cov_conf_identifier = "-".join(parts[:6])
         cov_conf = get_historical_coverage_configuration_by_identifier(
-            session, possible_six_part_historical_cov_conf_identifier)
+            session, possible_six_part_historical_cov_conf_identifier
+        )
         if cov_conf is not None:
             year_period_value = parts[7]
             try:
@@ -560,7 +571,8 @@ def get_historical_coverage(
                     ) from err
         else:
             raise exceptions.InvalidHistoricalCoverageIdentifierError(
-                f"Could not find historical coverage configuration")
+                "Could not find historical coverage configuration"
+            )
 
     result = HistoricalCoverageInternal(
         configuration=cov_conf,

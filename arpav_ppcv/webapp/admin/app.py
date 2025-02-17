@@ -19,8 +19,11 @@ from ...schemas.coverages import (
     CoverageConfiguration,
     ForecastCoverageConfiguration,
     ForecastModel,
+    ForecastModelGroup,
     ForecastTimeWindow,
+    ForecastYearPeriodGroup,
     HistoricalCoverageConfiguration,
+    HistoricalYearPeriodGroup,
 )
 from ...schemas.observations import (
     ObservationMeasurement,
@@ -77,9 +80,7 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
             Middleware(SqlModelDbSessionMiddleware, engine=engine),
         ],
     )
-    admin.add_view(
-        climaticindicators_views.ClimaticIndicatorView(ClimaticIndicator)
-    )
+    admin.add_view(climaticindicators_views.ClimaticIndicatorView(ClimaticIndicator))
     admin.add_view(base_views.SpatialRegionView(SpatialRegion))
     admin.add_view(
         DropDown(
@@ -105,7 +106,9 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                 coverage_views.ForecastCoverageConfigurationView(
                     ForecastCoverageConfiguration
                 ),
+                coverage_views.ForecastYearPeriodGroupView(ForecastYearPeriodGroup),
                 coverage_views.ForecastModelView(ForecastModel),
+                coverage_views.ForecastModelGroupView(ForecastModelGroup),
                 coverage_views.ForecastTimeWindowView(ForecastTimeWindow),
             ],
         )
@@ -119,6 +122,7 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                 coverage_views.HistoricalCoverageConfigurationView(
                     HistoricalCoverageConfiguration
                 ),
+                coverage_views.HistoricalYearPeriodGroupView(HistoricalYearPeriodGroup),
             ],
         )
     )
@@ -132,9 +136,7 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                 observations_views.ObservationSeriesConfigurationView(
                     ObservationSeriesConfiguration
                 ),
-                observations_views.ObservationStationView(
-                    ObservationStation
-                ),
+                observations_views.ObservationStationView(ObservationStation),
             ],
         )
     )

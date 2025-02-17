@@ -78,6 +78,22 @@ def generate_observation_series_configurations(
             ],
         ),
         ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tas-absolute-annual"],
+            measurement_aggregation_type=MeasurementAggregationType.MONTHLY,
+            station_managers=[
+                ObservationStationManager.ARPAV,
+                ObservationStationManager.ARPAFVG,
+            ],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmax-absolute-annual"],
+            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            station_managers=[
+                ObservationStationManager.ARPAV,
+                ObservationStationManager.ARPAFVG,
+            ],
+        ),
+        ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["tasmax-absolute-annual"],
             measurement_aggregation_type=MeasurementAggregationType.SEASONAL,
             station_managers=[
@@ -87,6 +103,14 @@ def generate_observation_series_configurations(
         ),
         ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["tasmax-absolute-annual"],
+            measurement_aggregation_type=MeasurementAggregationType.MONTHLY,
+            station_managers=[
+                ObservationStationManager.ARPAV,
+                ObservationStationManager.ARPAFVG,
+            ],
+        ),
+        ObservationSeriesConfigurationCreate(
+            climatic_indicator_id=indicators["tasmin-absolute-annual"],
             measurement_aggregation_type=MeasurementAggregationType.YEARLY,
             station_managers=[
                 ObservationStationManager.ARPAV,
@@ -103,7 +127,7 @@ def generate_observation_series_configurations(
         ),
         ObservationSeriesConfigurationCreate(
             climatic_indicator_id=indicators["tasmin-absolute-annual"],
-            measurement_aggregation_type=MeasurementAggregationType.YEARLY,
+            measurement_aggregation_type=MeasurementAggregationType.MONTHLY,
             station_managers=[
                 ObservationStationManager.ARPAV,
                 ObservationStationManager.ARPAFVG,

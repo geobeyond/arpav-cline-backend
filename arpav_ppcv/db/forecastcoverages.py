@@ -90,18 +90,22 @@ def list_forecast_coverage_configurations(
             == climatic_indicator_filter.id
         )
     if forecast_model_name_filter is not None:
-        statement = statement.join(
-            ForecastModelGroup,
-            ForecastModelGroup.id
-            == ForecastCoverageConfiguration.forecast_model_group_id,
-        ).join(
-            ForecastModelForecastModelGroupLink,
-            ForecastModelGroup.id ==
-            ForecastModelForecastModelGroupLink.forecast_model_group_id
-        ).join(
-            ForecastModel,
-            ForecastModel.id
-            == ForecastModelForecastModelGroupLink.forecast_model_id,
+        statement = (
+            statement.join(
+                ForecastModelGroup,
+                ForecastModelGroup.id
+                == ForecastCoverageConfiguration.forecast_model_group_id,
+            )
+            .join(
+                ForecastModelForecastModelGroupLink,
+                ForecastModelGroup.id
+                == ForecastModelForecastModelGroupLink.forecast_model_group_id,
+            )
+            .join(
+                ForecastModel,
+                ForecastModel.id
+                == ForecastModelForecastModelGroupLink.forecast_model_id,
+            )
         )
         if perform_exact_matches:
             statement = add_multiple_values_filter(
@@ -267,14 +271,16 @@ def get_forecast_coverage_configuration_by_identifier(
         )
     year_period_group_name = parts[5]
     year_period_group = get_forecast_year_period_group_by_name(
-        session, year_period_group_name)
+        session, year_period_group_name
+    )
     if year_period_group is None:
         raise exceptions.InvalidForecastYearPeriodGroupNameError(
             f"{year_period_group_name!r} is not a valid forecast year period group name"
         )
     forecast_model_group_name = parts[5]
     forecast_model_group = get_forecast_model_group_by_name(
-        session, forecast_model_group_name)
+        session, forecast_model_group_name
+    )
     if forecast_model_group is None:
         raise exceptions.InvalidForecastModelGroupNameError(
             f"{forecast_model_group_name!r} is not a valid forecast model group name"
@@ -283,17 +289,18 @@ def get_forecast_coverage_configuration_by_identifier(
         ForecastCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,  # noqa
         ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
         ForecastCoverageConfiguration.year_period_group_id == year_period_group.id,  # noqa
-        ForecastCoverageConfiguration.forecast_model_group_id == forecast_model_group.id,  # noqa
+        ForecastCoverageConfiguration.forecast_model_group_id
+        == forecast_model_group.id,  # noqa
     )
     return session.exec(statement).first()
 
 
 def create_forecast_coverage_configuration(
     session: sqlmodel.Session,
-    forecast_coverage_configuration_create: ForecastCoverageConfigurationCreate,
+    coverage_configuration_create: ForecastCoverageConfigurationCreate,
 ) -> ForecastCoverageConfiguration:
-    db_forecast_coverage_configuration = ForecastCoverageConfiguration(
-        **forecast_coverage_configuration_create.model_dump(
+    db_coverage_configuration = ForecastCoverageConfiguration(
+        **coverage_configuration_create.model_dump(
             exclude={
                 "time_windows",
                 "observation_series_configurations",
@@ -301,18 +308,18 @@ def create_forecast_coverage_configuration(
                 "year_period_group",
             }
         ),
-        forecast_model_group_id=forecast_coverage_configuration_create.forecast_model_group,
-        year_period_group_id=forecast_coverage_configuration_create.year_period_group
+        forecast_model_group_id=coverage_configuration_create.forecast_model_group,
+        year_period_group_id=coverage_configuration_create.year_period_group,
     )
-    session.add(db_forecast_coverage_configuration)
+    session.add(db_coverage_configuration)
     for forecast_time_window_id in (
-        forecast_coverage_configuration_create.forecast_time_windows or []
+        coverage_configuration_create.forecast_time_windows or []
     ):
         db_forecast_time_window = get_forecast_time_window(
             session, forecast_time_window_id
         )
         if db_forecast_time_window is not None:
-            db_forecast_coverage_configuration.forecast_time_window_links.append(
+            db_coverage_configuration.forecast_time_window_links.append(
                 ForecastCoverageConfigurationForecastTimeWindowLink(
                     forecast_time_window=db_forecast_time_window
                 )
@@ -322,13 +329,13 @@ def create_forecast_coverage_configuration(
                 f"Forecast time window {forecast_time_window_id!r} not found"
             )
     for obs_series_conf_id in (
-        forecast_coverage_configuration_create.observation_series_configurations or []
+        coverage_configuration_create.observation_series_configurations or []
     ):
         db_obs_series_conf = get_observation_series_configuration(
             session, obs_series_conf_id
         )
         if db_obs_series_conf is not None:
-            db_forecast_coverage_configuration.observation_series_configuration_links.append(
+            db_coverage_configuration.observation_series_configuration_links.append(
                 ForecastCoverageConfigurationObservationSeriesConfigurationLink(
                     observation_series_configuration=db_obs_series_conf
                 )
@@ -338,33 +345,32 @@ def create_forecast_coverage_configuration(
                 f"observation series configuration {obs_series_conf_id!r} not found"
             )
     session.commit()
-    session.refresh(db_forecast_coverage_configuration)
-    return db_forecast_coverage_configuration
+    session.refresh(db_coverage_configuration)
+    return db_coverage_configuration
 
 
 def update_forecast_coverage_configuration(
     session: sqlmodel.Session,
-    db_forecast_coverage_configuration: ForecastCoverageConfiguration,
-    forecast_coverage_configuration_update: ForecastCoverageConfigurationUpdate,
+    db_coverage_configuration: ForecastCoverageConfiguration,
+    coverage_configuration_update: ForecastCoverageConfigurationUpdate,
 ) -> ForecastCoverageConfiguration:
     """Update a forecast coverage configuration."""
     existing_time_window_links_to_keep = []
     existing_time_window_links_discard = []
     for (
         existing_time_window_link
-    ) in db_forecast_coverage_configuration.forecast_time_window_links:
+    ) in db_coverage_configuration.forecast_time_window_links:
         has_been_requested_to_remove = (
             existing_time_window_link.forecast_time_window_id
             not in [
-                tw_id
-                for tw_id in forecast_coverage_configuration_update.forecast_time_windows
+                tw_id for tw_id in coverage_configuration_update.forecast_time_windows
             ]
         )
         if not has_been_requested_to_remove:
             existing_time_window_links_to_keep.append(existing_time_window_link)
         else:
             existing_time_window_links_discard.append(existing_time_window_link)
-    db_forecast_coverage_configuration.forecast_time_window_links = (
+    db_coverage_configuration.forecast_time_window_links = (
         existing_time_window_links_to_keep
     )
     for to_discard in existing_time_window_links_discard:
@@ -373,42 +379,42 @@ def update_forecast_coverage_configuration(
     existing_obs_series_conf_links_discard = []
     for (
         existing_obs_series_conf_link
-    ) in db_forecast_coverage_configuration.observation_series_configuration_links:
+    ) in db_coverage_configuration.observation_series_configuration_links:
         has_been_requested_to_remove = (
             existing_obs_series_conf_link.observation_series_configuration_id
             not in [
                 osc_id
-                for osc_id in forecast_coverage_configuration_update.observation_series_configurations
+                for osc_id in coverage_configuration_update.observation_series_configurations
             ]
         )
         if not has_been_requested_to_remove:
             existing_obs_series_conf_links_to_keep.append(existing_obs_series_conf_link)
         else:
             existing_obs_series_conf_links_discard.append(existing_obs_series_conf_link)
-    db_forecast_coverage_configuration.observation_series_configuration_links = (
+    db_coverage_configuration.observation_series_configuration_links = (
         existing_obs_series_conf_links_to_keep
     )
     for to_discard in existing_obs_series_conf_links_discard:
         session.delete(to_discard)
 
-    for time_window_id in forecast_coverage_configuration_update.forecast_time_windows:
+    for time_window_id in coverage_configuration_update.forecast_time_windows:
         already_there = time_window_id in (
             twl.forecast_time_window_id
-            for twl in db_forecast_coverage_configuration.forecast_time_window_links
+            for twl in db_coverage_configuration.forecast_time_window_links
         )
         if not already_there:
             db_time_window_link = ForecastCoverageConfigurationForecastTimeWindowLink(
                 forecast_time_window_id=time_window_id
             )
-            db_forecast_coverage_configuration.forecast_time_window_links.append(
+            db_coverage_configuration.forecast_time_window_links.append(
                 db_time_window_link
             )
     for (
         obs_series_conf_id
-    ) in forecast_coverage_configuration_update.observation_series_configurations:
+    ) in coverage_configuration_update.observation_series_configurations:
         already_there = obs_series_conf_id in (
             oscl.observation_series_configuration_id
-            for oscl in db_forecast_coverage_configuration.observation_series_configuration_links
+            for oscl in db_coverage_configuration.observation_series_configuration_links
         )
         if not already_there:
             db_obs_series_conf_link = (
@@ -416,10 +422,10 @@ def update_forecast_coverage_configuration(
                     observation_series_configuration_id=obs_series_conf_id
                 )
             )
-            db_forecast_coverage_configuration.observation_series_configuration_links.append(
+            db_coverage_configuration.observation_series_configuration_links.append(
                 db_obs_series_conf_link
             )
-    data_ = forecast_coverage_configuration_update.model_dump(
+    data_ = coverage_configuration_update.model_dump(
         exclude={
             "time_windows",
             "observation_series_configurations",
@@ -430,19 +436,19 @@ def update_forecast_coverage_configuration(
         exclude_none=True,
     )
     if (
-            model_group_id := forecast_coverage_configuration_update.forecast_model_group
+        model_group_id := coverage_configuration_update.forecast_model_group
     ) is not None:
-        data["forecast_model_group_id"] = model_group_id
+        data_["forecast_model_group_id"] = model_group_id
     if (
-            year_period_group_id := forecast_coverage_configuration_update.year_period_group
+        year_period_group_id := coverage_configuration_update.year_period_group
     ) is not None:
         data_["year_period_group_id"] = year_period_group_id
     for key, value in data_.items():
-        setattr(db_forecast_coverage_configuration, key, value)
-    session.add(db_forecast_coverage_configuration)
+        setattr(db_coverage_configuration, key, value)
+    session.add(db_coverage_configuration)
     session.commit()
-    session.refresh(db_forecast_coverage_configuration)
-    return db_forecast_coverage_configuration
+    session.refresh(db_coverage_configuration)
+    return db_coverage_configuration
 
 
 def delete_forecast_coverage_configuration(
@@ -515,6 +521,7 @@ def get_forecast_model(
     session: sqlmodel.Session,
     forecast_model_id: int,
 ) -> Optional[ForecastModel]:
+    logger.debug(f"{forecast_model_id=}")
     return session.get(ForecastModel, forecast_model_id)
 
 
