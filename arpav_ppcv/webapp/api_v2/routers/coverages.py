@@ -74,8 +74,14 @@ from ...frontendutils.schemas import (
     LegacyForecastVariableCombinationsList,
     LegacyForecastVariableCombinations,
     LegacyForecastMenuTranslations,
+    LegacyHistoricalVariableCombinationsList,
+    LegacyHistoricalVariableCombinations,
+    LegacyHistoricalMenuTranslations,
 )
-from ...frontendutils.navigation import get_forecast_advanced_section_navigation
+from ...frontendutils.navigation import (
+    get_forecast_advanced_section_navigation,
+    get_historical_advanced_section_navigation,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -1047,4 +1053,23 @@ def get_forecast_variable_combinations(
             for s in sections
         ],
         translations=LegacyForecastMenuTranslations.from_navigation_sections(sections),
+    )
+
+
+@router.get(
+    "/historical-variable-combinations",
+    response_model=LegacyHistoricalVariableCombinationsList,
+)
+def get_historical_variable_combinations(
+    db_session: Annotated[Session, Depends(dependencies.get_db_session)],
+):
+    sections = get_historical_advanced_section_navigation(db_session)
+    return LegacyHistoricalVariableCombinationsList(
+        combinations=[
+            LegacyHistoricalVariableCombinations.from_navigation_section(s)
+            for s in sections
+        ],
+        translations=LegacyHistoricalMenuTranslations.from_navigation_sections(
+            sections
+        ),
     )

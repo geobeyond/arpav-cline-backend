@@ -29,6 +29,18 @@ class ForecastCoverageNavigationSection:
     )
 
 
+@dataclasses.dataclass
+class HistoricalCoverageNavigationSection:
+    climatic_indicator: "ClimaticIndicator"
+    year_periods: list[static.HistoricalYearPeriod] = dataclasses.field(
+        default_factory=list
+    )
+    reference_periods: list[static.HistoricalReferencePeriod] = dataclasses.field(
+        default_factory=list
+    )
+    decades: list[static.HistoricalDecade] = dataclasses.field(default_factory=list)
+
+
 class LegacyForecastVariableCombinations(pydantic.BaseModel):
     variable: str
     aggregation_period: str
@@ -39,7 +51,7 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
     def from_navigation_section(cls, section: ForecastCoverageNavigationSection):
         other = {
             "archive": [
-                "forecast",
+                static.DataCategory.FORECAST.value,
             ],
             "climatological_model": [fm.name for fm in section.forecast_models],
             "scenario": [s.value for s in section.scenarios],
@@ -47,6 +59,34 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
         }
         if len(section.time_windows) > 0:
             other["time_window"] = [tw.name for tw in section.time_windows]
+        return cls(
+            variable=section.climatic_indicator.name,
+            aggregation_period=legacy_schemas.convert_to_aggregation_period(
+                section.climatic_indicator.aggregation_period
+            ),
+            measure=section.climatic_indicator.measure_type.value,
+            other_parameters=other,
+        )
+
+
+class LegacyHistoricalVariableCombinations(pydantic.BaseModel):
+    variable: str
+    aggregation_period: str
+    measure: str
+    other_parameters: dict[str, list[str]]
+
+    @classmethod
+    def from_navigation_section(cls, section: HistoricalCoverageNavigationSection):
+        other = {
+            "archive": [
+                static.DataCategory.HISTORICAL.value,
+            ],
+            "year_period": [yp.value for yp in section.year_periods],
+        }
+        if len(section.reference_periods) > 0:
+            other["reference_period"] = [rp.value for rp in section.reference_periods]
+        if len(section.decades) > 0:
+            other["decade"] = [d.value for d in section.decades]
         return cls(
             variable=section.climatic_indicator.name,
             aggregation_period=legacy_schemas.convert_to_aggregation_period(
@@ -78,7 +118,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
         other = {
             "year_period": {},
             "archive": {
-                "forecast": LegacyConfigurationParameterMenuTranslation(
+                static.DataCategory.FORECAST.value: LegacyConfigurationParameterMenuTranslation(
                     name={
                         LOCALE_EN.language: "Forecast data",
                         LOCALE_IT.language: "Forecast data",
@@ -209,6 +249,130 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
         )
 
 
+class LegacyHistoricalMenuTranslations(pydantic.BaseModel):
+    variable: dict[str, LegacyConfigurationParameterMenuTranslation]
+    aggregation_period: dict[str, LegacyConfigurationParameterMenuTranslation]
+    measure: dict[str, LegacyConfigurationParameterMenuTranslation]
+    other_parameters: dict[str, dict[str, LegacyConfigurationParameterMenuTranslation]]
+
+    @classmethod
+    def from_navigation_sections(
+        cls, sections: list[HistoricalCoverageNavigationSection]
+    ):
+        vars = {}
+        aggreg_periods = {}
+        measures = {}
+        other = {
+            "year_period": {},
+            "archive": {
+                static.DataCategory.HISTORICAL.value: LegacyConfigurationParameterMenuTranslation(
+                    name={
+                        LOCALE_EN.language: "Historical data",
+                        LOCALE_IT.language: "Historical data",
+                    },
+                    description={
+                        LOCALE_EN.language: "Historical data",
+                        LOCALE_IT.language: "Historical data",
+                    },
+                ),
+            },
+            "decade": {},
+            "reference_period": {},
+        }
+        unique_year_periods = set()
+        unique_reference_periods = set()
+        unique_decades = set()
+        for section in sections:
+            vars[
+                section.climatic_indicator.name
+            ] = LegacyConfigurationParameterMenuTranslation(
+                name={
+                    LOCALE_EN.language: section.climatic_indicator.display_name_english,
+                    LOCALE_IT.language: section.climatic_indicator.display_name_italian,
+                },
+                description={
+                    LOCALE_EN.language: section.climatic_indicator.description_english,
+                    LOCALE_IT.language: section.climatic_indicator.description_italian,
+                },
+            )
+            unique_year_periods.update(section.year_periods)
+            unique_decades.update(section.decades)
+            unique_reference_periods.update(section.reference_periods)
+        unique_aggregation_periods = {
+            s.climatic_indicator.aggregation_period for s in sections
+        }
+        for aggregation_period in unique_aggregation_periods:
+            aggreg_periods[
+                legacy_schemas.convert_to_aggregation_period(aggregation_period)
+            ] = LegacyConfigurationParameterMenuTranslation(
+                name={
+                    LOCALE_EN.language: aggregation_period.get_value_display_name(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: aggregation_period.get_value_display_name(
+                        LOCALE_IT
+                    ),
+                },
+                description={
+                    LOCALE_EN.language: aggregation_period.get_value_description(
+                        LOCALE_EN
+                    ),
+                    LOCALE_IT.language: aggregation_period.get_value_description(
+                        LOCALE_IT
+                    ),
+                },
+            )
+        for measure_type in {s.climatic_indicator.measure_type for s in sections}:
+            measures[measure_type.value] = LegacyConfigurationParameterMenuTranslation(
+                name={
+                    LOCALE_EN.language: measure_type.get_value_display_name(LOCALE_EN),
+                    LOCALE_IT.language: measure_type.get_value_display_name(LOCALE_IT),
+                },
+                description={
+                    LOCALE_EN.language: measure_type.get_value_description(LOCALE_EN),
+                    LOCALE_IT.language: measure_type.get_value_description(LOCALE_IT),
+                },
+            )
+
+        for key, unique_values in (
+            ("year_period", unique_year_periods),
+            ("decade", unique_decades),
+            ("reference_period", unique_reference_periods),
+        ):
+            for unique_value in unique_values:
+                other[key][
+                    unique_value.value
+                ] = LegacyConfigurationParameterMenuTranslation(
+                    name={
+                        LOCALE_EN.language: unique_value.get_value_display_name(
+                            LOCALE_EN
+                        ),
+                        LOCALE_IT.language: unique_value.get_value_display_name(
+                            LOCALE_IT
+                        ),
+                    },
+                    description={
+                        LOCALE_EN.language: unique_value.get_value_description(
+                            LOCALE_EN
+                        ),
+                        LOCALE_IT.language: unique_value.get_value_description(
+                            LOCALE_IT
+                        ),
+                    },
+                )
+        return cls(
+            variable=vars,
+            aggregation_period=aggreg_periods,
+            measure=measures,
+            other_parameters=other,
+        )
+
+
 class LegacyForecastVariableCombinationsList(pydantic.BaseModel):
     combinations: list[LegacyForecastVariableCombinations]
     translations: LegacyForecastMenuTranslations
+
+
+class LegacyHistoricalVariableCombinationsList(pydantic.BaseModel):
+    combinations: list[LegacyHistoricalVariableCombinations]
+    translations: LegacyHistoricalMenuTranslations
