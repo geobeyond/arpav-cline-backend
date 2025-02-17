@@ -242,6 +242,9 @@ detailed instructions are available in the project's README file, but in a nutsh
 
 ```shell
 
+# ensure you are running node v16
+nvm use 16
+
 # 1. put these in the environment and then run the `inject-env` command
 ARPAV_BACKEND_API_BASE_URL=http://localhost:8877 \
 ARPAV_TOLGEE_BASE_URL=http://localhost:8899 \
