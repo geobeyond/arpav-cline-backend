@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Optional,
     Sequence,
@@ -26,6 +27,8 @@ from .base import (
     add_substring_filter,
     get_total_num_records,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_climatic_indicator(
@@ -189,14 +192,17 @@ def update_climatic_indicator(
         ): ron
         for ron in climatic_indicator_update.observation_names
     }
+    logger.debug(f"{requested_obs_names=}")
     existing_obs_names = {
         "-".join((str(db_climatic_indicator.id), ron.station_manager.value)): ron
         for ron in db_climatic_indicator.observation_names
     }
+    logger.debug(f"{existing_obs_names=}")
     for existing_key, existing_obs_name in existing_obs_names.items():
         has_been_requested_to_remove = existing_key not in requested_obs_names
         if has_been_requested_to_remove:
             session.delete(existing_obs_name)
+    session.refresh(db_climatic_indicator)
     for requested_key, requested_obs_name in requested_obs_names.items():
         if requested_key not in existing_obs_names:  # need to create this one
             db_observation_name = ClimaticIndicatorObservationName(
@@ -214,6 +220,7 @@ def update_climatic_indicator(
     requested_forecast_model_links = {
         fm.forecast_model_id: fm for fm in climatic_indicator_update.forecast_models
     }
+    logger.debug(f"{requested_forecast_model_links=}")
     existing_forecast_model_links = {
         db_fm.forecast_model_id: db_fm
         for db_fm in db_climatic_indicator.forecast_model_links
@@ -224,7 +231,7 @@ def update_climatic_indicator(
         )
         if has_been_requested_to_remove:
             session.delete(existing_fm_link)
-    for requested_fm_id, requested_fm in requested_forecast_model_links:
+    for requested_fm_id, requested_fm in requested_forecast_model_links.items():
         if (
             requested_fm_id not in existing_forecast_model_links
         ):  # need to create this one

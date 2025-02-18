@@ -138,24 +138,24 @@ class RelatedForecastModelField(starlette_admin.EnumField):
         self.choices_loader = RelatedForecastModelField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_forecast_model = db.get_forecast_model(session, value)
-        return db_forecast_model.name
+    # def _get_label(self, value: int, request: Request) -> str:
+    #     session = request.state.session
+    #     db_forecast_model = db.get_forecast_model(session, value)
+    #     return db_forecast_model.name
 
-    async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        logger.debug(f"{value=}")
-        return self._get_label(value, request)
+    # async def serialize_value(
+    #     self,
+    #     request: Request,
+    #     value: int,
+    #     action: starlette_admin.RequestAction,
+    # ) -> Any:
+    #     logger.debug(f"{value=}")
+    #     return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):
         all_forecast_models = db.collect_all_forecast_models(request.state.session)
-        return [(str(fm.id), fm.name) for fm in all_forecast_models]
+        return [(fm.id, fm.name) for fm in all_forecast_models]
 
 
 class RelatedForecastModelsField(starlette_admin.EnumField):

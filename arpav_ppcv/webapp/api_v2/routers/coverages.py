@@ -356,6 +356,7 @@ def legacy_list_coverages(
 def legacy_get_coverage(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     coverage_identifier: str,
 ):
     """Get coverage details"""
@@ -372,7 +373,7 @@ def legacy_get_coverage(
                 cov = db.get_historical_coverage(session, coverage_identifier)
                 response_model = LegacyHistoricalCoverageReadDetail
             if cov is not None:
-                return response_model.from_db_instance(cov, request)
+                return response_model.from_db_instance(cov, request, settings)
             else:
                 raise HTTPException(
                     400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
@@ -442,8 +443,11 @@ async def wms_endpoint(
 
     Pass additional relevant WMS query parameters directly to this endpoint.
     """
+    logger.debug(f"{coverage_identifier=}")
+    logger.warning(f"{coverage_identifier=}")
     try:
         category = DataCategory(coverage_identifier.partition("-")[0])
+        logger.debug(f"{category=}")
     except ValueError:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
     else:

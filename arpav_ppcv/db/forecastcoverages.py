@@ -253,7 +253,6 @@ def get_forecast_coverage_configuration_by_identifier(
         raise exceptions.InvalidForecastCoverageConfigurationIdentifierError(
             error_message
         )
-    # forecast-tas-absolute-annual-arpa_vfvgtaa-all_seasons-five_models
     climatic_indicator_identifier = "-".join(parts[1:4])
     climatic_indicator = get_climatic_indicator_by_identifier(
         session, climatic_indicator_identifier
@@ -277,7 +276,7 @@ def get_forecast_coverage_configuration_by_identifier(
         raise exceptions.InvalidForecastYearPeriodGroupNameError(
             f"{year_period_group_name!r} is not a valid forecast year period group name"
         )
-    forecast_model_group_name = parts[5]
+    forecast_model_group_name = parts[6]
     forecast_model_group = get_forecast_model_group_by_name(
         session, forecast_model_group_name
     )
@@ -289,10 +288,10 @@ def get_forecast_coverage_configuration_by_identifier(
         ForecastCoverageConfiguration.climatic_indicator_id == climatic_indicator.id,  # noqa
         ForecastCoverageConfiguration.spatial_region_id == spatial_region.id,  # noqa
         ForecastCoverageConfiguration.year_period_group_id == year_period_group.id,  # noqa
-        ForecastCoverageConfiguration.forecast_model_group_id
+        ForecastCoverageConfiguration.forecast_model_group_id  # noqa
         == forecast_model_group.id,  # noqa
     )
-    return session.exec(statement).first()
+    return session.exec(statement).first()  # noqa
 
 
 def create_forecast_coverage_configuration(
@@ -846,8 +845,8 @@ def generate_forecast_coverages_from_configuration(
     result = []
     to_combine = [
         forecast_coverage_configuration.scenarios,
-        forecast_coverage_configuration.year_periods,
-        forecast_coverage_configuration.forecast_model_links,
+        forecast_coverage_configuration.year_period_group.year_periods,
+        forecast_coverage_configuration.forecast_model_group.forecast_model_links,
     ]
     has_time_window = (
         len(forecast_coverage_configuration.forecast_time_window_links) > 0
@@ -865,7 +864,7 @@ def generate_forecast_coverages_from_configuration(
                     configuration=forecast_coverage_configuration,
                     scenario=scenario,
                     forecast_model=fm_link.forecast_model,
-                    forecast_year_period=year_period,
+                    year_period=year_period,
                     forecast_time_window=tw_link.forecast_time_window
                     if tw_link
                     else None,
@@ -1004,10 +1003,9 @@ def get_forecast_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[ForecastCoverageInternal]:
     parts = identifier.split("-")
+    logger.debug(f"{parts=}")
     time_window = None
     cov_conf_identifier = "-".join(parts[:7])
-    # first try to find the forecast coverage configuration using the longest
-    # possible identifier, which is with seven parts...
     try:
         cov_conf = get_forecast_coverage_configuration_by_identifier(
             session, cov_conf_identifier
@@ -1038,7 +1036,7 @@ def get_forecast_coverage(
             raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
                 f"Invalid year period value - {year_period_value!r}"
             ) from err
-        if len(parts) > 9:
+        if len(parts) > 10:
             time_window_name = parts[10]
             time_window = get_forecast_time_window_by_name(session, time_window_name)
             if time_window is None:
@@ -1072,6 +1070,7 @@ def legacy_list_forecast_coverage_configurations(
     an early version of the project. This is kept only for compatibility reasons -
     newer code should use `list_forecast_coverage_configurations()` instead.
     """
+    logger.debug(f"{conf_param_filter=}")
     statement = (
         sqlmodel.select(ForecastCoverageConfiguration)
         .join(
@@ -1108,23 +1107,25 @@ def legacy_list_forecast_coverage_configurations(
                     ClimaticIndicator.aggregation_period  # noqa
                     == conf_param_filter.aggregation_period.name
                 )
-        # if conf_param_filter.climatological_model is not None:
-        #     statement = (
-        #         statement.join(
-        #             ForecastCoverageConfigurationForecastModelLink,
-        #             ForecastCoverageConfiguration.id  # noqa
-        #             == ForecastCoverageConfigurationForecastModelLink.forecast_coverage_configuration_id,  # noqa
-        #         )
-        #         .join(
-        #             ForecastModel,
-        #             ForecastModel.id  # noqa
-        #             == ForecastCoverageConfigurationForecastModelLink.forecast_model_id,  # noqa
-        #         )
-        #         .where(
-        #             ForecastModel.id  # noqa
-        #             == conf_param_filter.climatological_model.id
-        #         )
-        #     )
+        if conf_param_filter.climatological_model is not None:
+            statement = (
+                statement.join(
+                    ForecastModelGroup,
+                    ForecastModelGroup.id
+                    == ForecastCoverageConfiguration.forecast_model_group_id,
+                )
+                .join(
+                    ForecastModelForecastModelGroupLink,
+                    ForecastModelGroup.id
+                    == ForecastModelForecastModelGroupLink.forecast_model_group_id,
+                )
+                .join(
+                    ForecastModel,
+                    ForecastModel.id
+                    == ForecastModelForecastModelGroupLink.forecast_model_id,
+                )
+                .where(ForecastModel.id == conf_param_filter.climatological_model.id)
+            )
         if conf_param_filter.scenario is not None:
             statement = statement.where(
                 conf_param_filter.scenario.name
@@ -1147,9 +1148,13 @@ def legacy_list_forecast_coverage_configurations(
                 )
             )
         if conf_param_filter.year_period is not None:
-            statement = statement.where(
+            statement = statement.join(
+                ForecastYearPeriodGroup,
+                ForecastYearPeriodGroup.id
+                == ForecastCoverageConfiguration.year_period_group_id,
+            ).where(
                 conf_param_filter.year_period.name
-                == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+                == sqlalchemy.any_(ForecastYearPeriodGroup.year_periods)
             )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
@@ -1202,7 +1207,52 @@ def legacy_list_forecast_coverages(
     )
     result = []
     for cov_conf in all_cov_confs:
-        result.extend(generate_forecast_coverages_from_configuration(cov_conf))
+        candidates = generate_forecast_coverages_from_configuration(cov_conf)
+        for cov in candidates:
+            is_eligible = True
+            if conf_param_filter is not None:
+                if (
+                    conf_param_filter.scenario
+                    and cov.scenario != conf_param_filter.scenario
+                ):
+                    logger.debug(
+                        f"\t\tScenario {cov.scenario} different from "
+                        f"filter {conf_param_filter.scenario}"
+                    )
+                    is_eligible = False
+                elif (
+                    conf_param_filter.year_period
+                    and cov.year_period != conf_param_filter.year_period
+                ):
+                    logger.debug(
+                        f"\t\tYear period {cov.year_period} different "
+                        f"from filter {conf_param_filter.year_period}"
+                    )
+                    is_eligible = False
+                elif (
+                    conf_param_filter.climatological_model
+                    and cov.forecast_model.name
+                    != conf_param_filter.climatological_model.name
+                ):
+                    logger.debug(
+                        f"\t\tForecast model {cov.forecast_model.name!r} different "
+                        f"from filter {conf_param_filter.climatological_model.name}"
+                    )
+                    is_eligible = False
+                elif (
+                    conf_param_filter.time_window
+                    and cov.forecast_time_window.name
+                    != conf_param_filter.time_window.name
+                ):
+                    logger.debug(
+                        f"\t\tTime window "
+                        f"{cov.forecast_time_window.name if cov.forecast_time_window else None!r} "
+                        f"different from filter {conf_param_filter.time_window.name}"
+                    )
+                    is_eligible = False
+            if is_eligible:
+                result.append(cov)
+
     if name_filter is not None:
         for fragment in name_filter:
             result = [fc for fc in result if fragment in fc.identifier]

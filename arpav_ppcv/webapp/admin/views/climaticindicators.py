@@ -111,6 +111,7 @@ class ClimaticIndicatorView(ModelView):
                         required=True,
                     ),
                     starlette_admin.StringField("thredds_url_base_path", required=True),
+                    starlette_admin.StringField("thredds_url_uncertainties_base_path"),
                 ],
             ),
         ),
@@ -135,6 +136,7 @@ class ClimaticIndicatorView(ModelView):
                 read_schemas.ClimaticIndicatorForecastModelBasePathRead(
                     forecast_model=fm.forecast_model_id,
                     thredds_url_base_path=fm.thredds_url_base_path,
+                    thredds_url_uncertainties_base_path=fm.thredds_url_uncertainties_base_path,
                 )
                 for fm in instance.forecast_model_links
             ],
@@ -146,7 +148,9 @@ class ClimaticIndicatorView(ModelView):
             await self.validate(request, data)
             climatic_indicator_create = climaticindicators.ClimaticIndicatorCreate(
                 name=data["name"],
-                historical_coverages_internal_name=data.get("historical_coverages_internal_name"),
+                historical_coverages_internal_name=data.get(
+                    "historical_coverages_internal_name"
+                ),
                 measure_type=data["measure_type"],
                 aggregation_period=data["aggregation_period"],
                 display_name_english=data["display_name_english"],
@@ -164,6 +168,9 @@ class ClimaticIndicatorView(ModelView):
                     climaticindicators.ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                         forecast_model_id=fm["forecast_model"],
                         thredds_url_base_path=fm["thredds_url_base_path"],
+                        thredds_url_uncertainties_base_path=fm.get(
+                            "thredds_url_uncertainties_base_path"
+                        ),
                     )
                     for fm in data.get("forecast_model_base_paths", [])
                 ],
@@ -192,7 +199,9 @@ class ClimaticIndicatorView(ModelView):
             await self.validate(request, data)
             climatic_indicator_update = climaticindicators.ClimaticIndicatorUpdate(
                 name=data["name"],
-                historical_coverages_internal_name=data.get("historical_coverages_internal_name"),
+                historical_coverages_internal_name=data.get(
+                    "historical_coverages_internal_name"
+                ),
                 measure_type=data["measure_type"],
                 aggregation_period=data["aggregation_period"],
                 display_name_english=data["display_name_english"],
@@ -214,6 +223,16 @@ class ClimaticIndicatorView(ModelView):
                         ],
                     )
                     for obs_name in data.get("observation_names", [])
+                ],
+                forecast_models=[
+                    climaticindicators.ClimaticIndicatorForecastModelLinkUpdateEmbeddedInClimaticIndicator(
+                        forecast_model_id=fm["forecast_model"],
+                        thredds_url_base_path=fm["thredds_url_base_path"],
+                        thredds_url_uncertainties_base_path=fm.get(
+                            "thredds_url_uncertainties_base_path"
+                        ),
+                    )
+                    for fm in data.get("forecast_model_base_paths", [])
                 ],
             )
             db_climatic_indicator = await anyio.to_thread.run_sync(

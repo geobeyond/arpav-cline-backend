@@ -21,6 +21,8 @@ from ..config import get_translations
 
 if TYPE_CHECKING:
     import babel
+
+    from ..config import ArpavPpcvSettings
     from .climaticindicators import ClimaticIndicator
     from . import coverages
 
@@ -670,30 +672,16 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
             measurement_aggregation_type=self.measurement_aggregation_type,
         )
 
-    # # FIXME: implement this as operations instead
-    # def list_stations(
-    #         self,
-    #         owner: Optional[static.ObservationStationOwner] = None,
-    #         limit: Optional[int] = 20,
-    #         offset: Optional[int] = 0,
-    # ) -> list[ObservationStation]:
-    #     ...
-    #
-    # # FIXME: implement this as operations instead
-    # def list_measurements(
-    #         self,
-    #         station: Optional[ObservationStation] = None,
-    #         limit: Optional[int] = 20,
-    #         offset: Optional[int] = 0,
-    # ) -> list[ObservationMeasurement]:
-    #     ...
-    #
-    # # FIXME: implement this as operations instead
-    # def get_series(
-    #         self,
-    #         station: Optional[ObservationStation] = None,
-    # ) -> list[ObservationStationSeries]:
-    #     ...
+    def get_observation_stations_vector_tile_layer_url(
+        self, settings: "ArpavPpcvSettings"
+    ) -> Optional[str]:
+        return "/".join(
+            (
+                settings.vector_tile_server_base_url,
+                self.climatic_indicator.identifier.replace("-", "_"),
+                "{z}/{x}/{y}",
+            )
+        )
 
 
 class ObservationSeriesConfigurationCreate(sqlmodel.SQLModel):

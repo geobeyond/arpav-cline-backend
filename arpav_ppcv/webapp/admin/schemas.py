@@ -27,6 +27,7 @@ class ClimaticIndicatorObservationNameRead(sqlmodel.SQLModel):
 class ClimaticIndicatorForecastModelBasePathRead(sqlmodel.SQLModel):
     forecast_model: int
     thredds_url_base_path: str
+    thredds_url_uncertainties_base_path: Optional[str] = None
 
 
 class ClimaticIndicatorRead(sqlmodel.SQLModel):

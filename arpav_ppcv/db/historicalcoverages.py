@@ -388,7 +388,7 @@ def generate_historical_coverages_from_configuration(
 ) -> list[HistoricalCoverageInternal]:
     result = []
     to_combine = [
-        historical_coverage_configuration.year_periods,
+        historical_coverage_configuration.year_period_group.year_periods,
     ]
     has_decades = len(historical_coverage_configuration.decades or []) > 0
     if has_decades:
@@ -540,7 +540,7 @@ def get_historical_coverage(
             raise exceptions.InvalidHistoricalCoverageIdentifierError(
                 f"Invalid year period value: {year_period_value!r}"
             ) from err
-        if len(parts) > 8:
+        if len(parts) > 9:
             decade_value = parts[9]
             try:
                 decade = HistoricalDecade(decade_value)
@@ -561,7 +561,7 @@ def get_historical_coverage(
                 raise exceptions.InvalidHistoricalCoverageIdentifierError(
                     f"Invalid year period value: {year_period_value!r}"
                 ) from err
-            if len(parts) > 7:
+            if len(parts) > 8:
                 decade_value = parts[8]
                 try:
                     decade = HistoricalDecade(decade_value)

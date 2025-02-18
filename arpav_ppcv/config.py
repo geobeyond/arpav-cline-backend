@@ -118,7 +118,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     palettes_dir: Path = Path(__file__).parents[1] / "data/palettes"
     palette_num_stops: int = 5
     prefect: PrefectSettings = PrefectSettings()
-    martin_tile_server_base_url: str = "http://localhost:3000"
+    vector_tile_server_base_url: str = "http://localhost:5001/vector-tiles"
     nearest_station_radius_meters: int = 1000
     v2_api_mount_prefix: str = "/api/v2"
     v3_api_mount_prefix: str = "/api/v3"

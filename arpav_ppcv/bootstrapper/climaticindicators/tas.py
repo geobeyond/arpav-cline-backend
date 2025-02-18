@@ -173,7 +173,7 @@ def generate_climatic_indicators(
             description_italian="Temperatura media giornaliera dell'aria vicino al suolo",
             unit_english="ºC",
             unit_italian="ºC",
-            palette="default/seq-YlOrRd",
+            palette="uncert-stippled/seq-YlOrRd",
             color_scale_min=0,
             color_scale_max=6,
             data_precision=1,

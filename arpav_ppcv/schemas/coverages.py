@@ -1289,15 +1289,6 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
             sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastScenario))
         ),
     )
-    # year_periods: list[static.ForecastYearPeriod] = sqlmodel.Field(
-    #     default=list,
-    #     sa_column=sqlalchemy.Column(
-    #         sqlmodel.ARRAY(sqlmodel.Enum(static.ForecastYearPeriod))
-    #     ),
-    # )
-    # year_period_group_links: list[
-    #     ForecastCoverageConfigurationForecastYearPeriodGroupLink
-    # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configurations")
 
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
         back_populates="forecast_coverage_configurations"
@@ -1305,14 +1296,6 @@ class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
     climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="forecast_coverage_configurations"
     )
-
-    # forecast_model_links: list[
-    #     ForecastCoverageConfigurationForecastModelLink
-    # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
-
-    # forecast_model_group_links: list[
-    #     ForecastCoverageConfigurationForecastModelGroupLink
-    # ] = sqlmodel.Relationship(back_populates="forecast_coverage_configuration")
 
     year_period_group: ForecastYearPeriodGroup = sqlmodel.Relationship(
         back_populates="forecast_coverage_configurations"
@@ -1770,17 +1753,17 @@ class HistoricalCoverageInternal:
 
 @dataclasses.dataclass(frozen=True)
 class LegacyConfParamFilterValues:
-    aggregation_period: Optional[static.AggregationPeriod]  # done
-    archive: Optional[str]
-    climatological_model: Optional[ForecastModel]
-    climatological_variable: Optional[str]
-    historical_decade: Optional[static.HistoricalDecade]
-    historical_reference_period: Optional[static.HistoricalDecade]
-    historical_variable: Optional[str]
-    historical_year_period: Optional[static.HistoricalYearPeriod]
-    measure: Optional[static.MeasureType]
-    scenario: Optional[static.ForecastScenario]
-    uncertainty_type: Optional[str]
-    time_window: Optional[ForecastTimeWindow]
-    year_period: Optional[static.ForecastYearPeriod]
-    climatic_indicator: Optional["climaticindicators.ClimaticIndicator"]
+    aggregation_period: Optional[static.AggregationPeriod] = None
+    archive: Optional[str] = None
+    climatological_model: Optional[ForecastModel] = None
+    climatological_variable: Optional[str] = None
+    historical_decade: Optional[static.HistoricalDecade] = None
+    historical_reference_period: Optional[static.HistoricalDecade] = None
+    historical_variable: Optional[str] = None
+    historical_year_period: Optional[static.HistoricalYearPeriod] = None
+    measure: Optional[static.MeasureType] = None
+    scenario: Optional[static.ForecastScenario] = None
+    uncertainty_type: Optional[str] = None
+    time_window: Optional[ForecastTimeWindow] = None
+    year_period: Optional[static.ForecastYearPeriod] = None
+    climatic_indicator: Optional["climaticindicators.ClimaticIndicator"] = None

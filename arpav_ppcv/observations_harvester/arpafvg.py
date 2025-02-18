@@ -50,6 +50,11 @@ def fetch_remote_stations(
         == MeasurementAggregationType.SEASONAL
     ):
         period = 1  # any season works
+    elif (
+        series_configuration.measurement_aggregation_type
+        == MeasurementAggregationType.MONTHLY
+    ):
+        period = 1  # any month works
     else:
         raise NotImplementedError()
     response = client.get(

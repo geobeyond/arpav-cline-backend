@@ -7,6 +7,7 @@ import pydantic
 from fastapi import Request
 
 from ....config import (
+    ArpavPpcvSettings,
     LOCALE_EN,
     LOCALE_IT,
 )
@@ -201,7 +202,7 @@ class LegacyHistoricalCoverageConfigurationReadListItem(pydantic.BaseModel):
                     configuration_parameter_value=decade.value,
                 ),
             )
-        for year_period in instance.year_periods:
+        for year_period in instance.year_period_group.year_periods:
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="year_period",
@@ -457,7 +458,8 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
             name=instance.identifier,
             climatic_indicator_identifier=instance.climatic_indicator.identifier,
             forecast_model_names=[
-                fml.forecast_model.name for fml in instance.forecast_model_links
+                fml.forecast_model.name
+                for fml in instance.forecast_model_group.forecast_model_links
             ],
             has_associated_uncertainty_datasets=(
                 instance.lower_uncertainty_netcdf_main_dataset_name is not None
@@ -500,7 +502,7 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
                 configuration_parameter_value=instance.climatic_indicator.measure_type.value,
             ),
         ]
-        for forecast_model_link in instance.forecast_model_links:
+        for forecast_model_link in instance.forecast_model_group.forecast_model_links:
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="climatological_model",
@@ -559,7 +561,7 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
                     configuration_parameter_value=time_window_link.forecast_time_window.name,
                 ),
             )
-        for year_period in instance.year_periods:
+        for year_period in instance.year_period_group.year_periods:
             possible_values.append(
                 ConfigurationParameterPossibleValueRead(
                     configuration_parameter_name="year_period",
@@ -604,8 +606,10 @@ class LegacyForecastCoverageConfigurationReadDetail(
             name=instance.identifier,
             climatic_indicator_identifier=instance.climatic_indicator.identifier,
             forecast_model_names=[
-                fml.forecast_model.name for fml in instance.forecast_model_links
+                fml.forecast_model.name
+                for fml in instance.forecast_model_group.forecast_model_links
             ],
+            year_periods=[yp.value for yp in instance.year_period_group.year_periods],
             has_associated_uncertainty_datasets=(
                 instance.lower_uncertainty_netcdf_main_dataset_name is not None
             ),
@@ -859,13 +863,13 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
         possible_values.append(
             ConfigurationParameterPossibleValueRead(
                 configuration_parameter_name="year_period",
-                configuration_parameter_display_name_english=instance.forecast_year_period.get_param_display_name(
+                configuration_parameter_display_name_english=instance.year_period.get_param_display_name(
                     LOCALE_EN
                 ),
-                configuration_parameter_display_name_italian=instance.forecast_year_period.get_param_display_name(
+                configuration_parameter_display_name_italian=instance.year_period.get_param_display_name(
                     LOCALE_IT
                 ),
-                configuration_parameter_value=instance.forecast_year_period.value,
+                configuration_parameter_value=instance.year_period.value,
             ),
         )
         return possible_values
@@ -884,13 +888,22 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
     wms_main_layer_name: str | None = None
     wms_secondary_layer_name: str | None = None
     possible_values: list[ConfigurationParameterPossibleValueRead]
+    observation_stations_vector_tile_layer_url: str | None = None
 
     @classmethod
     def from_db_instance(
         cls,
         instance: ForecastCoverageInternal,
         request: Request,
+        settings: ArpavPpcvSettings,
     ) -> "LegacyForecastCoverageReadDetail":
+        vector_tile_stations_url = None
+        if len(instance.configuration.observation_series_configuration_links) > 0:
+            vector_tile_stations_url = instance.configuration.observation_series_configuration_links[
+                0
+            ].observation_series_configuration.get_observation_stations_vector_tile_layer_url(
+                settings
+            )
         return cls(
             url=str(
                 request.url_for(
@@ -909,7 +922,7 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
             ),
             forecast_model=instance.forecast_model.name,
             scenario=instance.scenario.value,
-            year_period=instance.forecast_year_period.value,
+            year_period=instance.year_period.value,
             time_window=(
                 instance.forecast_time_window.name
                 if instance.forecast_time_window is not None
@@ -927,6 +940,7 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
                 else None
             ),
             possible_values=cls.prepare_possible_values(instance),
+            observation_stations_vector_tile_layer_url=vector_tile_stations_url,
         )
 
     @classmethod
@@ -990,13 +1004,13 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
             ),
             ConfigurationParameterPossibleValueRead(
                 configuration_parameter_name="year_period",
-                configuration_parameter_display_name_english=instance.forecast_year_period.get_param_display_name(
+                configuration_parameter_display_name_english=instance.year_period.get_param_display_name(
                     LOCALE_EN
                 ),
-                configuration_parameter_display_name_italian=instance.forecast_year_period.get_param_display_name(
+                configuration_parameter_display_name_italian=instance.year_period.get_param_display_name(
                     LOCALE_IT
                 ),
-                configuration_parameter_value=instance.forecast_year_period.value,
+                configuration_parameter_value=instance.year_period.value,
             ),
         ]
         if instance.lower_uncertainty_identifier is not None:
@@ -1055,13 +1069,22 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
     file_download_url: pydantic.AnyHttpUrl
     wms_main_layer_name: str | None = None
     possible_values: list[ConfigurationParameterPossibleValueRead]
+    observation_stations_vector_tile_layer_url: str | None = None
 
     @classmethod
     def from_db_instance(
         cls,
         instance: HistoricalCoverageInternal,
         request: Request,
+        settings: ArpavPpcvSettings,
     ) -> "LegacyHistoricalCoverageReadDetail":
+        vector_tile_stations_url = None
+        if len(instance.configuration.observation_series_configuration_links) > 0:
+            vector_tile_stations_url = instance.configuration.observation_series_configuration_links[
+                0
+            ].observation_series_configuration.get_observation_stations_vector_tile_layer_url(
+                settings
+            )
         return cls(
             url=str(
                 request.url_for(
@@ -1097,6 +1120,7 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
             ),
             wms_main_layer_name=instance.get_wms_main_layer_name(),
             possible_values=cls.prepare_possible_values(instance),
+            observation_stations_vector_tile_layer_url=vector_tile_stations_url,
         )
 
 
