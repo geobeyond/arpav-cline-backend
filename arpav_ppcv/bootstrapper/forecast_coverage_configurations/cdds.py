@@ -33,7 +33,7 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP85,
             ],
             year_period_group=year_period_groups["only_year"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
@@ -54,7 +54,7 @@ def generate_forecast_coverage_configurations(
                 ForecastScenario.RCP85,
             ],
             year_period_group=year_period_groups["only_year"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],

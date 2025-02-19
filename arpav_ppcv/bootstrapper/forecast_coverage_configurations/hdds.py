@@ -1,8 +1,5 @@
 from ...schemas.coverages import ForecastCoverageConfigurationCreate
-from ...schemas.static import (
-    ForecastScenario,
-    ForecastYearPeriod,
-)
+from ...schemas.static import ForecastScenario
 
 # below are configurations for:
 # 1. hdds anomaly 30 year (model ensemble) (all year)
@@ -37,7 +34,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["only_year"],
             forecast_model_group=forecast_model_groups["ensemble"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
@@ -58,7 +55,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["only_year"],
             forecast_model_group=forecast_model_groups["five_models"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],

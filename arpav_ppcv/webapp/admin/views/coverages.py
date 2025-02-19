@@ -1289,8 +1289,8 @@ class ForecastCoverageConfigurationView(ModelView):
         "upper_uncertainty_thredds_url_pattern",
         "upper_uncertainty_netcdf_main_dataset_name",
         "scenarios",
-        "year_period_group",
-        "forecast_model_group",
+        # "year_period_group",
+        # "forecast_model_group",
         "time_windows",
         "observation_series_configurations",
     )
@@ -1302,6 +1302,28 @@ class ForecastCoverageConfigurationView(ModelView):
     fields = (
         starlette_admin.IntegerField("id"),
         starlette_admin.StringField("identifier", read_only=True),
+        fields.RelatedClimaticIndicatorField(
+            "climatic_indicator",
+            help_text="climatic indicator",
+            required=True,
+        ),
+        fields.RelatedSpatialRegionField(
+            "spatial_region",
+            required=True,
+        ),
+        starlette_admin.EnumField(
+            "scenarios", multiple=True, enum=static.ForecastScenario, required=True
+        ),
+        fields.RelatedForecastYearPeriodGroupField("year_period_group", required=True),
+        fields.RelatedForecastModelGroupField("forecast_model_group", required=True),
+        fields.RelatedForecastTimeWindowField(
+            "time_windows",
+            multiple=True,
+        ),
+        fields.RelatedObservationSeriesConfigurationField(
+            "observation_series_configurations",
+            multiple=True,
+        ),
         starlette_admin.StringField(
             "netcdf_main_dataset_name",
             required=True,
@@ -1329,15 +1351,6 @@ class ForecastCoverageConfigurationView(ModelView):
         ),
         starlette_admin.StringField("wms_main_layer_name", required=True),
         starlette_admin.StringField("wms_secondary_layer_name", required=False),
-        fields.RelatedClimaticIndicatorField(
-            "climatic_indicator",
-            help_text="climatic indicator",
-            required=True,
-        ),
-        fields.RelatedSpatialRegionField(
-            "spatial_region",
-            required=True,
-        ),
         starlette_admin.StringField(
             "lower_uncertainty_thredds_url_pattern", required=False
         ),
@@ -1362,25 +1375,6 @@ class ForecastCoverageConfigurationView(ModelView):
                 "as '{historical_year_period}_avg'."
             ),
         ),
-        starlette_admin.EnumField(
-            "scenarios", multiple=True, enum=static.ForecastScenario, required=True
-        ),
-        fields.RelatedForecastYearPeriodGroupField("year_period_group"),
-        fields.RelatedForecastModelGroupField("forecast_model_group"),
-        starlette_admin.ListField(
-            field=fields.RelatedForecastTimeWindowField(
-                "time_windows",
-                multiple=True,
-                required=True,
-            )
-        ),
-        starlette_admin.ListField(
-            field=fields.RelatedObservationSeriesConfigurationField(
-                "observation_series_configurations",
-                multiple=True,
-                required=True,
-            )
-        ),
     )
 
     def __init__(self, *args, **kwargs) -> None:
@@ -1393,8 +1387,6 @@ class ForecastCoverageConfigurationView(ModelView):
             **instance.model_dump(
                 exclude={
                     "climatic_indicator",
-                    "time_windows",
-                    "observation_series_configurations",
                     "spatial_region",
                     "forecast_model_group",
                     "year_period_group",
@@ -1404,7 +1396,7 @@ class ForecastCoverageConfigurationView(ModelView):
             forecast_model_group=instance.forecast_model_group_id,
             year_period_group=instance.year_period_group_id,
             spatial_region=instance.spatial_region_id,
-            forecast_time_windows=[
+            time_windows=[
                 twl.forecast_time_window_id
                 for twl in instance.forecast_time_window_links
             ],
@@ -1443,7 +1435,7 @@ class ForecastCoverageConfigurationView(ModelView):
                     scenarios=data.get("scenarios", []),
                     year_period_group=data["year_period_group"],
                     forecast_model_group=data["forecast_model_group"],
-                    forecast_time_windows=data["forecast_time_windows"],
+                    time_windows=data["time_windows"],
                     observation_series_configurations=data[
                         "observation_series_configurations"
                     ],
@@ -1461,7 +1453,9 @@ class ForecastCoverageConfigurationView(ModelView):
     async def edit(self, request: Request, pk: Any, data: dict[str, Any]) -> Any:
         try:
             data = await self._arrange_data(request, data, True)
+            logger.debug(f"before validation {data=}")
             await self.validate(request, data)
+            logger.debug(f"after validation {data=}")
             forecast_coverage_configuration_create = (
                 coverages.ForecastCoverageConfigurationUpdate(
                     netcdf_main_dataset_name=data["netcdf_main_dataset_name"],
@@ -1487,10 +1481,10 @@ class ForecastCoverageConfigurationView(ModelView):
                     scenarios=data.get("scenarios", []),
                     year_period_group=data.get("year_period_group"),
                     forecast_model_group=data.get("forecast_model_group"),
-                    forecast_time_windows=data["forecast_time_windows"],
-                    observation_series_configurations=data[
+                    time_windows=data.get("time_windows"),
+                    observation_series_configurations=data.get(
                         "observation_series_configurations"
-                    ],
+                    ),
                 )
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(

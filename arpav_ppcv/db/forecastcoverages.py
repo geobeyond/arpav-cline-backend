@@ -311,9 +311,7 @@ def create_forecast_coverage_configuration(
         year_period_group_id=coverage_configuration_create.year_period_group,
     )
     session.add(db_coverage_configuration)
-    for forecast_time_window_id in (
-        coverage_configuration_create.forecast_time_windows or []
-    ):
+    for forecast_time_window_id in coverage_configuration_create.time_windows or []:
         db_forecast_time_window = get_forecast_time_window(
             session, forecast_time_window_id
         )
@@ -361,9 +359,7 @@ def update_forecast_coverage_configuration(
     ) in db_coverage_configuration.forecast_time_window_links:
         has_been_requested_to_remove = (
             existing_time_window_link.forecast_time_window_id
-            not in [
-                tw_id for tw_id in coverage_configuration_update.forecast_time_windows
-            ]
+            not in [tw_id for tw_id in coverage_configuration_update.time_windows]
         )
         if not has_been_requested_to_remove:
             existing_time_window_links_to_keep.append(existing_time_window_link)
@@ -374,6 +370,19 @@ def update_forecast_coverage_configuration(
     )
     for to_discard in existing_time_window_links_discard:
         session.delete(to_discard)
+    session.refresh(db_coverage_configuration)
+    for time_window_id in coverage_configuration_update.time_windows:
+        already_there = time_window_id in (
+            twl.forecast_time_window_id
+            for twl in db_coverage_configuration.forecast_time_window_links
+        )
+        if not already_there:
+            db_time_window_link = ForecastCoverageConfigurationForecastTimeWindowLink(
+                forecast_time_window_id=time_window_id
+            )
+            db_coverage_configuration.forecast_time_window_links.append(
+                db_time_window_link
+            )
     existing_obs_series_conf_links_to_keep = []
     existing_obs_series_conf_links_discard = []
     for (
@@ -395,19 +404,7 @@ def update_forecast_coverage_configuration(
     )
     for to_discard in existing_obs_series_conf_links_discard:
         session.delete(to_discard)
-
-    for time_window_id in coverage_configuration_update.forecast_time_windows:
-        already_there = time_window_id in (
-            twl.forecast_time_window_id
-            for twl in db_coverage_configuration.forecast_time_window_links
-        )
-        if not already_there:
-            db_time_window_link = ForecastCoverageConfigurationForecastTimeWindowLink(
-                forecast_time_window_id=time_window_id
-            )
-            db_coverage_configuration.forecast_time_window_links.append(
-                db_time_window_link
-            )
+    session.refresh(db_coverage_configuration)
     for (
         obs_series_conf_id
     ) in coverage_configuration_update.observation_series_configurations:

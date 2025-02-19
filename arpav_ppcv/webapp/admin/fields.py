@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+import anyio.to_thread
 import starlette_admin
 from starlette.requests import Request
 
@@ -60,25 +61,25 @@ class RelatedForecastModelGroupField(starlette_admin.EnumField):
         self.choices_loader = RelatedForecastModelGroupField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_forecast_model_group = db.get_forecast_model_group(session, value)
-        return db_forecast_model_group.name
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
+    # def _get_label(self, value: int, request: Request) -> str:
+    #     session = request.state.session
+    #     db_forecast_model_group = db.get_forecast_model_group(session, value)
+    #     return db_forecast_model_group.name
+    #
+    # async def serialize_value(
+    #     self,
+    #     request: Request,
+    #     value: int,
+    #     action: starlette_admin.RequestAction,
+    # ) -> Any:
+    #     return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):
         all_forecast_model_groups = db.collect_all_forecast_model_groups(
             request.state.session
         )
-        return [(str(fmg.id), fmg.name) for fmg in all_forecast_model_groups]
+        return [(fmg.id, fmg.name) for fmg in all_forecast_model_groups]
 
 
 class RelatedForecastYearPeriodGroupField(starlette_admin.EnumField):
@@ -86,25 +87,12 @@ class RelatedForecastYearPeriodGroupField(starlette_admin.EnumField):
         self.choices_loader = RelatedForecastYearPeriodGroupField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_year_period_group = db.get_forecast_year_period_group(session, value)
-        return db_year_period_group.name
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
-
     @staticmethod
     def choices_loader(request: Request):
         all_year_period_groups = db.collect_all_forecast_year_period_groups(
             request.state.session
         )
-        return [(str(ypg.id), ypg.name) for ypg in all_year_period_groups]
+        return [(ypg.id, ypg.name) for ypg in all_year_period_groups]
 
 
 class RelatedHistoricalYearPeriodGroupField(starlette_admin.EnumField):
@@ -112,25 +100,25 @@ class RelatedHistoricalYearPeriodGroupField(starlette_admin.EnumField):
         self.choices_loader = RelatedHistoricalYearPeriodGroupField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_year_period_group = db.get_historical_year_period_group(session, value)
-        return db_year_period_group.name
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
+    # def _get_label(self, value: int, request: Request) -> str:
+    #     session = request.state.session
+    #     db_year_period_group = db.get_historical_year_period_group(session, value)
+    #     return db_year_period_group.name
+    #
+    # async def serialize_value(
+    #     self,
+    #     request: Request,
+    #     value: int,
+    #     action: starlette_admin.RequestAction,
+    # ) -> Any:
+    #     return self._get_label(value, request)
 
     @staticmethod
     def choices_loader(request: Request):
         all_year_period_groups = db.collect_all_historical_year_period_groups(
             request.state.session
         )
-        return [(str(ypg.id), ypg.name) for ypg in all_year_period_groups]
+        return [(ypg.id, ypg.name) for ypg in all_year_period_groups]
 
 
 class RelatedForecastModelField(starlette_admin.EnumField):
@@ -138,19 +126,22 @@ class RelatedForecastModelField(starlette_admin.EnumField):
         self.choices_loader = RelatedForecastModelField.choices_loader
         super().__post_init__()
 
-    # def _get_label(self, value: int, request: Request) -> str:
-    #     session = request.state.session
-    #     db_forecast_model = db.get_forecast_model(session, value)
-    #     return db_forecast_model.name
-
-    # async def serialize_value(
-    #     self,
-    #     request: Request,
-    #     value: int,
-    #     action: starlette_admin.RequestAction,
-    # ) -> Any:
-    #     logger.debug(f"{value=}")
-    #     return self._get_label(value, request)
+    async def serialize_value(
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
+    ) -> Any:
+        session = request.state.session
+        if self.multiple:
+            instances = [
+                await anyio.to_thread.run_sync(db.get_forecast_model, session, v)
+                for v in value
+            ]
+            result = [self._get_label(i.id, request) for i in instances]
+        else:
+            instance = await anyio.to_thread.run_sync(
+                db.get_forecast_model, session, value
+            )
+            result = self._get_label(instance.id, request)
+        return result
 
     @staticmethod
     def choices_loader(request: Request):
@@ -196,25 +187,29 @@ class RelatedForecastTimeWindowField(starlette_admin.EnumField):
         self.choices_loader = RelatedForecastTimeWindowField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_forecast_time_window = db.get_forecast_time_window(session, value)
-        return db_forecast_time_window.name
-
     async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
     ) -> Any:
-        return self._get_label(value, request)
+        session = request.state.session
+        if self.multiple:
+            instances = [
+                await anyio.to_thread.run_sync(db.get_forecast_time_window, session, v)
+                for v in value
+            ]
+            result = [self._get_label(i.id, request) for i in instances]
+        else:
+            instance = await anyio.to_thread.run_sync(
+                db.get_forecast_time_window, session, value
+            )
+            result = self._get_label(instance.id, request)
+        return result
 
     @staticmethod
     def choices_loader(request: Request):
         all_forecast_time_windows = db.collect_all_forecast_time_windows(
             request.state.session
         )
-        return [(str(tw.id), tw.name) for tw in all_forecast_time_windows]
+        return [(tw.id, tw.name) for tw in all_forecast_time_windows]
 
 
 class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
@@ -222,27 +217,12 @@ class RelatedObservationSeriesConfigurationField(starlette_admin.EnumField):
         self.choices_loader = RelatedObservationSeriesConfigurationField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        db_observation_series_configuration = db.get_observation_series_configuration(
-            session, value
-        )
-        return db_observation_series_configuration.identifier
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
-
     @staticmethod
     def choices_loader(request: Request):
         all_obs_series_confs = db.collect_all_observation_series_configurations(
             request.state.session
         )
-        return [(str(osc.id), osc.identifier) for osc in all_obs_series_confs]
+        return [(osc.id, osc.identifier) for osc in all_obs_series_confs]
 
 
 class RelatedObservationStationField(starlette_admin.EnumField):
@@ -250,18 +230,22 @@ class RelatedObservationStationField(starlette_admin.EnumField):
         self.choices_loader = RelatedObservationStationField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        observation_station = db.get_observation_station(session, value)
-        return observation_station.code
-
     async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
     ) -> Any:
-        return self._get_label(value, request)
+        session = request.state.session
+        if self.multiple:
+            instances = [
+                await anyio.to_thread.run_sync(db.get_observation_station, session, v)
+                for v in value
+            ]
+            result = [self._get_label(i.id, request) for i in instances]
+        else:
+            instance = await anyio.to_thread.run_sync(
+                db.get_observation_station, session, value
+            )
+            result = self._get_label(instance.id, request)
+        return result
 
     @staticmethod
     def choices_loader(request: Request) -> list[tuple[int, str]]:
@@ -274,18 +258,22 @@ class RelatedSpatialRegionField(starlette_admin.EnumField):
         self.choices_loader = RelatedSpatialRegionField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        spatial_region = db.get_spatial_region(session, value)
-        return spatial_region.name
-
     async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
     ) -> Any:
-        return self._get_label(value, request)
+        session = request.state.session
+        if self.multiple:
+            instances = [
+                await anyio.to_thread.run_sync(db.get_spatial_region, session, v)
+                for v in value
+            ]
+            result = [self._get_label(i.id, request) for i in instances]
+        else:
+            instance = await anyio.to_thread.run_sync(
+                db.get_spatial_region, session, value
+            )
+            result = self._get_label(instance.id, request)
+        return result
 
     @staticmethod
     def choices_loader(request: Request):
@@ -315,18 +303,22 @@ class RelatedClimaticIndicatorField(starlette_admin.EnumField):
         self.choices_loader = RelatedClimaticIndicatorField.choices_loader
         super().__post_init__()
 
-    def _get_label(self, value: int, request: Request) -> str:
-        session = request.state.session
-        climatic_indicator = db.get_climatic_indicator(session, value)
-        return climatic_indicator.identifier
-
     async def serialize_value(
-        self,
-        request: Request,
-        value: int,
-        action: starlette_admin.RequestAction,
+        self, request: Request, value: Any, action: starlette_admin.RequestAction
     ) -> Any:
-        return self._get_label(value, request)
+        session = request.state.session
+        if self.multiple:
+            instances = [
+                await anyio.to_thread.run_sync(db.get_climatic_indicator, session, v)
+                for v in value
+            ]
+            result = [self._get_label(i.id, request) for i in instances]
+        else:
+            instance = await anyio.to_thread.run_sync(
+                db.get_climatic_indicator, session, value
+            )
+            result = self._get_label(instance.id, request)
+        return result
 
     @staticmethod
     def choices_loader(request: Request):

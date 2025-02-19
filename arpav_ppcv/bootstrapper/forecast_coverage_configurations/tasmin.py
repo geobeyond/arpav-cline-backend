@@ -36,7 +36,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["all_seasons"],
             forecast_model_group=forecast_model_groups["ensemble"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
@@ -57,7 +57,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["all_seasons"],
             forecast_model_group=forecast_model_groups["five_models"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],

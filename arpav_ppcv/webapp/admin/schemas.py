@@ -236,7 +236,7 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     upper_uncertainty_thredds_url_pattern: Optional[str]
     upper_uncertainty_netcdf_main_dataset_name: Optional[str]
     scenarios: list[ForecastScenario]
-    forecast_time_windows: list[int]
+    time_windows: list[int]
     observation_series_configurations: list[int]
 
 

@@ -1,8 +1,5 @@
 from ...schemas.coverages import ForecastCoverageConfigurationCreate
-from ...schemas.static import (
-    ForecastScenario,
-    ForecastYearPeriod,
-)
+from ...schemas.static import ForecastScenario
 
 # below are configurations for:
 # 1. hwdi anomaly 30 year (model ensemble) (all seasons)
@@ -21,7 +18,8 @@ def generate_forecast_coverage_configurations(
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hwdi-anomaly-thirty_year"],
             netcdf_main_dataset_name=(
-                "heat_wave_duration_index_wrt_mean_of_reference_period"),
+                "heat_wave_duration_index_wrt_mean_of_reference_period"
+            ),
             thredds_url_pattern=(
                 "{forecast_model_base_path}/heat_waves_anom_avgagree_55_"
                 "{time_window}_{scenario}_{year_period}_{spatial_region}.nc"
@@ -31,7 +29,8 @@ def generate_forecast_coverage_configurations(
                 "uncertainty_group"
             ),
             wms_secondary_layer_name=(
-                "heat_wave_duration_index_wrt_mean_of_reference_period"),
+                "heat_wave_duration_index_wrt_mean_of_reference_period"
+            ),
             spatial_region_id=spatial_region_ids["arpa_vfvgtaa"],
             scenarios=[
                 ForecastScenario.RCP26,
@@ -40,7 +39,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["only_summer"],
             forecast_model_group=forecast_model_groups["ensemble"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
@@ -48,7 +47,8 @@ def generate_forecast_coverage_configurations(
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hwdi-anomaly-thirty_year"],
             netcdf_main_dataset_name=(
-                "heat_wave_duration_index_wrt_mean_of_reference_period"),
+                "heat_wave_duration_index_wrt_mean_of_reference_period"
+            ),
             thredds_url_pattern=(
                 "{forecast_model_base_path}/heat_waves_anom_{forecast_model}_"
                 "{scenario}_{year_period}_55_{time_window}_{spatial_region}.nc"
@@ -62,7 +62,7 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["only_summer"],
             forecast_model_group=forecast_model_groups["five_models"],
-            forecast_time_windows=[
+            time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],

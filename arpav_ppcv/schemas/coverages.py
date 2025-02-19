@@ -1357,7 +1357,7 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     # year_periods: list[static.ForecastYearPeriod]
     year_period_group: int
     forecast_model_group: int
-    forecast_time_windows: Optional[list[int]] = None
+    time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
 
 
@@ -1376,7 +1376,7 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     # year_periods: Optional[list[static.ForecastYearPeriod]] = None
     year_period_group: Optional[int] = None
     forecast_model_group: Optional[int] = None
-    forecast_time_windows: Optional[list[int]] = None
+    time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
 
 
