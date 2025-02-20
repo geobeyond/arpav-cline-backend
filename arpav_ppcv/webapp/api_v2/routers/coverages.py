@@ -38,6 +38,7 @@ from ....schemas.coverages import (
     HistoricalCoverageInternal,
     ForecastCoverageInternal,
 )
+from ....schemas.climaticindicators import ClimaticIndicator
 from ....schemas.legacy import (
     parse_legacy_aggregation_period,
     CoverageDataSmoothingStrategy,
@@ -234,37 +235,10 @@ def legacy_get_coverage_configuration(
                 )
                 response_model = LegacyHistoricalCoverageConfigurationReadDetail
 
-            palette_colors = palette.parse_palette(
-                cov_conf.climatic_indicator.palette, settings.palettes_dir
-            )
-            applied_colors = []
-            if palette_colors is not None:
-                minimum = cov_conf.climatic_indicator.color_scale_min
-                maximum = cov_conf.climatic_indicator.color_scale_max
-                if abs(maximum - minimum) > 0.001:
-                    applied_colors = palette.apply_palette(
-                        palette_colors,
-                        minimum,
-                        maximum,
-                        num_stops=settings.palette_num_stops,
-                    )
-                else:
-                    logger.warning(
-                        f"Cannot calculate applied colors for coverage "
-                        f"configuration {cov_conf.identifier!r} - "
-                        f"check the respective climatic indicator's colorscale min "
-                        f"and max values"
-                    )
-            else:
-                logger.warning(
-                    f"Unable to parse palette "
-                    f"{cov_conf.climatic_indicator.palette!r}"
-                )
-
             return response_model.from_db_instance(
                 cov_conf,
                 coverages,
-                applied_colors,
+                _get_palette_colors(cov_conf.climatic_indicator, settings),
                 request,
             )
 
@@ -272,6 +246,34 @@ def legacy_get_coverage_configuration(
             raise HTTPException(
                 400, detail=_INVALID_COVERAGE_CONFIGURATION_IDENTIFIER_ERROR_DETAIL
             )
+
+
+def _get_palette_colors(
+    climatic_indicator: ClimaticIndicator,
+    settings: ArpavPpcvSettings,
+) -> list[tuple[float, str]]:
+    palette_colors = palette.parse_palette(
+        climatic_indicator.palette, settings.palettes_dir
+    )
+    applied_colors = []
+    if palette_colors is not None:
+        minimum = climatic_indicator.color_scale_min
+        maximum = climatic_indicator.color_scale_max
+        if abs(maximum - minimum) > 0.001:
+            applied_colors = palette.apply_palette(
+                palette_colors,
+                minimum,
+                maximum,
+                num_stops=settings.palette_num_stops,
+            )
+        else:
+            logger.warning(
+                f"Cannot calculate applied colors for climatic indicator "
+                f"{climatic_indicator.identifier!r}"
+            )
+    else:
+        logger.warning(f"Unable to parse palette " f"{climatic_indicator.palette!r}")
+    return applied_colors
 
 
 @router.get(
@@ -373,7 +375,12 @@ def legacy_get_coverage(
                 cov = db.get_historical_coverage(session, coverage_identifier)
                 response_model = LegacyHistoricalCoverageReadDetail
             if cov is not None:
-                return response_model.from_db_instance(cov, request, settings)
+                return response_model.from_db_instance(
+                    cov,
+                    request,
+                    settings,
+                    _get_palette_colors(cov.configuration.climatic_indicator, settings),
+                )
             else:
                 raise HTTPException(
                     400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
@@ -559,6 +566,25 @@ def list_forecast_data_download_links(
     )
 
 
+@router.get("/forecast-data/{coverage_identifier}")
+async def get_forecast_data(
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
+    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
+    session: Annotated[Session, Depends(dependencies.get_db_session)],
+    coverage_identifier: str,
+    coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
+    datetime: Optional[str] = "../..",
+):
+    if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
+        return await _get_coverage_data(
+            settings, http_client, coverage, coords, datetime
+        )
+    else:
+        raise HTTPException(
+            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+        )
+
+
 @router.get(
     "/historical-data",
     response_model=HistoricalCoverageDownloadList,
@@ -597,25 +623,6 @@ def list_historical_data_download_links(
         offset=list_params.offset,
         total=len(coverages),
     )
-
-
-@router.get("/forecast-data/{coverage_identifier}")
-async def get_forecast_data(
-    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
-    coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
-    datetime: Optional[str] = "../..",
-):
-    if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
-        return await _get_coverage_data(
-            settings, http_client, coverage, coords, datetime
-        )
-    else:
-        raise HTTPException(
-            status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-        )
 
 
 @router.get("/historical-data/{coverage_identifier}")

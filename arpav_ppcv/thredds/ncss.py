@@ -13,7 +13,6 @@ import xml.etree.ElementTree as etree
 from typing import (
     Optional,
     Protocol,
-    Union,
     TYPE_CHECKING,
 )
 
@@ -226,7 +225,7 @@ def _parse_ncss_dataset(
             df = df[:time_end]
         logger.debug(f"{df=}")
         return df[target_series_name]
-        #return df.squeeze()
+        # return df.squeeze()
 
 
 def _simplify_date(raw_date: str) -> str:
@@ -245,6 +244,8 @@ async def async_get_dataset_description(
     response = await http_client.get(f"{thredds_ncss_url}/dataset.xml")
     response.raise_for_status()
     root = etree.fromstring(response.text)
+    logger.debug("info response:")
+    logger.debug(etree.tostring(root).decode("utf-8"))
     variables = []
     for var_info in root.findall("./gridSet/grid"):
         variables.append(
@@ -255,13 +256,28 @@ async def async_get_dataset_description(
             )
         )
     time_span_el = root.findall("./TimeSpan")[0]
+    declared_start = time_span_el.findall("./begin")[0].text.replace("Z", "")
+    try:
+        start = dt.datetime.fromisoformat(declared_start)
+    except ValueError:
+        logger.warning(
+            f"THREDDS reported a start date of {declared_start!r} - this cannot be "
+            f"parsed into a datetime instance so it was ignored"
+        )
+        start = None
+    declared_end = time_span_el.findall("./end")[0].text.replace("Z", "")
+    try:
+        end = dt.datetime.fromisoformat(declared_end)
+    except ValueError:
+        logger.warning(
+            f"THREDDS reported an end date of {declared_end!r} - this cannot be parsed "
+            f"into a datetime instance so it was ignored"
+        )
+        end = None
+
     temporal_bounds = models.ThreddsDatasetDescriptionTemporalBounds(
-        start=dt.datetime.fromisoformat(
-            time_span_el.findall("./begin")[0].text.replace("Z", "")
-        ),
-        end=dt.datetime.fromisoformat(
-            time_span_el.findall("./end")[0].text.replace("Z", "")
-        ),
+        start=start,
+        end=end,
     )
     lat_lon_el = root.findall("./LatLonBox")[0]
     spatial_bounds = shapely.box(

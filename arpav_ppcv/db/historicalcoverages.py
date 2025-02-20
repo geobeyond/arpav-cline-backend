@@ -96,12 +96,10 @@ def list_historical_coverage_configurations(
                 HistoricalCoverageConfiguration.reference_period.in_(reference_periods)
             )
     if year_period_filter is not None:
-        statement = (
-            statement
-            .join(
-                HistoricalYearPeriodGroup,
-                HistoricalCoverageConfiguration.year_period_group_id == HistoricalYearPeriodGroup.id
-            )
+        statement = statement.join(
+            HistoricalYearPeriodGroup,
+            HistoricalCoverageConfiguration.year_period_group_id
+            == HistoricalYearPeriodGroup.id,
         )
         statement = add_values_in_list_filter(
             statement, year_period_filter, HistoricalYearPeriodGroup.year_periods
@@ -497,9 +495,13 @@ def legacy_list_historical_coverage_configurations(
                 == sqlalchemy.any_(HistoricalCoverageConfiguration.decades)  # noqa
             )
         if conf_param_filter.historical_year_period is not None:
-            statement = statement.where(
-                conf_param_filter.historical_decade.name
-                == sqlalchemy.any_(HistoricalCoverageConfiguration.year_periods)  # noqa
+            statement = statement.join(
+                HistoricalYearPeriodGroup,
+                HistoricalYearPeriodGroup.id
+                == HistoricalCoverageConfiguration.year_period_group_id,
+            ).where(
+                conf_param_filter.year_period.name
+                == sqlalchemy.any_(HistoricalYearPeriodGroup.year_periods)
             )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None

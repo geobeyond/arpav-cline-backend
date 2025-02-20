@@ -876,19 +876,27 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
 
 
 class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
-    url: pydantic.AnyHttpUrl
-    identifier: str
-    related_coverage_configuration_url: str
-    wms_base_url: pydantic.AnyHttpUrl
-    forecast_model: str
-    scenario: ForecastScenario
-    year_period: ForecastYearPeriod
-    time_window: Optional[str] = None
+    data_precision: int
+    description_english: str | None
+    description_italian: str | None
+    display_name_english: str
+    display_name_italian: str
     file_download_url: pydantic.AnyHttpUrl
+    forecast_model: str
+    identifier: str
+    legend: CoverageImageLegend
+    observation_stations_vector_tile_layer_url: str | None = None
+    possible_values: list[ConfigurationParameterPossibleValueRead]
+    related_coverage_configuration_url: str
+    scenario: ForecastScenario
+    time_window: Optional[str] = None
+    unit_english: str
+    unit_italian: str
+    url: pydantic.AnyHttpUrl
+    wms_base_url: pydantic.AnyHttpUrl
     wms_main_layer_name: str | None = None
     wms_secondary_layer_name: str | None = None
-    possible_values: list[ConfigurationParameterPossibleValueRead]
-    observation_stations_vector_tile_layer_url: str | None = None
+    year_period: ForecastYearPeriod
 
     @classmethod
     def from_db_instance(
@@ -896,6 +904,7 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
         instance: ForecastCoverageInternal,
         request: Request,
         settings: ArpavPpcvSettings,
+        legend_colors: list[tuple[float, str]],
     ) -> "LegacyForecastCoverageReadDetail":
         vector_tile_stations_url = None
         if len(instance.configuration.observation_series_configuration_links) > 0:
@@ -941,6 +950,18 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
             ),
             possible_values=cls.prepare_possible_values(instance),
             observation_stations_vector_tile_layer_url=vector_tile_stations_url,
+            display_name_english=instance.configuration.climatic_indicator.display_name_english,
+            display_name_italian=instance.configuration.climatic_indicator.display_name_italian,
+            description_english=instance.configuration.climatic_indicator.description_english,
+            description_italian=instance.configuration.climatic_indicator.description_italian,
+            unit_english=instance.configuration.climatic_indicator.unit_english,
+            unit_italian=instance.configuration.climatic_indicator.unit_italian,
+            data_precision=instance.configuration.climatic_indicator.data_precision,
+            legend=CoverageImageLegend(
+                color_entries=[
+                    ImageLegendColor(value=v, color=c) for v, c in legend_colors
+                ]
+            ),
         )
 
     @classmethod
@@ -1054,22 +1075,26 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
 
 
 class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
-    url: pydantic.AnyHttpUrl
-    identifier: str
-    name: str
-    related_coverage_configuration_url: str
-    display_name_english: str
-    display_name_italian: str
+    data_precision: int
+    decade: Optional[str] = None
     description_english: str
     description_italian: str
-    wms_base_url: pydantic.AnyHttpUrl
-    year_period: HistoricalYearPeriod
-    reference_period: Optional[HistoricalReferencePeriod] = None
-    decade: Optional[str] = None
+    display_name_english: str
+    display_name_italian: str
     file_download_url: pydantic.AnyHttpUrl
-    wms_main_layer_name: str | None = None
-    possible_values: list[ConfigurationParameterPossibleValueRead]
+    identifier: str
+    legend: CoverageImageLegend
+    name: str
     observation_stations_vector_tile_layer_url: str | None = None
+    possible_values: list[ConfigurationParameterPossibleValueRead]
+    reference_period: Optional[HistoricalReferencePeriod] = None
+    related_coverage_configuration_url: str
+    unit_english: str
+    unit_italian: str
+    url: pydantic.AnyHttpUrl
+    wms_base_url: pydantic.AnyHttpUrl
+    wms_main_layer_name: str | None = None
+    year_period: HistoricalYearPeriod
 
     @classmethod
     def from_db_instance(
@@ -1077,6 +1102,7 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
         instance: HistoricalCoverageInternal,
         request: Request,
         settings: ArpavPpcvSettings,
+        legend_colors: list[tuple[float, str]],
     ) -> "LegacyHistoricalCoverageReadDetail":
         vector_tile_stations_url = None
         if len(instance.configuration.observation_series_configuration_links) > 0:
@@ -1121,6 +1147,14 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
             wms_main_layer_name=instance.get_wms_main_layer_name(),
             possible_values=cls.prepare_possible_values(instance),
             observation_stations_vector_tile_layer_url=vector_tile_stations_url,
+            unit_english=instance.configuration.climatic_indicator.unit_english,
+            unit_italian=instance.configuration.climatic_indicator.unit_italian,
+            data_precision=instance.configuration.climatic_indicator.data_precision,
+            legend=CoverageImageLegend(
+                color_entries=[
+                    ImageLegendColor(value=v, color=c) for v, c in legend_colors
+                ]
+            ),
         )
 
 

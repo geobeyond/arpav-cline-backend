@@ -117,30 +117,14 @@ def list_forecast_coverage_configurations(
                 statement, forecast_model_name_filter, ForecastModel.name
             )
     if scenario_filter is not None:
-        if not isinstance(scenario_filter, list):
-            scenarios = [scenario_filter.name]
-        else:
-            scenarios = [s.name for s in scenario_filter]
-        if len(scenarios) == 1:
-            statement = statement.where(
-                scenarios[0] == sqlalchemy.any_(ForecastCoverageConfiguration.scenarios)  # noqa
-            )
-        else:
-            statement = statement.where(
-                sqlalchemy.or_(
-                    *[
-                        s == sqlalchemy.any_(ForecastCoverageConfiguration.scenarios)
-                        for s in scenarios
-                    ]
-                )
-            )
+        statement = add_values_in_list_filter(
+            statement, scenario_filter, ForecastCoverageConfiguration.scenarios
+        )
     if year_period_filter is not None:
-        statement = (
-            statement
-            .join(
-                ForecastYearPeriodGroup,
-                ForecastCoverageConfiguration.year_period_group_id == ForecastYearPeriodGroup.id
-            )
+        statement = statement.join(
+            ForecastYearPeriodGroup,
+            ForecastCoverageConfiguration.year_period_group_id
+            == ForecastYearPeriodGroup.id,
         )
         statement = add_values_in_list_filter(
             statement, year_period_filter, ForecastYearPeriodGroup.year_periods
@@ -470,13 +454,13 @@ def list_forecast_models(
             statement = add_multiple_values_filter(
                 statement,
                 name_filter,
-                ForecastModel.internal_value,  # noqa
+                ForecastModel.name,  # noqa
             )
         else:
             statement = add_substring_filter(
                 statement,
                 name_filter,
-                ForecastModel.internal_value,  # noqa
+                ForecastModel.name,  # noqa
             )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
@@ -732,13 +716,13 @@ def list_forecast_time_windows(
             statement = add_multiple_values_filter(
                 statement,
                 name_filter,
-                ForecastModel.internal_value,  # noqa
+                ForecastTimeWindow.internal_value,  # noqa
             )
         else:
             statement = add_substring_filter(
                 statement,
                 name_filter,
-                ForecastModel.internal_value,  # noqa
+                ForecastTimeWindow.internal_value,  # noqa
             )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
@@ -1262,19 +1246,13 @@ def list_forecast_coverages(
     offset: Optional[int] = 0,
     include_total: bool = False,
 ) -> tuple[list[ForecastCoverageInternal], int]:
-    logger.debug(f"{climatological_variable_filter=}")
-    logger.debug(f"{aggregation_period_filter=}")
-    logger.debug(f"{scenario_filter=}")
-    logger.debug(f"{measure_filter=}")
-    logger.debug(f"{year_period_filter=}")
-    logger.debug(f"{time_window_filter=}")
     climatic_indicators = collect_all_climatic_indicators(
         session,
         name_filter=climatological_variable_filter,
         aggregation_period_filter=aggregation_period_filter,
         measure_type_filter=measure_filter,
+        perform_exact_matches=True,
     )
-    logger.debug(f"{[ci.identifier for ci in climatic_indicators]=}")
     relevant_indicators = []
     for climatic_indicator in climatic_indicators:
         is_eligible = True
@@ -1322,6 +1300,7 @@ def list_forecast_coverages(
                 year_period_filter=year_period_filter,
                 time_window_name_filter=time_window_names,
             )
+            logger.debug(f"{[cc.identifier for cc in cov_confs]=}")
             for cov_conf in cov_confs:
                 candidates = generate_forecast_coverages_from_configuration(cov_conf)
                 for candidate in candidates:
