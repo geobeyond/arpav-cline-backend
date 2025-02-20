@@ -1605,12 +1605,10 @@ class HistoricalCoverageConfigurationView(ModelView):
             "decades", multiple=True, enum=static.HistoricalDecade, required=False
         ),
         fields.RelatedHistoricalYearPeriodGroupField("year_period_group"),
-        starlette_admin.ListField(
-            field=fields.RelatedObservationSeriesConfigurationField(
-                "observation_series_configurations",
-                multiple=True,
-                required=True,
-            )
+        fields.RelatedObservationSeriesConfigurationField(
+            "observation_series_configurations",
+            multiple=True,
+            required=True,
         ),
     )
 
