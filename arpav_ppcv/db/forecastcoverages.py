@@ -51,6 +51,7 @@ from ..schemas.static import (
 
 from .base import (
     add_multiple_values_filter,
+    add_values_in_list_filter,
     add_substring_filter,
     get_total_num_records,
 )
@@ -134,25 +135,16 @@ def list_forecast_coverage_configurations(
                 )
             )
     if year_period_filter is not None:
-        if not isinstance(year_period_filter, list):
-            year_periods = [year_period_filter.name]
-        else:
-            year_periods = [yp.name for yp in year_period_filter]
-        if len(year_periods) == 1:
-            statement = statement.where(
-                year_periods[0]
-                == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)  # noqa
+        statement = (
+            statement
+            .join(
+                ForecastYearPeriodGroup,
+                ForecastCoverageConfiguration.year_period_group_id == ForecastYearPeriodGroup.id
             )
-        else:
-            statement = statement.where(
-                sqlalchemy.or_(
-                    *[
-                        yp
-                        == sqlalchemy.any_(ForecastCoverageConfiguration.year_periods)
-                        for yp in year_periods
-                    ]
-                )
-            )
+        )
+        statement = add_values_in_list_filter(
+            statement, year_period_filter, ForecastYearPeriodGroup.year_periods
+        )
     if time_window_name_filter is not None:
         statement = statement.join(
             ForecastCoverageConfigurationForecastTimeWindowLink,
@@ -1341,10 +1333,10 @@ def list_forecast_coverages(
                         is_eligible = False
                     elif (
                         year_period_filter
-                        and candidate.forecast_year_period not in year_period_filter
+                        and candidate.year_period not in year_period_filter
                     ):
                         logger.debug(
-                            f"\t\tYear period {candidate.forecast_year_period} outside of filter {year_period_filter}"
+                            f"\t\tYear period {candidate.year_period} outside of filter {year_period_filter}"
                         )
                         is_eligible = False
                     elif (

@@ -500,12 +500,12 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "year_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.forecast_year_period.get_param_display_name(
+                        series.forecast_coverage.year_period.get_param_display_name(
                             LOCALE_EN
                         )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.forecast_year_period.get_param_display_name(
+                        series.forecast_coverage.year_period.get_param_display_name(
                             LOCALE_IT
                         )
                     ),
@@ -522,10 +522,10 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "processing_method": {
                     LOCALE_EN.language: (
-                        series.processing_method.get_value_display_name(LOCALE_EN),
+                        series.processing_method.get_value_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        series.processing_method.get_value_display_name(LOCALE_IT),
+                        series.processing_method.get_value_display_name(LOCALE_IT)
                     ),
                 },
                 "coverage_identifier": {
@@ -558,46 +558,46 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "climatological_variable": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.configuration.climatic_indicator.display_name_english,
+                        series.forecast_coverage.configuration.climatic_indicator.display_name_english
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.configuration.climatic_indicator.display_name_italian,
+                        series.forecast_coverage.configuration.climatic_indicator.display_name_italian
                     ),
                 },
                 "measure": {
                     LOCALE_EN.language: (
                         series.forecast_coverage.configuration.climatic_indicator.measure_type.get_value_display_name(
                             LOCALE_EN
-                        ),
+                        )
                     ),
                     LOCALE_IT.language: (
                         series.forecast_coverage.configuration.climatic_indicator.measure_type.get_value_display_name(
                             LOCALE_IT
-                        ),
+                        )
                     ),
                 },
                 "scenario": {
                     LOCALE_EN.language: (
                         series.forecast_coverage.scenario.get_value_display_name(
                             LOCALE_EN
-                        ),
+                        )
                     ),
                     LOCALE_IT.language: (
                         series.forecast_coverage.scenario.get_value_display_name(
                             LOCALE_IT
-                        ),
+                        )
                     ),
                 },
                 "year_period": {
                     LOCALE_EN.language: (
-                        series.forecast_coverage.forecast_year_period.get_value_display_name(
+                        series.forecast_coverage.year_period.get_value_display_name(
                             LOCALE_EN
-                        ),
+                        )
                     ),
                     LOCALE_IT.language: (
-                        series.forecast_coverage.forecast_year_period.get_value_display_name(
+                        series.forecast_coverage.year_period.get_value_display_name(
                             LOCALE_IT
-                        ),
+                        )
                     ),
                 },
             },
@@ -875,7 +875,7 @@ class LegacyTimeSeries(pydantic.BaseModel):
                     series.forecast_coverage.configuration.climatic_indicator.measure_type.value
                 ),
                 "scenario": series.forecast_coverage.scenario.value,
-                "year_period": series.forecast_coverage.forecast_year_period.value,
+                "year_period": series.forecast_coverage.year_period.value,
             },
             translations=LegacyTimeSeriesTranslations.from_forecast_data_series(series),
         )

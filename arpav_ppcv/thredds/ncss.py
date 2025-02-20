@@ -224,7 +224,9 @@ def _parse_ncss_dataset(
             df = df[time_start:]
         if time_end is not None:
             df = df[:time_end]
-        return df.squeeze()
+        logger.debug(f"{df=}")
+        return df[target_series_name]
+        #return df.squeeze()
 
 
 def _simplify_date(raw_date: str) -> str:

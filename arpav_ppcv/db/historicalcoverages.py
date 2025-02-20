@@ -35,6 +35,7 @@ from ..schemas.static import (
 )
 from .base import (
     add_multiple_values_filter,
+    add_values_in_list_filter,
     add_substring_filter,
     get_total_num_records,
 )
@@ -95,25 +96,16 @@ def list_historical_coverage_configurations(
                 HistoricalCoverageConfiguration.reference_period.in_(reference_periods)
             )
     if year_period_filter is not None:
-        if not isinstance(year_period_filter, list):
-            year_periods = [year_period_filter.name]
-        else:
-            year_periods = [yp.name for yp in year_period_filter]
-        if len(year_periods) == 1:
-            statement = statement.where(
-                year_periods[0]
-                == sqlalchemy.any_(HistoricalCoverageConfiguration.year_periods)
+        statement = (
+            statement
+            .join(
+                HistoricalYearPeriodGroup,
+                HistoricalCoverageConfiguration.year_period_group_id == HistoricalYearPeriodGroup.id
             )
-        else:
-            statement = statement.where(
-                sqlalchemy.or_(
-                    *[
-                        yp
-                        == sqlalchemy.any_(HistoricalCoverageConfiguration.year_periods)
-                        for yp in year_periods
-                    ]
-                )
-            )
+        )
+        statement = add_values_in_list_filter(
+            statement, year_period_filter, HistoricalYearPeriodGroup.year_periods
+        )
     if decade_filter is not None:
         if not isinstance(decade_filter, list):
             decades = [decade_filter.name]

@@ -1,7 +1,29 @@
+import enum
 import typing
 
 import sqlalchemy
 import sqlmodel
+
+
+def add_values_in_list_filter(
+    statement,
+    value: typing.Union[list, str, enum.Enum],
+    column: sqlalchemy.Column,
+):
+    if not isinstance(value, list):
+        values = [value]
+    else:
+        values = value
+    values = [v.name if isinstance(v, enum.Enum) else v for v in values]
+    if len(values) == 1:
+        result = statement.where(values[0] == sqlalchemy.any_(column))
+    else:
+        result = statement.where(
+            sqlalchemy.or_(
+                *[v == sqlalchemy.any_(column) for v in values],
+            )
+        )
+    return result
 
 
 def add_multiple_values_filter(
