@@ -22,10 +22,6 @@ class ArpavPpcvUser(locust.FastHttpUser):
     def stations(self):
         self.client.get("/api/v2/observations/stations")
 
-    @locust.task
-    def variables(self):
-        self.client.get("/api/v2/observations/variables")
-
 
 @locust.events.quitting.add_listener
 def _(environment, **kwargs):
