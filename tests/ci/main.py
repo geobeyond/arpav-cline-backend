@@ -279,13 +279,8 @@ async def _run_pipeline(
         build_args.append(dagger.BuildArg(name="GIT_COMMIT", value=git_commit))
     async with dagger.Connection(conf) as client:
         src = client.host().directory(str(REPO_ROOT))
-        built_container = (
-            client.container()
-            .build(context=src, dockerfile="docker/Dockerfile", build_args=build_args)
-            .with_label(
-                "org.opencontainers.image.source",
-                "https://github.com/geobeyond/Arpav-PPCV-backend",
-            )
+        built_container = client.container().build(
+            context=src, dockerfile="docker/Dockerfile", build_args=build_args
         )
         if with_formatter:
             await _run_formatter(built_container)
@@ -305,7 +300,12 @@ async def _run_pipeline(
                     test_container,
                 )
         if publish_docker_image is not None:
+            org_name, repo_name = publish_docker_image.split("/")[1:3]
+            label = f"https://github.com/{org_name}/{repo_name}"
             sanitized_name = _sanitize_docker_image_name(publish_docker_image)
+            built_container = built_container.with_label(
+                "org.opencontainers.image.source", label
+            )
             await built_container.publish(sanitized_name)
         print("Done")
 

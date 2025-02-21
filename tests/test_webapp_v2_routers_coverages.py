@@ -20,7 +20,9 @@ def test_coverage_configurations_list(
         headers={"accept": "application/json"},
     )
     assert list_response.status_code == 200
-    assert len(list_response.json()["items"]) == 10
+    assert len(list_response.json()["items"]) == min(
+        20, len(sample_real_forecast_coverage_configurations)
+    )
 
 
 def test_coverage_identifiers_list(

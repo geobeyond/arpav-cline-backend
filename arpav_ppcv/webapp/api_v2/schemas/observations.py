@@ -72,7 +72,7 @@ class StationReadListItem(observations.StationBase):
 
 class ObservationStationReadListItem(pydantic.BaseModel):
     url: pydantic.AnyHttpUrl
-    identifier: str
+    code: str
     name: str
     managed_by: static.ObservationStationManager
 
@@ -82,7 +82,7 @@ class ObservationStationReadListItem(pydantic.BaseModel):
     ) -> "ObservationStationReadListItem":
         return cls(
             **instance.model_dump(),
-            url=request.url_for("get_station", **{"station_id": instance.id}),
+            url=str(request.url_for("get_station", station_code=instance.code)),
         )
 
 

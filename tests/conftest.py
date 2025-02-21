@@ -34,7 +34,10 @@ from arpav_ppcv.schemas import (
 from arpav_ppcv.webapp import dependencies
 from arpav_ppcv.webapp.app import create_app_from_settings
 from arpav_ppcv.webapp.api_v2.app import create_app as create_v2_app
-from arpav_ppcv.bootstrapper.forecastmodels import generate_forecast_models
+from arpav_ppcv.bootstrapper.forecastmodels import (
+    generate_forecast_models,
+    generate_forecast_model_groups,
+)
 from arpav_ppcv.bootstrapper.forecasttimewindows import generate_forecast_time_windows
 from arpav_ppcv.bootstrapper.spatialregions import generate_spatial_regions
 from arpav_ppcv.bootstrapper.climaticindicators.cdd import (
@@ -255,7 +258,7 @@ def sample_real_station(arpav_db_session) -> observations.ObservationStation:
 def sample_stations(arpav_db_session) -> list[observations.ObservationStation]:
     db_stations = []
     for i in range(50):
-        manager = random.choice(static.ObservationStationManager)
+        manager = random.choice(list(static.ObservationStationManager))
         db_stations.append(
             observations.ObservationStation(
                 code=f"{manager.value}-{i}",
@@ -284,7 +287,7 @@ def sample_real_spatial_regions(
     arpav_db_session,
 ) -> list[base.SpatialRegion]:
     created = []
-    geoms_base_path = Path(__file__).parent / "data/spatial-regions"
+    geoms_base_path = Path(__file__).parents[1] / "data/spatial-regions"
     for spatial_region_to_create in generate_spatial_regions(geoms_base_path):
         created.append(
             db.create_spatial_region(arpav_db_session, spatial_region_to_create)
@@ -329,6 +332,19 @@ def sample_real_forecast_year_period_groups(
 
 
 @pytest.fixture()
+def sample_real_forecast_model_groups(
+    arpav_db_session,
+    sample_real_forecast_models,
+) -> list[coverages.ForecastModelGroup]:
+    created = []
+    forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
+
+    for item_create in generate_forecast_model_groups(forecast_model_ids):
+        created.append(db.create_forecast_model_group(arpav_db_session, item_create))
+    return created
+
+
+@pytest.fixture()
 def sample_real_forecast_time_windows(
     arpav_db_session,
 ) -> list[coverages.ForecastTimeWindow]:
@@ -346,21 +362,23 @@ def sample_real_climatic_indicators(
     sample_real_forecast_models,
 ) -> list[climaticindicators.ClimaticIndicator]:
     forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
-    to_create = [
-        *generate_cdd_climatic_indicators(forecast_model_ids),
-        *generate_cdds_climatic_indicators(forecast_model_ids),
-        *generate_fd_climatic_indicators(forecast_model_ids),
-        *generate_hdds_climatic_indicators(forecast_model_ids),
-        *generate_hwdi_climatic_indicators(forecast_model_ids),
-        *generate_pr_climatic_indicators(forecast_model_ids),
-        *generate_r95ptot_climatic_indicators(forecast_model_ids),
-        *generate_snwdays_climatic_indicators(forecast_model_ids),
-        *generate_su30_climatic_indicators(forecast_model_ids),
-        *generate_tas_climatic_indicators(forecast_model_ids),
-        *generate_tasmax_climatic_indicators(forecast_model_ids),
-        *generate_tasmin_climatic_indicators(forecast_model_ids),
-        *generate_tr_climatic_indicators(forecast_model_ids),
-    ]
+    to_create = []
+    for handler in (
+        generate_cdd_climatic_indicators,
+        generate_cdds_climatic_indicators,
+        generate_fd_climatic_indicators,
+        generate_hdds_climatic_indicators,
+        generate_hwdi_climatic_indicators,
+        generate_pr_climatic_indicators,
+        generate_r95ptot_climatic_indicators,
+        generate_snwdays_climatic_indicators,
+        generate_su30_climatic_indicators,
+        generate_tas_climatic_indicators,
+        generate_tasmax_climatic_indicators,
+        generate_tasmin_climatic_indicators,
+        generate_tr_climatic_indicators,
+    ):
+        to_create.extend(handler(forecast_model_ids))
     created = []
     for indicator_to_create in to_create:
         created.append(
@@ -433,7 +451,7 @@ def sample_real_forecast_coverage_configurations(
     arpav_db_session,
     sample_real_spatial_regions,
     sample_real_climatic_indicators,
-    sample_real_forecast_models,
+    sample_real_forecast_model_groups,
     sample_real_forecast_time_windows,
     sample_real_forecast_year_period_groups,
     sample_real_observation_series_configurations,
@@ -442,7 +460,9 @@ def sample_real_forecast_coverage_configurations(
     climatic_indicator_ids = {
         ci.identifier: ci.id for ci in sample_real_climatic_indicators
     }
-    forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
+    forecast_model_group_ids = {
+        fmg.name: fmg.id for fmg in sample_real_forecast_model_groups
+    }
     time_window_ids = {tw.name: tw.id for tw in sample_real_forecast_time_windows}
     obs_series_confs_ids = {
         osc.identifier: osc.id for osc in sample_real_observation_series_configurations
@@ -472,7 +492,7 @@ def sample_real_forecast_coverage_configurations(
                 spatial_region_ids=spatial_region_ids,
                 forecast_time_window_ids=time_window_ids,
                 year_period_groups=year_period_group_ids,
-                forecast_model_groups=forecast_model_ids,
+                forecast_model_groups=forecast_model_group_ids,
                 observation_series_configuration_ids=obs_series_confs_ids,
             )
         )
@@ -591,7 +611,7 @@ def sample_tas_csv_data():
 
 
 @pytest.fixture()
-def sample_real_monthly_measurements(
+def sample_monthly_measurements(
     arpav_db_session,
     sample_real_climatic_indicators,
     sample_real_station,

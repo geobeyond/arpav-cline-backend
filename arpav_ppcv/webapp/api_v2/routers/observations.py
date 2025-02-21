@@ -81,15 +81,15 @@ def list_stations(
 
 
 @router.get(
-    "/stations/{station_id}",
+    "/stations/{station_code}",
     response_model=observations.ObservationStationReadListItem,
 )
 def get_station(
     request: Request,
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
-    station_id: int,
+    station_code: str,
 ):
-    db_station = db.get_observation_station(db_session, station_id)
+    db_station = db.get_observation_station_by_code(db_session, station_code)
     return observations.ObservationStationReadListItem.from_db_instance(
         db_station, request
     )

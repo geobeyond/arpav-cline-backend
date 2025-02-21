@@ -343,7 +343,9 @@ to the repository's `main` branch. This is triggered by means of a github action
 - Running the following command:
 
     ```shell
-    dagger run poetry run python tests/ci/main.py \
+    # using `dagger --progress plain` because it sometimes locks up the terminal - probably because of
+    # https://github.com/dagger/dagger/issues/7160
+    dagger --progress plain run poetry run python tests/ci/main.py \
         --with-formatter \
         --with-linter \
         --with-tests
@@ -353,6 +355,15 @@ Testing uses these main additional libraries/frameworks:
 
 - pytest
 - ruff
+
+
+It is also possible, and very likely faster, to run the tests from inside an already up development docker
+compose stack. This involves running the following commands:
+
+````shell
+docker exec -ti arpav-ppcv-webapp-1 poetry install --with dev
+docker exec -ti arpav-ppcv-webapp-1 poetry run pytest
+````
 
 
 ##### Git pre-commit

@@ -11,7 +11,9 @@ def test_climatic_indicator_list(
         test_client_v2_app.app.url_path_for("list_climatic_indicators")
     )
     assert list_response.status_code == 200
-    assert len(list_response.json()["items"]) == 4
+    assert len(list_response.json()["items"]) == min(
+        20, len(sample_real_climatic_indicators)
+    )
 
 
 def test_climatic_indicator_detail(

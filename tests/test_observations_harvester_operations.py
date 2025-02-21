@@ -5,7 +5,10 @@ import pyproj
 import pytest
 
 from arpav_ppcv.observations_harvester import arpav as arpav_operations
-from arpav_ppcv.schemas import observations
+from arpav_ppcv.schemas import (
+    observations,
+    static,
+)
 
 
 @pytest.mark.parametrize(
@@ -22,7 +25,7 @@ from arpav_ppcv.schemas import observations
                 "statcd": 247,
                 "statnm": "Casamazzagno",
             },
-            observations.StationCreate(
+            observations.ObservationStationCreate(
                 code="arpa_v-247",
                 geom=geojson_pydantic.Point(
                     type="Point", coordinates=(12.51561664, 46.59389393)
@@ -30,6 +33,7 @@ from arpav_ppcv.schemas import observations
                 altitude_m=1342.0,
                 name="Casamazzagno",
                 active_since=dt.date(1992, 12, 11),
+                managed_by=static.ObservationStationManager.ARPAV,
             ),
         )
     ],

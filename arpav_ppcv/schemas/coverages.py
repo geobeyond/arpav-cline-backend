@@ -867,6 +867,8 @@ class ForecastCoverageConfigurationObservationSeriesConfigurationLink(
 class HistoricalCoverageConfigurationObservationSeriesConfigurationLink(
     sqlmodel.SQLModel, table=True
 ):
+    # name is shortened in order to be below 63 chars, which is the maximum allowed by postgresql
+    __tablename__ = "historicalcovconfobservationseriesconflink"
     __table_args__ = (
         sqlalchemy.ForeignKeyConstraint(
             [

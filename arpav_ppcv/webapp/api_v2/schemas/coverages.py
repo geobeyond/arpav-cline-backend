@@ -141,6 +141,7 @@ class LegacyHistoricalCoverageConfigurationReadListItem(pydantic.BaseModel):
             display_name_english=instance.climatic_indicator.display_name_english,
             display_name_italian=instance.climatic_indicator.display_name_italian,
             url=str(url),
+            year_periods=[yp.value for yp in instance.year_period_group.year_periods],
             possible_values=cls.prepare_possible_values(instance),
         )
 
@@ -461,6 +462,7 @@ class LegacyForecastCoverageConfigurationReadListItem(pydantic.BaseModel):
                 fml.forecast_model.name
                 for fml in instance.forecast_model_group.forecast_model_links
             ],
+            year_periods=[yp.value for yp in instance.year_period_group.year_periods],
             has_associated_uncertainty_datasets=(
                 instance.lower_uncertainty_netcdf_main_dataset_name is not None
             ),
