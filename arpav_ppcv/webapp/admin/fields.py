@@ -5,55 +5,9 @@ import anyio.to_thread
 import starlette_admin
 from starlette.requests import Request
 
-import arpav_ppcv.db.legacy
 from ... import db
-from . import schemas as read_schemas
 
 logger = logging.getLogger(__name__)
-
-
-class UuidField(starlette_admin.StringField):
-    """Custom field for handling item identifiers.
-
-    This field, in conjunction with the custom collection template, ensures
-    that we can have related fields be edited inline, by sending the item's `id`
-    as a form hidden field.
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.input_type = "hidden"
-
-    async def serialize_value(
-        self, request: Request, value: Any, action: starlette_admin.RequestAction
-    ) -> Any:
-        return str(value)
-
-
-class PossibleConfigurationParameterValuesField(starlette_admin.EnumField):
-    def _get_label(
-        self,
-        value: read_schemas.ConfigurationParameterPossibleValueRead,
-        request: Request,
-    ) -> Any:
-        conf_parameter_value = arpav_ppcv.db.legacy.get_configuration_parameter_value(
-            request.state.session, value.configuration_parameter_value_id
-        )
-        result = " - ".join(
-            (
-                conf_parameter_value.configuration_parameter.name,
-                conf_parameter_value.name,
-            )
-        )
-        return result
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: read_schemas.ConfigurationParameterPossibleValueRead,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
 
 
 class RelatedForecastModelGroupField(starlette_admin.EnumField):
@@ -326,33 +280,3 @@ class RelatedClimaticIndicatorField(starlette_admin.EnumField):
             request.state.session
         )
         return [(ci.id, ci.identifier) for ci in all_climatic_indicators]
-
-
-class RelatedObservationsVariableField(starlette_admin.EnumField):
-    def _get_label(
-        self, value: read_schemas.ObservationVariableRead, request: Request
-    ) -> Any:
-        return value.name
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: read_schemas.ObservationVariableRead,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)
-
-
-class RelatedCoverageconfigurationsField(starlette_admin.EnumField):
-    def _get_label(
-        self, value: read_schemas.CoverageConfigurationReadListItem, request: Request
-    ) -> Any:
-        return value.name
-
-    async def serialize_value(
-        self,
-        request: Request,
-        value: read_schemas.CoverageConfigurationReadListItem,
-        action: starlette_admin.RequestAction,
-    ) -> Any:
-        return self._get_label(value, request)

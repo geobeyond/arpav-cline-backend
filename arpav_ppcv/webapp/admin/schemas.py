@@ -1,11 +1,9 @@
 import datetime as dt
 from typing import Optional
-import uuid
 
 import pydantic
 import sqlmodel
 
-from ...schemas.base import ObservationAggregationType
 from ...schemas.static import (
     AggregationPeriod,
     ForecastScenario,
@@ -50,78 +48,6 @@ class ClimaticIndicatorRead(sqlmodel.SQLModel):
     sort_order: int
     observation_names: list[ClimaticIndicatorObservationNameRead]
     forecast_model_base_paths: list[ClimaticIndicatorForecastModelBasePathRead]
-
-
-class ConfigurationParameterValueRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    internal_value: str
-    name: str
-    display_name_english: Optional[str]
-    display_name_italian: Optional[str]
-    description_english: Optional[str]
-    description_italian: Optional[str]
-    sort_order: int
-
-
-class ConfigurationParameterRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-    display_name_english: Optional[str]
-    display_name_italian: Optional[str]
-    description_english: Optional[str]
-    description_italian: Optional[str]
-    allowed_values: list[ConfigurationParameterValueRead]
-
-
-class ConfigurationParameterPossibleValueRead(sqlmodel.SQLModel):
-    configuration_parameter_value_id: uuid.UUID
-    configuration_parameter_value_name: str
-
-
-class RelatedCoverageConfigurationRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-
-
-class CoverageConfigurationRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-    # display_name_english: Optional[str]
-    # display_name_italian: Optional[str]
-    # description_english: Optional[str]
-    # description_italian: Optional[str]
-    netcdf_main_dataset_name: str
-    wms_main_layer_name: str
-    wms_secondary_layer_name: Optional[str]
-    coverage_id_pattern: str
-    thredds_url_pattern: str
-    # unit_english: str
-    # unit_italian: str
-    # palette: str
-    # color_scale_min: float
-    # color_scale_max: float
-    # data_precision: int
-    climatic_indicator: Optional[int]
-    possible_values: list[ConfigurationParameterPossibleValueRead]
-    observation_variable_aggregation_type: ObservationAggregationType
-    observation_variable: Optional["ObservationVariableRead"]
-    uncertainty_lower_bounds_coverage_configuration: Optional[
-        "CoverageConfigurationReadListItem"
-    ]
-    uncertainty_upper_bounds_coverage_configuration: Optional[
-        "CoverageConfigurationReadListItem"
-    ]
-    related_coverages: list[RelatedCoverageConfigurationRead]
-
-
-class ObservationVariableRead(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
-
-
-class CoverageConfigurationReadListItem(sqlmodel.SQLModel):
-    id: uuid.UUID
-    name: str
 
 
 class ObservationStationRead(sqlmodel.SQLModel):

@@ -100,7 +100,7 @@ class ObservationStationView(ModelView):
     exclude_fields_from_detail = ("id",)
 
     fields = (
-        fields.UuidField("id"),
+        starlette_admin.IntegerField("id"),
         starlette_admin.StringField("name", required=True),
         starlette_admin.EnumField(
             "managed_by", enum=static.ObservationStationManager, required=True

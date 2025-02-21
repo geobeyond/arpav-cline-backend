@@ -69,7 +69,6 @@ from ..schemas.coverages import (
 from ..schemas.timeseries import (
     LegacyTimeSeries,
     LegacyTimeSeriesList,
-    TimeSeriesList,
 )
 from ...frontendutils.schemas import (
     LegacyForecastVariableCombinationsList,
@@ -761,7 +760,7 @@ def _modify_capabilities_response(
 
 @router.get(
     "/time-series/climate-barometer",
-    response_model=TimeSeriesList,
+    response_model=LegacyTimeSeriesList,
 )
 def get_overview_time_series(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -805,9 +804,11 @@ def get_overview_time_series(
 
 
 @router.get(
-    "/time-series/{coverage_identifier}", response_model=TimeSeriesList, deprecated=True
+    "/time-series/{coverage_identifier}",
+    response_model=LegacyTimeSeriesList,
+    deprecated=True,
 )
-def legacy_get_time_series(
+def deprecated_get_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
@@ -855,8 +856,8 @@ def legacy_get_time_series(
 
 @router.get(
     "/forecast-time-series/{coverage_identifier}",
-    response_model=TimeSeriesList,
-    deprecated=True,
+    # response_model=TimeSeriesList,
+    response_model=LegacyTimeSeriesList,
 )
 def get_forecast_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
@@ -884,11 +885,7 @@ def get_forecast_time_series(
     include_coverage_uncertainty: bool = False,
     include_coverage_related_data: bool = False,
 ):
-    """Get forecast dataset time series for a geographic location.
-
-    This is deprecated, use the
-    `/coverages/forecast-time-series/{coverage_identifier}` endpoint instead.
-    """
+    """Get forecast dataset time series for a geographic location"""
     try:
         data_category = DataCategory(coverage_identifier.partition("-")[0])
     except ValueError:
@@ -951,8 +948,7 @@ def get_forecast_time_series(
 
 @router.get(
     "/historical-time-series/{coverage_identifier}",
-    response_model=TimeSeriesList,
-    deprecated=True,
+    response_model=LegacyTimeSeriesList,
 )
 def get_historical_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],

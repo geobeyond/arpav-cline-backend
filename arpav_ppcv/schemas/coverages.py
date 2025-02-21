@@ -1,6 +1,5 @@
 import dataclasses
 import logging
-import re
 import uuid
 from typing import (
     Annotated,
@@ -108,9 +107,6 @@ class ForecastModel(sqlmodel.SQLModel, table=True):
     climatic_indicator_links: list[
         "ForecastModelClimaticIndicatorLink"
     ] = sqlmodel.Relationship(back_populates="forecast_model")
-    # forecast_coverage_configuration_links: list[
-    #     "ForecastCoverageConfigurationForecastModelLink"
-    # ] = sqlmodel.Relationship(back_populates="forecast_model")
     forecast_model_group_links: list[
         "ForecastModelForecastModelGroupLink"
     ] = sqlmodel.Relationship(back_populates="forecast_model")
@@ -258,57 +254,7 @@ class ForecastModelForecastModelGroupLink(sqlmodel.SQLModel, table=True):
     )
 
 
-# class ForecastCoverageConfigurationForecastModelGroupLink(
-#     sqlmodel.SQLModel, table=True
-# ):
-#     __table_args__ = (
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_coverage_configuration_id",
-#             ],
-#             [
-#                 "forecastcoverageconfiguration.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-#         ),
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_model_group_id",
-#             ],
-#             [
-#                 "forecastmodelgroup.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model group gets deleted
-#         ),
-#     )
-#     forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#     forecast_model_group_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#
-#     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-#         sqlmodel.Relationship(back_populates="forecast_model_group_links")
-#     )
-#     forecast_model_group: ForecastModelGroup = sqlmodel.Relationship(
-#         back_populates="forecast_coverage_configuration_links"
-#     )
-
-
 class ForecastYearPeriodGroup(_BaseGroup, table=True):
-    # forecast_coverage_configuration_links: list[
-    #     "ForecastCoverageConfigurationForecastYearPeriodGroupLink"
-    # ] = sqlmodel.Relationship(back_populates="forecast_year_period_group")
-
     year_periods: list[static.ForecastYearPeriod] = sqlmodel.Field(
         default=list,
         sa_column=sqlalchemy.Column(
@@ -341,58 +287,7 @@ class ForecastYearPeriodGroupUpdate(_BaseGroupUpdate):
     year_periods: list[static.ForecastYearPeriod] | None = None
 
 
-# class ForecastCoverageConfigurationForecastYearPeriodGroupLink(
-#     sqlmodel.SQLModel, table=True
-# ):
-#     __table_args__ = (
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_coverage_configuration_id",
-#             ],
-#             [
-#                 "forecastcoverageconfiguration.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-#         ),
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_year_period_group_id",
-#             ],
-#             [
-#                 "forecastyearperiodgroup.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",
-#             # i.e. delete all possible values if the related forecast year period group gets deleted
-#         ),
-#     )
-#     forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#     forecast_year_period_group_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#
-#     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-#         sqlmodel.Relationship(back_populates="forecast_year_period_group_links")
-#     )
-#     forecast_year_period_group: ForecastYearPeriodGroup = sqlmodel.Relationship(
-#         back_populates="forecast_coverage_configuration_links"
-#     )
-
-
 class HistoricalYearPeriodGroup(_BaseGroup, table=True):
-    # historical_coverage_configuration_links: list[
-    #     "HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink"
-    # ] = sqlmodel.Relationship(back_populates="historical_year_period_group")
-
     year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
         default=list,
         sa_column=sqlalchemy.Column(
@@ -423,53 +318,6 @@ class HistoricalYearPeriodGroupCreate(_BaseGroupCreate):
 
 class HistoricalYearPeriodGroupUpdate(_BaseGroupUpdate):
     year_periods: list[static.HistoricalYearPeriod] | None = None
-
-
-# class HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink(
-#     sqlmodel.SQLModel, table=True
-# ):
-#     __table_args__ = (
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "historical_coverage_configuration_id",
-#             ],
-#             [
-#                 "historicalcoverageconfiguration.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-#         ),
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "historical_year_period_group_id",
-#             ],
-#             [
-#                 "historicalyearperiodgroup.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",
-#             # i.e. delete all possible values if the related historical year period group gets deleted
-#         ),
-#     )
-#     historical_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#     historical_year_period_group_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#
-#     historical_coverage_configuration: "HistoricalCoverageConfiguration" = (
-#         sqlmodel.Relationship(back_populates="historical_year_period_group_links")
-#     )
-#     historical_year_period_group: HistoricalYearPeriodGroup = sqlmodel.Relationship(
-#         back_populates="historical_coverage_configuration_links"
-#     )
 
 
 class ConfigurationParameterValue(sqlmodel.SQLModel, table=True):
@@ -510,26 +358,6 @@ class ConfigurationParameterValue(sqlmodel.SQLModel, table=True):
     )
 
 
-class ConfigurationParameterValueCreate(sqlmodel.SQLModel):
-    internal_value: str
-    name: Annotated[
-        str,
-        pydantic.Field(
-            pattern=_NAME_PATTERN,
-            help=(
-                "Parameter value name. Only alphanumeric characters and the underscore "
-                "are allowed. Example: my_param_value"
-            ),
-        ),
-    ] = None
-    configuration_parameter_id: uuid.UUID
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    sort_order: Optional[int] = 0
-
-
 class ConfigurationParameter(sqlmodel.SQLModel, table=True):
     id: uuid.UUID = sqlmodel.Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = sqlmodel.Field(unique=True, index=True)
@@ -546,73 +374,6 @@ class ConfigurationParameter(sqlmodel.SQLModel, table=True):
             "order_by": "ConfigurationParameterValue.sort_order",
         },
     )
-
-
-class ConfigurationParameterValueCreateEmbeddedInConfigurationParameter(
-    sqlmodel.SQLModel
-):
-    internal_value: str
-    name: Annotated[
-        str,
-        pydantic.Field(
-            pattern=_NAME_PATTERN,
-            help=(
-                "Parameter value name. Only alphanumeric characters and the underscore "
-                "are allowed. Example: my_param_value"
-            ),
-        ),
-    ] = None
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    sort_order: int
-
-
-class ConfigurationParameterCreate(sqlmodel.SQLModel):
-    name: Annotated[
-        str,
-        pydantic.Field(
-            pattern=_NAME_PATTERN,
-            help=(
-                "Parameter name. Only alphanumeric characters and the underscore are "
-                "allowed. Example: my_param"
-            ),
-        ),
-    ]
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-
-    allowed_values: list[
-        ConfigurationParameterValueCreateEmbeddedInConfigurationParameter
-    ]
-
-
-class ConfigurationParameterValueUpdateEmbeddedInConfigurationParameterEdit(
-    sqlmodel.SQLModel
-):
-    id: Optional[uuid.UUID] = None
-    internal_value: Optional[str] = None
-    name: Annotated[Optional[str], pydantic.Field(pattern=_NAME_PATTERN)] = None
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-    sort_order: Optional[int] = None
-
-
-class ConfigurationParameterUpdate(sqlmodel.SQLModel):
-    name: Annotated[Optional[str], pydantic.Field(pattern=_NAME_PATTERN)] = None
-    display_name_english: Optional[str] = None
-    display_name_italian: Optional[str] = None
-    description_english: Optional[str] = None
-    description_italian: Optional[str] = None
-
-    allowed_values: list[
-        ConfigurationParameterValueUpdateEmbeddedInConfigurationParameterEdit
-    ]
 
 
 class CoverageConfiguration(sqlmodel.SQLModel, table=True):
@@ -865,61 +626,6 @@ class CoverageConfiguration(sqlmodel.SQLModel, table=True):
         return result
 
 
-class CoverageConfigurationCreate(sqlmodel.SQLModel):
-    name: Annotated[
-        str,
-        pydantic.Field(
-            pattern=_NAME_PATTERN,
-            help=(
-                "Coverage configuration name. Only alphanumeric characters and the "
-                "underscore are allowed. Example: my_name"
-            ),
-        ),
-    ]
-    netcdf_main_dataset_name: str
-    # the point in having a wms_main_layer_name and wms_secondary_layer_name is to let
-    # the frontend toggle between them
-    wms_main_layer_name: Optional[str] = None
-    wms_secondary_layer_name: Optional[str] = None
-    thredds_url_pattern: str
-    possible_values: list["ConfigurationParameterPossibleValueCreate"]
-    climatic_indicator_id: int
-    uncertainty_lower_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
-    uncertainty_upper_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
-    secondary_coverage_configurations_ids: Annotated[
-        Optional[list[uuid.UUID]], pydantic.Field(default_factory=list)
-    ]
-
-    @pydantic.field_validator("thredds_url_pattern")
-    @classmethod
-    def validate_thredds_url_pattern(cls, v: str) -> str:
-        for match_obj in re.finditer(r"(\{.*?\})", v):
-            if re.match(_NAME_PATTERN, match_obj.group(1)[1:-1]) is None:
-                raise ValueError(f"configuration parameter {v!r} has invalid name")
-        return v.strip()
-
-
-class CoverageConfigurationUpdate(sqlmodel.SQLModel):
-    name: Annotated[Optional[str], pydantic.Field(pattern=_NAME_PATTERN)] = None
-    netcdf_main_dataset_name: Optional[str] = None
-    wms_main_layer_name: Optional[str] = None
-    wms_secondary_layer_name: Optional[str] = None
-    thredds_url_pattern: Optional[str] = None
-    climatic_indicator_id: Optional[int] = None
-    possible_values: list["ConfigurationParameterPossibleValueUpdate"]
-    uncertainty_lower_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
-    uncertainty_upper_bounds_coverage_configuration_id: Optional[uuid.UUID] = None
-    secondary_coverage_configurations_ids: Optional[list[uuid.UUID]] = None
-
-    @pydantic.field_validator("thredds_url_pattern")
-    @classmethod
-    def validate_thredds_url_pattern(cls, v: str) -> str:
-        for match_obj in re.finditer(r"(\{.*?\})", v):
-            if re.match(_NAME_PATTERN, match_obj.group(1)[1:-1]) is None:
-                raise ValueError(f"configuration parameter {v!r} has invalid name")
-        return v.strip()
-
-
 class RelatedCoverageConfiguration(sqlmodel.SQLModel, table=True):
     """Relates coverage configurations with each other.
 
@@ -1000,14 +706,6 @@ class ConfigurationParameterPossibleValue(sqlmodel.SQLModel, table=True):
     )
 
 
-class ConfigurationParameterPossibleValueCreate(sqlmodel.SQLModel):
-    configuration_parameter_value_id: uuid.UUID
-
-
-class ConfigurationParameterPossibleValueUpdate(sqlmodel.SQLModel):
-    configuration_parameter_value_id: uuid.UUID
-
-
 @dataclasses.dataclass(frozen=True)
 class CoverageInternal:
     configuration: CoverageConfiguration
@@ -1072,52 +770,6 @@ class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
     climatic_indicator: "climaticindicators.ClimaticIndicator" = sqlmodel.Relationship(
         back_populates="forecast_model_links"
     )
-
-
-#
-#
-# class ForecastCoverageConfigurationForecastModelLink(sqlmodel.SQLModel, table=True):
-#     __table_args__ = (
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_coverage_configuration_id",
-#             ],
-#             [
-#                 "forecastcoverageconfiguration.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related coverage configuration gets deleted
-#         ),
-#         sqlalchemy.ForeignKeyConstraint(
-#             [
-#                 "forecast_model_id",
-#             ],
-#             [
-#                 "forecastmodel.id",
-#             ],
-#             onupdate="CASCADE",
-#             ondelete="CASCADE",  # i.e. delete all possible values if the related forecast model gets deleted
-#         ),
-#     )
-#     forecast_coverage_configuration_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#     forecast_model_id: Optional[int] = sqlmodel.Field(
-#         # NOTE: foreign key already defined in __table_args__ in order to be able to
-#         # specify the ondelete behavior
-#         default=None,
-#         primary_key=True,
-#     )
-#
-#     forecast_coverage_configuration: "ForecastCoverageConfiguration" = (
-#         sqlmodel.Relationship(back_populates="forecast_model_links")
-#     )
-#     forecast_model: ForecastModel = sqlmodel.Relationship(
-#         back_populates="forecast_coverage_configuration_links"
-#     )
 
 
 class ForecastCoverageConfigurationForecastTimeWindowLink(
@@ -1595,16 +1247,6 @@ class HistoricalCoverageConfiguration(BaseCoverageConfiguration, table=True):
             sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalDecade))
         ),
     )
-    # year_periods: list[static.HistoricalYearPeriod] = sqlmodel.Field(
-    #     default=list,
-    #     sa_column=sqlalchemy.Column(
-    #         sqlmodel.ARRAY(sqlmodel.Enum(static.HistoricalYearPeriod))
-    #     ),
-    # )
-    # historical_year_period_group_links: list[
-    #     HistoricalCoverageConfigurationHistoricalYearPeriodGroupLink
-    # ] = sqlmodel.Relationship(back_populates="historical_coverage_configurations")
-
     spatial_region: base.SpatialRegion = sqlmodel.Relationship(
         back_populates="historical_coverage_configurations"
     )

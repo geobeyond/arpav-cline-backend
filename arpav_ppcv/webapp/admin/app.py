@@ -15,8 +15,6 @@ from ...db import get_engine
 from ...schemas.base import SpatialRegion
 from ...schemas.climaticindicators import ClimaticIndicator
 from ...schemas.coverages import (
-    ConfigurationParameter,
-    CoverageConfiguration,
     ForecastCoverageConfiguration,
     ForecastModel,
     ForecastModelGroup,
@@ -137,17 +135,6 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                     ObservationSeriesConfiguration
                 ),
                 observations_views.ObservationStationView(ObservationStation),
-            ],
-        )
-    )
-    admin.add_view(
-        DropDown(
-            "Legacy",
-            icon="fa-solid fa-circle-xmark",
-            always_open=False,
-            views=[
-                coverage_views.ConfigurationParameterView(ConfigurationParameter),
-                coverage_views.CoverageConfigurationView(CoverageConfiguration),
             ],
         )
     )
