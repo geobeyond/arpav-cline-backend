@@ -211,14 +211,11 @@ async def _run_load_tests(
         .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
         .with_service_binding(db_host, db_service)
         .with_exec(shlex.split("poetry run arpav-ppcv db upgrade"))
-        .with_exec(shlex.split("poetry run arpav-ppcv bootstrap observation-variables"))
         .with_exec(
             shlex.split(
-                "poetry run arpav-ppcv bootstrap coverage-configuration-parameters"
+                "poetry run arpav-ppcv bootstrap all data/spatial-regions "
+                "data/municipalities-istat-2021.geojson"
             )
-        )
-        .with_exec(
-            shlex.split("poetry run arpav-ppcv bootstrap coverage-configurations")
         )
         .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
         .with_exec(shlex.split("poetry run arpav-ppcv run-server"))
