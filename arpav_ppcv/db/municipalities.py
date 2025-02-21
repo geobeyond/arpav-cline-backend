@@ -38,20 +38,24 @@ def list_municipality_centroids(
     ``polygon_intersection_filter`` parameter is expected to be express a geometry in
     the EPSG:4326 CRS.
     """
-    statement = sqlmodel.select(Municipality).order_by(
-        Municipality.name  # noqa
-    )
+    statement = sqlmodel.select(Municipality).order_by(Municipality.name)  # noqa
     if name_filter is not None:
         statement = add_substring_filter(
-            statement, name_filter, Municipality.name  # noqa
+            statement,
+            name_filter,
+            Municipality.name,  # noqa
         )
     if province_name_filter is not None:
         statement = add_substring_filter(
-            statement, province_name_filter, Municipality.province_name  # noqa
+            statement,
+            province_name_filter,
+            Municipality.province_name,  # noqa
         )
     if region_name_filter is not None:
         statement = add_substring_filter(
-            statement, region_name_filter, Municipality.region_name  # noqa
+            statement,
+            region_name_filter,
+            Municipality.region_name,  # noqa
         )
     if polygon_intersection_filter is not None:
         statement = statement.where(
@@ -101,15 +105,21 @@ def list_municipalities(
     )
     if name_filter is not None:
         statement = add_substring_filter(
-            statement, name_filter, Municipality.name  # noqa
+            statement,
+            name_filter,
+            Municipality.name,  # noqa
         )
     if province_name_filter is not None:
         statement = add_substring_filter(
-            statement, province_name_filter, Municipality.province_name  # noqa
+            statement,
+            province_name_filter,
+            Municipality.province_name,  # noqa
         )
     if region_name_filter is not None:
         statement = add_substring_filter(
-            statement, region_name_filter, Municipality.region_name  # noqa
+            statement,
+            region_name_filter,
+            Municipality.region_name,  # noqa
         )
     if polygon_intersection_filter is not None:
         statement = statement.where(

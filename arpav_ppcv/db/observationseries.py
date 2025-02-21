@@ -113,9 +113,7 @@ def create_observation_measurement(
 
 def create_many_observation_measurements(
     session: sqlmodel.Session,
-    observation_measurements_to_create: Sequence[
-        ObservationMeasurementCreate
-    ],
+    observation_measurements_to_create: Sequence[ObservationMeasurementCreate],
 ) -> list[ObservationMeasurement]:
     """Create several observation measurements."""
     db_records = []
@@ -144,9 +142,9 @@ def delete_observation_measurement(
 ) -> None:
     """Delete an observation measurement."""
     if (
-            db_measurement := get_observation_measurement(
-                session, observation_measurement_id
-            )
+        db_measurement := get_observation_measurement(
+            session, observation_measurement_id
+        )
     ) is not None:
         session.delete(db_measurement)
         session.commit()
@@ -175,9 +173,7 @@ def get_observation_series_configuration_by_identifier(
             f"climatic indicator {climatic_indicator_identifier} does not exist"
         )
     raw_station_managers, raw_measurement_aggregation = parts[3:5]
-    managers = [
-        ObservationStationManager(m) for m in raw_station_managers.split(":")
-    ]
+    managers = [ObservationStationManager(m) for m in raw_station_managers.split(":")]
     measurement_aggregation_type = MeasurementAggregationType(
         raw_measurement_aggregation
     )
@@ -187,7 +183,7 @@ def get_observation_series_configuration_by_identifier(
         ObservationSeriesConfiguration.measurement_aggregation_type  # noqa
         == measurement_aggregation_type,
         ObservationSeriesConfiguration.station_managers == managers,  # noqa
-        )
+    )
     return session.exec(statement).first()  # noqa
 
 

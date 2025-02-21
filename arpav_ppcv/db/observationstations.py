@@ -40,8 +40,7 @@ def get_observation_station_by_code(
 ) -> Optional[ObservationStation]:
     """Get an observation station by its code"""
     return session.exec(
-        sqlmodel.select(ObservationStation)  # noqa
-        .where(ObservationStation.code == code)  # noqa
+        sqlmodel.select(ObservationStation).where(ObservationStation.code == code)  # noqa  # noqa
     ).first()
 
 
@@ -66,7 +65,9 @@ def list_observation_stations(
     )
     if name_filter is not None:
         statement = add_substring_filter(
-            statement, name_filter, ObservationStation.name  # noqa
+            statement,
+            name_filter,
+            ObservationStation.name,  # noqa
         )
     if polygon_intersection_filter is not None:
         statement = statement.where(
@@ -86,10 +87,10 @@ def list_observation_stations(
             ObservationStationClimaticIndicatorLink,
             ObservationStation.id  # noqa
             == ObservationStationClimaticIndicatorLink.observation_station_id,  # noqa
-            ).where(
+        ).where(
             ObservationStationClimaticIndicatorLink.climatic_indicator_id  # noqa
             == climatic_indicator_id_filter,
-            )
+        )
     items = session.exec(statement.offset(offset).limit(limit)).all()
     num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items

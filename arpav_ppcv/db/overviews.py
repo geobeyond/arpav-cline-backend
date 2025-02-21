@@ -34,9 +34,7 @@ def list_forecast_overview_series_configurations(
         ForecastOverviewSeriesConfiguration.id  # noqa
     )
     items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = (
-        get_total_num_records(session, statement) if include_total else None
-    )
+    num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
 
 
@@ -77,9 +75,7 @@ def get_forecast_overview_series_configuration_by_identifier(
             session, climatic_indicator_identifier
         )
         if climatic_indicator is not None:
-            statement = sqlmodel.select(
-                ForecastOverviewSeriesConfiguration
-            ).where(
+            statement = sqlmodel.select(ForecastOverviewSeriesConfiguration).where(
                 ForecastOverviewSeriesConfiguration.climatic_indicator_id  # noqa
                 == climatic_indicator.id,
             )
@@ -148,13 +144,11 @@ def list_observation_overview_series_configurations(
     include_total: bool = False,
 ) -> tuple[Sequence[ObservationOverviewSeriesConfiguration], Optional[int]]:
     """List existing observation overview series configurations."""
-    statement = sqlmodel.select(
-        ObservationOverviewSeriesConfiguration
-    ).order_by(ObservationOverviewSeriesConfiguration.id)  # noqa
+    statement = sqlmodel.select(ObservationOverviewSeriesConfiguration).order_by(
+        ObservationOverviewSeriesConfiguration.id
+    )  # noqa
     items = session.exec(statement.offset(offset).limit(limit)).all()
-    num_items = (
-        get_total_num_records(session, statement) if include_total else None
-    )
+    num_items = get_total_num_records(session, statement) if include_total else None
     return items, num_items
 
 
@@ -195,9 +189,7 @@ def get_observation_overview_series_configuration_by_identifier(
             session, climatic_indicator_identifier
         )
         if climatic_indicator is not None:
-            statement = sqlmodel.select(
-                ObservationOverviewSeriesConfiguration
-            ).where(
+            statement = sqlmodel.select(ObservationOverviewSeriesConfiguration).where(
                 ObservationOverviewSeriesConfiguration.climatic_indicator_id  # noqa
                 == climatic_indicator.id,
             )
@@ -218,10 +210,8 @@ def create_observation_overview_series_configuration(
     session: sqlmodel.Session,
     observation_overview_series_configuration_create: ObservationOverviewSeriesConfigurationCreate,
 ) -> ObservationOverviewSeriesConfiguration:
-    db_overview_coverage_configuration = (
-        ObservationOverviewSeriesConfiguration(
-            **observation_overview_series_configuration_create.model_dump()
-        )
+    db_overview_coverage_configuration = ObservationOverviewSeriesConfiguration(
+        **observation_overview_series_configuration_create.model_dump()
     )
     session.add(db_overview_coverage_configuration)
     session.commit()
