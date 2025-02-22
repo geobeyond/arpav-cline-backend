@@ -297,13 +297,17 @@ async def _run_pipeline(
                     test_container,
                 )
         if publish_docker_image is not None:
+            print("About to publish docker image")
             org_name, repo_name = publish_docker_image.split("/")[1:3]
             label = f"https://github.com/{org_name}/{repo_name}"
+            print(f"{label=}")
             sanitized_name = _sanitize_docker_image_name(publish_docker_image)
+            print(f"{sanitized_name=}")
             built_container = built_container.with_label(
                 "org.opencontainers.image.source", label
             )
-            await built_container.publish(sanitized_name)
+            published_ref = await built_container.publish(sanitized_name)
+            print(f"{published_ref=}")
         print("Done")
 
 
