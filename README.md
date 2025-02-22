@@ -262,7 +262,9 @@ Build the docker image by running this command:
 
 ```shell
 docker build \
-    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend \
+    --tag ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend \
+    --label "org.opencontainers.image.source=https://github.com/geobeyond/arpav-cline-backend" \
+    --build-arg "GIT_COMMIT=$(git rev-parse --short HEAD)" \
     --file docker/Dockerfile \
     .
 ```
