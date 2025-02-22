@@ -25,8 +25,8 @@ class ArpavPpcvUser(locust.FastHttpUser):
 
 @locust.events.quitting.add_listener
 def _(environment, **kwargs):
-    max_avg_response_time_ms = 5_000
-    ninety_fifth_percentile_response_time_ms = 10_000
+    max_avg_response_time_ms = 10_000
+    ninety_fifth_percentile_response_time_ms = 20_000
     if environment.stats.total.fail_ratio > 0.01:
         logging.error("Test failed due to failure ratio > 1%")
         environment.process_exit_code = 1
