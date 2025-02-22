@@ -37,8 +37,8 @@ def _(environment, **kwargs):
         )
         environment.process_exit_code = 1
     elif (
-            environment.stats.total.get_response_time_percentile(0.95)
-            > ninety_fifth_percentile_response_time_ms
+        environment.stats.total.get_response_time_percentile(0.95)
+        > ninety_fifth_percentile_response_time_ms
     ):
         logging.error(
             f"Test failed due to 95th percentile response "
