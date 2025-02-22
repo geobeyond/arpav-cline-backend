@@ -211,14 +211,11 @@ async def _run_load_tests(
         .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
         .with_service_binding(db_host, db_service)
         .with_exec(shlex.split("poetry run arpav-ppcv db upgrade"))
-        .with_exec(shlex.split("poetry run arpav-ppcv bootstrap observation-variables"))
         .with_exec(
             shlex.split(
-                "poetry run arpav-ppcv bootstrap coverage-configuration-parameters"
+                "poetry run arpav-ppcv bootstrap all data/spatial-regions "
+                "data/municipalities-istat-2021.geojson"
             )
-        )
-        .with_exec(
-            shlex.split("poetry run arpav-ppcv bootstrap coverage-configurations")
         )
         .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
         .with_exec(shlex.split("poetry run arpav-ppcv run-server"))
@@ -279,13 +276,8 @@ async def _run_pipeline(
         build_args.append(dagger.BuildArg(name="GIT_COMMIT", value=git_commit))
     async with dagger.Connection(conf) as client:
         src = client.host().directory(str(REPO_ROOT))
-        built_container = (
-            client.container()
-            .build(context=src, dockerfile="docker/Dockerfile", build_args=build_args)
-            .with_label(
-                "org.opencontainers.image.source",
-                "https://github.com/geobeyond/Arpav-PPCV-backend",
-            )
+        built_container = client.container().build(
+            context=src, dockerfile="docker/Dockerfile", build_args=build_args
         )
         if with_formatter:
             await _run_formatter(built_container)
@@ -305,7 +297,12 @@ async def _run_pipeline(
                     test_container,
                 )
         if publish_docker_image is not None:
+            org_name, repo_name = publish_docker_image.split("/")[1:3]
+            label = f"https://github.com/{org_name}/{repo_name}"
             sanitized_name = _sanitize_docker_image_name(publish_docker_image)
+            built_container = built_container.with_label(
+                "org.opencontainers.image.source", label
+            )
             await built_container.publish(sanitized_name)
         print("Done")
 

@@ -22,7 +22,10 @@ x-common-env: &common-env
   ARPAV_PPCV__ADMIN_USER__PASSWORD: 12345678
   ARPAV_PPCV__LOG_CONFIG_FILE: /home/appuser/app/dev-log-config.yml
   ARPAV_PPCV__THREDDS_SERVER__BASE_URL: http://thredds:8080/thredds
-  ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL: http://martin:3000
+  ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL: http://localhost:8877/vector-tiles
+  ARPAV_PPCV__PREFECT__NUM_FLOW_RETRIES: 0
+  ARPAV_PPCV__PREFECT__NUM_TASK_RETRIES: 1
+  PREFECT_LOGGING_EXTRA_LOGGERS: arpav_ppcv
 
 x-common-volumes: &common-volumes
   - type: bind
@@ -54,6 +57,8 @@ services:
     image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:${FRONTEND_GIT_BRANCH:-latest}"
     labels:
       - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
+    environment:
+      ARPAV_BACKEND_API_BASE_URL: "http://localhost:8877"
     ports:
       - target: 80
         published: 5003
@@ -62,6 +67,9 @@ services:
     image: *webapp-image
     labels:
       - "traefik.http.routers.arpav-backend-router.entrypoints=web"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       <<: *common-env
       ARPAV_PPCV__CORS_ORIGINS: '["*"]'
@@ -77,6 +85,9 @@ services:
 
   jupyter:
     image: *webapp-image
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       *common-env
     ports:
@@ -186,6 +197,9 @@ services:
 
   prefect-static-worker:
     image: *webapp-image
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       PREFECT_API_URL: "http://prefect-server:4200/api"
       PREFECT_DEBUG_MODE: true
@@ -262,3 +276,8 @@ configs:
 
   traefik-conf:
     file: $PWD/docker/traefik/dev-config.toml
+
+
+secrets:
+  arpa-fvg-auth-token:
+    environment: "ARPAFVG_AUTH_TOKEN"

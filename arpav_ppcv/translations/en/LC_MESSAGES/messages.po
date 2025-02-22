@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-10-04 16:08+0000\n"
+"POT-Creation-Date: 2025-02-20 16:16+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -17,96 +17,762 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.15.0\n"
+"Generated-By: Babel 2.16.0\n"
 
-#: schemas/base.py:27
+#: schemas/base.py:50 schemas/static.py:241 schemas/static.py:392
 msgid "winter"
 msgstr "Winter"
 
-#: schemas/base.py:28
+#: schemas/base.py:51 schemas/static.py:242 schemas/static.py:393
 msgid "spring"
 msgstr "Spring"
 
-#: schemas/base.py:29
+#: schemas/base.py:52 schemas/static.py:243 schemas/static.py:394
 msgid "summer"
 msgstr "Summer"
 
-#: schemas/base.py:30
+#: schemas/base.py:53 schemas/static.py:244 schemas/static.py:395
 msgid "autumn"
 msgstr "Autumn"
 
-#: schemas/base.py:42 schemas/base.py:75
-msgid "no processing"
-msgstr "no processing"
-
-#: schemas/base.py:43
-msgid "centered 5-year moving average"
-msgstr "Centered 5-year moving average"
-
-#: schemas/base.py:60
+#: schemas/base.py:70 schemas/static.py:448
 msgid "monthly"
 msgstr "monthly"
 
-#: schemas/base.py:61
+#: schemas/base.py:71 schemas/static.py:449
 msgid "seasonal"
 msgstr "seasonal"
 
-#: schemas/base.py:62
+#: schemas/base.py:72 schemas/static.py:450
 msgid "yearly"
 msgstr "yearly"
 
-#: schemas/base.py:76
-msgid "LOESS"
-msgstr "LOESS"
-
-#: schemas/base.py:77
-msgid "centered 11-year moving average"
-msgstr "Centered 11-year moving average"
-
-#: schemas/base.py:91 schemas/base.py:110
+#: schemas/base.py:86 schemas/base.py:105
 msgid "series name"
 msgstr "Series name"
 
-#: schemas/base.py:92 schemas/base.py:111
+#: schemas/base.py:87 schemas/base.py:106
 msgid "processing method"
 msgstr "Processing method"
 
-#: schemas/base.py:93
+#: schemas/base.py:88
 msgid "coverage identifier"
 msgstr "Coverage identifier"
 
-#: schemas/base.py:94
+#: schemas/base.py:89
 msgid "coverage configuration"
 msgstr "Coverage configuration"
 
-#: schemas/base.py:112
+#: schemas/base.py:107
 msgid "variable"
 msgstr "Variable"
 
-#: schemas/base.py:113
+#: schemas/base.py:108
 msgid "station"
 msgstr "Station"
 
-#: schemas/base.py:114
+#: schemas/base.py:109
 msgid "series elaboration"
 msgstr "Series elaboration"
 
-#: schemas/base.py:115
+#: schemas/base.py:110
 msgid "derived series"
 msgstr "Derived series"
 
-#: schemas/base.py:127
+#: schemas/base.py:122
 msgid "original"
 msgstr "Original"
 
-#: schemas/base.py:128
+#: schemas/base.py:123
 msgid "derived"
 msgstr "Derived"
 
-#: schemas/base.py:140
+#: schemas/base.py:135
 msgid "decade series"
 msgstr "Decade series"
 
-#: schemas/base.py:141
+#: schemas/base.py:136
 msgid "Mann-Kendall series"
 msgstr "Mann-Kendall series"
+
+#: schemas/climaticindicators.py:133
+msgid "climatic indicator"
+msgstr "indicator"
+
+#: schemas/climaticindicators.py:139
+msgid "climatic indicator description"
+msgstr "climatic indicator"
+
+#: schemas/coverages.py:63
+msgid "time window"
+msgstr ""
+
+#: schemas/coverages.py:69
+#, fuzzy
+msgid "time window description"
+msgstr "climatic indicator"
+
+#: schemas/coverages.py:122
+msgid "forecast model"
+msgstr ""
+
+#: schemas/coverages.py:128
+#, fuzzy
+msgid "forecast model description"
+msgstr "Actual value in the selected period"
+
+#: schemas/coverages.py:200
+msgid "forecast model group"
+msgstr ""
+
+#: schemas/coverages.py:206
+#, fuzzy
+msgid "forecast model group description"
+msgstr "Actual value in the selected period"
+
+#: schemas/coverages.py:327
+msgid "forecast year period"
+msgstr ""
+
+#: schemas/coverages.py:333
+#, fuzzy
+msgid "forecast year period description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/coverages.py:411
+msgid "historical year period"
+msgstr ""
+
+#: schemas/coverages.py:417
+#, fuzzy
+msgid "historical year period description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/coverages.py:1336
+#, fuzzy
+msgid "forecast coverage configuration"
+msgstr "Coverage configuration"
+
+#: schemas/coverages.py:1342
+#, fuzzy
+msgid "forecast coverage configuration description"
+msgstr "Coverage configuration"
+
+#: schemas/coverages.py:1647
+#, fuzzy
+msgid "historical coverage configuration"
+msgstr "Coverage configuration"
+
+#: schemas/coverages.py:1653
+#, fuzzy
+msgid "historical coverage configuration description"
+msgstr "Coverage configuration"
+
+#: schemas/dataseries.py:78
+msgid "observation overview data series"
+msgstr ""
+
+#: schemas/dataseries.py:84
+msgid "observation overview data series description"
+msgstr ""
+
+#: schemas/dataseries.py:111
+msgid "forecast overview data series"
+msgstr ""
+
+#: schemas/dataseries.py:117
+#, fuzzy
+msgid "forecast overview data series description"
+msgstr "Type of climatological measurement"
+
+#: schemas/dataseries.py:158
+#, fuzzy
+msgid "forecast data series"
+msgstr "Decade series"
+
+#: schemas/dataseries.py:164
+#, fuzzy
+msgid "forecast data series description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/dataseries.py:188
+msgid "observation station data series"
+msgstr ""
+
+#: schemas/dataseries.py:194
+#, fuzzy
+msgid "observation station data series description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/dataseries.py:222
+msgid "historical data series"
+msgstr ""
+
+#: schemas/dataseries.py:228
+msgid "historical data series description"
+msgstr ""
+
+#: schemas/legacy.py:61 schemas/legacy.py:92 schemas/static.py:599
+#: schemas/static.py:645
+msgid "no processing"
+msgstr "no processing"
+
+#: schemas/legacy.py:62 schemas/static.py:600
+msgid "LOESS"
+msgstr "LOESS"
+
+#: schemas/legacy.py:63 schemas/static.py:601
+msgid "centered 11-year moving average"
+msgstr "Centered 11-year moving average"
+
+#: schemas/legacy.py:93 schemas/static.py:646
+msgid "centered 5-year moving average"
+msgstr "Centered 5-year moving average"
+
+#: schemas/observations.py:517
+msgid "observation station"
+msgstr ""
+
+#: schemas/observations.py:523
+#, fuzzy
+msgid "observation station description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/overviews.py:53
+#, fuzzy
+msgid "observation overview series configuration"
+msgstr "Coverage configuration"
+
+#: schemas/overviews.py:59
+msgid "observation overview series configuration description"
+msgstr ""
+
+#: schemas/overviews.py:102
+#, fuzzy
+msgid "forecast overview series configuration"
+msgstr "Coverage configuration"
+
+#: schemas/overviews.py:108
+msgid "forecast overview series configuration description"
+msgstr ""
+
+#: schemas/static.py:21
+msgid "forecast scenario"
+msgstr ""
+
+#: schemas/static.py:27
+#, fuzzy
+msgid "forecast scenario description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:33
+msgid "rcp26"
+msgstr ""
+
+#: schemas/static.py:34
+msgid "rcp45"
+msgstr ""
+
+#: schemas/static.py:35
+msgid "rcp85"
+msgstr ""
+
+#: schemas/static.py:42
+#, fuzzy
+msgid "rcp26 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:43
+#, fuzzy
+msgid "rcp45 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:44
+#, fuzzy
+msgid "rcp85 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:70
+msgid "data category"
+msgstr ""
+
+#: schemas/static.py:76
+#, fuzzy
+msgid "data category description"
+msgstr "climatic indicator"
+
+#: schemas/static.py:82
+msgid "forecast"
+msgstr ""
+
+#: schemas/static.py:83
+msgid "historical"
+msgstr ""
+
+#: schemas/static.py:90
+#, fuzzy
+msgid "forecast description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:91
+#, fuzzy
+msgid "historical description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:109
+msgid "measure type"
+msgstr "Measurement type"
+
+#: schemas/static.py:115
+msgid "measure type description"
+msgstr "Type of climatological measurement"
+
+#: schemas/static.py:121
+msgid "absolute"
+msgstr "Absolute value"
+
+#: schemas/static.py:122
+msgid "anomaly"
+msgstr "Anomaly"
+
+#: schemas/static.py:129
+msgid "absolute description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:130
+msgid "anomaly description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:149
+msgid "aggregation period"
+msgstr "Temporal aggregation period"
+
+#: schemas/static.py:155
+msgid "aggregation period description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:161
+msgid "annual"
+msgstr "Annual"
+
+#: schemas/static.py:162
+#, fuzzy
+msgid "10yr"
+msgstr "30-year"
+
+#: schemas/static.py:163
+msgid "30yr"
+msgstr "30-year"
+
+#: schemas/static.py:170
+msgid "annual description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:171
+#, fuzzy
+msgid "10yr description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:172
+msgid "30yr description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:228 schemas/static.py:379
+#, fuzzy
+msgid "year period"
+msgstr "Temporal aggregation period"
+
+#: schemas/static.py:234 schemas/static.py:385
+#, fuzzy
+msgid "year period description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:240 schemas/static.py:391
+msgid "all year"
+msgstr ""
+
+#: schemas/static.py:245
+#, fuzzy
+msgid "january"
+msgstr "Annual"
+
+#: schemas/static.py:246
+msgid "february"
+msgstr ""
+
+#: schemas/static.py:247
+msgid "march"
+msgstr ""
+
+#: schemas/static.py:248
+#, fuzzy
+msgid "april"
+msgstr "Variable"
+
+#: schemas/static.py:249
+#, fuzzy
+msgid "may"
+msgstr "Anomaly"
+
+#: schemas/static.py:250
+msgid "june"
+msgstr ""
+
+#: schemas/static.py:251
+msgid "july"
+msgstr ""
+
+#: schemas/static.py:252
+msgid "august"
+msgstr ""
+
+#: schemas/static.py:253
+msgid "september"
+msgstr ""
+
+#: schemas/static.py:254
+msgid "october"
+msgstr ""
+
+#: schemas/static.py:255
+msgid "november"
+msgstr ""
+
+#: schemas/static.py:256
+msgid "december"
+msgstr ""
+
+#: schemas/static.py:263 schemas/static.py:402
+#, fuzzy
+msgid "all year description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:264 schemas/static.py:403
+#, fuzzy
+msgid "winter description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:265 schemas/static.py:404
+#, fuzzy
+msgid "spring description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:266 schemas/static.py:405
+#, fuzzy
+msgid "summer description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:267 schemas/static.py:406
+#, fuzzy
+msgid "autumn description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:268
+#, fuzzy
+msgid "january description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:269
+#, fuzzy
+msgid "february description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:270
+#, fuzzy
+msgid "march description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:271
+#, fuzzy
+msgid "april description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:272
+#, fuzzy
+msgid "may description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:273
+#, fuzzy
+msgid "june description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:274
+#, fuzzy
+msgid "july description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:275
+#, fuzzy
+msgid "august description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:276
+#, fuzzy
+msgid "september description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:277
+#, fuzzy
+msgid "october description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:278
+#, fuzzy
+msgid "november description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:279
+#, fuzzy
+msgid "december description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:334
+msgid "forecast dataset"
+msgstr ""
+
+#: schemas/static.py:340
+#, fuzzy
+msgid "forecast dataset description"
+msgstr "Actual value in the selected period"
+
+#: schemas/static.py:346
+msgid "main"
+msgstr ""
+
+#: schemas/static.py:347
+msgid "lower uncertainty"
+msgstr ""
+
+#: schemas/static.py:348
+msgid "upper uncertainty"
+msgstr ""
+
+#: schemas/static.py:355
+#, fuzzy
+msgid "main description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:356
+#, fuzzy
+msgid "lower uncertainty description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:357
+#, fuzzy
+msgid "upper uncertainty description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:436
+#, fuzzy
+msgid "measurement aggregation type"
+msgstr "Temporal aggregation period"
+
+#: schemas/static.py:442
+#, fuzzy
+msgid "measurement aggregation description"
+msgstr "Type of climatological measurement"
+
+#: schemas/static.py:457
+#, fuzzy
+msgid "monthly description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:458
+#, fuzzy
+msgid "seasonal description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:459
+#, fuzzy
+msgid "yearly description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:484
+msgid "historical decade"
+msgstr ""
+
+#: schemas/static.py:490
+#, fuzzy
+msgid "historical decade description"
+msgstr "Change in the future with respect to the reference period"
+
+#: schemas/static.py:496
+msgid "decade_1961_1970"
+msgstr ""
+
+#: schemas/static.py:497
+msgid "decade_1971_1980"
+msgstr ""
+
+#: schemas/static.py:498
+msgid "decade_1981_1990"
+msgstr ""
+
+#: schemas/static.py:499
+msgid "decade_1991_2000"
+msgstr ""
+
+#: schemas/static.py:500
+msgid "decade_2001_2010"
+msgstr ""
+
+#: schemas/static.py:501
+msgid "decade_2011_2020"
+msgstr ""
+
+#: schemas/static.py:502
+msgid "decade_2021_2030"
+msgstr ""
+
+#: schemas/static.py:503
+msgid "decade_2031_2040"
+msgstr ""
+
+#: schemas/static.py:510
+msgid "decade_1961_1970 description"
+msgstr ""
+
+#: schemas/static.py:511
+msgid "decade_1971_1980 description"
+msgstr ""
+
+#: schemas/static.py:512
+msgid "decade_1981_1990 description"
+msgstr ""
+
+#: schemas/static.py:513
+msgid "decade_1991_2000 description"
+msgstr ""
+
+#: schemas/static.py:514
+msgid "decade_2001_2010 description"
+msgstr ""
+
+#: schemas/static.py:515
+msgid "decade_2011_2020 description"
+msgstr ""
+
+#: schemas/static.py:516
+#, fuzzy
+msgid "decade_2021_2030 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:517
+#, fuzzy
+msgid "decade_2031_2040 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:544
+msgid "historical reference period"
+msgstr ""
+
+#: schemas/static.py:550
+#, fuzzy
+msgid "historical reference period description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:556
+msgid "1961-1990"
+msgstr ""
+
+#: schemas/static.py:557
+msgid "1991-2020"
+msgstr ""
+
+#: schemas/static.py:564
+#, fuzzy
+msgid "1961-1990 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:565
+#, fuzzy
+msgid "1991-2020 description"
+msgstr "Average over the selected 30-year period"
+
+#: schemas/static.py:587
+#, fuzzy
+msgid "coverage data processing method"
+msgstr "Processing method"
+
+#: schemas/static.py:593
+#, fuzzy
+msgid "coverage data processing method description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:608 schemas/static.py:655
+#, fuzzy
+msgid "no processing description"
+msgstr "no processing"
+
+#: schemas/static.py:609
+#, fuzzy
+msgid "LOESS description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:610
+#, fuzzy
+msgid "centered 11-year moving average description"
+msgstr "Centered 11-year moving average"
+
+#: schemas/static.py:633
+#, fuzzy
+msgid "observation data processing method"
+msgstr "Processing method"
+
+#: schemas/static.py:639
+#, fuzzy
+msgid "observation data processing method description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:647
+#, fuzzy
+msgid "Mann-Kendall trend"
+msgstr "Mann-Kendall series"
+
+#: schemas/static.py:648
+#, fuzzy
+msgid "Decade aggregation"
+msgstr "Temporal aggregation period"
+
+#: schemas/static.py:656
+#, fuzzy
+msgid "centered 5-year moving average description"
+msgstr "Centered 5-year moving average"
+
+#: schemas/static.py:659
+#, fuzzy
+msgid "Mann-Kendall trend description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:660
+#, fuzzy
+msgid "Decade aggregation description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:680
+msgid "observation station manager"
+msgstr ""
+
+#: schemas/static.py:686
+#, fuzzy
+msgid "observation station manager description"
+msgstr "Aggregation period for climatological datasets"
+
+#: schemas/static.py:692
+msgid "ARPAV"
+msgstr ""
+
+#: schemas/static.py:693
+msgid "ARPAFVG"
+msgstr ""
+
+#: schemas/static.py:700
+#, fuzzy
+msgid "ARPAV description"
+msgstr "Average over the selected year"
+
+#: schemas/static.py:701
+#, fuzzy
+msgid "ARPAFVG description"
+msgstr "Average over the selected year"

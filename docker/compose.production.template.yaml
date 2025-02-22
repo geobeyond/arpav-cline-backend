@@ -101,6 +101,7 @@ services:
       ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_ppcv"
     depends_on:
       db:
         condition: service_healthy
@@ -189,6 +190,7 @@ services:
     depends_on:
       prefect-server:
         condition: service_healthy
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_ppcv"
     restart: unless-stopped
 
   prefect-db:

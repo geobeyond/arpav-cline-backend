@@ -31,7 +31,7 @@ class SqlModelDbSessionMiddleware(DBSessionMiddleware):
     want to use sqlmodel `Session` instances in our admin, rather than the
     default sqlalchemy `Session`. This is because our DB-handling
     functions, defined in `arpav_ppcv.database`, expect to use an
-    sqlmodel.Session. The main differences between these two sessuin classes
+    sqlmodel.Session. The main differences between these two session classes
     are described in the sqlmodel docs:
 
     https://sqlmodel.tiangolo.com/tutorial/select/#sqlmodels-sessionexec

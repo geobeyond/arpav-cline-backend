@@ -26,9 +26,8 @@ from rich.panel import Panel
 
 from . import (
     config,
-    database,
+    db,
 )
-from .cliapp.app import app as cli_app
 from .bootstrapper.cliapp import app as bootstrapper_app
 from .observations_harvester.cliapp import app as observations_harvester_app
 from .prefect.cliapp import app as prefect_app
@@ -38,7 +37,6 @@ app = typer.Typer()
 db_app = typer.Typer()
 dev_app = typer.Typer()
 translations_app = typer.Typer()
-app.add_typer(cli_app, name="app")
 app.add_typer(db_app, name="db")
 app.add_typer(dev_app, name="dev")
 app.add_typer(observations_harvester_app, name="observations-harvester")
@@ -51,7 +49,7 @@ app.add_typer(prefect_app, name="prefect")
 def base_callback(ctx: typer.Context) -> None:
     ctx_obj = ctx.ensure_object(dict)
     settings = config.get_settings()
-    engine = database.get_engine(settings)
+    engine = db.get_engine(settings)
     alembic_config = alembic.config.Config()
     alembic_config.set_main_option("script_location", "arpav_ppcv:migrations")
     ctx_obj.update(
@@ -70,6 +68,16 @@ def base_callback(ctx: typer.Context) -> None:
 @db_app.callback()
 def db_app_callback() -> None:
     """Manage ARPAV-PPCV database."""
+
+
+@db_app.command(name="check-for-changes")
+def check_for_changes(ctx: typer.Context):
+    """Look for changes in the DB schema.
+
+    This command checks if there are changes to the schema that warrant the
+    generation of new migration files.
+    """
+    alembic.command.check(ctx.obj["alembic_config"])
 
 
 @db_app.command(name="generate-migration")
@@ -180,11 +188,11 @@ def import_thredds_datasets(
             )
         ),
     ],
-    name_filter: Annotated[
+    coverage_configuration_identifier_filter: Annotated[
         str,
         typer.Option(
             help=(
-                "Only process coverage configurations whose name contains "
+                "Only process coverage configurations whose identifier contains "
                 "this substring"
             )
         ),
@@ -201,17 +209,56 @@ def import_thredds_datasets(
 ):
     """Import NetCDF datasets from a THREDDS server."""
     with sqlmodel.Session(ctx.obj["engine"]) as session:
-        relevant_cov_confs = database.collect_all_coverage_configurations(
-            session, name_filter=name_filter
-        )
-        urls = []
-        for cov_conf in relevant_cov_confs:
-            cov_conf_urls = crawler.get_coverage_configuration_urls(
-                base_thredds_url, cov_conf
+        relevant_forecast_cov_confs = (
+            db.collect_all_forecast_coverage_configurations_with_identifier_filter(
+                session, identifier_filter=coverage_configuration_identifier_filter
             )
-            urls.extend(cov_conf_urls)
+        )
+        relevant_historical_cov_confs = (
+            db.collect_all_historical_coverage_configurations_with_identifier_filter(
+                session, identifier_filter=coverage_configuration_identifier_filter
+            )
+        )
+        # TODO: Implement also overviews
+        urls = []
+        settings: config.ArpavPpcvSettings = ctx.obj["settings"]
 
+        # temporarily override the THREDDS server base URL in order to allow
+        # finding datasets that use fnmatch wildcards in their URL
+        old_thredds_base_url = settings.thredds_server.base_url
+        settings.thredds_server.base_url = base_thredds_url
+
+        for forecast_cov_conf in relevant_forecast_cov_confs:
+            forecast_covs = db.generate_forecast_coverages_from_configuration(
+                forecast_cov_conf
+            )
+            for cov in forecast_covs:
+                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
+                lower_uncert_url = cov.get_lower_uncertainty_thredds_file_download_url(
+                    settings.thredds_server
+                )
+                if lower_uncert_url is not None:
+                    urls.append(lower_uncert_url)
+                upper_uncert_url = cov.get_upper_uncertainty_thredds_file_download_url(
+                    settings.thredds_server
+                )
+                if upper_uncert_url is not None:
+                    urls.append(upper_uncert_url)
+        for historical_cov_conf in relevant_historical_cov_confs:
+            historical_covs = db.generate_historical_coverages_from_configuration(
+                historical_cov_conf
+            )
+            for cov in historical_covs:
+                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
+        # restore THREDDS base url
+        settings.thredds_server.base_url = old_thredds_base_url
+    # remote_urls = [
+    #     url.replace(settings.thredds_server.base_url, base_thredds_url)
+    #     for url in urls
+    # ]
     print(f"Trying to download {len(urls)} datasets...")
+    # for url in urls:
+    #     print(url)
     anyio.run(
         crawler.download_datasets,  # noqa
         urls,

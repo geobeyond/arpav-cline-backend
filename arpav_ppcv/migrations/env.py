@@ -12,7 +12,11 @@ from sqlmodel import SQLModel
 from arpav_ppcv import config as arpav_ppcv_config
 
 # this import is crucial so that SQLModel.metadata be populated with our models
+from arpav_ppcv.schemas import climaticindicators  # noqa
+from arpav_ppcv.schemas import coverages  # noqa
+from arpav_ppcv.schemas import municipalities  # noqa
 from arpav_ppcv.schemas import observations  # noqa
+from arpav_ppcv.schemas import overviews  # noqa
 
 arpav_ppcv_settings = arpav_ppcv_config.get_settings()
 

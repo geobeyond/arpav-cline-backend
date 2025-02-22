@@ -133,6 +133,24 @@ this can also be modified if needed. The system recognizes the following environ
 
 ### Operations
 
+##### Translations
+
+```shell
+# look for new translatable strings in the codebase
+docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations extract
+
+# update existing catalogs with the new strings found in the previous step
+docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations update
+```
+
+Now use your favorite editor to translate the strings.
+
+Finally, compile the translations files:
+
+```shell
+docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations compile
+```
+
 ##### Accessing the CLI
 
 The CLI is named `arpav-ppcv`. When running under docker compose, it can be used with the following incantation:
@@ -213,27 +231,61 @@ dev environment is located at individual devs machine(s). In order to get a work
   order to check which env variables are set and how to further interact with the system
 
 
+##### Standing up the frontend for development
+
+The frontend uses another code repository:
+
+https://github.com/geobeyond/arpav-cline-frontend
+
+It can be useful to have it running in dev mode alongside the backend, for development purposes. More
+detailed instructions are available in the project's README file, but in a nutshell:
+
+```shell
+
+# ensure you are running node v16
+nvm use 16
+
+# 1. put these in the environment and then run the `inject-env` command
+ARPAV_BACKEND_API_BASE_URL=http://localhost:8877 \
+ARPAV_TOLGEE_BASE_URL=http://localhost:8899 \
+yarn inject-env public
+
+# 2. launch the frontend
+yarn start
+```
+
+
+
 ##### Building the docker image locally
 
 Build the docker image by running this command:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend
+docker build \
+    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend \
+    --file docker/Dockerfile \
+    .
 ```
 
 If you want to build an image for the current branch, such as when you added a new third-party dependency as part of
 an ongoing task, add the branch name to the build image:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current)
+docker build \
+    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current) \
+    --file docker/Dockerfile \
+    .
 ```
 
 In order to use this custom named image on your local development, set the `CURRENT_GIT_BRANCH` env variable before
 launching the docker compose stack, _i.e._:
 
 ```shell
-export CURRENT_GIT_BRANCH=$(git branch --show-current)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+CURRENT_GIT_BRANCH=$(git branch --show-current) \
+    docker compose \
+    -f docker/compose.yaml \
+    -f docker/compose.dev.yaml \
+    up -d --force-recreate
 ```
 
 
@@ -291,7 +343,9 @@ to the repository's `main` branch. This is triggered by means of a github action
 - Running the following command:
 
     ```shell
-    dagger run poetry run python tests/ci/main.py \
+    # using `dagger --progress plain` because it sometimes locks up the terminal - probably because of
+    # https://github.com/dagger/dagger/issues/7160
+    dagger --progress plain run poetry run python tests/ci/main.py \
         --with-formatter \
         --with-linter \
         --with-tests
@@ -301,6 +355,15 @@ Testing uses these main additional libraries/frameworks:
 
 - pytest
 - ruff
+
+
+It is also possible, and very likely faster, to run the tests from inside an already up development docker
+compose stack. This involves running the following commands:
+
+````shell
+docker exec -ti arpav-ppcv-webapp-1 poetry install --with dev
+docker exec -ti arpav-ppcv-webapp-1 poetry run pytest
+````
 
 
 ##### Git pre-commit

@@ -1,4 +1,5 @@
 import logging
+import typing
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -10,26 +11,45 @@ from starlette_admin.views import (
     Link,
 )
 
-from ... import (
-    config,
-    database,
+from ...db import get_engine
+from ...schemas.base import SpatialRegion
+from ...schemas.climaticindicators import ClimaticIndicator
+from ...schemas.coverages import (
+    ForecastCoverageConfiguration,
+    ForecastModel,
+    ForecastModelGroup,
+    ForecastTimeWindow,
+    ForecastYearPeriodGroup,
+    HistoricalCoverageConfiguration,
+    HistoricalYearPeriodGroup,
 )
-from ...schemas import (
-    coverages,
-    observations,
+from ...schemas.observations import (
+    ObservationMeasurement,
+    ObservationSeriesConfiguration,
+    ObservationStation,
+)
+from ...schemas.overviews import (
+    ForecastOverviewSeriesConfiguration,
+    ObservationOverviewSeriesConfiguration,
 )
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
 from .views import (
+    base as base_views,
+    climaticindicators as climaticindicators_views,
     coverages as coverage_views,
     observations as observations_views,
+    overviews as overviews_views,
 )
+
+if typing.TYPE_CHECKING:
+    from ...config import ArpavPpcvSettings
 
 logger = logging.getLogger(__name__)
 
 
 class ArpavPpcvAdmin(Admin):
-    def mount_to(self, app: Starlette, settings: config.ArpavPpcvSettings) -> None:
+    def mount_to(self, app: Starlette, settings: "ArpavPpcvSettings") -> None:
         """Reimplemented in order to pass settings to the admin app."""
         admin_app = Starlette(
             routes=self.routes,
@@ -46,8 +66,8 @@ class ArpavPpcvAdmin(Admin):
         )
 
 
-def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
-    engine = database.get_engine(settings)
+def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
+    engine = get_engine(settings)
     admin = ArpavPpcvAdmin(
         engine,
         debug=settings.debug,
@@ -58,28 +78,63 @@ def create_admin(settings: config.ArpavPpcvSettings) -> ArpavPpcvAdmin:
             Middleware(SqlModelDbSessionMiddleware, engine=engine),
         ],
     )
-    admin.add_view(
-        coverage_views.ConfigurationParameterView(coverages.ConfigurationParameter)
-    )
-    admin.add_view(
-        coverage_views.CoverageConfigurationView(coverages.CoverageConfiguration)
-    )
-    admin.add_view(observations_views.VariableView(observations.Variable))
-    admin.add_view(observations_views.StationView(observations.Station))
+    admin.add_view(climaticindicators_views.ClimaticIndicatorView(ClimaticIndicator))
+    admin.add_view(base_views.SpatialRegionView(SpatialRegion))
     admin.add_view(
         DropDown(
-            "Measurements",
-            icon="fa-solid fa-vials",
+            "Overviews",
+            icon="fa-regular fa-flag",
+            always_open=False,
             views=[
-                observations_views.MonthlyMeasurementView(
-                    observations.MonthlyMeasurement
+                overviews_views.ForecastOverviewSeriesConfigurationView(
+                    ForecastOverviewSeriesConfiguration
                 ),
-                observations_views.SeasonalMeasurementView(
-                    observations.SeasonalMeasurement
+                overviews_views.ObservationOverviewSeriesConfigurationView(
+                    ObservationOverviewSeriesConfiguration
                 ),
-                observations_views.YearlyMeasurementView(
-                    observations.YearlyMeasurement
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
+            "Forecasts",
+            icon="fa-solid fa-chart-line",
+            always_open=False,
+            views=[
+                coverage_views.ForecastCoverageConfigurationView(
+                    ForecastCoverageConfiguration
                 ),
+                coverage_views.ForecastYearPeriodGroupView(ForecastYearPeriodGroup),
+                coverage_views.ForecastModelView(ForecastModel),
+                coverage_views.ForecastModelGroupView(ForecastModelGroup),
+                coverage_views.ForecastTimeWindowView(ForecastTimeWindow),
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
+            "Historical",
+            icon="fa-solid fa-clock-rotate-left",
+            always_open=False,
+            views=[
+                coverage_views.HistoricalCoverageConfigurationView(
+                    HistoricalCoverageConfiguration
+                ),
+                coverage_views.HistoricalYearPeriodGroupView(HistoricalYearPeriodGroup),
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
+            "Observations",
+            icon="fa-solid fa-ruler",
+            always_open=False,
+            views=[
+                observations_views.ObservationMeasurementView(ObservationMeasurement),
+                observations_views.ObservationSeriesConfigurationView(
+                    ObservationSeriesConfiguration
+                ),
+                observations_views.ObservationStationView(ObservationStation),
             ],
         )
     )

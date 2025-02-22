@@ -1,9 +1,9 @@
 import fnmatch
-import functools
 import logging
 import traceback
 import typing
 from pathlib import Path
+from typing import Optional
 from xml.etree import ElementTree as etree
 
 import anyio
@@ -11,9 +11,11 @@ import anyio.to_thread
 import exceptiongroup
 import httpx
 
-from .. import database
-from ..schemas import coverages
+from ..config import ThreddsServerSettings
 from ..utils import batched
+
+if typing.TYPE_CHECKING:
+    from ..schemas import coverages
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,140 @@ _NAMESPACES: typing.Final = {
 _THREDDS_FILE_SERVER_URL_FRAGMENT = "fileServer"
 
 
+def get_opendap_url(
+    rendered_fragment: str, thredds_settings: ThreddsServerSettings
+) -> Optional[str]:
+    if any(c in rendered_fragment for c in FNMATCH_SPECIAL_CHARS):
+        logger.debug(
+            f"THREDDS dataset url ({rendered_fragment}) is an "
+            f"fnmatch pattern, retrieving the actual URL from the server..."
+        )
+        final_fragment = find_thredds_dataset_url_fragment(
+            rendered_fragment,
+            thredds_settings.base_url,
+        )
+        if final_fragment is not None:
+            result = "/".join(
+                (
+                    thredds_settings.base_url,
+                    thredds_settings.opendap_service_url_fragment,
+                    final_fragment,
+                )
+            )
+        else:
+            result = None
+    else:
+        result = "/".join(
+            (
+                thredds_settings.base_url,
+                thredds_settings.opendap_service_url_fragment,
+                rendered_fragment,
+            )
+        )
+    return result
+
+
+def get_file_download_url(
+    rendered_fragment: str, thredds_settings: ThreddsServerSettings
+) -> Optional[str]:
+    if any(c in rendered_fragment for c in FNMATCH_SPECIAL_CHARS):
+        logger.debug(
+            f"THREDDS dataset url ({rendered_fragment}) is an "
+            f"fnmatch pattern, retrieving the actual URL from the server..."
+        )
+        final_fragment = find_thredds_dataset_url_fragment(
+            rendered_fragment,
+            thredds_settings.base_url,
+        )
+        if final_fragment is not None:
+            result = "/".join(
+                (
+                    thredds_settings.base_url,
+                    thredds_settings.file_download_service_url_fragment,
+                    final_fragment,
+                )
+            )
+        else:
+            result = None
+    else:
+        result = "/".join(
+            (
+                thredds_settings.base_url,
+                thredds_settings.file_download_service_url_fragment,
+                rendered_fragment,
+            )
+        )
+    return result
+
+
+def get_ncss_url(
+    rendered_fragment: str, thredds_settings: ThreddsServerSettings
+) -> Optional[str]:
+    if any(c in rendered_fragment for c in FNMATCH_SPECIAL_CHARS):
+        logger.debug(
+            f"THREDDS dataset url ({rendered_fragment}) is an "
+            f"fnmatch pattern, retrieving the actual URL from the server..."
+        )
+        final_fragment = find_thredds_dataset_url_fragment(
+            rendered_fragment,
+            thredds_settings.base_url,
+        )
+        if final_fragment is not None:
+            result = "/".join(
+                (
+                    thredds_settings.base_url,
+                    thredds_settings.netcdf_subset_service_url_fragment,
+                    final_fragment,
+                )
+            )
+        else:
+            result = None
+    else:
+        result = "/".join(
+            (
+                thredds_settings.base_url,
+                thredds_settings.netcdf_subset_service_url_fragment,
+                rendered_fragment,
+            )
+        )
+    return result
+
+
+def get_wms_base_url(
+    rendered_fragment: str, thredds_settings: ThreddsServerSettings
+) -> Optional[str]:
+    if any(c in rendered_fragment for c in FNMATCH_SPECIAL_CHARS):
+        logger.debug(
+            f"THREDDS dataset url ({rendered_fragment}) is an "
+            f"fnmatch pattern, retrieving the actual URL from the server..."
+        )
+        final_fragment = find_thredds_dataset_url_fragment(
+            rendered_fragment,
+            thredds_settings.base_url,
+        )
+        if final_fragment is not None:
+            result = "/".join(
+                (
+                    thredds_settings.base_url,
+                    thredds_settings.wms_service_url_fragment,
+                    final_fragment,
+                )
+            )
+        else:
+            result = None
+    else:
+        result = "/".join(
+            (
+                thredds_settings.base_url,
+                thredds_settings.wms_service_url_fragment,
+                rendered_fragment,
+            )
+        )
+    return result
+
+
 def get_thredds_url_fragment(
-    coverage: coverages.CoverageInternal, thredds_base_url: str
+    coverage: "coverages.CoverageInternal", thredds_base_url: str
 ) -> str:
     dataset_url_fragment = coverage.configuration.get_thredds_url_fragment(
         coverage.identifier
@@ -47,7 +181,6 @@ def get_thredds_url_fragment(
     return ds_fragment
 
 
-@functools.cache
 def find_thredds_dataset_url_fragment(
     rendered_url_fragment: str,
     base_thredds_url: str,
@@ -103,34 +236,34 @@ def find_thredds_dataset_url_fragment(
     return result
 
 
-def get_coverage_configuration_urls(
-    base_thredds_url: str,
-    coverage_configuration: coverages.CoverageConfiguration,
-) -> list[str]:
-    coverage_identifiers = database.generate_coverage_identifiers(
-        coverage_configuration=coverage_configuration
-    )
-    logger.debug(f"{base_thredds_url=}")
-    logger.debug(f"{coverage_configuration=}")
-    logger.debug(f"{coverage_identifiers=}")
-    result = []
-    for cov_identifier in coverage_identifiers:
-        ds_fragment = get_thredds_url_fragment(
-            coverages.CoverageInternal(
-                identifier=cov_identifier, configuration=coverage_configuration
-            ),
-            base_thredds_url,
-        )
-        result.append(
-            "/".join(
-                (
-                    base_thredds_url,
-                    _THREDDS_FILE_SERVER_URL_FRAGMENT,
-                    ds_fragment,
-                )
-            )
-        )
-    return result
+# def get_coverage_configuration_urls(
+#     base_thredds_url: str,
+#     coverage_configuration: coverages.CoverageConfiguration,
+# ) -> list[str]:
+#     coverage_identifiers = database.generate_coverage_identifiers(
+#         coverage_configuration=coverage_configuration
+#     )
+#     logger.debug(f"{base_thredds_url=}")
+#     logger.debug(f"{coverage_configuration=}")
+#     logger.debug(f"{coverage_identifiers=}")
+#     result = []
+#     for cov_identifier in coverage_identifiers:
+#         ds_fragment = get_thredds_url_fragment(
+#             coverages.CoverageInternal(
+#                 identifier=cov_identifier, configuration=coverage_configuration
+#             ),
+#             base_thredds_url,
+#         )
+#         result.append(
+#             "/".join(
+#                 (
+#                     base_thredds_url,
+#                     _THREDDS_FILE_SERVER_URL_FRAGMENT,
+#                     ds_fragment,
+#                 )
+#             )
+#         )
+#     return result
 
 
 async def download_datasets(

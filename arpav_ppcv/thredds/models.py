@@ -58,8 +58,8 @@ class ThreddsDatasetDescriptionVariable:
 
 @dataclasses.dataclass
 class ThreddsDatasetDescriptionTemporalBounds:
-    start: dt.datetime
-    end: dt.datetime
+    start: dt.datetime | None
+    end: dt.datetime | None
 
 
 @dataclasses.dataclass

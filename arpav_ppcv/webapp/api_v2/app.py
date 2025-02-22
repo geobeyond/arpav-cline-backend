@@ -2,6 +2,7 @@ import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 
 from ... import config
+from .routers.climaticindicators import router as climaticindicators_router
 from .routers.coverages import router as coverages_router
 from .routers.municipalities import router as municipalities_router
 from .routers.observations import router as observations_router
@@ -22,6 +23,8 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
             "url": settings.contact.url,
             "email": settings.contact.email,
         },
+        servers=[{"url": "/".join((settings.public_url, "api/v2"))}],
+        root_path_in_servers=False,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -56,6 +59,13 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
         prefix="/municipalities",
         tags=[
             "municipalities",
+        ],
+    )
+    app.include_router(
+        climaticindicators_router,
+        prefix="/climatic-indicators",
+        tags=[
+            "climatic-indicators",
         ],
     )
     return app

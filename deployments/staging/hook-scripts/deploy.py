@@ -287,7 +287,7 @@ def perform_deployment(
     compose_files = (
         f"-f {docker_dir}/compose.yaml " f"-f {docker_dir}/compose.staging.yaml"
     )
-    clone_destination = Path("/tmp/arpav-ppcv-backend")
+    clone_destination = Path("/tmp/arpav-cline-backend")
     deployment_env_files = {
         "db_service": deployment_root / "environment-files/db-service.env",
         "webapp_service": deployment_root / "environment-files/webapp-service.env",
@@ -305,14 +305,14 @@ def perform_deployment(
         _ValidateRequestPayload(
             raw_payload=raw_request_payload,
             valid_repositories=(
-                "geobeyond/arpav-ppcv",
-                "geobeyond/arpav-ppcv-backend",
+                "geobeyond/arpav-cline-frontend",
+                "geobeyond/arpav-cline-backend",
             ),
         ),
         _FindEnvFiles(env_files=deployment_env_files),
         _CloneRepo(
             clone_destination=clone_destination,
-            repo_url="https://github.com/geobeyond/Arpav-PPCV-backend.git ",
+            repo_url="https://github.com/geobeyond/arpav-cline-backend.git ",
         ),
     ]
     if auto_update:
@@ -326,8 +326,8 @@ def perform_deployment(
             _ReplaceDockerDir(repo_dir=clone_destination, docker_dir=docker_dir),
             _PullImages(
                 images=(
-                    "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend",
-                    "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv",
+                    "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend",
+                    "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend",
                 )
             ),
             _StartCompose(

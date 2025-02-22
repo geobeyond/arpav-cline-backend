@@ -23,7 +23,7 @@
 # blocks with a name like `x-something`. Then we mark these as being YAML
 # anchors. Later in the file we refer to them using YAML aliases.
 
-x-prefect-image: &prefect-image "prefecthq/prefect:3.0.0rc17-python3.10"
+x-prefect-image: &prefect-image "prefecthq/prefect:3.1.13-python3.10"
 x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:latest"
 
 x-postgres-db-healthcheck: &postgres-db-healthcheck
@@ -82,6 +82,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      prefect-server:
+        condition: service_healthy
 
   db:
     image: "postgis/postgis:16-3.4"
@@ -127,9 +129,7 @@ services:
     command: [
       "start-periodic-tasks",
       "--refresh-stations",
-      "--refresh-monthly-measurements",
-      "--refresh-seasonal-measurements",
-      "--refresh-yearly-measurements",
+      "--refresh-measurements",
       "--refresh-station-variables",
     ]
     depends_on:

@@ -13,7 +13,7 @@ postgres:
 
     stations:
       schema: public
-      table: station
+      table: observationstation
       srid: 4326
       geometry_column: geom
       id_column: ~
