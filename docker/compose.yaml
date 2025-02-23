@@ -24,7 +24,7 @@
 # anchors. Later in the file we refer to them using YAML aliases.
 
 x-prefect-image: &prefect-image "prefecthq/prefect:3.1.13-python3.10"
-x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:latest"
+x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:latest"
 
 x-postgres-db-healthcheck: &postgres-db-healthcheck
   interval: 20s
@@ -67,7 +67,7 @@ services:
       - traefik-users-file
 
   frontend:
-    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:latest"
+    image: "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:latest"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.arpav-frontend-router.rule=!PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"

@@ -8,7 +8,7 @@
 #   dev, testing and debugging
 # - mounts code repository inside the relevant container as a bind volume
 
-x-webapp-image: &webapp-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:${CURRENT_GIT_BRANCH:-latest}"
+x-webapp-image: &webapp-image "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:${CURRENT_GIT_BRANCH:-latest}"
 
 x-common-env: &common-env
   ARPAV_PPCV__DEBUG: true
@@ -54,7 +54,7 @@ services:
     command: --configFile /traefik.toml
 
   frontend:
-    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:${FRONTEND_GIT_BRANCH:-latest}"
+    image: "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:${FRONTEND_GIT_BRANCH:-latest}"
     labels:
       - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
     environment:
