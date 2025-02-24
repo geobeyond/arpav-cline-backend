@@ -874,7 +874,9 @@ def generate_forecast_coverages_for_other_models(
     indicator = forecast_coverage.configuration.climatic_indicator
     conf_ids = set()
     for candidate_forecast_cov_conf in indicator.forecast_coverage_configurations:
-        for candidate_model_link in candidate_forecast_cov_conf.forecast_model_links:
+        for (
+            candidate_model_link
+        ) in candidate_forecast_cov_conf.forecast_model_group.forecast_model_links:
             if candidate_model_link.forecast_model_id in other_model_ids:
                 # the respective forecast_cov_conf is able to generate forecast
                 # coverages with this forecast model
@@ -890,9 +892,7 @@ def generate_forecast_coverages_for_other_models(
     result = []
     for candidate in candidate_forecast_coverages:
         same_scenario = candidate.scenario == forecast_coverage.scenario
-        same_year_period = (
-            candidate.forecast_year_period == forecast_coverage.forecast_year_period
-        )
+        same_year_period = candidate.year_period == forecast_coverage.year_period
         different_model = (
             candidate.forecast_model.id != forecast_coverage.forecast_model.id
         )
@@ -976,7 +976,6 @@ def get_forecast_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[ForecastCoverageInternal]:
     parts = identifier.split("-")
-    logger.debug(f"{parts=}")
     time_window = None
     cov_conf_identifier = "-".join(parts[:7])
     try:

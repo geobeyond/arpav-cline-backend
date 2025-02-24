@@ -162,25 +162,23 @@ def legacy_list_coverage_configurations(
 
     filtered_forecast_cov_confs = []
     filtered_historical_cov_confs = []
-    unfiltered_forecast_cov_confs = []
-    unfiltered_historical_cov_confs = []
+    unfiltered_forecast_cov_confs = (
+        db.legacy_collect_all_forecast_coverage_configurations(session)
+    )
+    unfiltered_historical_cov_confs = (
+        db.legacy_collect_all_historical_coverage_configurations(session)
+    )
     if include_forecasts:
         filtered_forecast_cov_confs = (
             db.legacy_collect_all_forecast_coverage_configurations(
                 session, conf_param_filter=filter_values
             )
         )
-        unfiltered_forecast_cov_confs = (
-            db.legacy_collect_all_forecast_coverage_configurations(session)
-        )
     if include_historical:
         filtered_historical_cov_confs = (
             db.legacy_collect_all_historical_coverage_configurations(
                 session, conf_param_filter=filter_values
             )
-        )
-        unfiltered_historical_cov_confs = (
-            db.legacy_collect_all_historical_coverage_configurations(session)
         )
 
     return coverage_schemas.LegacyCoverageConfigurationList.from_items(

@@ -687,12 +687,12 @@ class LegacyCoverageConfigurationList(pydantic.BaseModel):
 
         return cls(
             meta=get_meta(
-                len(relevant),
-                (
+                num_returned_records=len(relevant),
+                unfiltered_total=(
                     unfiltered_total_forecast_coverage_configurations
                     + unfiltered_total_historical_coverage_configurations
                 ),
-                filtered_total,
+                filtered_total=filtered_total,
             ),
             links=get_list_links(
                 request,
