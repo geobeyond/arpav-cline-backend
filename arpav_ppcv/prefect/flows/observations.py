@@ -414,14 +414,15 @@ def harvest_arpafvg_station_measurements(
             _settings.arpafvg_auth_token,
         )
         for year_period, raw_measurement in raw_measurement_gen:
-            harvested_measurements.append(
-                arpafvg_operations.parse_measurement(
-                    raw_measurement,
-                    year_period,
-                    station,
-                    series_configuration.climatic_indicator,
+            if year_period is not None:
+                harvested_measurements.append(
+                    arpafvg_operations.parse_measurement(
+                        raw_measurement,
+                        year_period,
+                        station,
+                        series_configuration.climatic_indicator,
+                    )
                 )
-            )
         return harvested_measurements
 
 
