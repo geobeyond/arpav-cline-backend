@@ -81,6 +81,9 @@ services:
       - type: bind
         source: $HOME/data/arpav-ppcv/netcdf-uncertainty-example
         target: /home/appuser/data/additional
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     restart: unless-stopped
 
   db:
@@ -149,6 +152,9 @@ services:
       - back
     env_file:
       - *env-file-prefect-static-worker
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     restart: unless-stopped
 
   prefect-db:
@@ -194,3 +200,8 @@ configs:
 
   martin-conf:
     file: /home/arpav/docker/martin/config.yaml
+
+
+secrets:
+  arpa-fvg-auth-token:
+    file: "/opt/arpav-cline/ARPAFVG_AUTH_TOKEN"

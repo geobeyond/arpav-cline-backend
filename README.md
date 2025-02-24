@@ -133,6 +133,22 @@ this can also be modified if needed. The system recognizes the following environ
 
 ### Operations
 
+#### Manually refreshing stations and measurements
+
+After having stood up the docker stack, observation stations and measurements will be automatically refreshed
+periodically, with a weekly frequency. The first time however, it is convenient to do a manual refresh, at least for
+the observation stations, as it also requires a reboot of the martin tile server:
+
+```shell
+# this should take around 5 minutes to run
+docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv observations-harvester refresh-stations
+
+# now restart the martin container
+
+# this one will take a while to finish
+docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv observations-harvester refresh-measurements
+```
+
 ##### Translations
 
 ```shell
