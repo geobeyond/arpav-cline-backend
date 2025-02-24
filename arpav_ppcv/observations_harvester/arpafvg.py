@@ -1,6 +1,7 @@
 import logging
 from typing import (
     Generator,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -99,7 +100,7 @@ def fetch_station_measurements(
     series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
     auth_token: str,
-) -> Generator[tuple[ObservationYearPeriod, dict], None, None]:
+) -> Generator[tuple[Optional[ObservationYearPeriod], Optional[dict]], None, None]:
     measurements_url = f"{observations_base_url}/clima/indicatori/dati"
     headers = {"Authorization": f"Bearer {auth_token}"}
     station_identifier = observation_station.code.split("-")[-1]
@@ -147,7 +148,7 @@ def fetch_station_measurements(
             for raw_measurement in response.json():
                 yield year_period, raw_measurement
     elif aggreg_type == MeasurementAggregationType.MONTHLY:
-        yield None  # ARPA_FVG observation stations do not have monthly data
+        yield (None, None)  # ARPA_FVG observation stations do not have monthly data
     else:
         raise NotImplementedError(
             f"measurement aggregation type {aggreg_type!r} not implemented"
