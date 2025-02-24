@@ -106,7 +106,7 @@ services:
   thredds:
     networks:
       - back
-    image: unidata/thredds-docker:5.4
+    image: unidata/thredds-docker:5.6
     env_file:
       - *env-file-webapp
     volumes:
