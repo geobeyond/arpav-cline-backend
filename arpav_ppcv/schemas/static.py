@@ -579,6 +579,8 @@ class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
     NO_PROCESSING = "no_processing"
     LOESS_SMOOTHING = "loess_smoothing"
     MOVING_AVERAGE_11_YEARS = "moving_average_11_years"
+    MANN_KENDALL_TREND = "mann_kendall_trend"
+    DECADE_AGGREGATION = "decade_aggregation"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -599,6 +601,8 @@ class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
             self.NO_PROCESSING.name: _("no processing"),
             self.LOESS_SMOOTHING.name: _("LOESS"),
             self.MOVING_AVERAGE_11_YEARS.name: _("centered 11-year moving average"),
+            self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
+            self.DECADE_AGGREGATION.name: _("Decade aggregation"),
         }.get(self, self.value)
 
     def get_value_description(self, locale: babel.Locale) -> str:
@@ -610,13 +614,17 @@ class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
             self.MOVING_AVERAGE_11_YEARS.name: _(
                 "centered 11-year moving average description"
             ),
+            self.MANN_KENDALL_TREND: _("Mann-Kendall trend description"),
+            self.DECADE_AGGREGATION.name: _("Decade aggregation description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
             self.NO_PROCESSING.name: 0,
-            self.LOESS_SMOOTHING.name: 0,
-            self.MOVING_AVERAGE_11_YEARS.name: 0,
+            self.LOESS_SMOOTHING.name: 1,
+            self.MOVING_AVERAGE_11_YEARS.name: 2,
+            self.MANN_KENDALL_TREND.name: 3,
+            self.DECADE_AGGREGATION.name: 4,
         }.get(self, 0)
 
 

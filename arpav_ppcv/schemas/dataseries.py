@@ -9,7 +9,10 @@ from typing import (
 
 import geohashr
 import pandas as pd
-import shapely
+import pydantic
+import shapely.io
+import typing_extensions
+from geoalchemy2.shape import to_shape
 
 from ..config import get_translations
 from . import static
@@ -28,6 +31,20 @@ if TYPE_CHECKING:
         ForecastOverviewSeriesInternal,
         ObservationOverviewSeriesInternal,
     )
+
+
+class MannKendallParameters(pydantic.BaseModel):
+    start_year: int | None = None
+    end_year: int | None = None
+
+    @pydantic.model_validator(mode="after")
+    def check_year_span_is_valid(self) -> typing_extensions.Self:
+        if self.start_year is not None and self.end_year is not None:
+            if self.end_year - self.start_year < 27:
+                raise ValueError(
+                    "Mann-Kendall start and end years must span 27 years or more"
+                )
+        return self
 
 
 class OverviewDataSeriesProtocol(Protocol):
@@ -122,19 +139,20 @@ class ForecastOverviewDataSeries:
 
 @dataclasses.dataclass
 class ForecastDataSeries:
-    forecast_coverage: "ForecastCoverageInternal"
+    coverage: "ForecastCoverageInternal"
     dataset_type: static.DatasetType
     processing_method: static.CoverageTimeSeriesProcessingMethod
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]
     location: shapely.Point
     data_: Optional[pd.Series] = None
+    processing_method_info: Optional[dict] = None
 
     @property
     def identifier(self) -> str:
         return "-".join(
             (
-                self.forecast_coverage.identifier,
+                self.coverage.identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
                 (
@@ -163,20 +181,40 @@ class ForecastDataSeries:
         _ = translations.gettext
         return _("forecast data series description")
 
+    def get_legacy_info(self) -> dict:
+        return {
+            "coverage_identifier": self.coverage.identifier,
+            "coverage_configuration": self.coverage.configuration.identifier,
+            "aggregation_period": (
+                self.coverage.configuration.climatic_indicator.aggregation_period.value
+            ),
+            "climatological_model": self.coverage.forecast_model.name,
+            "climatological_variable": self.coverage.configuration.climatic_indicator.name,
+            "measure": self.coverage.configuration.climatic_indicator.measure_type.value,
+            "scenario": self.coverage.scenario.value,
+            "year_period": self.coverage.year_period.value,
+            "processing_method": self.processing_method.value,
+            "processing_method_info": self.processing_method_info,
+            "location": self.location.wkt,
+        }
+
 
 @dataclasses.dataclass
 class ObservationStationDataSeries:
     observation_series_configuration: "ObservationSeriesConfiguration"
     observation_station: "ObservationStation"
     processing_method: static.ObservationTimeSeriesProcessingMethod
+    location: shapely.Point
+    processing_method_info: Optional[dict] = None
     data_: Optional[pd.Series] = None
 
     @property
     def identifier(self) -> str:
         return "-".join(
             (
-                self.observation_series_configuration.identifier,
+                "station",
                 self.observation_station.code,
+                self.observation_series_configuration.identifier,
                 self.processing_method.value,
             )
         )
@@ -193,22 +231,39 @@ class ObservationStationDataSeries:
         _ = translations.gettext
         return _("observation station data series description")
 
+    def get_legacy_info(self) -> dict:
+        return {
+            "series_identifier": self.observation_series_configuration.identifier,
+            "aggregation_period": (
+                self.observation_series_configuration.climatic_indicator.aggregation_period.value
+            ),
+            "climatological_variable": self.observation_series_configuration.climatic_indicator.name,
+            "measure": self.observation_series_configuration.climatic_indicator.measure_type.value,
+            "measurement_aggregation_type": self.observation_series_configuration.measurement_aggregation_type.value,
+            "processing_method": self.processing_method.value,
+            "processing_method_info": self.processing_method_info,
+            "managers": self.observation_series_configuration.station_managers,
+            "location": self.location.wkt,
+            "station_location": to_shape(self.observation_station.geom).wkt,
+        }
+
 
 @dataclasses.dataclass
 class HistoricalDataSeries:
-    historical_coverage: "HistoricalCoverageInternal"
+    coverage: "HistoricalCoverageInternal"
     dataset_type: static.DatasetType
     processing_method: static.CoverageTimeSeriesProcessingMethod
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]
     location: shapely.Point
     data_: Optional[pd.Series] = None
+    processing_method_info: Optional[dict] = None
 
     @property
     def identifier(self) -> str:
         return "-".join(
             (
-                self.historical_coverage.identifier,
+                self.coverage.identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
                 self.processing_method.value,
@@ -226,3 +281,25 @@ class HistoricalDataSeries:
         translations = get_translations(locale)
         _ = translations.gettext
         return _("historical data series description")
+
+    def get_legacy_info(self) -> dict:
+        info = {
+            "coverage_identifier": self.coverage.identifier,
+            "coverage_configuration": self.coverage.configuration.identifier,
+            "aggregation_period": (
+                self.coverage.configuration.climatic_indicator.aggregation_period.value
+            ),
+            "climatological_variable": self.coverage.configuration.climatic_indicator.name,
+            "measure": self.coverage.configuration.climatic_indicator.measure_type.value,
+            "year_period": self.coverage.year_period.value,
+            "processing_method": self.processing_method.value,
+            "processing_method_info": self.processing_method_info,
+            "location": self.location.wkt,
+        }
+        if self.coverage.decade is not None:
+            info["decade"] = self.coverage.decade
+        if self.coverage.configuration.reference_period is not None:
+            info[
+                "reference_period"
+            ] = self.coverage.configuration.reference_period.value
+        return info

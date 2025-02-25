@@ -11,6 +11,7 @@ import httpx
 import pydantic
 import shapely
 import shapely.io
+import shapely.errors
 from fastapi import (
     APIRouter,
     Depends,
@@ -56,6 +57,7 @@ from ....schemas.static import (
     ObservationTimeSeriesProcessingMethod,
     MeasureType,
 )
+from ....schemas.dataseries import MannKendallParameters
 from ... import dependencies
 from ..schemas import coverages as coverage_schemas
 from ..schemas.coverages import (
@@ -310,8 +312,12 @@ def legacy_list_coverages(
     filtered_historical_covs = []
     total_filtered_forecast_covs = 0
     total_filtered_historical_covs = 0
-    total_unfiltered_forecast_covs = 0
-    total_unfiltered_historical_covs = 0
+    _, total_unfiltered_forecast_covs = db.legacy_list_forecast_coverages(
+        session, include_total=True
+    )
+    _, total_unfiltered_historical_covs = db.legacy_list_historical_coverages(
+        session, include_total=True
+    )
     if include_forecasts:
         (
             filtered_forecast_covs,
@@ -319,18 +325,12 @@ def legacy_list_coverages(
         ) = db.legacy_list_forecast_coverages(
             session, conf_param_filter=filter_values, include_total=True
         )
-        _, total_unfiltered_forecast_covs = db.legacy_list_forecast_coverages(
-            session, include_total=True
-        )
     if include_historical:
         (
             filtered_historical_covs,
             total_filtered_historical_covs,
         ) = db.legacy_list_historical_coverages(
             session, conf_param_filter=filter_values, include_total=True
-        )
-        _, total_unfiltered_historical_covs = db.legacy_list_historical_coverages(
-            session, include_total=True
         )
     return coverage_schemas.LegacyCoverageList.from_items(
         filtered_forecast_covs,
@@ -899,7 +899,10 @@ def get_forecast_time_series(
             os.to_processing_method() for os in observation_data_smoothing
         ]
 
-        point_geom = _get_point_location(coords)
+        try:
+            point_geom = _get_point_location(coords)
+        except shapely.errors.GEOSException as err:
+            raise HTTPException(status_code=400, detail=str(err))
         temporal_range = operations.parse_temporal_range(datetime)
         try:
             (
@@ -966,8 +969,10 @@ def get_historical_time_series(
         ),
     ] = False,
     coverage_processing_methods: Annotated[
-        list[CoverageTimeSeriesProcessingMethod], Query()
+        list[Union[CoverageTimeSeriesProcessingMethod,]], Query()
     ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+    mann_kendall_start_year: Optional[int] = None,
+    mann_kendall_end_year: Optional[int] = None,
     observation_processing_methods: Annotated[
         list[ObservationTimeSeriesProcessingMethod], Query()
     ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
@@ -982,7 +987,24 @@ def get_historical_time_series(
     if (
         coverage := db.get_historical_coverage(session, coverage_identifier)
     ) is not None:
-        point_geom = _get_point_location(coords)
+        logger.debug(f"found coverage {coverage.identifier=}")
+        cov_methods = coverage_processing_methods
+        if all((mann_kendall_start_year, mann_kendall_end_year)):
+            mann_kendall_params = MannKendallParameters(
+                start_year=mann_kendall_start_year,
+                end_year=mann_kendall_end_year,
+            )
+            if CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND in cov_methods:
+                cov_methods = [
+                    pm
+                    if pm != CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND
+                    else (pm, mann_kendall_params)
+                    for pm in coverage_processing_methods
+                ]
+        try:
+            point_geom = _get_point_location(coords)
+        except shapely.errors.GEOSException as err:
+            raise HTTPException(status_code=400, detail=str(err))
         temporal_range = operations.parse_temporal_range(datetime)
         try:
             (
@@ -995,7 +1017,7 @@ def get_historical_time_series(
                 coverage=coverage,
                 point_geom=point_geom,
                 temporal_range=temporal_range,
-                coverage_processing_methods=coverage_processing_methods,
+                coverage_processing_methods=cov_methods,
                 observation_processing_methods=observation_processing_methods,
                 include_coverage_data=include_coverage_data,
                 include_observation_data=include_observation_data,
@@ -1006,19 +1028,17 @@ def get_historical_time_series(
                 detail="Could not retrieve data",
             ) from err
         else:
-            series = []
-            for forecast_cov_series in coverage_series:
-                series.append(
-                    LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
-                )
+            time_series = []
+            for series in coverage_series:
+                time_series.append(LegacyTimeSeries.from_historical_data_series(series))
             if observations_series is not None:
                 for obs_station_series in observations_series:
-                    series.append(
+                    time_series.append(
                         LegacyTimeSeries.from_observation_station_data_series(
                             obs_station_series
                         )
                     )
-            return LegacyTimeSeriesList(series=series)
+            return LegacyTimeSeriesList(series=time_series)
     else:
         raise HTTPException(
             status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
