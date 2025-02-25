@@ -963,7 +963,7 @@ def get_forecast_coverage_data_series(session: sqlmodel.Session, identifier: str
             f"Processing method {raw_processing_method} does not exist"
         )
     return ForecastDataSeries(
-        forecast_coverage=forecast_coverage,
+        coverage=forecast_coverage,
         dataset_type=dataset_type,
         processing_method=processing_method,
         temporal_start=start,

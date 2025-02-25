@@ -2,14 +2,17 @@ import functools
 import logging
 import warnings
 from typing import (
+    Any,
     cast,
     Optional,
     Sequence,
     TYPE_CHECKING,
+    Union,
 )
 
 import pandas as pd
 import pyloess
+import pymannkendall
 import pyproj
 from pyproj.enums import TransformDirection
 import shapely
@@ -72,9 +75,12 @@ def generate_derived_overview_series(
 def generate_derived_historical_series(
     data_series: dataseries.HistoricalDataSeries,
     processing_method: static.CoverageTimeSeriesProcessingMethod,
+    processing_method_parameters: Optional[
+        Union[dataseries.MannKendallParameters]
+    ] = None,
 ) -> dataseries.HistoricalDataSeries:
     derived_series = dataseries.HistoricalDataSeries(
-        historical_coverage=data_series.historical_coverage,
+        coverage=data_series.coverage,
         dataset_type=data_series.dataset_type,
         processing_method=processing_method,
         temporal_start=data_series.temporal_start,
@@ -93,6 +99,31 @@ def generate_derived_historical_series(
         df[derived_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
         )
+    elif (
+        processing_method
+        == static.CoverageTimeSeriesProcessingMethod.DECADE_AGGREGATION
+    ):
+        df = _generate_decade_series(
+            df, data_series.identifier, derived_series.identifier
+        )
+    elif (
+        processing_method
+        == static.CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND
+    ):
+        if isinstance(processing_method_parameters, dataseries.MannKendallParameters):
+            mk_start = processing_method_parameters.start_year or df.index[0].year
+            mk_end = processing_method_parameters.end_year or df.index[-1].year
+        else:
+            mk_start = df.index[0].year
+            mk_end = df.index[-1].year
+        df, info = _generate_mann_kendall_series(
+            df,
+            data_series.identifier,
+            derived_series.identifier,
+            mk_start,
+            mk_end,
+        )
+        derived_series.processing_method_info = info
     else:
         raise NotImplementedError(
             f"Processing method {processing_method!r} is not implemented"
@@ -101,12 +132,62 @@ def generate_derived_historical_series(
     return derived_series
 
 
+def _generate_decade_series(
+    original: pd.DataFrame,
+    original_column: str,
+    column_name: str,
+) -> pd.DataFrame:
+    # group values by climatological decade, which starts at year 1 and ends at year 10
+    decade_grouper = original.groupby(((original.index.year - 1) // 10) * 10)
+    decade_df = decade_grouper.agg(
+        num_values=(original_column, "size"),
+        **{column_name: (original_column, "mean")},
+    )
+    # discard decades where there are less than 7 years
+    decade_df = decade_df[decade_df.num_values >= 7]
+    decade_df = decade_df.drop(columns=["num_values"])
+    decade_df["time"] = pd.to_datetime(decade_df.index.astype(str), utc=True)
+    decade_df.set_index("time", inplace=True)
+    return decade_df
+
+
+def _generate_mann_kendall_series(
+    original: pd.DataFrame,
+    original_column: str,
+    column_name: str,
+    start_year: Optional[int] = None,
+    end_year: Optional[int] = None,
+) -> tuple[pd.DataFrame, dict]:
+    mk_start = start_year or original.index[0].year
+    mk_end = end_year or original.index[-1].year
+    mk_df = original[str(mk_start) : str(mk_end)].copy()
+    mk_result = pymannkendall.original_test(mk_df[original_column])
+    mk_df[column_name] = (
+        mk_result.slope * (mk_df.index.year - mk_df.index.year.min())
+        + mk_result.intercept
+    )
+    return mk_df, {
+        "start_year": mk_start,
+        "end_year": mk_end,
+        "trend": mk_result.trend,
+        "h": bool(mk_result.h),
+        "p": mk_result.p,
+        "z": mk_result.z,
+        "tau": mk_result.Tau,
+        "s": mk_result.s,
+        "var_s": mk_result.var_s,
+        "slope": mk_result.slope,
+        "intercept": mk_result.intercept,
+        "is_statistically_significant": bool(mk_result.p < 0.05),
+    }
+
+
 def generate_derived_forecast_series(
     data_series: dataseries.ForecastDataSeries,
     processing_method: static.CoverageTimeSeriesProcessingMethod,
 ) -> dataseries.ForecastDataSeries:
     derived_series = dataseries.ForecastDataSeries(
-        forecast_coverage=data_series.forecast_coverage,
+        coverage=data_series.coverage,
         dataset_type=data_series.dataset_type,
         processing_method=processing_method,
         temporal_start=data_series.temporal_start,
@@ -214,6 +295,7 @@ def get_nearby_observation_station_time_series(
             observation_series_configuration=observation_series_configuration,
             observation_station=nearby_station,
             processing_method=static.ObservationTimeSeriesProcessingMethod.NO_PROCESSING,
+            location=location,
         )
         raw_data = db.collect_all_observation_measurements(
             session,
@@ -270,7 +352,12 @@ def get_historical_coverage_time_series(
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: "shapely.Point",
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
-    coverage_processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    coverage_processing_methods: list[
+        Union[
+            static.CoverageTimeSeriesProcessingMethod,
+            tuple[static.CoverageTimeSeriesProcessingMethod, Any],
+        ]
+    ],
     observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     include_coverage_data: bool = True,
     include_observation_data: bool = False,
@@ -282,21 +369,23 @@ def get_historical_coverage_time_series(
     observation_series = []
     if include_coverage_data:
         coverage_series = _get_historical_coverage_coverage_time_series(
-            settings.thredds_server,
-            session,
-            http_client,
-            coverage,
-            point_geom,
-            coverage_processing_methods,
+            thredds_settings=settings.thredds_server,
+            http_client=http_client,
+            coverage=coverage,
+            point_geom=point_geom,
+            processing_methods=coverage_processing_methods,
             temporal_range=temporal_range,
         )
     if include_observation_data:
         observation_series = _get_forecast_coverage_observation_time_series(
-            settings,
-            session,
-            coverage,
-            point_geom,
-            observation_processing_methods,
+            settings=settings,
+            session=session,
+            observation_series_configurations=[
+                oscl.observation_series_configuration
+                for oscl in coverage.configuration.observation_series_configuration_links
+            ],
+            point_geom=point_geom,
+            processing_methods=observation_processing_methods,
             temporal_range=temporal_range,
         )
     return coverage_series, observation_series
@@ -307,7 +396,12 @@ def _get_historical_coverage_coverage_time_series(
     http_client: "httpx.Client",
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: shapely.Point,
-    processing_methods: Sequence[static.CoverageTimeSeriesProcessingMethod],
+    processing_methods: Sequence[
+        Union[
+            static.CoverageTimeSeriesProcessingMethod,
+            tuple[static.CoverageTimeSeriesProcessingMethod, Any],
+        ]
+    ],
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.HistoricalDataSeries]:
     result = []
@@ -325,10 +419,14 @@ def _get_historical_coverage_coverage_time_series(
             for pm in processing_methods
             if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
         ]:
-            derived_series = generate_derived_historical_series(
-                cov_main_series,
-                processing_method,
-            )
+            if isinstance(processing_method, tuple):
+                derived_series = generate_derived_historical_series(
+                    cov_main_series, processing_method[0], processing_method[1]
+                )
+            else:
+                derived_series = generate_derived_historical_series(
+                    cov_main_series, processing_method
+                )
             result.append(derived_series)
     return result
 
@@ -367,28 +465,31 @@ def get_forecast_coverage_time_series(
         )
     if include_observation_data:
         observation_series = _get_forecast_coverage_observation_time_series(
-            settings,
-            session,
-            coverage,
-            point_geom,
-            observation_processing_methods,
+            settings=settings,
+            session=session,
+            observation_series_configurations=[
+                oscl.observation_series_configuration
+                for oscl in coverage.configuration.observation_series_configuration_links
+            ],
+            point_geom=point_geom,
+            processing_methods=observation_processing_methods,
             temporal_range=temporal_range,
         )
     return coverage_series, observation_series
 
 
 def generate_derived_observation_series(
-    series: dataseries.ObservationStationDataSeries,
+    data_series: dataseries.ObservationStationDataSeries,
     processing_method: static.ObservationTimeSeriesProcessingMethod,
     derived_series_name: Optional[str] = None,
 ) -> tuple[pd.DataFrame, str]:
-    column_to_process = series.identifier
+    column_to_process = data_series.identifier
     derived_name = (
         derived_series_name
         if derived_series_name
         else "__".join((column_to_process, processing_method.value))
     )
-    df = pd.to_frame(series.data_)
+    df = data_series.data_.to_frame()
     if (
         processing_method
         == static.ObservationTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS
@@ -456,14 +557,15 @@ def _get_forecast_coverage_coverage_time_series(
 def _get_forecast_coverage_observation_time_series(
     settings: "config.ArpavPpcvSettings",
     session: "sqlmodel.Session",
-    coverage: "coverages.ForecastCoverageInternal",
+    observation_series_configurations: list[
+        "observations.ObservationSeriesConfiguration"
+    ],
     point_geom: shapely.Point,
     processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
 ) -> list[dataseries.ObservationStationDataSeries]:
     result = []
-    for osc_link in coverage.configuration.observation_series_configuration_links:
-        observation_series_conf = osc_link.observation_series_configuration
+    for observation_series_conf in observation_series_configurations:
         observation_data_series = get_nearby_observation_station_time_series(
             session,
             point_geom,
@@ -484,6 +586,7 @@ def _get_forecast_coverage_observation_time_series(
                         observation_series_configuration=observation_series_conf,
                         observation_station=observation_data_series.observation_station,
                         processing_method=processing_method,
+                        location=point_geom,
                     )
                     smoothed_df, col_name = generate_derived_observation_series(
                         observation_data_series,
@@ -515,7 +618,7 @@ def _retrieve_historical_coverage_data(
         coverage=cast(ncss.RetrievableCoverageProtocol, coverage),
     )
     main_series = dataseries.HistoricalDataSeries(
-        historical_coverage=coverage,
+        coverage=coverage,
         dataset_type=static.DatasetType.MAIN,
         processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=temporal_range[0],
@@ -550,7 +653,7 @@ def _retrieve_forecast_coverage_data(
         coverage=coverage,
     )
     main_series = dataseries.ForecastDataSeries(
-        forecast_coverage=coverage,
+        coverage=coverage,
         dataset_type=static.DatasetType.MAIN,
         processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=temporal_range[0],
@@ -566,7 +669,7 @@ def _retrieve_forecast_coverage_data(
         main_series.data_ = main_data
         if include_uncertainty:
             lower_uncert_series = dataseries.ForecastDataSeries(
-                forecast_coverage=coverage,
+                coverage=coverage,
                 dataset_type=static.DatasetType.LOWER_UNCERTAINTY,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 temporal_start=temporal_range[0],
@@ -583,7 +686,7 @@ def _retrieve_forecast_coverage_data(
             else:
                 lower_uncert_series = None
             upper_uncert_series = dataseries.ForecastDataSeries(
-                forecast_coverage=coverage,
+                coverage=coverage,
                 dataset_type=static.DatasetType.UPPER_UNCERTAINTY,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 temporal_start=temporal_range[0],
