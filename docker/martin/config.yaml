@@ -21,7 +21,7 @@ postgres:
       properties:
         name: varchar
         code: varchar
-        id: uuid
+        id: int
         active_since: date
         active_until: date
 
@@ -52,3 +52,15 @@ postgres:
         name: varchar
         province_name: varchar
         region_name: varchar
+
+    spatial-regions:
+      schema: public
+      table: spatialregion
+      srid: 4326
+      geometry_column: geom
+      id_column: ~
+      geometry_type: POLYGON
+      properties:
+        id: int
+        name: varchar
+        internal_value: varchar
