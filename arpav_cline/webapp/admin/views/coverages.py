@@ -4,7 +4,7 @@ The classes contained in this module are derived from
 starlette_admin.contrib.sqlmodel.ModelView. This is done mostly for two reasons:
 
 1. To be able to control database access and ensure we are using our handlers
-   defined in `arpav_ppcv.database` - this is meant for achieving consistency
+   defined in `arpav_cline.db` - this is meant for achieving consistency
    throughout the code, as the API is also using the mentioned functions for
    interacting with the DB
 

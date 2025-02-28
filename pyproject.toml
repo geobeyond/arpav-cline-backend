@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "arpav-ppcv-backend"
+name = "arpav-cline-backend"
 version = "v2.0.0-dev"
-description = "Backend component of the ARPAV-PPCV platform"
+description = "Backend component of the ARPAV cline platform"
 authors = ["Geobeyond <info@geobeyond.it>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    {include = "arpav_ppcv"},
+    {include = "arpav_cline"},
 ]
 
 [tool.poetry.dependencies]
@@ -72,17 +72,17 @@ ipyleaflet = "^0.19.2"
 sidecar = "^0.7.0"
 
 [tool.poetry.scripts]
-arpav-ppcv = "arpav_ppcv.main:app"
+arpav-cline = "arpav_cline.main:app"
 
 [tool.ruff]
-extend-exclude = ["backend", "arpav_ppcv/migrations"]
+extend-exclude = ["backend", "arpav_cline/migrations"]
 
 [tool.pytest.ini_options]
 addopts = "--verbose --cov --cov-branch --log-level=warning"
 
 [tool.coverage.run]
 branch = true
-source = ["arpav_ppcv"]
+source = ["arpav_cline"]
 
 [build-system]
 requires = ["poetry-core"]

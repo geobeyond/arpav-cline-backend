@@ -4,8 +4,8 @@ import geojson_pydantic
 import pyproj
 import pytest
 
-from arpav_ppcv.observations_harvester import arpav as arpav_operations
-from arpav_ppcv.schemas import (
+from arpav_cline.observations_harvester import arpav as arpav_operations
+from arpav_cline.schemas import (
     observations,
     static,
 )

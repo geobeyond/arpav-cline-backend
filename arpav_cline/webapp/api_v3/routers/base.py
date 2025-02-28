@@ -15,6 +15,6 @@ router = APIRouter()
 async def get_app_info():
     """Return information about the ARPAV-PPCV application."""
     return {
-        "version": importlib.metadata.version("arpav_ppcv_backend"),
+        "version": importlib.metadata.version("arpav_cline_backend"),
         "git_commit": os.getenv("GIT_COMMIT", "unknown"),
     }

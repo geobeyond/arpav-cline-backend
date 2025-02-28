@@ -141,22 +141,22 @@ the observation stations, as it also requires a reboot of the martin tile server
 
 ```shell
 # this should take around 5 minutes to run
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv observations-harvester refresh-stations
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline observations-harvester refresh-stations
 
 # now restart the martin container
 
 # this one will take a while to finish
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv observations-harvester refresh-measurements
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline observations-harvester refresh-measurements
 ```
 
 ##### Translations
 
 ```shell
 # look for new translatable strings in the codebase
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations extract
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations extract
 
 # update existing catalogs with the new strings found in the previous step
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations update
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations update
 ```
 
 Now use your favorite editor to translate the strings.
@@ -164,15 +164,15 @@ Now use your favorite editor to translate the strings.
 Finally, compile the translations files:
 
 ```shell
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv translations compile
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations compile
 ```
 
 ##### Accessing the CLI
 
-The CLI is named `arpav-ppcv`. When running under docker compose, it can be used with the following incantation:
+The CLI is named `arpav-cline`. When running under docker compose, it can be used with the following incantation:
 
 ```shell
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv <sub-command>
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline <sub-command>
 ```
 
 There are numerous sub-commands and each may accept additional arguments, so please check the help of the sub-command
@@ -181,7 +181,7 @@ you want to run, by passing the `--help` flag.
 For example, running the web application  server can be achieved with:
 
 ```shell
-docker exec -ti poetry run arpav-ppcv run-server
+docker exec -ti poetry run arpav-cline run-server
 ```
 
 ##### Accessing the web API
@@ -218,19 +218,19 @@ dev environment is located at individual devs machine(s). In order to get a work
 - The system will eventually be initialized. Now bootstrap the system by running:
 
     ```shell
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv db upgrade
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap municipalities
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap observation-variables
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap coverage-configuration-parameters
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap coverage-configurations
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline db upgrade
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap municipalities
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap observation-variables
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap coverage-configuration-parameters
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap coverage-configurations
     ```
 
 - If needed, you can download some NetCDF datasets from the remote THREDDS server by running
-  the `arpav-ppcv dev import-thredds-datasets` command. Check its help for more detail. As an example:
+  the `arpav-cline dev import-thredds-datasets` command. Check its help for more detail. As an example:
 
     ```shell
     # downloads all su30 netcdf datasets in order to use them in the dev environment
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv dev import-thredds-datasets \
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline dev import-thredds-datasets \
         https://thredds.arpa.veneto.it/thredds \
         /home/appuser/data/datasets \
         --name-filter su30
@@ -290,7 +290,7 @@ an ongoing task, add the branch name to the build image:
 
 ```shell
 docker build \
-    --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current) \
+    --tag ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:$(git branch --show-current) \
     --file docker/Dockerfile \
     .
 ```
@@ -379,8 +379,8 @@ It is also possible, and very likely faster, to run the tests from inside an alr
 compose stack. This involves running the following commands:
 
 ````shell
-docker exec -ti arpav-ppcv-webapp-1 poetry install --with dev
-docker exec -ti arpav-ppcv-webapp-1 poetry run pytest
+docker exec -ti arpav-cline-webapp-1 poetry install --with dev
+docker exec -ti arpav-cline-webapp-1 poetry run pytest
 ````
 
 

@@ -51,7 +51,7 @@ def base_callback(ctx: typer.Context) -> None:
     settings = config.get_settings()
     engine = db.get_engine(settings)
     alembic_config = alembic.config.Config()
-    alembic_config.set_main_option("script_location", "arpav_ppcv:migrations")
+    alembic_config.set_main_option("script_location", "arpav_cline:migrations")
     ctx_obj.update(
         {
             "settings": settings,
@@ -119,7 +119,7 @@ def run_server(ctx: typer.Context):
     settings: config.ArpavPpcvSettings = ctx.obj["settings"]
     uvicorn_args = [
         "uvicorn",
-        "arpav_ppcv.webapp.app:create_app",
+        "arpav_cline.webapp.app:create_app",
         f"--port={settings.bind_port}",
         f"--host={settings.bind_host}",
         "--factory",
@@ -156,7 +156,7 @@ def run_server(ctx: typer.Context):
             f"{serving_str}\n\n"
             f"[dim]Running in [b]{'development' if settings.debug else 'production'} mode[/b]"
         ),
-        title="ARPAV-PPCV",
+        title="arpav-cline-backend",
         expand=False,
         padding=(1, 2),
         style="green",
@@ -277,7 +277,7 @@ def translations_app_callback():
 def extract_translations(
     output_path: Path = Path(__file__).parents[1] / "messages.pot",
 ):
-    """Scan the PRTR source code and extract translatable strings into a pot file."""
+    """Scan the source code and extract translatable strings into a pot file."""
     method_map = [
         ("**.py", "python"),
         ("**.html", "jinja2"),
@@ -285,7 +285,7 @@ def extract_translations(
     source_path = Path(__file__).parent
     print(f"Scanning source code from {source_path} for translatable strings...")
     messages = extract_from_dir(dirname=source_path, method_map=method_map)
-    template_catalog = Catalog(project="arpav-ppcv")
+    template_catalog = Catalog(project="arpav-cline")
     for message in messages:
         template_catalog.add(
             id=message[2],

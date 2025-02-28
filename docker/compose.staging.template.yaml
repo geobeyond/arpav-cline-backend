@@ -172,7 +172,7 @@ services:
 
   prefect-static-worker:
     image: "${backend_image}"
-    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-cline", "prefect"]
     command: [
       "start-periodic-tasks",
       "--refresh-stations",

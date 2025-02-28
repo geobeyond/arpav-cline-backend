@@ -2,8 +2,8 @@ from operator import attrgetter
 
 import pytest
 
-from arpav_ppcv import db
-from arpav_ppcv.schemas import static
+from arpav_cline import db
+from arpav_cline.schemas import static
 
 
 @pytest.mark.parametrize(

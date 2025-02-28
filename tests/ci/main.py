@@ -35,7 +35,7 @@ def run_ci_pipeline(
                 "published, including the image tag. This assumes that logging in to the "
                 "registry has already been made (for example by running the "
                 "`docker login` command beforehand)."
-                "Example: ghcr.io/geobeyond/arpav-ppcv-backend:latest"
+                "Example: ghcr.io/geobeyond/arpav-cline-backend:latest"
             )
         ),
     ] = False,
@@ -163,7 +163,7 @@ async def _run_tests(
         test_container = test_container.with_env_variable(var_name, var_value)
     return await (
         test_container.with_exec(shlex.split("poetry install --with dev"))
-        .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
+        .with_exec(shlex.split("poetry run arpav-cline translations compile"))
         .with_exec(shlex.split("poetry run pytest "))
     ).stdout()
 
@@ -210,15 +210,15 @@ async def _run_load_tests(
         test_container.without_entrypoint()
         .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
         .with_service_binding(db_host, db_service)
-        .with_exec(shlex.split("poetry run arpav-ppcv db upgrade"))
+        .with_exec(shlex.split("poetry run arpav-cline db upgrade"))
         .with_exec(
             shlex.split(
-                "poetry run arpav-ppcv bootstrap all data/spatial-regions "
+                "poetry run arpav-cline bootstrap all data/spatial-regions "
                 "data/municipalities-istat-2021.geojson"
             )
         )
-        .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
-        .with_exec(shlex.split("poetry run arpav-ppcv run-server"))
+        .with_exec(shlex.split("poetry run arpav-cline translations compile"))
+        .with_exec(shlex.split("poetry run arpav-cline run-server"))
         .with_exposed_port(5001)
         .as_service()
     )

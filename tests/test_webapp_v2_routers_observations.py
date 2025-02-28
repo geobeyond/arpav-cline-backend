@@ -1,6 +1,6 @@
 import httpx
 
-from arpav_ppcv.schemas import observations
+from arpav_cline.schemas import observations
 
 
 def test_station_list(

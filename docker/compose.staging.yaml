@@ -25,7 +25,7 @@ x-env-file-prefect-static-worker: &env-file-prefect-static-worker ${ARPAV_PPCV_D
 x-env-file-tolgee-db: &env-file-tolgee-db ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_DB_SERVICE:-/home/arpav/environment-files/tolgee-db-service.env}
 x-env-file-tolgee-app: &env-file-tolgee-app ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_APP_SERVICE:-/home/arpav/environment-files/tolgee-app-service.env}
 
-name: arpav-ppcv-staging
+name: arpav-cline-staging
 
 networks:
 

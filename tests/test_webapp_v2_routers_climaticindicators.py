@@ -1,6 +1,6 @@
 import httpx
 
-from arpav_ppcv.schemas.climaticindicators import ClimaticIndicator
+from arpav_cline.schemas.climaticindicators import ClimaticIndicator
 
 
 def test_climatic_indicator_list(

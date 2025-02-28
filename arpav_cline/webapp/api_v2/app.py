@@ -3,19 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ... import config
 from .routers.climaticindicators import router as climaticindicators_router
+from .routers.coverages import router as coverages_router
+from .routers.municipalities import router as municipalities_router
+from .routers.observations import router as observations_router
 from .routers.base import router as base_router
 
 
 def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
     app = fastapi.FastAPI(
         debug=settings.debug,
-        title="ARPAV PPCV backend v3",
-        description="Developer API for ARPAV-PPCV backend v3",
+        title="arpav cline backend v2",
+        description=(
+            "### Developer API for arpav cline backend v2\n"
+            "This is the documentation for API v2, which is the new implementation "
+            "of the system and is the recommended way to interact with it."
+        ),
         contact={
             "name": settings.contact.name,
             "url": settings.contact.url,
             "email": settings.contact.email,
         },
+        servers=[{"url": "/".join((settings.public_url, "api/v2"))}],
+        root_path_in_servers=False,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -29,6 +38,27 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
         prefix="/base",
         tags=[
             "base",
+        ],
+    )
+    app.include_router(
+        coverages_router,
+        prefix="/coverages",
+        tags=[
+            "coverages",
+        ],
+    )
+    app.include_router(
+        observations_router,
+        prefix="/observations",
+        tags=[
+            "observations",
+        ],
+    )
+    app.include_router(
+        municipalities_router,
+        prefix="/municipalities",
+        tags=[
+            "municipalities",
         ],
     )
     app.include_router(

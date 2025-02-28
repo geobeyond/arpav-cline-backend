@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Complete refactor of system internals in order to simplify codebase and ease administration
+
 
 ## [2.0.0-rc1] - 2024-12-17
 
