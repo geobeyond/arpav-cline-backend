@@ -1,7 +1,7 @@
 # ARPAV-PPCV deployment script
 #
 # This script is to be run by the `webhook` server whenever there
-# is a push to the arpav-ppcv-backend repository.
+# is a push to the arpav-cline-backend repository.
 #
 # NOTE: IN ORDER TO SIMPLIFY DEPLOYMENT, THIS SCRIPT SHALL ONLY USE STUFF FROM THE
 # PYTHON STANDARD LIBRARY
@@ -222,7 +222,7 @@ class _CompileTranslations:
         run(
             shlex.split(
                 f"docker exec {self.webapp_service_name} poetry run "
-                f"arpav-ppcv translations compile"
+                f"arpav-cline translations compile"
             ),
             check=True,
         )
@@ -238,7 +238,7 @@ class _RunMigrations:
         run(
             shlex.split(
                 f"docker exec {self.webapp_service_name} poetry run "
-                f"arpav-ppcv db upgrade"
+                f"arpav-cline db upgrade"
             ),
             check=True,
         )
@@ -300,7 +300,7 @@ def perform_deployment(
         "prefect_static_worker_service": deployment_root
         / "environment-files/prefect-static-worker-service.env",
     }
-    webapp_service_name = "arpav-ppcv-staging-webapp-1"
+    webapp_service_name = "arpav-cline-staging-webapp-1"
     deployment_steps = [
         _ValidateRequestPayload(
             raw_payload=raw_request_payload,

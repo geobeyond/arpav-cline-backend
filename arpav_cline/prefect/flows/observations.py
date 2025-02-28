@@ -6,26 +6,26 @@ import prefect
 import prefect.artifacts
 import pyproj
 
-from arpav_ppcv import (
+from arpav_cline import (
     db,
     exceptions,
 )
-from arpav_ppcv.config import get_settings
-from arpav_ppcv.observations_harvester import arpav as arpav_operations
-from arpav_ppcv.observations_harvester import arpafvg as arpafvg_operations
-from arpav_ppcv.operations import (
+from arpav_cline.config import get_settings
+from arpav_cline.observations_harvester import arpav as arpav_operations
+from arpav_cline.observations_harvester import arpafvg as arpafvg_operations
+from arpav_cline.operations import (
     create_db_schema,
     refresh_station_climatic_indicator_database_view,
 )
-from arpav_ppcv.schemas import (
+from arpav_cline.schemas import (
     climaticindicators,
     observations,
 )
-from arpav_ppcv.schemas.static import (
+from arpav_cline.schemas.static import (
     MeasureType,
     ObservationStationManager,
 )
-from arpav_ppcv.prefect.static import PrefectTaskTag
+from arpav_cline.prefect.static import PrefectTaskTag
 
 # this is a module global because we need to configure the prefect flow and
 # task with values from it

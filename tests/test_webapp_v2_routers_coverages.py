@@ -4,7 +4,7 @@ import typing
 import httpx
 
 if typing.TYPE_CHECKING:
-    from arpav_ppcv.schemas import coverages
+    from arpav_cline.schemas import coverages
 
 random.seed(0)
 

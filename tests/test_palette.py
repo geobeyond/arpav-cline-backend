@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from arpav_ppcv import palette
+from arpav_cline import palette
 
 
 @pytest.mark.parametrize(

@@ -9,16 +9,16 @@ from alembic import context
 
 from geoalchemy2 import alembic_helpers
 from sqlmodel import SQLModel
-from arpav_ppcv import config as arpav_ppcv_config
+from arpav_cline import config as arpav_cline_config
 
 # this import is crucial so that SQLModel.metadata be populated with our models
-from arpav_ppcv.schemas import climaticindicators  # noqa
-from arpav_ppcv.schemas import coverages  # noqa
-from arpav_ppcv.schemas import municipalities  # noqa
-from arpav_ppcv.schemas import observations  # noqa
-from arpav_ppcv.schemas import overviews  # noqa
+from arpav_cline.schemas import climaticindicators  # noqa
+from arpav_cline.schemas import coverages  # noqa
+from arpav_cline.schemas import municipalities  # noqa
+from arpav_cline.schemas import observations  # noqa
+from arpav_cline.schemas import overviews  # noqa
 
-arpav_ppcv_settings = arpav_ppcv_config.get_settings()
+arpav_cline_settings = arpav_cline_config.get_settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -68,7 +68,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = arpav_ppcv_settings.db_dsn.unicode_string()
+    url = arpav_cline_settings.db_dsn.unicode_string()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -91,7 +91,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_engine(arpav_ppcv_settings.db_dsn.unicode_string())
+    connectable = create_engine(arpav_cline_settings.db_dsn.unicode_string())
 
     with connectable.connect() as connection:
         context.configure(

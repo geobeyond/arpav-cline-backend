@@ -463,7 +463,7 @@ class _CompileTranslations:
         subprocess.run(
             shlex.split(
                 f"docker exec {self.config.executable_webapp_service_name} poetry run "
-                f"arpav-ppcv translations compile"
+                f"arpav-cline translations compile"
             ),
             check=True,
         )
@@ -478,7 +478,7 @@ class _RunMigrations:
         subprocess.run(
             shlex.split(
                 f"docker exec {self.config.executable_webapp_service_name} poetry run "
-                f"arpav-ppcv db upgrade"
+                f"arpav-cline db upgrade"
             ),
             check=True,
         )
@@ -601,7 +601,7 @@ if __name__ == "__main__":
         help=(
             "Full name of the docker image to be used for the backend. "
             "Example: "
-            "'ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:v1.0.0'. "
+            "'ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:v1.0.0'. "
             "Defaults to whatever is specified in the configuration file."
         ),
     )
@@ -610,7 +610,7 @@ if __name__ == "__main__":
         "--frontend-image",
         help=(
             "Full name of the docker image to be used for the frontend. "
-            "Example: 'ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:v1.0.0'. "
+            "Example: 'ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:v1.0.0'. "
             "Defaults to whatever is specified in the configuration file."
         ),
     )
