@@ -30,7 +30,7 @@ class SqlModelDbSessionMiddleware(DBSessionMiddleware):
     This is derived from the starlette_admin DBSessionMiddleware because we
     want to use sqlmodel `Session` instances in our admin, rather than the
     default sqlalchemy `Session`. This is because our DB-handling
-    functions, defined in `arpav_ppcv.database`, expect to use an
+    functions, defined in `arpav_cline.db`, expect to use an
     sqlmodel.Session. The main differences between these two session classes
     are described in the sqlmodel docs:
 

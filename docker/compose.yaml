@@ -53,7 +53,7 @@ x-prefect-server-healthcheck: &prefect-server-healthcheck
     else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
     fi
 
-name: arpav-ppcv
+name: arpav-cline
 
 services:
 
@@ -125,7 +125,7 @@ services:
 
   prefect-static-worker:
     image: *backend-image
-    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-cline", "prefect"]
     command: [
       "start-periodic-tasks",
       "--refresh-stations",

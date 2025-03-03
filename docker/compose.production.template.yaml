@@ -101,7 +101,7 @@ services:
       ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
-      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_ppcv"
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
     depends_on:
       db:
         condition: service_healthy
@@ -173,7 +173,7 @@ services:
 
   prefect-static-worker:
     image: "${backend_image}"
-    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-cline", "prefect"]
     command: [
       "start-periodic-tasks",
       "--refresh-stations",
@@ -187,10 +187,10 @@ services:
       ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
       PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
       PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
     depends_on:
       prefect-server:
         condition: service_healthy
-      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_ppcv"
     restart: unless-stopped
 
   prefect-db:

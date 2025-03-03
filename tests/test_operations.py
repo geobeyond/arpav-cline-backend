@@ -2,7 +2,7 @@ import datetime as dt
 
 import pytest
 
-from arpav_ppcv import operations
+from arpav_cline import operations
 
 
 @pytest.mark.parametrize(

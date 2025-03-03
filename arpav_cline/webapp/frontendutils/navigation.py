@@ -1,5 +1,5 @@
 import sqlmodel
-from arpav_ppcv.db import collect_all_historical_coverage_configurations
+from arpav_cline.db import collect_all_historical_coverage_configurations
 
 from ...db import collect_all_forecast_coverage_configurations
 from . import schemas
