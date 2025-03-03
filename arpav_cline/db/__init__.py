@@ -1,3 +1,14 @@
+from .analytics import (
+    collect_all_forecast_coverage_download_requests,  # noqa
+    collect_all_historical_coverage_download_requests,  # noqa
+    delete_forecast_coverage_download_request,  # noqa
+    delete_historical_coverage_download_request,  # noqa
+    get_forecast_coverage_download_request,  # noqa
+    get_historical_coverage_download_request,  # noqa
+    list_forecast_coverage_download_requests,  # noqa
+    list_historical_coverage_download_requests,  # noqa
+)
+
 from .climaticindicators import (
     collect_all_climatic_indicators,  # noqa
     create_climatic_indicator,  # noqa

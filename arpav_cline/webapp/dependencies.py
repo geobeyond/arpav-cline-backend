@@ -42,3 +42,9 @@ def get_sync_http_client(
 class CommonListFilterParameters(pydantic.BaseModel):  # noqa: D101
     offset: Annotated[int, pydantic.Field(ge=0)] = 0
     limit: Annotated[int, pydantic.Field(ge=0, le=100)] = 20
+
+
+class CoverageDownloadAnalyticsParameters(pydantic.BaseModel):
+    entity_name: str | None = None
+    is_public_sector: bool
+    download_reason: str
