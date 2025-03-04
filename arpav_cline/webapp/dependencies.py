@@ -52,12 +52,16 @@ class CommonListFilterParameters(pydantic.BaseModel):  # noqa: D101
 
 class CoverageDownloadAnalyticsParameters(pydantic.BaseModel):
     entity_name: Annotated[
-        Optional[str], pydantic.Field(description="Name of institution/company")
+        Optional[str],
+        pydantic.Field(
+            description="Name of institution/company",
+            max_length=500,
+        ),
     ] = None
     is_public_sector: Annotated[
         bool, Query(description="Does the user work for the public sector?")
     ]
     download_reason: Annotated[
         str,
-        Query(description="Reason for downloading the data"),
+        Query(description="Reason for downloading the data", max_length=500),
     ]
