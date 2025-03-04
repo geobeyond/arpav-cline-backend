@@ -38,6 +38,11 @@ def generate_forecast_coverage_configurations(
                 forecast_time_window_ids["tw2"],
             ],
             forecast_model_group=forecast_model_groups["ensemble"],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-anomaly-thirty_year"],
@@ -59,6 +64,11 @@ def generate_forecast_coverage_configurations(
                 forecast_time_window_ids["tw2"],
             ],
             forecast_model_group=forecast_model_groups["five_models"],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-absolute-annual"],

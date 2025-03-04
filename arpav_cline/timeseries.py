@@ -377,13 +377,21 @@ def get_historical_coverage_time_series(
             temporal_range=temporal_range,
         )
     if include_observation_data:
+        # do not gather time series if the related observation series configuration
+        # specifies a different climatic indicator
+        relevant_series_confs = [
+            oscl.observation_series_configuration
+            for oscl in coverage.configuration.observation_series_configuration_links
+            if (
+                coverage.configuration.climatic_indicator.identifier
+                == oscl.observation_series_configuration.climatic_indicator.identifier
+            )
+        ]
+
         observation_series = _get_forecast_coverage_observation_time_series(
             settings=settings,
             session=session,
-            observation_series_configurations=[
-                oscl.observation_series_configuration
-                for oscl in coverage.configuration.observation_series_configuration_links
-            ],
+            observation_series_configurations=relevant_series_confs,
             point_geom=point_geom,
             processing_methods=observation_processing_methods,
             temporal_range=temporal_range,
@@ -464,13 +472,20 @@ def get_forecast_coverage_time_series(
             temporal_range=temporal_range,
         )
     if include_observation_data:
+        # do not gather time series if the related observation series configuration
+        # specifies a different climatic indicator
+        relevant_series_confs = [
+            oscl.observation_series_configuration
+            for oscl in coverage.configuration.observation_series_configuration_links
+            if (
+                coverage.configuration.climatic_indicator.identifier
+                == oscl.observation_series_configuration.climatic_indicator.identifier
+            )
+        ]
         observation_series = _get_forecast_coverage_observation_time_series(
             settings=settings,
             session=session,
-            observation_series_configurations=[
-                oscl.observation_series_configuration
-                for oscl in coverage.configuration.observation_series_configuration_links
-            ],
+            observation_series_configurations=relevant_series_confs,
             point_geom=point_geom,
             processing_methods=observation_processing_methods,
             temporal_range=temporal_range,
