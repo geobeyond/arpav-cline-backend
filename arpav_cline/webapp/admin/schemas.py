@@ -209,7 +209,7 @@ class ForecastCoverageDownloadRequestRead(sqlmodel.SQLModel):
     year_period: str
     climatological_model: str
     scenario: str
-    time_window: str
+    time_window: str | None
 
 
 class HistoricalCoverageDownloadRequestRead(sqlmodel.SQLModel):

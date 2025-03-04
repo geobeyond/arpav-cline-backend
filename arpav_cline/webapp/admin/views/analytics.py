@@ -81,9 +81,7 @@ class ForecastCoverageDownloadRequestView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[ForecastCoverageDownloadRequestRead]:
         finder = functools.partial(
-            db.list_forecast_coverage_download_requests,
-            limit=limit,
-            offset=skip,
+            db.collect_all_forecast_coverage_download_requests,
         )
         db_items = await anyio.to_thread.run_sync(finder, request.state.session)
         return [self._serialize_instance(ind) for ind in db_items]
@@ -157,9 +155,7 @@ class HistoricalCoverageDownloadRequestView(ModelView):
         order_by: Optional[list[str]] = None,
     ) -> Sequence[HistoricalCoverageDownloadRequestRead]:
         finder = functools.partial(
-            db.list_historical_coverage_download_requests,
-            limit=limit,
-            offset=skip,
+            db.collect_all_historical_coverage_download_requests,
         )
         db_items = await anyio.to_thread.run_sync(finder, request.state.session)
         return [self._serialize_instance(ind) for ind in db_items]

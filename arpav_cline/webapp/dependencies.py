@@ -1,9 +1,15 @@
-from typing import Annotated
+from typing import (
+    Annotated,
+    Optional,
+)
 
 import httpx
 import pydantic
 import sqlmodel
-from fastapi import Depends
+from fastapi import (
+    Depends,
+    Query,
+)
 
 from .. import config
 from ..db import get_engine
@@ -45,6 +51,13 @@ class CommonListFilterParameters(pydantic.BaseModel):  # noqa: D101
 
 
 class CoverageDownloadAnalyticsParameters(pydantic.BaseModel):
-    entity_name: str | None = None
-    is_public_sector: bool
-    download_reason: str
+    entity_name: Annotated[
+        Optional[str], pydantic.Field(description="Name of institution/company")
+    ] = None
+    is_public_sector: Annotated[
+        bool, Query(description="Does the user work for the public sector?")
+    ]
+    download_reason: Annotated[
+        str,
+        Query(description="Reason for downloading the data"),
+    ]

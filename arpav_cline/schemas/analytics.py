@@ -29,7 +29,7 @@ class _BaseCoverageDownloadRequestCreate(sqlmodel.SQLModel):
 class ForecastCoverageDownloadRequest(_BaseCoverageDownloadRequest, table=True):
     climatological_model: str
     scenario: str
-    time_window: str
+    time_window: str | None
 
 
 class ForecastCoverageDownloadRequestCreate(_BaseCoverageDownloadRequestCreate):

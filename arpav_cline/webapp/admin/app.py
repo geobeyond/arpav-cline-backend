@@ -12,6 +12,10 @@ from starlette_admin.views import (
 )
 
 from ...db import get_engine
+from ...schemas.analytics import (
+    ForecastCoverageDownloadRequest,
+    HistoricalCoverageDownloadRequest,
+)
 from ...schemas.base import SpatialRegion
 from ...schemas.climaticindicators import ClimaticIndicator
 from ...schemas.coverages import (
@@ -35,6 +39,7 @@ from ...schemas.overviews import (
 from . import auth
 from .middlewares import SqlModelDbSessionMiddleware
 from .views import (
+    analytics as analytics_views,
     base as base_views,
     climaticindicators as climaticindicators_views,
     coverages as coverage_views,
@@ -135,6 +140,21 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                     ObservationSeriesConfiguration
                 ),
                 observations_views.ObservationStationView(ObservationStation),
+            ],
+        )
+    )
+    admin.add_view(
+        DropDown(
+            "Download stats",
+            icon="fa-solid fa-chart-pie",
+            always_open=False,
+            views=[
+                analytics_views.ForecastCoverageDownloadRequestView(
+                    ForecastCoverageDownloadRequest
+                ),
+                analytics_views.HistoricalCoverageDownloadRequestView(
+                    HistoricalCoverageDownloadRequest
+                ),
             ],
         )
     )

@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 import urllib.parse
 from xml.etree import ElementTree as et
@@ -7,6 +8,7 @@ from typing import (
     Union,
 )
 
+import anyio.to_thread
 import httpx
 import pydantic
 import shapely
@@ -35,6 +37,10 @@ from .... import (
 )
 from ....config import ArpavPpcvSettings
 from ....thredds import utils as thredds_utils
+from ....schemas.analytics import (
+    ForecastCoverageDownloadRequestCreate,
+    HistoricalCoverageDownloadRequestCreate,
+)
 from ....schemas.coverages import (
     HistoricalCoverageInternal,
     ForecastCoverageInternal,
@@ -569,10 +575,34 @@ async def get_forecast_data(
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
+    analytics_params: Annotated[
+        dependencies.CoverageDownloadAnalyticsParameters, Depends()
+    ],
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
     if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
+        await anyio.to_thread.run_sync(
+            db.create_forecast_coverage_download_request,
+            session,
+            ForecastCoverageDownloadRequestCreate(
+                request_datetime=dt.datetime.now(tz=dt.timezone.utc),
+                entity_name=analytics_params.entity_name,
+                is_public_sector=analytics_params.is_public_sector,
+                download_reason=analytics_params.download_reason,
+                climatological_variable=coverage.configuration.climatic_indicator.name,
+                aggregation_period=coverage.configuration.climatic_indicator.aggregation_period.value,
+                measure_type=coverage.configuration.climatic_indicator.measure_type.value,
+                year_period=coverage.year_period.value,
+                climatological_model=coverage.forecast_model.name,
+                scenario=coverage.scenario.value,
+                time_window=(
+                    coverage.forecast_time_window.name
+                    if coverage.forecast_time_window
+                    else None
+                ),
+            ),
+        )
         return await _get_coverage_data(
             settings, http_client, coverage, coords, datetime
         )
@@ -627,6 +657,9 @@ async def get_historical_data(
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     session: Annotated[Session, Depends(dependencies.get_db_session)],
+    analytics_params: Annotated[
+        dependencies.CoverageDownloadAnalyticsParameters, Depends()
+    ],
     coverage_identifier: str,
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
@@ -634,6 +667,26 @@ async def get_historical_data(
     if (
         coverage := db.get_historical_coverage(session, coverage_identifier)
     ) is not None:
+        await anyio.to_thread.run_sync(
+            db.create_historical_coverage_download_request,
+            session,
+            HistoricalCoverageDownloadRequestCreate(
+                request_datetime=dt.datetime.now(tz=dt.timezone.utc),
+                entity_name=analytics_params.entity_name,
+                is_public_sector=analytics_params.is_public_sector,
+                download_reason=analytics_params.download_reason,
+                climatological_variable=coverage.configuration.climatic_indicator.name,
+                aggregation_period=coverage.configuration.climatic_indicator.aggregation_period.value,
+                measure_type=coverage.configuration.climatic_indicator.measure_type.value,
+                year_period=coverage.year_period.value,
+                decade=coverage.decade.value if coverage.decade else None,
+                reference_period=(
+                    coverage.configuration.reference_period.value
+                    if coverage.configuration.reference_period
+                    else None
+                ),
+            ),
+        )
         return await _get_coverage_data(
             settings, http_client, coverage, coords, datetime
         )

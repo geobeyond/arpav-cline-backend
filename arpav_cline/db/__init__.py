@@ -1,6 +1,8 @@
 from .analytics import (
     collect_all_forecast_coverage_download_requests,  # noqa
     collect_all_historical_coverage_download_requests,  # noqa
+    create_forecast_coverage_download_request,  # noqa
+    create_historical_coverage_download_request,  # noqa
     delete_forecast_coverage_download_request,  # noqa
     delete_historical_coverage_download_request,  # noqa
     get_forecast_coverage_download_request,  # noqa
