@@ -38,6 +38,11 @@ def generate_forecast_coverage_configurations(
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "su30-absolute-annual-arpa_v:arpa_fvg-yearly"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["su30-anomaly-thirty_year"],
@@ -58,6 +63,11 @@ def generate_forecast_coverage_configurations(
             time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
+            ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "su30-absolute-annual-arpa_v:arpa_fvg-yearly"
+                ],
             ],
         ),
         ForecastCoverageConfigurationCreate(

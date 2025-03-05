@@ -33,6 +33,11 @@ def generate_historical_coverage_configurations(
             year_period_group=year_period_groups["only_year"],
             thredds_url_pattern="cline_yr/anomalia1yr/{climatic_indicator}_{year_period}_????-????_diff_{reference_period}.nc",
             wms_main_layer_name="{climatic_indicator}_diff",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-absolute-ten_year"],
@@ -47,6 +52,11 @@ def generate_historical_coverage_configurations(
             year_period_group=year_period_groups["only_year"],
             thredds_url_pattern="cline_10yr/{climatic_indicator}_{decade}_ref{reference_period}.nc",
             wms_main_layer_name="{year_period}_avg",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-anomaly-ten_year"],
@@ -61,6 +71,11 @@ def generate_historical_coverage_configurations(
             year_period_group=year_period_groups["only_year"],
             thredds_url_pattern="cline_10yr/{climatic_indicator}_{decade}_ref{reference_period}.nc",
             wms_main_layer_name="{year_period}_avg",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdds-absolute-thirty_year"],
@@ -70,5 +85,10 @@ def generate_historical_coverage_configurations(
             year_period_group=year_period_groups["only_year"],
             thredds_url_pattern="cline_30yr/{climatic_indicator}_{reference_period}.nc",
             wms_main_layer_name="{year_period}_avg",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "cdds-absolute-annual-arpa_v-yearly"
+                ]
+            ],
         ),
     ]

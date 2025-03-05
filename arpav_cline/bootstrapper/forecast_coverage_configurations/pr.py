@@ -42,6 +42,11 @@ def generate_forecast_coverage_configurations(
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
             ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-thirty_year"],
@@ -63,6 +68,11 @@ def generate_forecast_coverage_configurations(
             time_windows=[
                 forecast_time_window_ids["tw1"],
                 forecast_time_window_ids["tw2"],
+            ],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
             ],
         ),
         ForecastCoverageConfigurationCreate(
@@ -91,6 +101,11 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["all_seasons"],
             forecast_model_group=forecast_model_groups["ensemble"],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-annual"],
@@ -108,6 +123,11 @@ def generate_forecast_coverage_configurations(
             ],
             year_period_group=year_period_groups["all_seasons"],
             forecast_model_group=forecast_model_groups["five_models"],
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                ],
+            ],
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
@@ -137,7 +157,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["ensemble"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
                 ],
             ],
         ),
@@ -159,7 +179,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["five_models"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v:arpa_fvg-seasonal"
+                    "pr-absolute-annual-arpa_v:arpa_fvg-seasonal"
                 ],
             ],
         ),
@@ -191,7 +211,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["ensemble"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v:arpa_fvg-yearly"
+                    "pr-absolute-annual-arpa_v:arpa_fvg-yearly"
                 ],
             ],
         ),
@@ -213,7 +233,7 @@ def generate_forecast_coverage_configurations(
             forecast_model_group=forecast_model_groups["five_models"],
             observation_series_configurations=[
                 observation_series_configuration_ids[
-                    "tas-absolute-annual-arpa_v:arpa_fvg-yearly"
+                    "pr-absolute-annual-arpa_v:arpa_fvg-yearly"
                 ],
             ],
         ),
