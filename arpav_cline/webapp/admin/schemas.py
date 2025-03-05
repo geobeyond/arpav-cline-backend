@@ -195,3 +195,32 @@ class SpatialRegionRead(sqlmodel.SQLModel):
     display_name_italian: str
     sort_order: int
     geom: pydantic.Json
+
+
+class ForecastCoverageDownloadRequestRead(sqlmodel.SQLModel):
+    id: int
+    request_datetime: dt.datetime
+    entity_name: str | None
+    is_public_sector: bool
+    download_reason: str
+    climatological_variable: str
+    aggregation_period: str
+    measure_type: str
+    year_period: str
+    climatological_model: str
+    scenario: str
+    time_window: str | None
+
+
+class HistoricalCoverageDownloadRequestRead(sqlmodel.SQLModel):
+    id: int
+    request_datetime: dt.datetime
+    entity_name: str | None
+    is_public_sector: bool
+    download_reason: str
+    climatological_variable: str
+    aggregation_period: str
+    measure_type: str
+    year_period: str
+    decade: str | None
+    reference_period: str | None

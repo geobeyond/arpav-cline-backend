@@ -261,6 +261,19 @@ services:
     volumes:
       - tolgee-db-data:/var/lib/postgresql/data
 
+  analytics:
+    image: metabase/metabase:v0.53.x
+    environment:
+      MB_DB_TYPE: "postgres"
+      MB_DB_DBNAME: "arpav_ppcv"
+      MB_DB_PORT: "5432"
+      MB_DB_USER: "arpav"
+      MB_DB_PASS: "arpavpassword"
+      MB_DB_HOST: "db"
+    ports:
+      - target: 3000
+        published: 3003
+
 
 volumes:
   db-data:
