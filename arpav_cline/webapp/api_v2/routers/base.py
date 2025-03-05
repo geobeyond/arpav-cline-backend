@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=AppInformation)
+@router.get("", response_model=AppInformation)
 async def get_app_info():
     """Return information about the ARPAV-PPCV application."""
     return {

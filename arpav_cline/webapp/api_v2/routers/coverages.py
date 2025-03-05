@@ -217,6 +217,7 @@ def legacy_get_coverage_configuration(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_configuration_identifier: str,
 ):
+    """Return details about a coverage configuration."""
     try:
         category = DataCategory(coverage_configuration_identifier.partition("-")[0])
     except ValueError:
@@ -581,6 +582,7 @@ async def get_forecast_data(
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
+    """Return forecast coverages in their native NetCDF format"""
     if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
         await anyio.to_thread.run_sync(
             db.create_forecast_coverage_download_request,
@@ -664,6 +666,7 @@ async def get_historical_data(
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
+    """Return historical coverages in their native NetCDF format"""
     if (
         coverage := db.get_historical_coverage(session, coverage_identifier)
     ) is not None:
@@ -1124,6 +1127,7 @@ def _get_point_location(raw_coords: str) -> shapely.Point:
 def get_forecast_variable_combinations(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
 ):
+    """Return valid combinations of parameters used to describe forecast data."""
     sections = get_forecast_advanced_section_navigation(db_session)
     return LegacyForecastVariableCombinationsList(
         combinations=[
@@ -1141,6 +1145,7 @@ def get_forecast_variable_combinations(
 def get_historical_variable_combinations(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
 ):
+    """Return valid combinations of parameters used to describe historical data."""
     sections = get_historical_advanced_section_navigation(db_session)
     return LegacyHistoricalVariableCombinationsList(
         combinations=[

@@ -89,6 +89,7 @@ def get_station(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     station_code: str,
 ):
+    """Return details about an observation station."""
     db_station = db.get_observation_station_by_code(db_session, station_code)
     return observations.ObservationStationReadListItem.from_db_instance(
         db_station, request
