@@ -53,5 +53,6 @@ jobs:
             --with-formatter
             --with-tests
             --with-load-tests
+            --with-api-checks
             ${{ env.PUBLISH_IMAGE == 'TRUE' && format('--publish-docker-image {0}:{1}', env.IMAGE_NAME, env.IMAGE_TAG)  || ''}}
           version: 0.9.9

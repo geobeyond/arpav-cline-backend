@@ -1,3 +1,4 @@
+import enum
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,6 +8,33 @@ from .routers.coverages import router as coverages_router
 from .routers.municipalities import router as municipalities_router
 from .routers.observations import router as observations_router
 from .routers.base import router as base_router
+
+
+class WebAppOpenApiTag(enum.Enum):
+    BASE = "base"
+    CLIMATIC_INDICATORS = "climatic_indicators"
+    COVERAGES = "coverages"
+    MUNICIPALITIES = "municipalities"
+    OBSERVATIONS = "observations"
+
+    def get_description(self) -> str:
+        return {
+            self.BASE: "Operations that provide information about this API",
+            self.CLIMATIC_INDICATORS: "Operations related to climatic indicators",
+            self.COVERAGES: (
+                "Operations that deal with coverages of forecast and " "historical data"
+            ),
+            self.MUNICIPALITIES: "Operations related to municipalities",
+            self.OBSERVATIONS: (
+                "Operations related to observation stations and measurements"
+            ),
+        }.get(self)
+
+    def as_app_tag(self) -> dict:
+        return {
+            "name": self.value,
+            "description": self.get_description(),
+        }
 
 
 def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
@@ -25,6 +53,13 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
         },
         servers=[{"url": "/".join((settings.public_url, "api/v2"))}],
         root_path_in_servers=False,
+        openapi_tags=[
+            WebAppOpenApiTag.COVERAGES.as_app_tag(),
+            WebAppOpenApiTag.OBSERVATIONS.as_app_tag(),
+            WebAppOpenApiTag.CLIMATIC_INDICATORS.as_app_tag(),
+            WebAppOpenApiTag.MUNICIPALITIES.as_app_tag(),
+            WebAppOpenApiTag.BASE.as_app_tag(),
+        ],
     )
     app.add_middleware(
         CORSMiddleware,
@@ -37,35 +72,35 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
         base_router,
         prefix="/base",
         tags=[
-            "base",
+            WebAppOpenApiTag.BASE,
         ],
     )
     app.include_router(
         coverages_router,
         prefix="/coverages",
         tags=[
-            "coverages",
+            WebAppOpenApiTag.COVERAGES,
         ],
     )
     app.include_router(
         observations_router,
         prefix="/observations",
         tags=[
-            "observations",
+            WebAppOpenApiTag.OBSERVATIONS,
         ],
     )
     app.include_router(
         municipalities_router,
         prefix="/municipalities",
         tags=[
-            "municipalities",
+            WebAppOpenApiTag.MUNICIPALITIES,
         ],
     )
     app.include_router(
         climaticindicators_router,
         prefix="/climatic-indicators",
         tags=[
-            "climatic-indicators",
+            WebAppOpenApiTag.CLIMATIC_INDICATORS,
         ],
     )
     return app

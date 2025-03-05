@@ -75,6 +75,7 @@ def get_climatic_indicator(
     db_session: Annotated[Session, Depends(dependencies.get_db_session)],
     climatic_indicator_identifier: str,
 ):
+    """Return details about a climatic indicator."""
     db_climatic_indicator = db.get_climatic_indicator_by_identifier(
         db_session, climatic_indicator_identifier
     )
