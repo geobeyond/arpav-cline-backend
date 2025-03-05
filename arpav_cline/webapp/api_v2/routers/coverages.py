@@ -23,7 +23,10 @@ from fastapi import (
     Response,
     status,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    StreamingResponse,
+)
 from sqlmodel import Session
 from starlette.background import BackgroundTask
 
@@ -454,81 +457,92 @@ async def wms_endpoint(
 
     Pass additional relevant WMS query parameters directly to this endpoint.
     """
-    logger.debug(f"{coverage_identifier=}")
-    logger.warning(f"{coverage_identifier=}")
-    try:
-        category = DataCategory(coverage_identifier.partition("-")[0])
-        logger.debug(f"{category=}")
-    except ValueError:
-        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+    query_params = {k.lower(): v for k, v in request.query_params.items()}
+    if query_params.get("request") == "GetMap" and query_params.get("opacity") == "0":
+        logger.debug(
+            "Bypassing THREDDS server and returning a pre-rendered transparent "
+            "image..."
+        )
+        size_ = query_params.get("width", "256")
+        image_path = settings.transparent_images_dir / f"transparent-{size_}.png"
+        response = FileResponse(image_path)
     else:
-        if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
-            if category == DataCategory.FORECAST:
-                cov = db.get_forecast_coverage(session, coverage_identifier)
-            else:  # historical
-                cov = db.get_historical_coverage(session, coverage_identifier)
-        else:
+        try:
+            category = DataCategory(coverage_identifier.partition("-")[0])
+        except ValueError:
             raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-        if cov is not None:
-            base_wms_url = cov.get_wms_base_url(settings.thredds_server)
-            parsed_url = urllib.parse.urlparse(base_wms_url)
-            logger.info(f"{base_wms_url=}")
-            query_params = {k.lower(): v for k, v in request.query_params.items()}
-            logger.debug(f"original query params: {query_params=}")
-            if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
-                query_params = thredds_utils.tweak_wms_get_map_request(
-                    query_params,
-                    ncwms_palette=cov.configuration.climatic_indicator.palette,
-                    ncwms_color_scale_range=(
-                        cov.configuration.climatic_indicator.color_scale_min,
-                        cov.configuration.climatic_indicator.color_scale_max,
-                    ),
-                    uncertainty_visualization_scale_range=(
-                        settings.thredds_server.uncertainty_visualization_scale_range
-                    ),
-                )
-            logger.debug(f"{query_params=}")
-            wms_url = parsed_url._replace(
-                query=urllib.parse.urlencode(
-                    {
-                        **query_params,
-                        "service": "WMS",
-                        "version": version,
-                    }
-                )
-            ).geturl()
-            logger.info(f"{wms_url=}")
-            try:
-                wms_response = await thredds_utils.proxy_request(wms_url, http_client)
-            except httpx.HTTPStatusError as err:
-                logger.exception(
-                    msg=f"THREDDS server replied with an error: {err.response.text}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY, detail=err.response.text
-                )
-            except httpx.HTTPError as err:
-                logger.exception(msg="THREDDS server replied with an error")
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                ) from err
-            else:
-                if query_params.get("request") == "GetCapabilities":
-                    response_content = _modify_capabilities_response(
-                        wms_response.text, str(request.url).partition("?")[0]
-                    )
-                else:
-                    response_content = wms_response.content
-                response = Response(
-                    content=response_content,
-                    status_code=wms_response.status_code,
-                    headers=dict(wms_response.headers),
-                )
-            return response
         else:
-            raise HTTPException(
-                status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-            )
+            if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+                if category == DataCategory.FORECAST:
+                    cov = db.get_forecast_coverage(session, coverage_identifier)
+                else:  # historical
+                    cov = db.get_historical_coverage(session, coverage_identifier)
+            else:
+                raise HTTPException(
+                    400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+                )
+            if cov is not None:
+                base_wms_url = cov.get_wms_base_url(settings.thredds_server)
+                parsed_url = urllib.parse.urlparse(base_wms_url)
+                logger.info(f"{base_wms_url=}")
+                logger.debug(f"original query params: {query_params=}")
+                if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
+                    query_params = thredds_utils.tweak_wms_get_map_request(
+                        query_params,
+                        ncwms_palette=cov.configuration.climatic_indicator.palette,
+                        ncwms_color_scale_range=(
+                            cov.configuration.climatic_indicator.color_scale_min,
+                            cov.configuration.climatic_indicator.color_scale_max,
+                        ),
+                        uncertainty_visualization_scale_range=(
+                            settings.thredds_server.uncertainty_visualization_scale_range
+                        ),
+                    )
+                logger.debug(f"{query_params=}")
+                wms_url = parsed_url._replace(
+                    query=urllib.parse.urlencode(
+                        {
+                            **query_params,
+                            "service": "WMS",
+                            "version": version,
+                        }
+                    )
+                ).geturl()
+                logger.info(f"{wms_url=}")
+                try:
+                    wms_response = await thredds_utils.proxy_request(
+                        wms_url, http_client
+                    )
+                except httpx.HTTPStatusError as err:
+                    logger.exception(
+                        msg=f"THREDDS server replied with an error: {err.response.text}"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=err.response.text,
+                    )
+                except httpx.HTTPError as err:
+                    logger.exception(msg="THREDDS server replied with an error")
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                    ) from err
+                else:
+                    if query_params.get("request") == "GetCapabilities":
+                        response_content = _modify_capabilities_response(
+                            wms_response.text, str(request.url).partition("?")[0]
+                        )
+                    else:
+                        response_content = wms_response.content
+                    response = Response(
+                        content=response_content,
+                        status_code=wms_response.status_code,
+                        headers=dict(wms_response.headers),
+                    )
+            else:
+                raise HTTPException(
+                    status_code=400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
+                )
+    return response
 
 
 @router.get("/forecast-data", response_model=ForecastCoverageDownloadList)
