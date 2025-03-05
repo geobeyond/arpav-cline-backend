@@ -116,6 +116,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     static_dir: Optional[Path] = Path(__file__).parent / "webapp/static"
     thredds_server: ThreddsServerSettings = ThreddsServerSettings()
     palettes_dir: Path = Path(__file__).parents[1] / "data/palettes"
+    transparent_images_dir: Path = Path(__file__).parents[1] / "data/transparents"
     palette_num_stops: int = 5
     prefect: PrefectSettings = PrefectSettings()
     vector_tile_server_base_url: str = "http://localhost:5001/vector-tiles"
