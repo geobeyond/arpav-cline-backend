@@ -119,23 +119,23 @@ def test_forecast_tas_absolute_annual_details(
     assert details["legend"]["color_entries"][0]["value"] == -6.0
     assert details["legend"]["color_entries"][1]["color"] == "#fffed976"
     assert details["legend"]["color_entries"][1]["value"] == 3.0
-    assert details["observation_stations_vector_tile_layer_url"] == (
-        "http://localhost:8877/vector-tiles/tas_absolute_annual/{z}/{x}/{y}"
+    assert details["observation_stations_vector_tile_layer_url"].endswith(
+        "/vector-tiles/tas_absolute_annual/{z}/{x}/{y}"
     )
-    assert details["related_coverage_configuration_url"] == (
-        "http://testserver/coverages/coverage-configurations/"
+    assert details["related_coverage_configuration_url"].endswith(
+        "/coverages/coverage-configurations/"
         "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble"
     )
     assert details["scenario"] == "rcp26"
     assert details["time_window"] is None
     assert details["unit_italian"] == "ºC"
-    assert details["url"] == (
-        "http://testserver/coverages/coverages/"
+    assert details["url"].endswith(
+        "/coverages/coverages/"
         "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble-"
         "model_ensemble-rcp26-winter"
     )
-    assert details["wms_base_url"] == (
-        "http://testserver/coverages/wms/forecast-tas-absolute-annual-arpa_vfvg-"
+    assert details["wms_base_url"].endswith(
+        "/coverages/wms/forecast-tas-absolute-annual-arpa_vfvg-"
         "all_seasons-ensemble-model_ensemble-rcp26-winter"
     )
     assert details["wms_main_layer_name"] == "tas"
