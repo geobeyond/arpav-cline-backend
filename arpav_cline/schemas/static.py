@@ -324,8 +324,9 @@ class HistoricalYearPeriod(str, enum.Enum):
 
 class DatasetType(str, enum.Enum):
     MAIN = "main"
-    LOWER_UNCERTAINTY = "lower_uncertainty"
-    UPPER_UNCERTAINTY = "upper_uncertainty"
+    LOWER_UNCERTAINTY = "forecast_lower_uncertainty"
+    OBSERVATION = "observation"
+    UPPER_UNCERTAINTY = "forecast_upper_uncertainty"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -345,6 +346,7 @@ class DatasetType(str, enum.Enum):
         return {
             self.MAIN: _("main"),
             self.LOWER_UNCERTAINTY: _("lower uncertainty"),
+            self.OBSERVATION: _("observation measurement"),
             self.UPPER_UNCERTAINTY: _("upper uncertainty"),
         }.get(self, self.value)
 
@@ -354,14 +356,16 @@ class DatasetType(str, enum.Enum):
         return {
             self.MAIN: _("main description"),
             self.LOWER_UNCERTAINTY: _("lower uncertainty description"),
+            self.OBSERVATION: _("observation measurement description"),
             self.UPPER_UNCERTAINTY: _("upper uncertainty description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
-            self.LOWER_UNCERTAINTY: 0,
-            self.MAIN: 1,
-            self.UPPER_UNCERTAINTY: 2,
+            self.OBSERVATION: 0,
+            self.LOWER_UNCERTAINTY: 1,
+            self.MAIN: 2,
+            self.UPPER_UNCERTAINTY: 3,
         }.get(self, 0)
 
 

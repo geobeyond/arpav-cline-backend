@@ -977,7 +977,7 @@ def get_forecast_time_series(
         temporal_range = operations.parse_temporal_range(datetime)
         try:
             (
-                coverage_series,
+                forecast_series,
                 observations_series,
             ) = timeseries.get_forecast_coverage_time_series(
                 settings=settings,
@@ -1000,7 +1000,7 @@ def get_forecast_time_series(
             ) from err
         else:
             series = []
-            for forecast_cov_series in coverage_series:
+            for forecast_cov_series in forecast_series:
                 series.append(
                     LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
                 )
