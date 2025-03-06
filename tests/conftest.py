@@ -529,8 +529,6 @@ def sample_real_historical_coverage_configurations(
         generate_cdds_historical_coverage_configurations,
         generate_fd_historical_coverage_configurations,
         generate_hdds_historical_coverage_configurations,
-        generate_fd_historical_coverage_configurations,
-        generate_hdds_historical_coverage_configurations,
         generate_pr_historical_coverage_configurations,
         generate_su30_historical_coverage_configurations,
         generate_tas_historical_coverage_configurations,

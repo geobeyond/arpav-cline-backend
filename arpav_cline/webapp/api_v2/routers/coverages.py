@@ -435,13 +435,14 @@ def deprecated_list_coverage_identifiers(
 def deprecated_get_coverage_identifier(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
+    settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     coverage_identifier: str,
 ):
     """Get coverage details.
 
     Use the /coverages/coverages/{coverage_identifier} endpoint instead.
     """
-    return legacy_get_coverage(request, session, coverage_identifier)
+    return legacy_get_coverage(request, session, settings, coverage_identifier)
 
 
 @router.get("/wms/{coverage_identifier}")
