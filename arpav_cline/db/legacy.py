@@ -36,39 +36,6 @@ logger = logging.getLogger(__name__)
 _FAKE_ID: Final[uuid.UUID] = uuid.UUID("06213c04-6872-4677-a149-a3b84f8da224")
 
 
-def _get_historical_variable_conf_param(
-    all_climatic_indicators: Sequence[climaticindicators.ClimaticIndicator],
-):
-    conf_param = coverages.ConfigurationParameter(
-        id=_FAKE_ID,
-        name="historical_variable",
-        display_name_english="Variable",
-        display_name_italian="Variabile",
-        description_english="Historical variable",
-        description_italian="Variabile historica",
-        allowed_values=[],
-    )
-    seen = set()
-    for indicator in all_climatic_indicators:
-        for historical_cov_conf in indicator.historical_coverage_configurations:
-            if indicator.name not in seen:
-                seen.add(indicator.name)
-                conf_param.allowed_values.append(
-                    coverages.ConfigurationParameterValue(
-                        id=_FAKE_ID,
-                        name=indicator.name,
-                        internal_value=indicator.name,
-                        display_name_english=indicator.display_name_english,
-                        display_name_italian=indicator.display_name_italian,
-                        description_english=indicator.description_english,
-                        description_italian=indicator.description_italian,
-                        sort_order=indicator.sort_order,
-                        configuration_parameter_id=_FAKE_ID,
-                    )
-                )
-    return conf_param
-
-
 def _get_climatological_variable_conf_param(
     all_climatic_indicators: Sequence[climaticindicators.ClimaticIndicator],
 ):
@@ -529,7 +496,6 @@ def legacy_list_configuration_parameters(
         _get_climatological_variable_conf_param(all_climatic_indicators),
         _get_historical_decade_conf_param(),
         _get_historical_reference_period_conf_param(),
-        _get_historical_variable_conf_param(all_climatic_indicators),
         _get_historical_year_period_conf_param(),
         _get_measure_conf_param(all_climatic_indicators),
         _get_scenario_conf_param(),

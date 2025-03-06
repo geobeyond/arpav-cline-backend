@@ -42,7 +42,7 @@ class HistoricalCoverageNavigationSection:
 
 
 class LegacyForecastVariableCombinations(pydantic.BaseModel):
-    variable: str
+    climatological_variable: str
     aggregation_period: str
     measure: str
     other_parameters: dict[str, list[str]]
@@ -60,7 +60,7 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
         if len(section.time_windows) > 0:
             other["time_window"] = [tw.name for tw in section.time_windows]
         return cls(
-            variable=section.climatic_indicator.name,
+            climatological_variable=section.climatic_indicator.name,
             aggregation_period=legacy_schemas.convert_to_aggregation_period(
                 section.climatic_indicator.aggregation_period
             ),
@@ -70,7 +70,7 @@ class LegacyForecastVariableCombinations(pydantic.BaseModel):
 
 
 class LegacyHistoricalVariableCombinations(pydantic.BaseModel):
-    variable: str
+    climatological_variable: str
     aggregation_period: str
     measure: str
     other_parameters: dict[str, list[str]]
@@ -88,7 +88,7 @@ class LegacyHistoricalVariableCombinations(pydantic.BaseModel):
         if len(section.decades) > 0:
             other["decade"] = [d.value for d in section.decades]
         return cls(
-            variable=section.climatic_indicator.name,
+            climatological_variable=section.climatic_indicator.name,
             aggregation_period=legacy_schemas.convert_to_aggregation_period(
                 section.climatic_indicator.aggregation_period
             ),
