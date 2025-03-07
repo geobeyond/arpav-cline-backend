@@ -50,7 +50,7 @@ class CommonListFilterParameters(pydantic.BaseModel):  # noqa: D101
     limit: Annotated[int, pydantic.Field(ge=0, le=100)] = 20
 
 
-class CoverageDownloadAnalyticsParameters(pydantic.BaseModel):
+class DownloadAnalyticsParameters(pydantic.BaseModel):
     entity_name: Annotated[
         Optional[str],
         pydantic.Field(
