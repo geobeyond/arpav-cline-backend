@@ -24,4 +24,4 @@ class TimeSeriesDownloadRequestCreate(pydantic.BaseModel):
     entity_name: Annotated[Optional[str], pydantic.Field(max_length=500)] = None
     is_public_sector: bool
     download_reason: Annotated[str, pydantic.Field(max_length=500)]
-    coords: str
+    coords: Annotated[str, pydantic.Field(max_length=20)]
