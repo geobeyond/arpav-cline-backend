@@ -15,6 +15,7 @@ from ...db import get_engine
 from ...schemas.analytics import (
     ForecastCoverageDownloadRequest,
     HistoricalCoverageDownloadRequest,
+    TimeSeriesDownloadRequest,
 )
 from ...schemas.base import SpatialRegion
 from ...schemas.climaticindicators import ClimaticIndicator
@@ -154,6 +155,9 @@ def create_admin(settings: "ArpavPpcvSettings") -> ArpavPpcvAdmin:
                 ),
                 analytics_views.HistoricalCoverageDownloadRequestView(
                     HistoricalCoverageDownloadRequest
+                ),
+                analytics_views.TimeSeriesDownloadRequestView(
+                    TimeSeriesDownloadRequest
                 ),
             ],
         )

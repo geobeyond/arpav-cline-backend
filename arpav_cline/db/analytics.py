@@ -11,6 +11,8 @@ from ..schemas.analytics import (
     ForecastCoverageDownloadRequestCreate,
     HistoricalCoverageDownloadRequest,
     HistoricalCoverageDownloadRequestCreate,
+    TimeSeriesDownloadRequest,
+    TimeSeriesDownloadRequestCreate,
 )
 from .base import (
     add_substring_filter,
@@ -172,3 +174,81 @@ def delete_historical_coverage_download_request(
         session.commit()
     else:
         raise RuntimeError("Historical coverage download request not found")
+
+
+def get_time_series_download_request(
+    session: sqlmodel.Session,
+    download_request_id: int,
+) -> Optional[TimeSeriesDownloadRequest]:
+    return session.get(TimeSeriesDownloadRequest, download_request_id)
+
+
+def list_time_series_download_requests(
+    session: sqlmodel.Session,
+    *,
+    limit: int = 20,
+    offset: int = 0,
+    include_total: bool = False,
+    climatological_variable_name_filter: Optional[str] = None,
+) -> tuple[Sequence[TimeSeriesDownloadRequest], Optional[int]]:
+    """List existing time series download requests."""
+    statement = sqlmodel.select(TimeSeriesDownloadRequest).order_by(
+        TimeSeriesDownloadRequest.request_datetime  # noqa
+    )
+    if climatological_variable_name_filter is not None:
+        statement = add_substring_filter(
+            statement,
+            climatological_variable_name_filter,
+            TimeSeriesDownloadRequest.climatological_variable,
+        )
+    items = session.exec(statement.offset(offset).limit(limit)).all()
+    num_items = get_total_num_records(session, statement) if include_total else None
+    return items, num_items
+
+
+def collect_all_time_series_download_requests(
+    session: sqlmodel.Session,
+    climatological_variable_name_filter: Optional[str] = None,
+) -> Sequence[TimeSeriesDownloadRequest]:
+    _, num_total = list_time_series_download_requests(
+        session,
+        limit=1,
+        include_total=True,
+        climatological_variable_name_filter=climatological_variable_name_filter,
+    )
+    result, _ = list_time_series_download_requests(
+        session,
+        limit=num_total,
+        include_total=False,
+        climatological_variable_name_filter=climatological_variable_name_filter,
+    )
+    return result
+
+
+def create_time_series_download_request(
+    session: sqlmodel.Session,
+    download_request_create: TimeSeriesDownloadRequestCreate,
+) -> TimeSeriesDownloadRequest:
+    """Create a new time series download request."""
+    db_download_request = TimeSeriesDownloadRequest(
+        **download_request_create.model_dump(),
+    )
+    session.add(db_download_request)
+    try:
+        session.commit()
+    except sqlalchemy.exc.DBAPIError:
+        raise
+    else:
+        session.refresh(db_download_request)
+    return db_download_request
+
+
+def delete_time_series_download_request(
+    session: sqlmodel.Session, download_request_id: int
+) -> None:
+    db_item = get_time_series_download_request(session, download_request_id)
+    if db_item is not None:
+        session.delete(db_item)
+        session.commit()
+    else:
+        raise RuntimeError("Time series download request not found")
