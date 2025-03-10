@@ -720,12 +720,6 @@ class VariableMenuTreeCombination(TypedDict):
     values: list[ConfigurationParameterValue]
 
 
-class HistoricalVariableMenuTree(TypedDict):
-    historical_variable: ConfigurationParameterValue
-    aggregation_period: ConfigurationParameterValue
-    combinations: dict[str, VariableMenuTreeCombination]
-
-
 class ForecastModelClimaticIndicatorLink(sqlmodel.SQLModel, table=True):
     __table_args__ = (
         sqlalchemy.ForeignKeyConstraint(
@@ -1403,7 +1397,6 @@ class LegacyConfParamFilterValues:
     climatological_variable: Optional[str] = None
     historical_decade: Optional[static.HistoricalDecade] = None
     historical_reference_period: Optional[static.HistoricalDecade] = None
-    historical_variable: Optional[str] = None
     historical_year_period: Optional[static.HistoricalYearPeriod] = None
     measure: Optional[static.MeasureType] = None
     scenario: Optional[static.ForecastScenario] = None

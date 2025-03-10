@@ -41,7 +41,7 @@ def convert_to_uncertainty_type(dataset_type: static.DatasetType) -> Optional[st
     }.get(dataset_type, dataset_type.value)
 
 
-def convert_overview_historical_variable(
+def convert_overview_climatological_variable(
     climatic_indicator: "ClimaticIndicator",
 ) -> str:
     return {

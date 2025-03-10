@@ -461,10 +461,10 @@ def legacy_list_historical_coverage_configurations(
                 == conf_param_filter.climatic_indicator.id
             )
         else:
-            if conf_param_filter.historical_variable is not None:
+            if conf_param_filter.climatological_variable is not None:
                 statement = statement.where(
                     ClimaticIndicator.name  # noqa
-                    == conf_param_filter.historical_variable
+                    == conf_param_filter.climatological_variable
                 )
             if conf_param_filter.measure is not None:
                 statement = statement.where(

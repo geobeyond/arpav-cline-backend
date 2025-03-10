@@ -679,7 +679,7 @@ class LegacyTimeSeries(pydantic.BaseModel):
             "coverage_identifier": series.overview_series.identifier,
             "coverage_configuration": series.overview_series.configuration.identifier,
             "archive": "barometro_climatico",
-            "historical_variable": legacy.convert_overview_historical_variable(
+            "climatological_variable": legacy.convert_overview_climatological_variable(
                 series.overview_series.configuration.climatic_indicator
             ),
         }

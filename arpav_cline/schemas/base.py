@@ -29,7 +29,6 @@ class CoreConfParamName(enum.Enum):
     ARCHIVE = "archive"
     CLIMATOLOGICAL_MODEL = "climatological_model"
     CLIMATOLOGICAL_VARIABLE = "climatological_variable"
-    HISTORICAL_VARIABLE = "historical_variable"
     HISTORICAL_YEAR_PERIOD = "historical_year_period"
     MEASURE = "measure"
     SCENARIO = "scenario"
@@ -56,21 +55,6 @@ class Season(enum.Enum):
 
 UNCERTAINTY_TIME_SERIES_PATTERN = "**UNCERTAINTY**"
 RELATED_TIME_SERIES_PATTERN = "**RELATED**"
-
-
-class ObservationAggregationType(str, enum.Enum):
-    MONTHLY = "MONTHLY"
-    SEASONAL = "SEASONAL"
-    YEARLY = "YEARLY"
-
-    def get_display_name(self, locale: babel.Locale) -> str:
-        translations = get_translations(locale)
-        _ = translations.gettext
-        return {
-            self.MONTHLY.name: _("monthly"),
-            self.SEASONAL.name: _("seasonal"),
-            self.YEARLY.name: _("yearly"),
-        }[self.name] or self.name
 
 
 class StaticCoverageSeriesParameter(enum.Enum):

@@ -178,7 +178,6 @@ def convert_conf_params_filter(
 
     historical_decade = None
     historical_reference_period = None
-    historical_variable = None
     historical_year_period = None
 
     measure = None
@@ -224,8 +223,6 @@ def convert_conf_params_filter(
                     f"Could not parse {param_value!r} as an historical reference "
                     f"period, skipping..."
                 )
-        elif param_name == "historical_variable":
-            historical_variable = param_value
         elif param_name == "historical_year_period":
             try:
                 historical_year_period = static.HistoricalYearPeriod(param_value)
@@ -279,7 +276,6 @@ def convert_conf_params_filter(
         historical_decade=historical_decade,
         historical_reference_period=historical_reference_period,
         historical_year_period=historical_year_period,
-        historical_variable=historical_variable,
         measure=measure,
         scenario=scenario,
         time_window=time_window,
