@@ -144,6 +144,8 @@ class HistoricalCoverageConfigurationRead(sqlmodel.SQLModel):
     reference_period: Optional[HistoricalReferencePeriod]
     decades: list[HistoricalDecade]
     observation_series_configurations: list[int]
+    include_in_advanced_section_combinations: bool
+    include_in_simple_section_combinations: bool
 
 
 class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
@@ -164,6 +166,8 @@ class ForecastCoverageConfigurationRead(sqlmodel.SQLModel):
     scenarios: list[ForecastScenario]
     time_windows: list[int]
     observation_series_configurations: list[int]
+    include_in_advanced_section_combinations: bool
+    include_in_simple_section_combinations: bool
 
 
 class ForecastModelRead(sqlmodel.SQLModel):

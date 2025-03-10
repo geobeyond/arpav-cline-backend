@@ -212,22 +212,22 @@ class RelatedSpatialRegionField(starlette_admin.EnumField):
         self.choices_loader = RelatedSpatialRegionField.choices_loader
         super().__post_init__()
 
-    async def serialize_value(
-        self, request: Request, value: Any, action: starlette_admin.RequestAction
-    ) -> Any:
-        session = request.state.session
-        if self.multiple:
-            instances = [
-                await anyio.to_thread.run_sync(db.get_spatial_region, session, v)
-                for v in value
-            ]
-            result = [self._get_label(i.id, request) for i in instances]
-        else:
-            instance = await anyio.to_thread.run_sync(
-                db.get_spatial_region, session, value
-            )
-            result = self._get_label(instance.id, request)
-        return result
+    # async def serialize_value(
+    #     self, request: Request, value: Any, action: starlette_admin.RequestAction
+    # ) -> Any:
+    #     session = request.state.session
+    #     if self.multiple:
+    #         instances = [
+    #             await anyio.to_thread.run_sync(db.get_spatial_region, session, v)
+    #             for v in value
+    #         ]
+    #         result = [self._get_label(i.id, request) for i in instances]
+    #     else:
+    #         instance = await anyio.to_thread.run_sync(
+    #             db.get_spatial_region, session, value
+    #         )
+    #         result = self._get_label(instance.id, request)
+    #     return result
 
     @staticmethod
     def choices_loader(request: Request):
@@ -257,22 +257,24 @@ class RelatedClimaticIndicatorField(starlette_admin.EnumField):
         self.choices_loader = RelatedClimaticIndicatorField.choices_loader
         super().__post_init__()
 
-    async def serialize_value(
-        self, request: Request, value: Any, action: starlette_admin.RequestAction
-    ) -> Any:
-        session = request.state.session
-        if self.multiple:
-            instances = [
-                await anyio.to_thread.run_sync(db.get_climatic_indicator, session, v)
-                for v in value
-            ]
-            result = [self._get_label(i.id, request) for i in instances]
-        else:
-            instance = await anyio.to_thread.run_sync(
-                db.get_climatic_indicator, session, value
-            )
-            result = self._get_label(instance.id, request)
-        return result
+    # async def serialize_value(
+    #     self, request: Request, value: Any, action: starlette_admin.RequestAction
+    # ) -> Any:
+    #     logger.debug(f"relatedclimaticindicatorfield.serialize_value - value: {value} - action: {action}")
+    #     session = request.state.session
+    #     if self.multiple:
+    #         instances = [
+    #             await anyio.to_thread.run_sync(db.get_climatic_indicator, session, v)
+    #             for v in value
+    #         ]
+    #         result = [self._get_label(i.id, request) for i in instances]
+    #     else:
+    #         instance = await anyio.to_thread.run_sync(
+    #             db.get_climatic_indicator, session, value
+    #         )
+    #         result = self._get_label(instance.id, request)
+    #     logger.debug(f"inside relatedclimaticindicatorfield.serialize_value - result: {result}")
+    #     return result
 
     @staticmethod
     def choices_loader(request: Request):

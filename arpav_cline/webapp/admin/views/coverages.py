@@ -550,6 +550,8 @@ class ForecastCoverageConfigurationView(ModelView):
 
     exclude_fields_from_list = (
         "id",
+        "include_in_advanced_section_combinations",
+        "include_in_simple_section_combinations",
         "identifier",
         "netcdf_main_dataset_name",
         "thredds_url_pattern",
@@ -572,6 +574,12 @@ class ForecastCoverageConfigurationView(ModelView):
     fields = (
         starlette_admin.IntegerField("id"),
         starlette_admin.StringField("identifier", read_only=True),
+        starlette_admin.BooleanField(
+            "include_in_advanced_section_combinations", required=True
+        ),
+        starlette_admin.BooleanField(
+            "include_in_simple_section_combinations", required=True
+        ),
         fields.RelatedClimaticIndicatorField(
             "climatic_indicator",
             help_text="climatic indicator",
@@ -709,6 +717,12 @@ class ForecastCoverageConfigurationView(ModelView):
                     observation_series_configurations=data[
                         "observation_series_configurations"
                     ],
+                    include_in_advanced_section_combinations=data[
+                        "include_in_advanced_section_combinations"
+                    ],
+                    include_in_simple_section_combinations=data[
+                        "include_in_simple_section_combinations"
+                    ],
                 )
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
@@ -755,6 +769,12 @@ class ForecastCoverageConfigurationView(ModelView):
                     observation_series_configurations=data.get(
                         "observation_series_configurations"
                     ),
+                    include_in_advanced_section_combinations=data[
+                        "include_in_advanced_section_combinations"
+                    ],
+                    include_in_simple_section_combinations=data[
+                        "include_in_simple_section_combinations"
+                    ],
                 )
             )
             db_forecast_coverage_configuration = await anyio.to_thread.run_sync(
@@ -818,6 +838,8 @@ class HistoricalCoverageConfigurationView(ModelView):
     exclude_fields_from_list = (
         "decades",
         "id",
+        "include_in_advanced_section_combinations",
+        "include_in_simple_section_combinations",
         "identifier",
         "netcdf_main_dataset_name",
         "observation_series_configurations",
@@ -834,6 +856,12 @@ class HistoricalCoverageConfigurationView(ModelView):
     fields = (
         starlette_admin.IntegerField("id"),
         starlette_admin.StringField("identifier", read_only=True),
+        starlette_admin.BooleanField(
+            "include_in_advanced_section_combinations", required=True
+        ),
+        starlette_admin.BooleanField(
+            "include_in_simple_section_combinations", required=True
+        ),
         starlette_admin.StringField(
             "netcdf_main_dataset_name",
             required=True,
@@ -928,6 +956,12 @@ class HistoricalCoverageConfigurationView(ModelView):
                     observation_series_configurations=data[
                         "observation_series_configurations"
                     ],
+                    include_in_advanced_section_combinations=data[
+                        "include_in_advanced_section_combinations"
+                    ],
+                    include_in_simple_section_combinations=data[
+                        "include_in_simple_section_combinations"
+                    ],
                 )
             )
             db_historical_coverage_configuration = await anyio.to_thread.run_sync(
@@ -955,6 +989,12 @@ class HistoricalCoverageConfigurationView(ModelView):
                     year_period_group=data.get("year_period_group"),
                     observation_series_configurations=data[
                         "observation_series_configurations"
+                    ],
+                    include_in_advanced_section_combinations=data[
+                        "include_in_advanced_section_combinations"
+                    ],
+                    include_in_simple_section_combinations=data[
+                        "include_in_simple_section_combinations"
                     ],
                 )
             )
