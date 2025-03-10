@@ -1,14 +1,19 @@
 from .analytics import (
     collect_all_forecast_coverage_download_requests,  # noqa
     collect_all_historical_coverage_download_requests,  # noqa
+    collect_all_time_series_download_requests,  # noqa
     create_forecast_coverage_download_request,  # noqa
     create_historical_coverage_download_request,  # noqa
+    create_time_series_download_request,  # noqa
     delete_forecast_coverage_download_request,  # noqa
     delete_historical_coverage_download_request,  # noqa
+    delete_time_series_download_request,  # noqa
     get_forecast_coverage_download_request,  # noqa
     get_historical_coverage_download_request,  # noqa
+    get_time_series_download_request,  # noqa
     list_forecast_coverage_download_requests,  # noqa
     list_historical_coverage_download_requests,  # noqa
+    list_time_series_download_requests,  # noqa
 )
 
 from .climaticindicators import (
