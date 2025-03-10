@@ -293,6 +293,7 @@ def get_nearby_observation_station_time_series(
     if nearby_station is not None:
         result = dataseries.ObservationStationDataSeries(
             observation_series_configuration=observation_series_configuration,
+            dataset_type=static.DatasetType.OBSERVATION,
             observation_station=nearby_station,
             processing_method=static.ObservationTimeSeriesProcessingMethod.NO_PROCESSING,
             location=location,
@@ -600,6 +601,7 @@ def _get_forecast_coverage_observation_time_series(
                     series = dataseries.ObservationStationDataSeries(
                         observation_series_configuration=observation_series_conf,
                         observation_station=observation_data_series.observation_station,
+                        dataset_type=observation_data_series.dataset_type,
                         processing_method=processing_method,
                         location=point_geom,
                     )

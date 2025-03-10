@@ -184,6 +184,7 @@ class ForecastDataSeries:
     def get_legacy_info(self) -> dict:
         return {
             "coverage_identifier": self.coverage.identifier,
+            "dataset_type": self.dataset_type,
             "coverage_configuration": self.coverage.configuration.identifier,
             "aggregation_period": (
                 self.coverage.configuration.climatic_indicator.aggregation_period.value
@@ -203,6 +204,7 @@ class ForecastDataSeries:
 class ObservationStationDataSeries:
     observation_series_configuration: "ObservationSeriesConfiguration"
     observation_station: "ObservationStation"
+    dataset_type: static.DatasetType
     processing_method: static.ObservationTimeSeriesProcessingMethod
     location: shapely.Point
     processing_method_info: Optional[dict] = None
@@ -237,6 +239,7 @@ class ObservationStationDataSeries:
             "aggregation_period": (
                 self.observation_series_configuration.climatic_indicator.aggregation_period.value
             ),
+            "dataset_type": self.dataset_type,
             "climatological_variable": self.observation_series_configuration.climatic_indicator.name,
             "measure": self.observation_series_configuration.climatic_indicator.measure_type.value,
             "measurement_aggregation_type": self.observation_series_configuration.measurement_aggregation_type.value,
@@ -286,6 +289,7 @@ class HistoricalDataSeries:
         info = {
             "coverage_identifier": self.coverage.identifier,
             "coverage_configuration": self.coverage.configuration.identifier,
+            "dataset_type": self.dataset_type,
             "aggregation_period": (
                 self.coverage.configuration.climatic_indicator.aggregation_period.value
             ),
