@@ -69,10 +69,7 @@ from ....schemas.static import (
 )
 from ....schemas.dataseries import MannKendallParameters
 from ... import dependencies
-from ..schemas.analytics import (
-    TimeSeriesDownloadRequestCreate as PublicTimeSeriesDownloadRequestCreateCreate,
-    TimeSeriesDownloadRequestRead,
-)
+from ..schemas.analytics import TimeSeriesDownloadRequestRead
 from ..schemas.coverages import (
     ForecastCoverageDownloadList,
     HistoricalCoverageDownloadList,
@@ -1189,16 +1186,17 @@ def get_historical_variable_combinations(
     )
 
 
-@router.post(
+@router.get(
     "/time-series-download-request/{coverage_identifier}",
     response_model=TimeSeriesDownloadRequestRead,
 )
-def create_time_series_download_request(
+def notify_time_series_download_request(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     coverage_identifier: str,
-    public_download_request_create: PublicTimeSeriesDownloadRequestCreateCreate,
+    analytics_params: Annotated[dependencies.DownloadAnalyticsParameters, Depends()],
+    coords: Annotated[str, Query(max_length=20)],
 ) -> TimeSeriesDownloadRequestRead:
-    """Create a new download request for time series data."""
+    """Notify backend of a download request for time series data for a coverage."""
     raw_category = coverage_identifier.split("-")[0]
     try:
         data_category = DataCategory(raw_category)
@@ -1213,12 +1211,12 @@ def create_time_series_download_request(
         else:
             cov = db.get_historical_coverage(session, coverage_identifier)
         if cov is not None:
-            geom = shapely.io.from_wkt(public_download_request_create.coords)
+            geom = shapely.io.from_wkt(coords)
             download_request_create = TimeSeriesDownloadRequestCreate(
                 request_datetime=dt.datetime.now(tz=dt.timezone.utc),
-                entity_name=public_download_request_create.entity_name,
-                is_public_sector=public_download_request_create.is_public_sector,
-                download_reason=public_download_request_create.download_reason,
+                entity_name=analytics_params.entity_name,
+                is_public_sector=analytics_params.is_public_sector,
+                download_reason=analytics_params.download_reason,
                 climatological_variable=cov.configuration.climatic_indicator.name,
                 aggregation_period=cov.configuration.climatic_indicator.aggregation_period.value,
                 measure_type=cov.configuration.climatic_indicator.measure_type.value,

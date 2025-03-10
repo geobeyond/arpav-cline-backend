@@ -1,8 +1,4 @@
 import datetime as dt
-from typing import (
-    Annotated,
-    Optional,
-)
 import pydantic
 
 
@@ -18,10 +14,3 @@ class TimeSeriesDownloadRequestRead(pydantic.BaseModel):
     data_category: str
     longitude: float
     latitude: float
-
-
-class TimeSeriesDownloadRequestCreate(pydantic.BaseModel):
-    entity_name: Annotated[Optional[str], pydantic.Field(max_length=500)] = None
-    is_public_sector: bool
-    download_reason: Annotated[str, pydantic.Field(max_length=500)]
-    coords: Annotated[str, pydantic.Field(max_length=20)]
