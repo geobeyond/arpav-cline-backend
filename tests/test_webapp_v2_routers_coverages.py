@@ -1,3 +1,4 @@
+import itertools
 import random
 import typing
 
@@ -9,8 +10,6 @@ from arpav_cline import db
 
 if typing.TYPE_CHECKING:
     from arpav_cline.schemas import coverages
-
-random.seed(0)
 
 
 def test_coverage_configurations_list(
@@ -141,3 +140,145 @@ def test_forecast_tas_absolute_annual_details(
     assert details["wms_main_layer_name"] == "tas"
     assert details["wms_secondary_layer_name"] is None
     assert details["year_period"] == "winter"
+
+
+@pytest.mark.parametrize(
+    "navigation_section",
+    [
+        pytest.param(None),
+        pytest.param("advanced"),
+        pytest.param("simple"),
+    ],
+)
+def test_forecast_variable_combinations(
+    test_client_v2_app: httpx.Client,
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
+    navigation_section,
+):
+    """
+    Ensure combinations can be used to create a coverage.
+
+    In order to keep this test from taking forever to run (it can take up to
+    10 mins to test all coverages that result from the bootstrap), we randomly
+    select 10 coverages to test.
+    In case of a failure, the test output should provide the necessary info for
+    being able to replicate it
+    """
+    params = (
+        None
+        if navigation_section is None
+        else {"navigation_section": navigation_section}
+    )
+    response = test_client_v2_app.get(
+        test_client_v2_app.app.url_path_for(
+            "get_forecast_variable_combinations",
+        ),
+        params=params,
+    )
+    assert response.status_code == 200
+    details = response.json()
+    all_possible_values = []
+    for combination in details["combinations"]:
+        coverage_listing_params = [
+            f"{k}:{v}" for k, v in combination.items() if k != "other_parameters"
+        ]
+        other_names = list(
+            combination["other_parameters"].keys()
+        )  # this only works because dicts are ordered now
+        for combined_params in itertools.product(
+            *combination["other_parameters"].values()
+        ):
+            possible_values = coverage_listing_params[:]
+            for idx, param in enumerate(combined_params):
+                possible_values.append(f"{other_names[idx]}:{param}")
+            all_possible_values.append(possible_values)
+    tested_coverages = []
+    while len(tested_coverages) < 10:
+        chosen_index = random.choice(list(range(len(all_possible_values))))
+        chosen = all_possible_values[chosen_index]
+        coverage_list_response = test_client_v2_app.get(
+            test_client_v2_app.app.url_path_for("legacy_list_coverages"),
+            params={"possible_value": chosen},
+        )
+        assert coverage_list_response.status_code == 200
+        details = coverage_list_response.json()
+        for item in details["items"]:
+            if random.random() < 0.05:  # there is a 5% chance we test this
+                coverage_detail_url = item["url"]
+                coverage_detail_response = test_client_v2_app.get(coverage_detail_url)
+                print(coverage_detail_url)
+                assert coverage_detail_response.status_code == 200
+                tested_coverages.append(coverage_detail_url)
+
+
+@pytest.mark.parametrize(
+    "navigation_section",
+    [
+        pytest.param(None),
+        pytest.param("advanced"),
+        pytest.param("simple"),
+    ],
+)
+def test_historical_variable_combinations(
+    test_client_v2_app: httpx.Client,
+    sample_real_historical_coverage_configurations: list[
+        "coverages.HistoricalCoverageConfiguration"
+    ],
+    navigation_section,
+):
+    """
+    Ensure combinations can be used to create a coverage.
+
+    In order to keep this test from taking forever to run (it can take up to
+    10 mins to test all coverages that result from the bootstrap), we randomly
+    select 10 coverages to test.
+    In case of a failure, the test output should provide the necessary info for
+    being able to replicate it
+    """
+    params = (
+        None
+        if navigation_section is None
+        else {"navigation_section": navigation_section}
+    )
+    response = test_client_v2_app.get(
+        test_client_v2_app.app.url_path_for(
+            "get_historical_variable_combinations",
+        ),
+        params=params,
+    )
+    assert response.status_code == 200
+    details = response.json()
+    all_possible_values = []
+    for combination in details["combinations"]:
+        coverage_listing_params = [
+            f"{k}:{v}" for k, v in combination.items() if k != "other_parameters"
+        ]
+        other_names = list(
+            combination["other_parameters"].keys()
+        )  # this only works because dicts are ordered now
+        for combined_params in itertools.product(
+            *combination["other_parameters"].values()
+        ):
+            possible_values = coverage_listing_params[:]
+            for idx, param in enumerate(combined_params):
+                possible_values.append(f"{other_names[idx]}:{param}")
+            all_possible_values.append(possible_values)
+    tested_coverages = []
+    while len(tested_coverages) < 10:
+        chosen_index = random.choice(list(range(len(all_possible_values))))
+        chosen = all_possible_values[chosen_index]
+        coverage_list_response = test_client_v2_app.get(
+            test_client_v2_app.app.url_path_for("legacy_list_coverages"),
+            params={"possible_value": chosen},
+        )
+        assert coverage_list_response.status_code == 200
+        details = coverage_list_response.json()
+        for item in details["items"]:
+            if random.random() < 0.05:  # there is a 5% chance we test this
+                coverage_detail_url = item["url"]
+                coverage_detail_response = test_client_v2_app.get(coverage_detail_url)
+                print(coverage_detail_url)
+                assert coverage_detail_response.status_code == 200
+                tested_coverages.append(coverage_detail_url)

@@ -504,6 +504,7 @@ def get_historical_coverage(
     session: sqlmodel.Session, identifier: str
 ) -> Optional[HistoricalCoverageInternal]:
     parts = identifier.split("-")
+    logger.debug(f"{parts=}")
     decade = None
     year_period = None
     # historical cov conf has either 6 or 7 parts, then we have the year period and maybe a decade
@@ -515,18 +516,22 @@ def get_historical_coverage(
     result = None
     if len(parts) >= 7 and parts[0] == DataCategory.HISTORICAL.value:
         possible_seven_part_historical_cov_conf_identifier = "-".join(parts[:7])
+        logger.debug(f"{possible_seven_part_historical_cov_conf_identifier=}")
         cov_conf = get_historical_coverage_configuration_by_identifier(
             session, possible_seven_part_historical_cov_conf_identifier
         )
+        logger.debug(f"{cov_conf.identifier if cov_conf else None=}")
         if cov_conf is not None:
-            year_period_value = parts[8]
+            year_period_value = parts[7]
+            logger.debug(f"{year_period_value=}")
             try:
                 year_period = HistoricalYearPeriod(year_period_value)
             except ValueError:
                 pass
             else:
-                if len(parts) > 9:
-                    decade_value = parts[9]
+                if len(parts) > 8:
+                    decade_value = parts[8]
+                    logger.debug(f"{decade_value=}")
                     try:
                         decade = HistoricalDecade(decade_value)
                     except ValueError:
@@ -543,7 +548,7 @@ def get_historical_coverage(
                 except ValueError:
                     pass
                 else:
-                    if len(parts) > 8:
+                    if len(parts) > 7:
                         decade_value = parts[7]
                         try:
                             decade = HistoricalDecade(decade_value)
