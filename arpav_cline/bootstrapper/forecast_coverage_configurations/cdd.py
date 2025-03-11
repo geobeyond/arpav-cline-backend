@@ -17,6 +17,8 @@ def generate_forecast_coverage_configurations(
     return [
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdd-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
+            include_in_simple_section_combinations=True,
             netcdf_main_dataset_name="consecutive_dry_days_index_per_time_period",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/eca_{climatic_indicator}_an_avgagree_"
@@ -39,6 +41,7 @@ def generate_forecast_coverage_configurations(
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["cdd-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name="consecutive_dry_days_index_per_time_period",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/eca_{climatic_indicator}_an_"

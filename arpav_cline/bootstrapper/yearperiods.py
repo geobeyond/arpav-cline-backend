@@ -77,12 +77,27 @@ def generate_historical_year_period_groups() -> list[HistoricalYearPeriodGroupCr
             ],
         ),
         HistoricalYearPeriodGroupCreate(
+            name="all_year_and_seasons",
+            display_name_english="All year and seasons",
+            display_name_italian="Tutto l'anno e le stagioni",
+            description_english="Only year and seasons description",
+            description_italian="Tutto l'anno e le stagioni descrizione",
+            sort_order=2,
+            year_periods=[
+                HistoricalYearPeriod.ALL_YEAR,
+                HistoricalYearPeriod.WINTER,
+                HistoricalYearPeriod.SPRING,
+                HistoricalYearPeriod.SUMMER,
+                HistoricalYearPeriod.AUTUMN,
+            ],
+        ),
+        HistoricalYearPeriodGroupCreate(
             name="all_months",
             display_name_english="All months",
             display_name_italian="Tutti i mesi",
             description_english="All seasons description",
             description_italian="Descrizione di tutti i mesi",
-            sort_order=2,
+            sort_order=3,
             year_periods=[
                 HistoricalYearPeriod.JANUARY,
                 HistoricalYearPeriod.FEBRUARY,
@@ -104,7 +119,7 @@ def generate_historical_year_period_groups() -> list[HistoricalYearPeriodGroupCr
             display_name_italian="Tutti i periodi",
             description_english="All periods description",
             description_italian="Tutti i periodi descrizzione",
-            sort_order=3,
+            sort_order=4,
             year_periods=[
                 HistoricalYearPeriod.ALL_YEAR,
                 HistoricalYearPeriod.WINTER,

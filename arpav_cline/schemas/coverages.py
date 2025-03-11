@@ -1009,8 +1009,8 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     forecast_model_group: int
     time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
-    include_in_advanced_section_combinations: bool
-    include_in_simple_section_combinations: bool
+    include_in_advanced_section_combinations: bool = False
+    include_in_simple_section_combinations: bool = False
 
 
 class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
@@ -1307,8 +1307,8 @@ class HistoricalCoverageConfigurationCreate(sqlmodel.SQLModel):
     decades: Optional[list[static.HistoricalDecade]] = None
     year_period_group: int
     observation_series_configurations: Optional[list[int]] = None
-    include_in_advanced_section_combinations: bool
-    include_in_simple_section_combinations: bool
+    include_in_advanced_section_combinations: bool = False
+    include_in_simple_section_combinations: bool = False
 
 
 class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
