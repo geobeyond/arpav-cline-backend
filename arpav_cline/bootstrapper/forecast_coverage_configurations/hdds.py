@@ -19,6 +19,7 @@ def generate_forecast_coverage_configurations(
     return [
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hdds-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name="{climatic_indicator}",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/{climatic_indicator}_an_20oc_"
@@ -46,6 +47,7 @@ def generate_forecast_coverage_configurations(
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hdds-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name="{climatic_indicator}",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/{climatic_indicator}_an_20oc_"
@@ -72,6 +74,7 @@ def generate_forecast_coverage_configurations(
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hdds-absolute-annual"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name="{climatic_indicator}",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/{climatic_indicator}_20oc_avg_"
@@ -104,6 +107,7 @@ def generate_forecast_coverage_configurations(
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hdds-absolute-annual"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name="{climatic_indicator}",
             thredds_url_pattern=(
                 "{forecast_model_base_path}/{climatic_indicator}_20oc_"

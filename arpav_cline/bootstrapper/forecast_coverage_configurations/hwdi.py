@@ -17,6 +17,7 @@ def generate_forecast_coverage_configurations(
     return [
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hwdi-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name=(
                 "heat_wave_duration_index_wrt_mean_of_reference_period"
             ),
@@ -46,6 +47,7 @@ def generate_forecast_coverage_configurations(
         ),
         ForecastCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["hwdi-anomaly-thirty_year"],
+            include_in_advanced_section_combinations=True,
             netcdf_main_dataset_name=(
                 "heat_wave_duration_index_wrt_mean_of_reference_period"
             ),

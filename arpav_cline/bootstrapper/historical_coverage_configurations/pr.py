@@ -14,6 +14,8 @@ def generate_historical_coverage_configurations(
     return [
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
+            include_in_advanced_section_combinations=True,
+            include_in_simple_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}",
             year_period_group=year_period_groups["only_year"],
@@ -27,6 +29,8 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
+            include_in_advanced_section_combinations=True,
+            include_in_simple_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}",
             year_period_group=year_period_groups["all_seasons"],
@@ -40,6 +44,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-annual"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}",
             year_period_group=year_period_groups["all_months"],
@@ -53,10 +58,27 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-annual"],
+            include_in_advanced_section_combinations=True,
+            include_in_simple_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}_pdiff",
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
-            year_period_group=year_period_groups["all_periods"],
+            year_period_group=year_period_groups["all_year_and_seasons"],
+            thredds_url_pattern="cline_yr/anomalia1yr/{climatic_indicator}_{year_period}_????-????_diff_{reference_period}.nc",
+            wms_main_layer_name="{climatic_indicator}_pdiff",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-monthly"
+                ],
+            ],
+        ),
+        HistoricalCoverageConfigurationCreate(
+            climatic_indicator_id=climatic_indicator_ids["pr-anomaly-annual"],
+            include_in_advanced_section_combinations=True,
+            spatial_region_id=spatial_region_ids["arpa_v"],
+            netcdf_main_dataset_name="{climatic_indicator}_pdiff",
+            reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
+            year_period_group=year_period_groups["all_months"],
             thredds_url_pattern="cline_yr/anomalia1yr/{climatic_indicator}_{year_period}_????-????_diff_{reference_period}.nc",
             wms_main_layer_name="{climatic_indicator}_pdiff",
             observation_series_configurations=[
@@ -67,6 +89,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-ten_year"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_avg",
             decades=[
@@ -86,6 +109,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-ten_year"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_diffavg_{reference_period}",
             decades=[
@@ -105,10 +129,27 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["pr-absolute-thirty_year"],
+            include_in_advanced_section_combinations=True,
+            include_in_simple_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_avg",
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
-            year_period_group=year_period_groups["all_periods"],
+            year_period_group=year_period_groups["all_year_and_seasons"],
+            thredds_url_pattern="cline_30yr/{climatic_indicator}_{reference_period}.nc",
+            wms_main_layer_name="{year_period}_avg",
+            observation_series_configurations=[
+                observation_series_configuration_ids[
+                    "pr-absolute-annual-arpa_v:arpa_fvg-monthly"
+                ],
+            ],
+        ),
+        HistoricalCoverageConfigurationCreate(
+            climatic_indicator_id=climatic_indicator_ids["pr-absolute-thirty_year"],
+            include_in_advanced_section_combinations=True,
+            spatial_region_id=spatial_region_ids["arpa_v"],
+            netcdf_main_dataset_name="{year_period}_avg",
+            reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
+            year_period_group=year_period_groups["all_months"],
             thredds_url_pattern="cline_30yr/{climatic_indicator}_{reference_period}.nc",
             wms_main_layer_name="{year_period}_avg",
             observation_series_configurations=[

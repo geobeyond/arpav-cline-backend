@@ -93,10 +93,7 @@ from ...frontendutils.schemas import (
     LegacyHistoricalVariableCombinations,
     LegacyHistoricalMenuTranslations,
 )
-from ...frontendutils.navigation import (
-    get_forecast_advanced_section_navigation,
-    get_historical_advanced_section_navigation,
-)
+from ...frontendutils import navigation
 
 
 logger = logging.getLogger(__name__)
@@ -1154,9 +1151,12 @@ def _get_point_location(raw_coords: str) -> shapely.Point:
 )
 def get_forecast_variable_combinations(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
+    navigation_section: navigation.SECTION_TYPE = "advanced",
 ):
     """Return valid combinations of parameters used to describe forecast data."""
-    sections = get_forecast_advanced_section_navigation(session)
+    sections = navigation.get_forecast_navigation_sections(
+        session, type_=navigation_section
+    )
     return LegacyForecastVariableCombinationsList(
         combinations=[
             LegacyForecastVariableCombinations.from_navigation_section(s)
@@ -1172,9 +1172,12 @@ def get_forecast_variable_combinations(
 )
 def get_historical_variable_combinations(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
+    navigation_section: navigation.SECTION_TYPE = "advanced",
 ):
     """Return valid combinations of parameters used to describe historical data."""
-    sections = get_historical_advanced_section_navigation(session)
+    sections = navigation.get_historical_navigation_sections(
+        session, type_=navigation_section
+    )
     return LegacyHistoricalVariableCombinationsList(
         combinations=[
             LegacyHistoricalVariableCombinations.from_navigation_section(s)

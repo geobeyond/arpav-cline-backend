@@ -14,6 +14,7 @@ def generate_historical_coverage_configurations(
     return [
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["fd-absolute-annual"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}",
             year_period_group=year_period_groups["only_year"],
@@ -27,6 +28,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["fd-anomaly-annual"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{climatic_indicator}_diff",
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
@@ -41,6 +43,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["fd-absolute-ten_year"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_avg",
             decades=[
@@ -60,6 +63,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["fd-anomaly-ten_year"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_diffavg_{reference_period}",
             decades=[
@@ -79,6 +83,7 @@ def generate_historical_coverage_configurations(
         ),
         HistoricalCoverageConfigurationCreate(
             climatic_indicator_id=climatic_indicator_ids["fd-absolute-thirty_year"],
+            include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
             netcdf_main_dataset_name="{year_period}_avg",
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,

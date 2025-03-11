@@ -916,6 +916,8 @@ class BaseCoverageConfiguration(sqlmodel.SQLModel):
     spatial_region_id: Optional[int] = sqlmodel.Field(
         default=None, foreign_key="spatialregion.id"
     )
+    include_in_advanced_section_combinations: bool = False
+    include_in_simple_section_combinations: bool = False
 
 
 class ForecastCoverageConfiguration(BaseCoverageConfiguration, table=True):
@@ -1007,6 +1009,8 @@ class ForecastCoverageConfigurationCreate(sqlmodel.SQLModel):
     forecast_model_group: int
     time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
+    include_in_advanced_section_combinations: bool = False
+    include_in_simple_section_combinations: bool = False
 
 
 class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
@@ -1026,6 +1030,8 @@ class ForecastCoverageConfigurationUpdate(sqlmodel.SQLModel):
     forecast_model_group: Optional[int] = None
     time_windows: Optional[list[int]] = None
     observation_series_configurations: Optional[list[int]] = None
+    include_in_advanced_section_combinations: Optional[bool] = None
+    include_in_simple_section_combinations: Optional[bool] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1301,6 +1307,8 @@ class HistoricalCoverageConfigurationCreate(sqlmodel.SQLModel):
     decades: Optional[list[static.HistoricalDecade]] = None
     year_period_group: int
     observation_series_configurations: Optional[list[int]] = None
+    include_in_advanced_section_combinations: bool = False
+    include_in_simple_section_combinations: bool = False
 
 
 class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
@@ -1313,6 +1321,8 @@ class HistoricalCoverageConfigurationUpdate(sqlmodel.SQLModel):
     decades: Optional[list[static.HistoricalDecade]] = None
     year_period_group: Optional[int] = None
     observation_series_configurations: Optional[list[int]] = None
+    include_in_advanced_section_combinations: Optional[bool] = None
+    include_in_simple_section_combinations: Optional[bool] = None
 
 
 @dataclasses.dataclass(frozen=True)
