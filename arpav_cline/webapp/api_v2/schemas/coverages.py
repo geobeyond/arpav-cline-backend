@@ -1,5 +1,4 @@
 import typing
-from operator import itemgetter
 from typing import Optional
 
 import pydantic
@@ -13,7 +12,6 @@ from ....config import (
 )
 from ....schemas.coverages import (
     ConfigurationParameter,
-    ConfigurationParameterValue,
     ForecastCoverageConfiguration,
     ForecastCoverageInternal,
     HistoricalCoverageConfiguration,
@@ -27,7 +25,6 @@ from ....schemas.static import (
     HistoricalYearPeriod,
     HistoricalReferencePeriod,
 )
-from ....schemas.climaticindicators import ClimaticIndicator
 from .base import (
     ListLinks,
     ListMeta,
@@ -1336,143 +1333,3 @@ class HistoricalCoverageDownloadList(pydantic.BaseModel):
                 for c in coverages
             ],
         )
-
-
-class ConfigurationParameterMenuTranslation(pydantic.BaseModel):
-    name: dict[str, str]
-    description: dict[str, str]
-
-
-class ForecastMenuTranslations(pydantic.BaseModel):
-    variable: dict[str, ConfigurationParameterMenuTranslation]
-    aggregation_period: dict[str, ConfigurationParameterMenuTranslation]
-    measure: dict[str, ConfigurationParameterMenuTranslation]
-    other_parameters: dict[str, dict[str, ConfigurationParameterMenuTranslation]]
-
-    @classmethod
-    def from_items(
-        cls,
-        var_combinations: dict[
-            ClimaticIndicator,
-            dict[
-                str,
-                dict[
-                    str,
-                    ConfigurationParameter | ConfigurationParameterValue,
-                ],
-            ],
-        ],
-    ):
-        result = {}
-        for climatic_indicator, indicator_combinations in var_combinations.items():
-            vars = result.setdefault("variable", {})
-            vars[climatic_indicator.name] = {
-                "name": {
-                    LOCALE_EN.language: climatic_indicator.display_name_english,
-                    LOCALE_IT.language: climatic_indicator.display_name_italian,
-                },
-                "description": {
-                    LOCALE_EN.language: climatic_indicator.description_english,
-                    LOCALE_IT.language: climatic_indicator.description_italian,
-                },
-            }
-            aggreg_periods = result.setdefault("aggregation_period", {})
-            aggreg_periods[climatic_indicator.aggregation_period.value.lower()] = {
-                "name": {
-                    LOCALE_EN.language: climatic_indicator.aggregation_period.get_value_display_name(
-                        LOCALE_EN
-                    ),
-                    LOCALE_IT.language: climatic_indicator.aggregation_period.get_value_display_name(
-                        LOCALE_IT
-                    ),
-                },
-                "description": {
-                    LOCALE_EN.language: climatic_indicator.aggregation_period.get_value_description(
-                        LOCALE_EN
-                    ),
-                    LOCALE_IT.language: climatic_indicator.aggregation_period.get_value_description(
-                        LOCALE_IT
-                    ),
-                },
-            }
-            measures = result.setdefault("measure", {})
-            measures[climatic_indicator.measure_type.value.lower()] = {
-                "name": {
-                    LOCALE_EN.language: climatic_indicator.measure_type.get_value_display_name(
-                        LOCALE_EN
-                    ),
-                    LOCALE_IT.language: climatic_indicator.measure_type.get_value_display_name(
-                        LOCALE_IT
-                    ),
-                },
-                "description": {
-                    LOCALE_EN.language: climatic_indicator.measure_type.get_value_description(
-                        LOCALE_EN
-                    ),
-                    LOCALE_IT.language: climatic_indicator.measure_type.get_value_description(
-                        LOCALE_IT
-                    ),
-                },
-            }
-            others = result.setdefault("other_parameters", {})
-            for param_info in indicator_combinations.values():
-                cp = param_info["configuration_parameter"]
-                param_ = others.setdefault(cp.name, {})
-                for cpv in cp.allowed_values:
-                    param_[cpv.name] = ConfigurationParameterMenuTranslation(
-                        name={
-                            LOCALE_EN.language: cpv.display_name_english,
-                            LOCALE_IT.language: cpv.display_name_english,
-                        },
-                        description={
-                            LOCALE_EN.language: cpv.description_english,
-                            LOCALE_IT.language: cpv.description_italian,
-                        },
-                    )
-        return cls(
-            variable=result["variable"],
-            aggregation_period=result["aggregation_period"],
-            measure=result["measure"],
-            other_parameters=result["other_parameters"],
-        )
-
-
-class ForecastVariableCombinations(pydantic.BaseModel):
-    variable: str
-    aggregation_period: str
-    measure: str
-    other_parameters: dict[str, list[str]]
-
-    @classmethod
-    def from_items(
-        cls,
-        climatic_indicator: ClimaticIndicator,
-        parameter_combinations: dict[
-            str,
-            dict[
-                str,
-                ConfigurationParameter | ConfigurationParameterValue,
-            ],
-        ],
-    ):
-        combinations = {}
-        for param_name, param_info in parameter_combinations.items():
-            sortable_param_values = []
-            for cpv in param_info["values"]:
-                sortable_param_values.append((cpv.name, cpv.sort_order or 0))
-            combinations[param_name] = sortable_param_values
-
-        for param_name, param_combinations in combinations.items():
-            param_combinations.sort(key=itemgetter(1))
-            combinations[param_name] = [name for name, sort_order in param_combinations]
-        return cls(
-            variable=climatic_indicator.name,
-            aggregation_period=climatic_indicator.aggregation_period.value.lower(),
-            measure=climatic_indicator.measure_type.value.lower(),
-            other_parameters=combinations,
-        )
-
-
-class ForecastVariableCombinationsList(pydantic.BaseModel):
-    combinations: list[ForecastVariableCombinations]
-    translations: ForecastMenuTranslations
