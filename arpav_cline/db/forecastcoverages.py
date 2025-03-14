@@ -1186,7 +1186,10 @@ def legacy_list_forecast_coverages(
         ),
         climatological_model_filter=(
             conf_param_filter.climatological_model.name
-            if conf_param_filter is not None
+            if (
+                conf_param_filter is not None
+                and conf_param_filter.climatological_model is not None
+            )
             else None
         ),
         scenario_filter=(
