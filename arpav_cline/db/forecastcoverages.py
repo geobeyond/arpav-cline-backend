@@ -493,7 +493,6 @@ def get_forecast_model(
     session: sqlmodel.Session,
     forecast_model_id: int,
 ) -> Optional[ForecastModel]:
-    logger.debug(f"{forecast_model_id=}")
     return session.get(ForecastModel, forecast_model_id)
 
 
@@ -1186,7 +1185,7 @@ def legacy_list_forecast_coverages(
             else None
         ),
         climatological_model_filter=(
-            conf_param_filter.climatological_model
+            conf_param_filter.climatological_model.name
             if conf_param_filter is not None
             else None
         ),
@@ -1200,7 +1199,12 @@ def legacy_list_forecast_coverages(
             conf_param_filter.year_period if conf_param_filter is not None else None
         ),
         time_window_filter=(
-            conf_param_filter.time_window if conf_param_filter is not None else None
+            conf_param_filter.time_window.name
+            if (
+                conf_param_filter is not None
+                and conf_param_filter.time_window is not None
+            )
+            else None
         ),
         limit=limit,
         offset=offset,
@@ -1246,7 +1250,6 @@ def list_forecast_coverages(
             is_eligible = False
         if is_eligible:
             relevant_indicators.append(climatic_indicator)
-    logger.debug(f"{[ci.identifier for ci in relevant_indicators]=}")
     result = []
     if len(relevant_indicators) > 0:
         forecast_model_names = None
@@ -1276,7 +1279,6 @@ def list_forecast_coverages(
                 year_period_filter=year_period_filter,
                 time_window_name_filter=time_window_names,
             )
-            logger.debug(f"{[cc.identifier for cc in cov_confs]=}")
             for cov_conf in cov_confs:
                 candidates = generate_forecast_coverages_from_configuration(cov_conf)
                 for candidate in candidates:

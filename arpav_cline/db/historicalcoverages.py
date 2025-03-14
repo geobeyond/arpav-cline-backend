@@ -622,17 +622,12 @@ def list_historical_coverages(
     offset: Optional[int] = 0,
     include_total: bool = False,
 ) -> tuple[list[HistoricalCoverageInternal], int]:
-    logger.debug(f"{climatological_variable_filter=}")
-    logger.debug(f"{aggregation_period_filter=}")
-    logger.debug(f"{measure_filter=}")
-    logger.debug(f"{year_period_filter=}")
     climatic_indicators = collect_all_climatic_indicators(
         session,
         name_filter=climatological_variable_filter,
         aggregation_period_filter=aggregation_period_filter,
         measure_type_filter=measure_filter,
     )
-    logger.debug(f"{[ci.identifier for ci in climatic_indicators]=}")
     relevant_indicators = []
     for climatic_indicator in climatic_indicators:
         is_eligible = True
@@ -650,7 +645,6 @@ def list_historical_coverages(
             is_eligible = False
         if is_eligible:
             relevant_indicators.append(climatic_indicator)
-    logger.debug(f"{[ci.identifier for ci in relevant_indicators]=}")
     result = []
     if len(relevant_indicators) > 0:
         for climatic_indicator in relevant_indicators:
