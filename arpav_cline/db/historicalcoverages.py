@@ -571,19 +571,42 @@ def legacy_list_historical_coverages(
     limit: int = 20,
     offset: int = 0,
     include_total: bool = False,
-    name_filter: list[str] | None = None,
     conf_param_filter: Optional[LegacyConfParamFilterValues] = None,
 ) -> tuple[list[HistoricalCoverageInternal], Optional[int]]:
-    all_cov_confs = legacy_collect_all_historical_coverage_configurations(
-        session, conf_param_filter=conf_param_filter
+    return list_historical_coverages(
+        session,
+        climatological_variable_filter=(
+            conf_param_filter.climatological_variable
+            if conf_param_filter is not None
+            else None
+        ),
+        aggregation_period_filter=(
+            conf_param_filter.aggregation_period
+            if conf_param_filter is not None
+            else None
+        ),
+        measure_filter=(
+            conf_param_filter.measure if conf_param_filter is not None else None
+        ),
+        year_period_filter=(
+            conf_param_filter.historical_year_period
+            if conf_param_filter is not None
+            else None
+        ),
+        reference_period_filter=(
+            conf_param_filter.historical_reference_period
+            if conf_param_filter is not None
+            else None
+        ),
+        decade_filter=(
+            conf_param_filter.historical_decade
+            if conf_param_filter is not None
+            else None
+        ),
+        limit=limit,
+        offset=offset,
+        include_total=include_total,
     )
-    result = []
-    for cov_conf in all_cov_confs:
-        result.extend(generate_historical_coverages_from_configuration(cov_conf))
-    if name_filter is not None:
-        for fragment in name_filter:
-            result = [fc for fc in result if fragment in fc.identifier]
-    return result[offset : offset + limit], len(result) if include_total else None
 
 
 def list_historical_coverages(
