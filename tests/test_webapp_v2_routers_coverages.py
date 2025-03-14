@@ -198,6 +198,7 @@ def test_forecast_variable_combinations(
     while len(tested_coverages) < 10:
         chosen_index = random.choice(list(range(len(all_possible_values))))
         chosen = all_possible_values[chosen_index]
+        print(f"{chosen=}")
         coverage_list_response = test_client_v2_app.get(
             test_client_v2_app.app.url_path_for("legacy_list_coverages"),
             params={"possible_value": chosen},
