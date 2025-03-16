@@ -5,6 +5,20 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     curl \
     apt-utils \
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libasound2 \
+    libatspi2.0-0 \
     tini
 
 # download poetry
@@ -34,6 +48,8 @@ WORKDIR /home/appuser/app
 COPY --chown=appuser:appuser pyproject.toml poetry.lock ./
 
 RUN poetry install --no-root --only main
+
+RUN poetry run playwright install chromium
 
 EXPOSE 8000
 
