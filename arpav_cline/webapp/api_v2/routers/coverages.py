@@ -447,11 +447,11 @@ def deprecated_get_coverage_identifier(
 
 
 @router.get("/wms/{coverage_identifier}")
-async def wms_endpoint(
+def wms_endpoint(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
+    http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
     coverage_identifier: str,
     version: str = "1.3.0",
 ):
@@ -476,14 +476,14 @@ async def wms_endpoint(
         else:
             if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
                 if category == DataCategory.FORECAST:
-                    cov = db.get_forecast_coverage(session, coverage_identifier)
+                    handler = db.get_forecast_coverage
                 else:  # historical
-                    cov = db.get_historical_coverage(session, coverage_identifier)
+                    handler = db.get_historical_coverage
             else:
                 raise HTTPException(
                     400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
                 )
-            if cov is not None:
+            if (cov := handler(session, coverage_identifier)) is not None:
                 base_wms_url = cov.get_wms_base_url(settings.thredds_server)
                 parsed_url = urllib.parse.urlparse(base_wms_url)
                 logger.info(f"{base_wms_url=}")
@@ -512,7 +512,7 @@ async def wms_endpoint(
                 ).geturl()
                 logger.info(f"{wms_url=}")
                 try:
-                    wms_response = await thredds_utils.proxy_request(
+                    wms_response = thredds_utils.proxy_request_sync(
                         wms_url, http_client
                     )
                 except httpx.HTTPStatusError as err:

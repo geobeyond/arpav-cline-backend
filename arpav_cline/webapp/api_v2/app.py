@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ... import config
 from .routers.climaticindicators import router as climaticindicators_router
 from .routers.coverages import router as coverages_router
+from .routers.maps import router as maps_router
 from .routers.municipalities import router as municipalities_router
 from .routers.observations import router as observations_router
 from .routers.base import router as base_router
@@ -14,6 +15,7 @@ class WebAppOpenApiTag(enum.Enum):
     BASE = "base"
     CLIMATIC_INDICATORS = "climatic_indicators"
     COVERAGES = "coverages"
+    MAPS = "maps"
     MUNICIPALITIES = "municipalities"
     OBSERVATIONS = "observations"
 
@@ -24,6 +26,7 @@ class WebAppOpenApiTag(enum.Enum):
             self.COVERAGES: (
                 "Operations that deal with coverages of forecast and " "historical data"
             ),
+            self.MAPS: "Operations related to maps",
             self.MUNICIPALITIES: "Operations related to municipalities",
             self.OBSERVATIONS: (
                 "Operations related to observation stations and measurements"
@@ -87,6 +90,13 @@ def create_app(settings: config.ArpavPpcvSettings) -> fastapi.FastAPI:
         prefix="/observations",
         tags=[
             WebAppOpenApiTag.OBSERVATIONS,
+        ],
+    )
+    app.include_router(
+        maps_router,
+        prefix="/maps",
+        tags=[
+            WebAppOpenApiTag.MAPS,
         ],
     )
     app.include_router(

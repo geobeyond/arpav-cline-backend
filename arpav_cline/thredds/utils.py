@@ -32,6 +32,12 @@ def get_parameter_internal_value(name: str, value: str) -> str:
     return parsed_value
 
 
+def proxy_request_sync(url: str, http_client: httpx.Client) -> httpx.Response:
+    response = http_client.get(url)
+    response.raise_for_status()
+    return response
+
+
 async def proxy_request(url: str, http_client: httpx.AsyncClient) -> httpx.Response:
     response = await http_client.get(url)
     response.raise_for_status()
