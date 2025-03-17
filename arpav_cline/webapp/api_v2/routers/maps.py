@@ -3,9 +3,12 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    HTTPException,
     Query,
+    status,
 )
 from fastapi.responses import StreamingResponse
+from playwright.sync_api import Error as PlaywrightError
 
 from .... import mapdownloads
 
@@ -21,10 +24,14 @@ def get_map(
     delay_seconds: Annotated[int, Query(ge=1, le=60)] = 10,
 ):
     """Get a screenshot representing a map."""
-    screenshot_buffer = mapdownloads.grab_frontend_screenshot(
-        url, delay_seconds=delay_seconds
-    )
-    return StreamingResponse(
-        screenshot_buffer,
-        media_type="image/png",
-    )
+    try:
+        screenshot_buffer = mapdownloads.grab_frontend_screenshot(
+            url, frontend_settle_delay_seconds=delay_seconds
+        )
+    except PlaywrightError as err:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(err))
+    else:
+        return StreamingResponse(
+            screenshot_buffer,
+            media_type="image/png",
+        )
