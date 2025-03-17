@@ -103,7 +103,7 @@ class LegacyConfigurationParameterMenuTranslation(pydantic.BaseModel):
 
 
 class LegacyForecastMenuTranslations(pydantic.BaseModel):
-    variable: dict[str, LegacyConfigurationParameterMenuTranslation]
+    climatological_variable: dict[str, LegacyConfigurationParameterMenuTranslation]
     aggregation_period: dict[str, LegacyConfigurationParameterMenuTranslation]
     measure: dict[str, LegacyConfigurationParameterMenuTranslation]
     other_parameters: dict[str, dict[str, LegacyConfigurationParameterMenuTranslation]]
@@ -242,7 +242,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
                 },
             )
         return cls(
-            variable=vars,
+            climatological_variable=vars,
             aggregation_period=aggreg_periods,
             measure=measures,
             other_parameters=other,
@@ -250,7 +250,7 @@ class LegacyForecastMenuTranslations(pydantic.BaseModel):
 
 
 class LegacyHistoricalMenuTranslations(pydantic.BaseModel):
-    variable: dict[str, LegacyConfigurationParameterMenuTranslation]
+    climatological_variable: dict[str, LegacyConfigurationParameterMenuTranslation]
     aggregation_period: dict[str, LegacyConfigurationParameterMenuTranslation]
     measure: dict[str, LegacyConfigurationParameterMenuTranslation]
     other_parameters: dict[str, dict[str, LegacyConfigurationParameterMenuTranslation]]
@@ -361,7 +361,7 @@ class LegacyHistoricalMenuTranslations(pydantic.BaseModel):
                     },
                 )
         return cls(
-            variable=vars,
+            climatological_variable=vars,
             aggregation_period=aggreg_periods,
             measure=measures,
             other_parameters=other,
