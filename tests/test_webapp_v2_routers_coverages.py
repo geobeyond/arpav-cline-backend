@@ -119,7 +119,7 @@ def test_forecast_tas_absolute_annual_details(
     assert details["legend"]["color_entries"][1]["color"] == "#fffed976"
     assert details["legend"]["color_entries"][1]["value"] == 3.0
     assert details["observation_stations_vector_tile_layer_url"].endswith(
-        "/vector-tiles/tas_absolute_annual/{z}/{x}/{y}"
+        "/vector-tiles/stations_tas_absolute_annual/{z}/{x}/{y}"
     )
     assert details["related_coverage_configuration_url"].endswith(
         "/coverages/coverage-configurations/"
