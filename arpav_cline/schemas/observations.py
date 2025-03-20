@@ -675,10 +675,12 @@ class ObservationSeriesConfiguration(sqlmodel.SQLModel, table=True):
     def get_observation_stations_vector_tile_layer_url(
         self, settings: "ArpavPpcvSettings"
     ) -> Optional[str]:
+        sanitized_indicator_name = self.climatic_indicator.identifier.replace("-", "_")
+        layer_name = f"stations_{sanitized_indicator_name}"
         return "/".join(
             (
                 settings.vector_tile_server_base_url,
-                self.climatic_indicator.identifier.replace("-", "_"),
+                layer_name,
                 "{z}/{x}/{y}",
             )
         )
