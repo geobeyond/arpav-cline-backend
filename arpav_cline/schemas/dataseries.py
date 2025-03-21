@@ -205,7 +205,7 @@ class ObservationStationDataSeries:
     observation_series_configuration: "ObservationSeriesConfiguration"
     observation_station: "ObservationStation"
     dataset_type: static.DatasetType
-    processing_method: static.ObservationTimeSeriesProcessingMethod
+    processing_method: static.HistoricalTimeSeriesProcessingMethod
     location: shapely.Point
     processing_method_info: Optional[dict] = None
     data_: Optional[pd.Series] = None
@@ -245,9 +245,11 @@ class ObservationStationDataSeries:
             "measurement_aggregation_type": self.observation_series_configuration.measurement_aggregation_type.value,
             "processing_method": self.processing_method.value,
             "processing_method_info": self.processing_method_info,
-            "managers": self.observation_series_configuration.station_managers,
+            "manager": self.observation_station.managed_by.name,
             "location": self.location.wkt,
             "station_location": to_shape(self.observation_station.geom).wkt,
+            "station_name": self.observation_station.name,
+            "station_code": self.observation_station.code,
         }
 
 
@@ -255,7 +257,7 @@ class ObservationStationDataSeries:
 class HistoricalDataSeries:
     coverage: "HistoricalCoverageInternal"
     dataset_type: static.DatasetType
-    processing_method: static.CoverageTimeSeriesProcessingMethod
+    processing_method: static.HistoricalTimeSeriesProcessingMethod
     temporal_start: Optional[dt.date]
     temporal_end: Optional[dt.date]
     location: shapely.Point

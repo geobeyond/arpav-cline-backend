@@ -1,13 +1,12 @@
+import datetime as dt
 import functools
 import logging
 import warnings
 from typing import (
-    Any,
     cast,
     Optional,
     Sequence,
     TYPE_CHECKING,
-    Union,
 )
 
 import pandas as pd
@@ -29,7 +28,6 @@ from .schemas import (
 )
 
 if TYPE_CHECKING:
-    import datetime as dt
     import httpx
     import numpy as np
     import sqlmodel
@@ -64,66 +62,6 @@ def generate_derived_overview_series(
         df[derived_series.identifier] = (
             df[data_series.identifier].rolling(center=True, window=11).mean()
         )
-    else:
-        raise NotImplementedError(
-            f"Processing method {processing_method!r} is not implemented"
-        )
-    derived_series.data_ = df[derived_series.identifier].squeeze()
-    return derived_series
-
-
-def generate_derived_historical_series(
-    data_series: dataseries.HistoricalDataSeries,
-    processing_method: static.CoverageTimeSeriesProcessingMethod,
-    processing_method_parameters: Optional[
-        Union[dataseries.MannKendallParameters]
-    ] = None,
-) -> dataseries.HistoricalDataSeries:
-    derived_series = dataseries.HistoricalDataSeries(
-        coverage=data_series.coverage,
-        dataset_type=data_series.dataset_type,
-        processing_method=processing_method,
-        temporal_start=data_series.temporal_start,
-        temporal_end=data_series.temporal_end,
-        location=data_series.location,
-    )
-    df = data_series.data_.to_frame()
-    if processing_method == static.CoverageTimeSeriesProcessingMethod.LOESS_SMOOTHING:
-        df[derived_series.identifier] = _apply_loess_smoothing(
-            df, data_series.identifier, ignore_warnings=True
-        )
-    elif (
-        processing_method
-        == static.CoverageTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS
-    ):
-        df[derived_series.identifier] = (
-            df[data_series.identifier].rolling(center=True, window=11).mean()
-        )
-    elif (
-        processing_method
-        == static.CoverageTimeSeriesProcessingMethod.DECADE_AGGREGATION
-    ):
-        df = _generate_decade_series(
-            df, data_series.identifier, derived_series.identifier
-        )
-    elif (
-        processing_method
-        == static.CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND
-    ):
-        if isinstance(processing_method_parameters, dataseries.MannKendallParameters):
-            mk_start = processing_method_parameters.start_year or df.index[0].year
-            mk_end = processing_method_parameters.end_year or df.index[-1].year
-        else:
-            mk_start = df.index[0].year
-            mk_end = df.index[-1].year
-        df, info = _generate_mann_kendall_series(
-            df,
-            data_series.identifier,
-            derived_series.identifier,
-            mk_start,
-            mk_end,
-        )
-        derived_series.processing_method_info = info
     else:
         raise NotImplementedError(
             f"Processing method {processing_method!r} is not implemented"
@@ -284,7 +222,7 @@ def get_nearby_observation_station_time_series(
     location: shapely.Point,
     observation_series_configuration: "observations.ObservationSeriesConfiguration",
     distance_threshold_meters: int,
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> Optional[dataseries.ObservationStationDataSeries]:
     result = None
     nearby_station = find_nearby_observation_station(
@@ -325,7 +263,7 @@ def get_nearby_observation_station_time_series(
 def parse_observation_station_data(
     raw_data: Sequence["observations.ObservationMeasurement"],
     base_name: str,
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> pd.Series:
     df = pd.DataFrame([i.model_dump() for i in raw_data])
     df = df.rename(
@@ -335,6 +273,7 @@ def parse_observation_station_data(
         },
     )
     df = df[[base_name, "time"]]
+    df["time"] = pd.to_datetime(df["time"])
     df.set_index("time", inplace=True)
     if temporal_range is not None:
         start, end = temporal_range
@@ -345,98 +284,282 @@ def parse_observation_station_data(
     return df.squeeze()
 
 
-def get_historical_coverage_time_series(
+def generate_decade_derived_observation_station_series(
+    original_series: dataseries.ObservationStationDataSeries,
+    point_geom: shapely.geometry.Point,
+) -> dataseries.ObservationStationDataSeries:
+    derived_series = dataseries.ObservationStationDataSeries(
+        observation_series_configuration=(
+            original_series.observation_series_configuration
+        ),
+        observation_station=original_series.observation_station,
+        dataset_type=original_series.dataset_type,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.DECADE_AGGREGATION
+        ),
+        location=point_geom,
+    )
+    df = original_series.data_.to_frame()
+    df = _generate_decade_series(
+        df, original_series.identifier, derived_series.identifier
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_loess_derived_observation_station_series(
+    original_series: dataseries.ObservationStationDataSeries,
+    point_geom: shapely.geometry.Point,
+) -> dataseries.ObservationStationDataSeries:
+    derived_series = dataseries.ObservationStationDataSeries(
+        observation_series_configuration=(
+            original_series.observation_series_configuration
+        ),
+        observation_station=original_series.observation_station,
+        dataset_type=original_series.dataset_type,
+        processing_method=(static.HistoricalTimeSeriesProcessingMethod.LOESS_SMOOTHING),
+        location=point_geom,
+    )
+    df = original_series.data_.to_frame()
+    df[derived_series.identifier] = _apply_loess_smoothing(
+        df, original_series.identifier, ignore_warnings=True
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_moving_average_derived_observation_station_series(
+    original_series: dataseries.ObservationStationDataSeries,
+    point_geom: shapely.geometry.Point,
+) -> dataseries.ObservationStationDataSeries:
+    derived_series = dataseries.ObservationStationDataSeries(
+        observation_series_configuration=(
+            original_series.observation_series_configuration
+        ),
+        observation_station=original_series.observation_station,
+        dataset_type=original_series.dataset_type,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS
+        ),
+        location=point_geom,
+    )
+    df = original_series.data_.to_frame()
+    df[derived_series.identifier] = (
+        df[original_series.identifier].rolling(window=5, center=True).mean()
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_mann_kendall_derived_observation_station_series(
+    original_series: dataseries.ObservationStationDataSeries,
+    point_geom: shapely.geometry.Point,
+    *,
+    start: dt.datetime | None,
+    end: dt.datetime | None,
+) -> dataseries.ObservationStationDataSeries:
+    derived_series = dataseries.ObservationStationDataSeries(
+        observation_series_configuration=(
+            original_series.observation_series_configuration
+        ),
+        observation_station=original_series.observation_station,
+        dataset_type=original_series.dataset_type,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.MANN_KENDALL_TREND
+        ),
+        location=point_geom,
+    )
+    df = original_series.data_.to_frame()
+    mk_start = start or df.index[0].year
+    mk_end = end or df.index[-1].year
+    df, info = _generate_mann_kendall_series(
+        df, original_series.identifier, derived_series.identifier, mk_start, mk_end
+    )
+    derived_series.processing_method_info = info
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_moving_average_derived_historical_coverage_series(
+    original_series: dataseries.HistoricalDataSeries,
+) -> dataseries.HistoricalDataSeries:
+    derived_series = dataseries.HistoricalDataSeries(
+        coverage=original_series.coverage,
+        dataset_type=original_series.dataset_type,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS,
+        temporal_start=original_series.temporal_start,
+        temporal_end=original_series.temporal_end,
+        location=original_series.location,
+    )
+    df = original_series.data_.to_frame()
+    df[derived_series.identifier] = (
+        df[original_series.identifier].rolling(center=True, window=11).mean()
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_decade_derived_historical_coverage_series(
+    original_series: dataseries.HistoricalDataSeries,
+) -> dataseries.HistoricalDataSeries:
+    derived_series = dataseries.HistoricalDataSeries(
+        coverage=original_series.coverage,
+        dataset_type=original_series.dataset_type,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.DECADE_AGGREGATION,
+        temporal_start=original_series.temporal_start,
+        temporal_end=original_series.temporal_end,
+        location=original_series.location,
+    )
+    df = original_series.data_.to_frame()
+    df = _generate_decade_series(
+        df, original_series.identifier, derived_series.identifier
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_loess_derived_historical_coverage_series(
+    original_series: dataseries.HistoricalDataSeries,
+) -> dataseries.HistoricalDataSeries:
+    derived_series = dataseries.HistoricalDataSeries(
+        coverage=original_series.coverage,
+        dataset_type=original_series.dataset_type,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.LOESS_SMOOTHING,
+        temporal_start=original_series.temporal_start,
+        temporal_end=original_series.temporal_end,
+        location=original_series.location,
+    )
+    df = original_series.data_.to_frame()
+    df[derived_series.identifier] = _apply_loess_smoothing(
+        df, original_series.identifier, ignore_warnings=True
+    )
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def generate_mann_kendall_derived_historical_coverage_series(
+    original_series: dataseries.HistoricalDataSeries,
+    *,
+    start: dt.datetime | None,
+    end: dt.datetime | None,
+) -> dataseries.HistoricalDataSeries:
+    derived_series = dataseries.HistoricalDataSeries(
+        coverage=original_series.coverage,
+        dataset_type=original_series.dataset_type,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.MANN_KENDALL_TREND,
+        temporal_start=original_series.temporal_start,
+        temporal_end=original_series.temporal_end,
+        location=original_series.location,
+    )
+    df = original_series.data_.to_frame()
+    mk_start = start or df.index[0].year
+    mk_end = end or df.index[-1].year
+    df, info = _generate_mann_kendall_series(
+        df, original_series.identifier, derived_series.identifier, mk_start, mk_end
+    )
+    derived_series.processing_method_info = info
+    derived_series.data_ = df[derived_series.identifier].squeeze()
+    return derived_series
+
+
+def get_historical_time_series(
     *,
     settings: "config.ArpavPpcvSettings",
     session: "sqlmodel.Session",
     http_client: "httpx.Client",
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: "shapely.Point",
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
-    coverage_processing_methods: list[
-        Union[
-            static.CoverageTimeSeriesProcessingMethod,
-            tuple[static.CoverageTimeSeriesProcessingMethod, Any],
-        ]
-    ],
-    observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
-    include_coverage_data: bool = True,
-    include_observation_data: bool = False,
-) -> tuple[
-    Optional[list[dataseries.HistoricalDataSeries]],
-    Optional[list[dataseries.ObservationStationDataSeries]],
-]:
-    coverage_series = []
-    observation_series = []
-    if include_coverage_data:
-        coverage_series = _get_historical_coverage_coverage_time_series(
-            thredds_settings=settings.thredds_server,
-            http_client=http_client,
-            coverage=coverage,
-            point_geom=point_geom,
-            processing_methods=coverage_processing_methods,
-            temporal_range=temporal_range,
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
+    mann_kendall_params: dataseries.MannKendallParameters,
+    include_moving_average_series: bool,
+    include_decade_aggregation_series: bool,
+    include_loess_series: bool,
+) -> list[dataseries.HistoricalDataSeries | dataseries.ObservationStationDataSeries]:
+    """Return a list of historical time series for the input location.
+
+    If there is a nearby observation station, returns station data. Otherwise
+    returns NetCDF coverage data
+    """
+    # if the related observation series configuration specifies a different climatic
+    # indicator try to retrieve historical data instead
+    relevant_series_confs = [
+        oscl.observation_series_configuration
+        for oscl in coverage.configuration.observation_series_configuration_links
+        if (
+            coverage.configuration.climatic_indicator.identifier
+            == oscl.observation_series_configuration.climatic_indicator.identifier
         )
-    if include_observation_data:
-        # do not gather time series if the related observation series configuration
-        # specifies a different climatic indicator
-        relevant_series_confs = [
-            oscl.observation_series_configuration
-            for oscl in coverage.configuration.observation_series_configuration_links
-            if (
-                coverage.configuration.climatic_indicator.identifier
-                == oscl.observation_series_configuration.climatic_indicator.identifier
-            )
-        ]
+    ]
 
-        observation_series = _get_forecast_coverage_observation_time_series(
-            settings=settings,
-            session=session,
-            observation_series_configurations=relevant_series_confs,
-            point_geom=point_geom,
-            processing_methods=observation_processing_methods,
-            temporal_range=temporal_range,
-        )
-    return coverage_series, observation_series
-
-
-def _get_historical_coverage_coverage_time_series(
-    thredds_settings: "config.ThreddsServerSettings",
-    http_client: "httpx.Client",
-    coverage: "coverages.HistoricalCoverageInternal",
-    point_geom: shapely.Point,
-    processing_methods: Sequence[
-        Union[
-            static.CoverageTimeSeriesProcessingMethod,
-            tuple[static.CoverageTimeSeriesProcessingMethod, Any],
-        ]
-    ],
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
-) -> list[dataseries.HistoricalDataSeries]:
     result = []
-    cov_main_series = _retrieve_historical_coverage_data(
-        http_client,
-        thredds_settings,
-        coverage,
-        point_geom,
-        temporal_range,
-    )
-    if cov_main_series is not None:
-        result.append(cov_main_series)
-        for processing_method in [
-            pm
-            for pm in processing_methods
-            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-        ]:
-            if isinstance(processing_method, tuple):
-                derived_series = generate_derived_historical_series(
-                    cov_main_series, processing_method[0], processing_method[1]
+    for obs_series_conf in relevant_series_confs:
+        obs_data_series = get_nearby_observation_station_time_series(
+            session,
+            point_geom,
+            obs_series_conf,
+            distance_threshold_meters=settings.nearest_station_radius_meters,
+            temporal_range=temporal_range,
+        )
+        if obs_data_series is not None:
+            result.append(obs_data_series)
+            if include_loess_series:
+                result.append(
+                    generate_loess_derived_observation_station_series(
+                        obs_data_series, point_geom
+                    )
                 )
-            else:
-                derived_series = generate_derived_historical_series(
-                    cov_main_series, processing_method
+            if include_moving_average_series:
+                result.append(
+                    generate_moving_average_derived_observation_station_series(
+                        obs_data_series, point_geom
+                    )
                 )
-            result.append(derived_series)
+            if include_decade_aggregation_series:
+                result.append(
+                    generate_decade_derived_observation_station_series(
+                        obs_data_series, point_geom
+                    )
+                )
+            if mann_kendall_params is not None:
+                result.append(
+                    generate_mann_kendall_derived_observation_station_series(
+                        obs_data_series,
+                        point_geom,
+                        start=mann_kendall_params.start_year,
+                        end=mann_kendall_params.end_year,
+                    )
+                )
+        else:
+            logger.info("No station data found")
+    if len(result) == 0:
+        # could not find any nearby stations, let's fetch historical coverage data
+        cov_series = _retrieve_historical_coverage_data(
+            http_client, settings.thredds_server, coverage, point_geom, temporal_range
+        )
+        if cov_series is not None:
+            result.append(cov_series)
+            if include_loess_series:
+                result.append(
+                    generate_loess_derived_historical_coverage_series(cov_series)
+                )
+            if include_moving_average_series:
+                result.append(
+                    generate_moving_average_derived_historical_coverage_series(
+                        cov_series
+                    )
+                )
+            if include_decade_aggregation_series:
+                result.append(
+                    generate_decade_derived_historical_coverage_series(cov_series)
+                )
+            if mann_kendall_params is not None:
+                result.append(
+                    generate_mann_kendall_derived_historical_coverage_series(
+                        cov_series,
+                        start=mann_kendall_params.start_year,
+                        end=mann_kendall_params.end_year,
+                    )
+                )
     return result
 
 
@@ -447,7 +570,7 @@ def get_forecast_coverage_time_series(
     http_client: "httpx.Client",
     coverage: "coverages.ForecastCoverageInternal",
     point_geom: "shapely.Point",
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
     coverage_processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     include_coverage_data: bool = True,
@@ -527,7 +650,7 @@ def _get_forecast_coverage_coverage_time_series(
     processing_methods: Sequence[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
     include_related_models: bool,
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> list[dataseries.ForecastDataSeries]:
     data_ = []
     cov_series = _retrieve_forecast_coverage_data(
@@ -578,7 +701,7 @@ def _get_forecast_coverage_observation_time_series(
     ],
     point_geom: shapely.Point,
     processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> list[dataseries.ObservationStationDataSeries]:
     result = []
     for observation_series_conf in observation_series_configurations:
@@ -627,7 +750,7 @@ def _retrieve_historical_coverage_data(
     settings: "config.ThreddsServerSettings",
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: shapely.Point,
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> Optional[dataseries.HistoricalDataSeries]:
     retriever = ncss.SimpleCoverageDataRetriever(
         settings=settings,
@@ -637,7 +760,7 @@ def _retrieve_historical_coverage_data(
     main_series = dataseries.HistoricalDataSeries(
         coverage=coverage,
         dataset_type=static.DatasetType.MAIN,
-        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=temporal_range[0],
         temporal_end=temporal_range[1],
         location=point_geom,
@@ -657,7 +780,7 @@ def _retrieve_forecast_coverage_data(
     settings: "config.ThreddsServerSettings",
     coverage: "coverages.ForecastCoverageInternal",
     point_geom: shapely.Point,
-    temporal_range: tuple[Optional["dt.datetime"], Optional["dt.datetime"]],
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
     include_uncertainty: bool = False,
 ) -> tuple[
     dataseries.ForecastDataSeries | None,
