@@ -274,6 +274,22 @@ services:
       - target: 3000
         published: 3003
 
+  qgis-server:
+    image: qgis/qgis-server:ltr-noble
+    environment:
+      QGIS_PROJECT_FILE: /io/projects/map-printer-project.qgz
+      QGIS_PLUGIN_PATH: /io/plugins
+    ports:
+      - target: 80
+        published: 3004
+    volumes:
+      - type: bind
+        source: $PWD/docker/qgis-server/projects
+        target: /io/projects
+      - type: bind
+        source: $PWD/docker/qgis-server/plugins
+        target: /io/plugins
+
 
 volumes:
   db-data:

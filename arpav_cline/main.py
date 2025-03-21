@@ -4,13 +4,11 @@ import logging
 import logging.config
 import os
 import sys
-from typing import Annotated, Optional
+from typing import Optional
 from pathlib import Path
 
 import alembic.command
 import alembic.config
-import anyio
-import sqlmodel
 import typer
 import yaml
 from babel.messages.catalog import Catalog
@@ -29,13 +27,12 @@ from . import (
     db,
 )
 from .bootstrapper.cliapp import app as bootstrapper_app
+from .devapp.main import app as dev_app
 from .observations_harvester.cliapp import app as observations_harvester_app
 from .prefect.cliapp import app as prefect_app
-from .thredds import crawler
 
 app = typer.Typer()
 db_app = typer.Typer()
-dev_app = typer.Typer()
 translations_app = typer.Typer()
 app.add_typer(db_app, name="db")
 app.add_typer(dev_app, name="dev")
@@ -165,107 +162,6 @@ def run_server(ctx: typer.Context):
     sys.stdout.flush()
     sys.stderr.flush()
     os.execvp("uvicorn", uvicorn_args)
-
-
-@dev_app.command()
-def import_thredds_datasets(
-    ctx: typer.Context,
-    base_thredds_url: Annotated[
-        str,
-        typer.Argument(
-            help=(
-                "Base URL of the THREDDS server. Example: "
-                "https://thredds.arpa.veneto.it/thredds"
-            )
-        ),
-    ],
-    output_base_dir: Annotated[
-        Path,
-        typer.Argument(
-            help=(
-                "Base path for downloaded NetCDF files. Example: "
-                "/home/appuser/data/datasets"
-            )
-        ),
-    ],
-    coverage_configuration_identifier_filter: Annotated[
-        str,
-        typer.Option(
-            help=(
-                "Only process coverage configurations whose identifier contains "
-                "this substring"
-            )
-        ),
-    ] = None,
-    force_download: Annotated[
-        Optional[bool],
-        typer.Option(
-            help=(
-                "Whether to re-download a dataset even if it is already "
-                "present locally."
-            )
-        ),
-    ] = False,
-):
-    """Import NetCDF datasets from a THREDDS server."""
-    with sqlmodel.Session(ctx.obj["engine"]) as session:
-        relevant_forecast_cov_confs = (
-            db.collect_all_forecast_coverage_configurations_with_identifier_filter(
-                session, identifier_filter=coverage_configuration_identifier_filter
-            )
-        )
-        relevant_historical_cov_confs = (
-            db.collect_all_historical_coverage_configurations_with_identifier_filter(
-                session, identifier_filter=coverage_configuration_identifier_filter
-            )
-        )
-        # TODO: Implement also overviews
-        urls = []
-        settings: config.ArpavPpcvSettings = ctx.obj["settings"]
-
-        # temporarily override the THREDDS server base URL in order to allow
-        # finding datasets that use fnmatch wildcards in their URL
-        old_thredds_base_url = settings.thredds_server.base_url
-        settings.thredds_server.base_url = base_thredds_url
-
-        for forecast_cov_conf in relevant_forecast_cov_confs:
-            forecast_covs = db.generate_forecast_coverages_from_configuration(
-                forecast_cov_conf
-            )
-            for cov in forecast_covs:
-                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
-                lower_uncert_url = cov.get_lower_uncertainty_thredds_file_download_url(
-                    settings.thredds_server
-                )
-                if lower_uncert_url is not None:
-                    urls.append(lower_uncert_url)
-                upper_uncert_url = cov.get_upper_uncertainty_thredds_file_download_url(
-                    settings.thredds_server
-                )
-                if upper_uncert_url is not None:
-                    urls.append(upper_uncert_url)
-        for historical_cov_conf in relevant_historical_cov_confs:
-            historical_covs = db.generate_historical_coverages_from_configuration(
-                historical_cov_conf
-            )
-            for cov in historical_covs:
-                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
-        # restore THREDDS base url
-        settings.thredds_server.base_url = old_thredds_base_url
-    # remote_urls = [
-    #     url.replace(settings.thredds_server.base_url, base_thredds_url)
-    #     for url in urls
-    # ]
-    print(f"Trying to download {len(urls)} datasets...")
-    # for url in urls:
-    #     print(url)
-    anyio.run(
-        crawler.download_datasets,  # noqa
-        urls,
-        base_thredds_url,
-        output_base_dir,
-        force_download,
-    )
 
 
 @translations_app.callback()
