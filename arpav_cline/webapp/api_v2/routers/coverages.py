@@ -39,6 +39,7 @@ from .... import (
     timeseries,
 )
 from ....config import ArpavPpcvSettings
+from ....operations import parse_temporal_range
 from ....thredds import utils as thredds_utils
 from ....schemas.analytics import (
     ForecastCoverageDownloadRequestCreate,
@@ -50,6 +51,10 @@ from ....schemas.coverages import (
     ForecastCoverageInternal,
 )
 from ....schemas.climaticindicators import ClimaticIndicator
+from ....schemas.dataseries import (
+    HistoricalDataSeries,
+    ObservationStationDataSeries,
+)
 from ....schemas.legacy import (
     parse_legacy_aggregation_period,
     CoverageDataSmoothingStrategy,
@@ -57,14 +62,12 @@ from ....schemas.legacy import (
 )
 from ....schemas.static import (
     AggregationPeriod,
-    CoverageTimeSeriesProcessingMethod,
     DataCategory,
     ForecastScenario,
     ForecastYearPeriod,
     HistoricalDecade,
     HistoricalReferencePeriod,
     HistoricalYearPeriod,
-    ObservationTimeSeriesProcessingMethod,
     MeasureType,
 )
 from ....schemas.dataseries import MannKendallParameters
@@ -1036,26 +1039,16 @@ def get_historical_time_series(
     coverage_identifier: str,
     coords: str,
     datetime: Optional[str] = "../..",
-    include_coverage_data: bool = True,
-    include_observation_data: Annotated[
-        bool,
-        Query(
-            description=(
-                "Whether data from the nearest observation station (if any) "
-                "should be included in the response."
-            )
-        ),
-    ] = False,
-    coverage_processing_methods: Annotated[
-        list[Union[CoverageTimeSeriesProcessingMethod,]], Query()
-    ] = [CoverageTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
-    mann_kendall_start_year: Optional[int] = None,
-    mann_kendall_end_year: Optional[int] = None,
-    observation_processing_methods: Annotated[
-        list[ObservationTimeSeriesProcessingMethod], Query()
-    ] = [ObservationTimeSeriesProcessingMethod.NO_PROCESSING],  # noqa
+    mann_kendall_datetime: Optional[str] = None,
+    include_moving_average_series: bool = False,
+    include_decade_aggregation_series: bool = False,
+    include_loess_series: bool = False,
 ):
     """Get historical dataset time series for a geographic location."""
+    try:
+        point_geom = _get_point_location(coords)
+    except shapely.errors.GEOSException as err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
     try:
         data_category = DataCategory(coverage_identifier.partition("-")[0])
     except ValueError:
@@ -1066,41 +1059,28 @@ def get_historical_time_series(
         coverage := db.get_historical_coverage(session, coverage_identifier)
     ) is not None:
         logger.debug(f"found coverage {coverage.identifier=}")
-        cov_methods = coverage_processing_methods
-        if all((mann_kendall_start_year, mann_kendall_end_year)):
-            mann_kendall_params = MannKendallParameters(
-                start_year=mann_kendall_start_year,
-                end_year=mann_kendall_end_year,
-            )
-            if CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND in cov_methods:
-                cov_methods = [
-                    pm
-                    if pm != CoverageTimeSeriesProcessingMethod.MANN_KENDALL_TREND
-                    else (pm, mann_kendall_params)
-                    for pm in coverage_processing_methods
-                ]
-        try:
-            point_geom = _get_point_location(coords)
-        except shapely.errors.GEOSException as err:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
-            )
         temporal_range = operations.parse_temporal_range(datetime)
+        mann_kendall_params = None
+        if mann_kendall_datetime is not None:
+            mann_kendall_start, mann_kendall_end = parse_temporal_range(
+                mann_kendall_datetime
+            )
+            mann_kendall_params = MannKendallParameters(
+                start_year=mann_kendall_start,
+                end_year=mann_kendall_end,
+            )
         try:
-            (
-                coverage_series,
-                observations_series,
-            ) = timeseries.get_historical_coverage_time_series(
+            historical_series = timeseries.get_historical_time_series(
                 settings=settings,
                 session=session,
                 http_client=http_client,
                 coverage=coverage,
                 point_geom=point_geom,
                 temporal_range=temporal_range,
-                coverage_processing_methods=cov_methods,
-                observation_processing_methods=observation_processing_methods,
-                include_coverage_data=include_coverage_data,
-                include_observation_data=include_observation_data,
+                mann_kendall_params=mann_kendall_params,
+                include_moving_average_series=include_moving_average_series,
+                include_decade_aggregation_series=include_decade_aggregation_series,
+                include_loess_series=include_loess_series,
             )
         except exceptions.CoverageDataRetrievalError as err:
             raise HTTPException(
@@ -1109,15 +1089,17 @@ def get_historical_time_series(
             ) from err
         else:
             time_series = []
-            for series in coverage_series:
-                time_series.append(LegacyTimeSeries.from_historical_data_series(series))
-            if observations_series is not None:
-                for obs_station_series in observations_series:
+            for series in historical_series:
+                if isinstance(series, HistoricalDataSeries):
                     time_series.append(
-                        LegacyTimeSeries.from_observation_station_data_series(
-                            obs_station_series
-                        )
+                        LegacyTimeSeries.from_historical_data_series(series)
                     )
+                elif isinstance(series, ObservationStationDataSeries):
+                    time_series.append(
+                        LegacyTimeSeries.from_observation_station_data_series(series)
+                    )
+                else:
+                    logger.warning(f"series {series=} is not implemented")
             return LegacyTimeSeriesList(series=time_series)
     else:
         raise HTTPException(
