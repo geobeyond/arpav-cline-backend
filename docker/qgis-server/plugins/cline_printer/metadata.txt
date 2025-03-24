@@ -1,0 +1,10 @@
+[general]
+name=cline-printer
+qgisMinimumVersion=3.0
+description=Provides printing service for arpav-cline
+about=This provides a suitable map printing service for the arpav-cline service
+version=1.0.0
+author=geobeyond
+email=info@geobeyond.it
+repository=https://github.com/geobeyond/arpav-cline-backend
+server=True
