@@ -1,4 +1,16 @@
-from qgis.core import QgsMessageLog
+import json
+import urllib.parse
+
+from qgis.PyQt import (
+    QtCore,
+    QtNetwork,
+)
+from qgis.core import (
+    QgsMessageLog,
+    QgsNetworkAccessManager,
+    QgsProject,
+    QgsRasterLayer,
+)
 from qgis.server import (
     QgsServerFilter,
     QgsServerInterface,
@@ -13,8 +25,11 @@ class ClinePrinterServer:
 
 
 class ClinePrinterServerFilter(QgsServerFilter):
+    network_access_manager: QgsNetworkAccessManager
+
     def __init__(self, server_iface: QgsServerInterface):
         super().__init__(server_iface)
+        self.network_access_manager = QgsNetworkAccessManager().instance()
 
     def onRequestReady(self) -> bool:
         """Callback for when the request is ready to be processed.
@@ -33,20 +48,57 @@ class ClinePrinterServerFilter(QgsServerFilter):
         make much sense though).
 
         """
+        # request should look like this:
+        #
+        # {url}?
+        # (qgis-server standard params, like the current extent, etc.)
+        # arpav_cline_coverage_identifier
+        # arpav_cline_wms_layer_name
+        # arpav_cline_base_layer_name
         QgsMessageLog.logMessage(f"{self.__class__.__name__} inside onRequestReady")
-        # example setting an additional query param
         request = self.serverInterface().requestHandler()
-        request.setParameter("TEST_NEW_PARAM", "yo")
-        # 1. Call the backend API and retrieve information about the
-        # coverage configuration to display:
-        # - base WMS URL
-        # - WMS layer name
-        # - palette for the legend
-        # - URL for stations
-        # 2. Add stations as a vector tile layer
-        # 3. Add coverage as a WMS layer
-        # 4. Render the correct date for the coverage
-        # 5. Generate a PNG with the legend
+        request_params = request.parameterMap()
+        if request_params.get("request") == "GetPrint":
+            prefix = "cline_"
+            cov_identifier = request_params.get(f"{prefix}cov_identifier")
+            wms_layer_name = request_params.get(f"{prefix}wms_layer_name")
+            if cov_identifier is not None:
+                # 1. Call the backend API and retrieve information about the
+                # coverage configuration to display:
+                backend_request = QtNetwork.QNetworkRequest(
+                    QtCore.QUrl(
+                        f"http://webapp:5001/api/v2/coverages/coverages/{cov_identifier}"
+                    )
+                )
+                reply_content = self.network_access_manager.blockingGet(backend_request)
+                response_content = json.loads(
+                    reply_content.content().data().decode("utf-8")
+                )
+                QgsMessageLog.logMessage(f"{response_content=}")
+                wms_base_url = response_content["wms_base_url"]
+                layer_load_params = {
+                    "crs": "EPSG:4326",
+                    "url": wms_base_url,
+                    "format": "image/png",
+                    "layers": wms_layer_name,
+                    "styles": "",
+                    "version": "auto",
+                }
+                wms_layer = QgsRasterLayer(
+                    urllib.parse.unquote(urllib.parse.urlencode(layer_load_params)),
+                    wms_layer_name,
+                    "wms",
+                )
+                loaded_layer = QgsProject.instance().addMapLayer(wms_layer)  # noqa
+
+                # - base WMS URL
+                # - WMS layer name
+                # - palette for the legend
+                # - URL for stations
+                # 2. Add stations as a vector tile layer
+                # 3. Add coverage as a WMS layer
+                # 4. Render the correct date for the coverage
+                # 5. Generate a PNG with the legend
         return True
 
     def onSendResponse(self) -> bool:

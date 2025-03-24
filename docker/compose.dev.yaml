@@ -278,7 +278,8 @@ services:
     image: qgis/qgis-server:ltr-noble
     environment:
       QGIS_PROJECT_FILE: /io/projects/map-printer-project.qgz
-      QGIS_PLUGIN_PATH: /io/plugins
+      QGIS_PLUGINPATH: /io/plugins
+      QGIS_SERVER_LOG_LEVEL: 0
     ports:
       - target: 80
         published: 3004
