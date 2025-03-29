@@ -20,7 +20,7 @@ router = APIRouter()
     "/map-screenshot",
 )
 def get_map(
-    url: Annotated[str, Query(max_length=255)],
+    url: Annotated[str, Query(max_length=500)],
     delay_seconds: Annotated[int, Query(ge=1, le=60)] = 10,
 ):
     """Get a screenshot representing a map."""

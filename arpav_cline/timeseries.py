@@ -386,14 +386,14 @@ def generate_moving_average_derived_historical_coverage_series(
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_11_YEARS,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS,
         temporal_start=original_series.temporal_start,
         temporal_end=original_series.temporal_end,
         location=original_series.location,
     )
     df = original_series.data_.to_frame()
     df[derived_series.identifier] = (
-        df[original_series.identifier].rolling(center=True, window=11).mean()
+        df[original_series.identifier].rolling(center=True, window=5).mean()
     )
     derived_series.data_ = df[derived_series.identifier].squeeze()
     return derived_series

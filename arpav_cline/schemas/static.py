@@ -638,7 +638,6 @@ class HistoricalTimeSeriesProcessingMethod(str, enum.Enum):
     MANN_KENDALL_TREND = "mann_kendall_trend"
     NO_PROCESSING = "no_processing"
     MOVING_AVERAGE_5_YEARS = "moving_average_5_years"
-    MOVING_AVERAGE_11_YEARS = "moving_average_11_years"
 
     @staticmethod
     def get_param_display_name(locale: babel.Locale) -> str:
@@ -660,7 +659,6 @@ class HistoricalTimeSeriesProcessingMethod(str, enum.Enum):
             self.LOESS_SMOOTHING.name: _("LOESS"),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
             self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
-            self.MOVING_AVERAGE_11_YEARS.name: _("centered 11-year moving average"),
             self.NO_PROCESSING.name: _("no processing"),
         }.get(self, self.value)
 
@@ -674,9 +672,6 @@ class HistoricalTimeSeriesProcessingMethod(str, enum.Enum):
             self.MOVING_AVERAGE_5_YEARS.name: _(
                 "centered 5-year moving average description"
             ),
-            self.MOVING_AVERAGE_11_YEARS.name: _(
-                "centered 11-year moving average description"
-            ),
             self.NO_PROCESSING.name: _("no processing description"),
         }.get(self, self.value)
 
@@ -686,7 +681,6 @@ class HistoricalTimeSeriesProcessingMethod(str, enum.Enum):
             self.LOESS_SMOOTHING.name: 1,
             self.MANN_KENDALL_TREND.name: 2,
             self.MOVING_AVERAGE_5_YEARS.name: 1,
-            self.MOVING_AVERAGE_11_YEARS.name: 2,
             self.NO_PROCESSING.name: 0,
         }.get(self, 0)
 
