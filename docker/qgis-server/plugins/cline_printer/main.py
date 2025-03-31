@@ -6,10 +6,13 @@ from qgis.PyQt import (
     QtNetwork,
 )
 from qgis.core import (
+    QgsExpressionContextUtils,
+    QgsLayoutItemHtml,
     QgsMessageLog,
     QgsNetworkAccessManager,
     QgsProject,
     QgsRasterLayer,
+    QgsVectorTileLayer,
 )
 from qgis.server import (
     QgsServerFilter,
@@ -52,16 +55,21 @@ class ClinePrinterServerFilter(QgsServerFilter):
         #
         # {url}?
         # (qgis-server standard params, like the current extent, etc.)
-        # arpav_cline_coverage_identifier
-        # arpav_cline_wms_layer_name
-        # arpav_cline_base_layer_name
+        # cline_coverage_identifier
+        # cline_wms_layer_name
+        # cline_base_layer_name
         QgsMessageLog.logMessage(f"{self.__class__.__name__} inside onRequestReady")
-        request = self.serverInterface().requestHandler()
+        iface = self.serverInterface()
+        request = iface.requestHandler()
         request_params = request.parameterMap()
-        if request_params.get("request") == "GetPrint":
-            prefix = "cline_"
-            cov_identifier = request_params.get(f"{prefix}cov_identifier")
-            wms_layer_name = request_params.get(f"{prefix}wms_layer_name")
+        QgsMessageLog.logMessage(f"{request_params=}")
+        if request_params.get("REQUEST") == "GetPrint":
+            QgsMessageLog.logMessage("Preparing cline layers...")
+            prefix = "CLINE_"
+            cov_identifier = request_params.get(f"{prefix}COVERAGE_IDENTIFIER")
+            wms_layer_name = request_params.get(f"{prefix}WMS_LAYER_NAME")
+            QgsMessageLog.logMessage(f"{cov_identifier=}")
+            QgsMessageLog.logMessage(f"{wms_layer_name=}")
             if cov_identifier is not None:
                 # 1. Call the backend API and retrieve information about the
                 # coverage configuration to display:
@@ -89,7 +97,49 @@ class ClinePrinterServerFilter(QgsServerFilter):
                     wms_layer_name,
                     "wms",
                 )
-                loaded_layer = QgsProject.instance().addMapLayer(wms_layer)  # noqa
+                QgsMessageLog.logMessage(f"{wms_layer.isValid()=}")
+                qgis_project = _get_current_project(iface.configFilePath())
+                loaded_wms_layer = qgis_project.addMapLayer(wms_layer)  # noqa
+
+                vector_layer_url_template = response_content[
+                    "observation_stations_vector_tile_layer_url"
+                ]
+                vector_layer_params = {
+                    "type": "xyz",
+                    "url": vector_layer_url_template,
+                }
+                vector_tile_layer = QgsVectorTileLayer(
+                    urllib.parse.unquote(
+                        urllib.parse.urlencode(vector_layer_params),
+                    ),
+                    "observation stations",
+                )
+                QgsMessageLog.logMessage(f"{vector_tile_layer.isValid()=}")
+                loaded_vector_tile_layer = qgis_project.addMapLayer(vector_tile_layer)  # noqa
+                layout_manager = qgis_project.layoutManager()
+                print_layout = layout_manager.layoutByName("arpav-cline-printer-layout")
+                QgsExpressionContextUtils.setLayoutVariable(
+                    print_layout,
+                    "arpav_title",
+                    response_content["display_name_english"],
+                )
+                map_info_html_layout_element = print_layout.itemById(
+                    "map_info"
+                ).multiFrame()
+                map_info_html = "<table>"
+                for possible_value in response_content["possible_values"]:
+                    map_info_html += (
+                        f"<tr>"
+                        f"<th>{possible_value['configuration_parameter_name']}</th>"
+                        f"<td>{possible_value['configuration_parameter_value']}</td>"
+                        f"</tr>"
+                    )
+                map_info_html += "</table>"
+                map_info_html_layout_element.setContentMode(
+                    QgsLayoutItemHtml.ContentMode.ManualHtml
+                )
+                map_info_html_layout_element.setHtml(map_info_html)
+                map_info_html_layout_element.loadHtml()
 
                 # - base WMS URL
                 # - WMS layer name
@@ -149,3 +199,9 @@ class ClinePrinterServerFilter(QgsServerFilter):
         if params.get("TEST_NEW_PARAM", "") == "yo":
             QgsMessageLog.logMessage("Found the custom parameter in the params")
         return True
+
+
+def _get_current_project(configuration_path: str) -> QgsProject:
+    current_project = QgsProject.instance()
+    current_project.read(configuration_path)
+    return current_project
