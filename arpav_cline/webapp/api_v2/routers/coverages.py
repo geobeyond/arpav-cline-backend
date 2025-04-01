@@ -1065,10 +1065,22 @@ def get_historical_time_series(
             mann_kendall_start, mann_kendall_end = parse_temporal_range(
                 mann_kendall_datetime
             )
-            mann_kendall_params = MannKendallParameters(
-                start_year=mann_kendall_start,
-                end_year=mann_kendall_end,
-            )
+            try:
+                mann_kendall_params = MannKendallParameters(
+                    start_year=(
+                        mann_kendall_start.year
+                        if mann_kendall_start is not None
+                        else None
+                    ),
+                    end_year=(
+                        mann_kendall_end.year if mann_kendall_end is not None else None
+                    ),
+                )
+            except pydantic.ValidationError as err:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=err.errors(include_context=False, include_url=False),
+                ) from err
         try:
             historical_series = timeseries.get_historical_time_series(
                 settings=settings,
