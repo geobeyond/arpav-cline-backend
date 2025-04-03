@@ -887,6 +887,7 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
     observation_stations_vector_tile_layer_url: str | None = None
     possible_values: list[ConfigurationParameterPossibleValueRead]
     related_coverage_configuration_url: str
+    climatic_indicator_url: str
     scenario: ForecastScenario
     time_window: Optional[str] = None
     unit_english: str
@@ -924,6 +925,12 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
                     "legacy_get_coverage_configuration",
                     coverage_configuration_identifier=instance.configuration.identifier,
                 )
+            ),
+            climatic_indicator_url=str(
+                request.url_for(
+                    "get_climatic_indicator",
+                    climatic_indicator_identifier=instance.configuration.climatic_indicator.identifier,
+                ),
             ),
             wms_base_url=str(
                 request.url_for("wms_endpoint", coverage_identifier=instance.identifier)
