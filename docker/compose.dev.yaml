@@ -275,7 +275,7 @@ services:
         published: 3003
 
   qgis-server:
-    image: qgis/qgis-server:ltr-noble
+    image: qgis/qgis-server:3.42-noble
     environment:
       QGIS_PROJECT_FILE: /io/projects/map-printer-project.qgz
       QGIS_PLUGINPATH: /io/plugins

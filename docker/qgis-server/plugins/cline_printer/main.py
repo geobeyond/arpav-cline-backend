@@ -16,6 +16,7 @@ import numpy as np
 
 from qgis.PyQt import (
     QtCore,
+    QtGui,
     QtNetwork,
 )
 from qgis.core import (
@@ -29,10 +30,14 @@ from qgis.core import (
     QgsLayerTree,
     QgsLayerTreeGroup,
     QgsMapLayer,
+    QgsMarkerSymbol,
     QgsMessageLog,
     QgsNetworkAccessManager,
     QgsProject,
     QgsRasterLayer,
+    QgsSymbol,
+    QgsVectorTileBasicRenderer,
+    QgsVectorTileBasicRendererStyle,
     QgsVectorTileLayer,
 )
 from qgis.server import (
@@ -116,12 +121,20 @@ class ClinePrinterException(Exception):
     ...
 
 
+class ClinePrinterServer:
+    def __init__(self, server_iface: QgsServerInterface):
+        service_registry = server_iface.serviceRegistry()
+        printer_service = ClinePrinterService(server_iface)
+        service_registry.registerService(printer_service)
+
+
 class ClinePrinterService(QgsService):
     server_iface: QgsServerInterface
     network_access_manager: QgsNetworkAccessManager
     layout_name = "map-printer"
     vector_tile_layer_name = "observation_stations"
     webapp_service_internal_base_url = "http://webapp:5001"
+    vector_tile_service_internal_base_url = "http://martin:3000"
     osm_layer_name = "osm_standard"
     municipalities_layer_name = "municipalities"
     extent = {
@@ -134,6 +147,7 @@ class ClinePrinterService(QgsService):
     def __init__(self, server_iface: QgsServerInterface, *args, **kwargs):
         self.server_iface = server_iface
         self.network_access_manager = QgsNetworkAccessManager().instance()
+        self.network_access_manager.setRequestPreprocessor(add_cache_load_control)
         super().__init__(*args, **kwargs)
 
     def name(self) -> str:
@@ -151,16 +165,17 @@ class ClinePrinterService(QgsService):
         original_params = request.parameters()
         logger(f"{original_params=}")
         request_id = original_params.get("REQUEST_ID", str(uuid.uuid4()))
+        logger(f"before unloading layers {project.mapLayers()=}")
+        unload_layers(project, self.osm_layer_name, self.municipalities_layer_name)
+        logger(f"after unloading layers {project.mapLayers()=}")
         try:
-            cov_identifier = original_params.get("CLINE_COVERAGE_IDENTIFIER")
+            cov_identifier = original_params.get("COVERAGE_IDENTIFIER")
             if cov_identifier is None:
-                raise ClinePrinterException(
-                    "Missing CLINE_COVERAGE_IDENTIFIER parameter"
-                )
-            wms_layer_name = original_params.get("CLINE_WMS_LAYER_NAME")
+                raise ClinePrinterException("Missing COVERAGE_IDENTIFIER parameter")
+            wms_layer_name = original_params.get("WMS_LAYER_NAME")
             if wms_layer_name is None:
-                write_error(response, "Missing CLINE_WMS_LAYER_NAME parameter")
-            language_code = original_params.get("CLINE_LANGUAGE_CODE", "it")
+                write_error(response, "Missing WMS_LAYER_NAME parameter")
+            language_code = original_params.get("LANGUAGE_CODE", "it")
         except ClinePrinterException as err:
             write_error(response, str(err))
         else:
@@ -184,7 +199,10 @@ class ClinePrinterService(QgsService):
                     osm_layer_name=self.osm_layer_name,
                     municipalities_layer_name=self.municipalities_layer_name,
                     qgis_project=project,
-                    internal_url_base=self.webapp_service_internal_base_url,
+                    internal_wms_url_base=self.webapp_service_internal_base_url,
+                    internal_vector_tiles_url_base=(
+                        self.vector_tile_service_internal_base_url
+                    ),
                     request_id=request_id,
                 )
                 return call_wms_get_print(
@@ -195,6 +213,30 @@ class ClinePrinterService(QgsService):
                     layout_name=self.layout_name,
                     extent=self.extent,
                 )
+
+
+def add_cache_load_control(request: QtNetwork.QNetworkRequest):
+    """Prevents QGIS from caching network requests.
+
+    This is a workaround for the fact that QGIS Server is not being able
+    to cache WMS requests properly, as discussed in:
+
+    https://github.com/qgis/QGIS/issues/59613
+
+    """
+
+    request.setAttribute(
+        QtNetwork.QNetworkRequest.CacheLoadControlAttribute,
+        QtNetwork.QNetworkRequest.CacheLoadControl.AlwaysNetwork,
+    )
+
+
+def unload_layers(project: QgsProject, *to_keep: str):
+    to_remove = []
+    for identifier, layer in project.mapLayers().items():
+        if layer.name() not in to_keep:
+            to_remove.append(identifier)
+    project.removeMapLayers(to_remove)
 
 
 def call_wms_get_print(
@@ -301,12 +343,6 @@ def write_error(response: QgsServerResponse, message: str):
     response.finish()
 
 
-def get_webapp_service_internal_url(public_url: str, internal_url_base: str) -> str:
-    return "/".join(
-        (internal_url_base, public_url.replace("://", "").partition("/")[-1])
-    )
-
-
 def adjust_print_layout(
     *,
     layout_name: str,
@@ -317,16 +353,25 @@ def adjust_print_layout(
     osm_layer_name: str,
     municipalities_layer_name: str,
     qgis_project: QgsProject,
-    internal_url_base: str,
+    internal_wms_url_base: str,
+    internal_vector_tiles_url_base: str,
     request_id: str,
 ) -> None:
-    internal_wms_base_url = get_webapp_service_internal_url(
-        coverage_details["wms_base_url"], internal_url_base
+    internal_wms_base_url = "/".join(
+        (
+            internal_wms_url_base,
+            coverage_details["wms_base_url"].replace("://", "").partition("/")[-1],
+        )
     )
+
     logger(f"{internal_wms_base_url=}")
-    internal_vector_tile_layer_url = get_webapp_service_internal_url(
-        coverage_details["observation_stations_vector_tile_layer_url"],
-        internal_url_base,
+    internal_vector_tile_layer_url = "/".join(
+        (
+            internal_vector_tiles_url_base,
+            coverage_details["observation_stations_vector_tile_layer_url"].partition(
+                "vector-tiles/"
+            )[-1],
+        )
     )
     logger(f"{internal_vector_tile_layer_url=}")
     wms_map_layer = load_cline_wms_layer(
@@ -349,10 +394,8 @@ def adjust_print_layout(
     reorder_layers(layer_tree_root, layer_order)
     wms_map_layer.setOpacity(0.9)
     vector_tile_map_layer.setOpacity(1)
+    set_vector_tile_layer_color(vector_tile_map_layer, QtGui.QColor(179, 181, 181))
     municipalities_map_layer.setOpacity(0.5)
-    # logger(f"{layer_tree_root.findLayers()=}")
-    # layer_tree_root.reorderGroupLayers(layer_order)
-
     layout_manager = qgis_project.layoutManager()
     print_layout = layout_manager.layoutByName(layout_name)
     print_layout = cast(QgsPrintLayout, print_layout)
@@ -373,6 +416,41 @@ def adjust_print_layout(
         colorbar_path=Path(f"/tmp/cline_printer_legend_{request_id}.svg"),
     )
     print_layout.refresh()
+
+
+def set_vector_tile_layer_color(
+    layer: QgsVectorTileLayer,
+    fill_color: QtGui.QColor,
+    stroke_color: QtGui.QColor = None,
+) -> None:
+    renderer = layer.renderer()
+    original_styles = renderer.styles()
+    new_styles = []
+    for old_style in original_styles:
+        name = old_style.styleName().lower()
+        new_style = QgsVectorTileBasicRendererStyle(old_style)
+        if "point" in name or "marker" in name:
+            print(f"Processing style {name=}...")
+            old_symbol = new_style.symbol()
+            if old_symbol.type() == QgsSymbol.SymbolType.Marker:
+                print("Creating a new symbol...")
+                new_symbol = QgsMarkerSymbol.createSimple(
+                    {
+                        "color": fill_color.name(),
+                        "outline_color": (
+                            stroke_color.name()
+                            if stroke_color is not None
+                            else fill_color.name()
+                        ),
+                        "outline_width": 0.26,
+                    }
+                )
+                new_style.setSymbol(new_symbol)
+        new_styles.append(new_style)
+    new_renderer = QgsVectorTileBasicRenderer()
+    new_renderer.setStyles(new_styles)
+    layer.setRenderer(new_renderer)
+    layer.triggerRepaint()
 
 
 def adjust_legend(
@@ -415,30 +493,6 @@ def refresh_layout_variables(
     )
 
 
-# def update_layout_item_html(
-#     html_item: QgsLayoutItemHtml, coverage_details: dict
-# ) -> None:
-#     map_info_html = f"<h3>{coverage_details['display_name_english']}</h3>" f"<table>"
-#     for possible_value in coverage_details["possible_values"]:
-#         map_info_html += (
-#             f"<tr>"
-#             f"<th>{possible_value['configuration_parameter_name']}</th>"
-#             f"<td>{possible_value['configuration_parameter_value']}</td>"
-#             f"</tr>"
-#         )
-#     map_info_html += "</table>"
-#     html_item.setContentMode(QgsLayoutItemHtml.ContentMode.ManualHtml)
-#     html_item.setHtml(map_info_html)
-#     html_item.loadHtml()
-
-
-class ClinePrinterServer:
-    def __init__(self, server_iface: QgsServerInterface):
-        service_registry = server_iface.serviceRegistry()
-        printer_service = ClinePrinterService(server_iface)
-        service_registry.registerService(printer_service)
-
-
 def get_arpav_cline_details(
     url: str, network_access_manager: QgsNetworkAccessManager
 ) -> dict:
@@ -462,6 +516,7 @@ def load_cline_wms_layer(
         "layers": layer_name,
         "styles": "",
         "version": "auto",
+        "no_cache": str(uuid.uuid4()),
     }
     wms_layer = QgsRasterLayer(
         urllib.parse.unquote(urllib.parse.urlencode(layer_load_params)),
