@@ -97,6 +97,12 @@ from ...frontendutils.schemas import (
     LegacyHistoricalMenuTranslations,
 )
 from ...frontendutils import navigation
+from ..arguments import (
+    COVERAGE_IDENTIFIER_PATH_PARAMETER,
+    COVERAGE_CONFIGURATION_IDENTIFIER_PATH_PARAMETER,
+    FORECAST_COVERAGE_IDENTIFIER_PATH_PARAMETER,
+    HISTORICAL_COVERAGE_IDENTIFIER_PATH_PARAMETER,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -222,7 +228,7 @@ def legacy_get_coverage_configuration(
     request: Request,
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_configuration_identifier: str,
+    coverage_configuration_identifier: COVERAGE_CONFIGURATION_IDENTIFIER_PATH_PARAMETER,
 ):
     """Return details about a coverage configuration."""
     try:
@@ -370,7 +376,7 @@ def legacy_get_coverage(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    coverage_identifier: str,
+    coverage_identifier: COVERAGE_IDENTIFIER_PATH_PARAMETER,
 ):
     """Get coverage details"""
     try:
@@ -440,7 +446,7 @@ def deprecated_get_coverage_identifier(
     request: Request,
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
-    coverage_identifier: str,
+    coverage_identifier: COVERAGE_IDENTIFIER_PATH_PARAMETER,
 ):
     """Get coverage details.
 
@@ -455,7 +461,7 @@ def wms_endpoint(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
-    coverage_identifier: str,
+    coverage_identifier: COVERAGE_IDENTIFIER_PATH_PARAMETER,
     version: str = "1.3.0",
 ):
     """### Serve coverage via OGC Web Map Service.
@@ -595,7 +601,7 @@ async def get_forecast_data(
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
+    coverage_identifier: FORECAST_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     analytics_params: Annotated[dependencies.DownloadAnalyticsParameters, Depends()],
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
@@ -679,7 +685,7 @@ async def get_historical_data(
     http_client: Annotated[httpx.AsyncClient, Depends(dependencies.get_http_client)],
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     analytics_params: Annotated[dependencies.DownloadAnalyticsParameters, Depends()],
-    coverage_identifier: str,
+    coverage_identifier: HISTORICAL_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     coords: Annotated[str, Query(description="A Well-Known-Text Polygon")] = None,
     datetime: Optional[str] = "../..",
 ):
@@ -888,7 +894,7 @@ def deprecated_get_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
-    coverage_identifier: str,
+    coverage_identifier: FORECAST_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     coords: str,
     datetime: Optional[str] = "../..",
     include_coverage_data: bool = True,
@@ -939,7 +945,7 @@ def get_forecast_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
-    coverage_identifier: str,
+    coverage_identifier: FORECAST_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     coords: str,
     datetime: Optional[str] = "../..",
     include_coverage_data: bool = True,
@@ -1036,7 +1042,7 @@ def get_historical_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
-    coverage_identifier: str,
+    coverage_identifier: HISTORICAL_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     coords: str,
     datetime: Optional[str] = "../..",
     mann_kendall_datetime: Optional[str] = None,
@@ -1177,7 +1183,7 @@ def get_historical_variable_combinations(
 )
 def notify_time_series_download_request(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
-    coverage_identifier: str,
+    coverage_identifier: FORECAST_COVERAGE_IDENTIFIER_PATH_PARAMETER,
     analytics_params: Annotated[dependencies.DownloadAnalyticsParameters, Depends()],
     coords: Annotated[str, Query(max_length=20)],
 ) -> TimeSeriesDownloadRequestRead:

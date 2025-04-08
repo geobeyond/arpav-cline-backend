@@ -1,8 +1,11 @@
 import io
 import logging
+import typing
 
 from httpx import Client
 from playwright.sync_api import sync_playwright
+
+from .config import ArpavPpcvSettings
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +47,27 @@ def grab_frontend_screenshot(
     return screenshot_buffer
 
 
-def get_map_print(http_client: Client):
-    response = http_client.get(  # noqa
-        "http://qgis-server/ogc/",
-        params={
-            "service": "WMS",
-            "request": "GetPrint",
-            "template": "arpav-cline-printer-layout",
-            "crs": "EPSG:3857",
-            "cline_coverage_identifier": None,
-            "cline_wms_layer_name": None,
-        },
-    )
+def get_map_print(
+    http_client: Client,
+    coverage_identifier: str,
+    output_format: typing.Literal["jpg", "png", "pdf"],
+    settings: ArpavPpcvSettings,
+    main_layer: str | None = None,
+    language_code: str | None = None,
+):
+    params = {
+        "service": "CLINE_PRINTER",
+        "coverage_identifier": coverage_identifier,
+        "wms_layer_name": None,
+        "format": output_format,
+    }
+    if main_layer:
+        params["wms_layer_name"] = main_layer
+    if language_code:
+        params["language_code"] = language_code
+    with http_client.stream(
+        "GET", f"{settings.print_server_base_url}/ogc/", params=params
+    ) as response:
+        yield response.headers
+        for data in response.iter_raw():
+            yield data

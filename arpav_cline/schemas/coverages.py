@@ -1170,7 +1170,13 @@ class ForecastCoverageInternal:
         return self._render_templated_value(self.configuration.wms_main_layer_name)
 
     def get_wms_secondary_layer_name(self) -> Optional[str]:
-        return self._render_templated_value(self.configuration.wms_secondary_layer_name)
+        try:
+            result = self._render_templated_value(
+                self.configuration.wms_secondary_layer_name
+            )
+        except AttributeError:
+            result = None
+        return result
 
     def _get_forecast_model_thredds_url_base_path(self) -> Optional[str]:
         result = None

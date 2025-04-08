@@ -1,4 +1,3 @@
-import dataclasses
 import json
 import uuid
 import urllib.parse
@@ -6,6 +5,7 @@ from pathlib import Path
 from typing import (
     Iterable,
     Literal,
+    Union,
     cast,
 )
 
@@ -47,74 +47,9 @@ from qgis.server import (
     QgsService,
 )
 
+from . import models
+
 logger = QgsMessageLog.logMessage
-
-
-@dataclasses.dataclass(frozen=True)
-class ForecastCoverageDisplayDetails:
-    title: str
-    description: str
-    climatic_indicator: str
-    measure: str
-    aggregation_period: str
-    model: str
-    scenario: str
-    year_period: str
-    time_window: str | None
-    full_coverage_details: dict
-    unit: str
-
-
-@dataclasses.dataclass(frozen=True)
-class ClinePrinterLayoutVariables:
-    title: str
-    description: str
-    climatic_indicator: str
-    measure: str
-    aggregation_period: str
-    model: str
-    scenario: str
-    year_period: str
-    time_window: str | None
-    parameter_climatic_indicator: str
-    parameter_model_and_scenario: str
-    parameter_quantity_and_period: str
-    parameter_season: str
-    section_map_details_title: str
-    legend_title: str
-
-    @classmethod
-    def from_coverage_details(
-        cls, coverage_details: dict, language_code: str
-    ) -> "ClinePrinterLayoutVariables":
-        display_details = get_display_details(
-            language_code=language_code, coverage_details=coverage_details
-        )
-        return ClinePrinterLayoutVariables(
-            title=display_details.title,
-            description=display_details.description,
-            climatic_indicator=display_details.climatic_indicator,
-            measure=display_details.measure,
-            aggregation_period=display_details.aggregation_period,
-            model=display_details.model,
-            scenario=display_details.scenario,
-            year_period=display_details.year_period,
-            time_window=display_details.time_window,
-            parameter_climatic_indicator=(
-                "Indicatore" if language_code == "it" else "Indicator"
-            ),
-            parameter_model_and_scenario=(
-                "Modello e Scenario" if language_code == "it" else "Model and Scenario"
-            ),
-            parameter_quantity_and_period=(
-                "Quantità e Periodo" if language_code == "it" else "Quantity and Period"
-            ),
-            parameter_season=("Stagione" if language_code == "it" else "Season"),
-            section_map_details_title=(
-                "Informazioni sulla mappa" if language_code == "it" else "Map Info"
-            ),
-            legend_title=f"{display_details.title} ({display_details.unit})",
-        )
 
 
 class ClinePrinterException(Exception):
@@ -131,7 +66,8 @@ class ClinePrinterServer:
 class ClinePrinterService(QgsService):
     server_iface: QgsServerInterface
     network_access_manager: QgsNetworkAccessManager
-    layout_name = "map-printer"
+    forecast_layout_name = "map-printer-forecast"
+    historical_layout_name = "map-printer-historical"
     vector_tile_layer_name = "observation_stations"
     webapp_service_internal_base_url = "http://webapp:5001"
     vector_tile_service_internal_base_url = "http://martin:3000"
@@ -165,9 +101,7 @@ class ClinePrinterService(QgsService):
         original_params = request.parameters()
         logger(f"{original_params=}")
         request_id = original_params.get("REQUEST_ID", str(uuid.uuid4()))
-        logger(f"before unloading layers {project.mapLayers()=}")
         unload_layers(project, self.osm_layer_name, self.municipalities_layer_name)
-        logger(f"after unloading layers {project.mapLayers()=}")
         try:
             cov_identifier = original_params.get("COVERAGE_IDENTIFIER")
             if cov_identifier is None:
@@ -175,44 +109,129 @@ class ClinePrinterService(QgsService):
             wms_layer_name = original_params.get("WMS_LAYER_NAME")
             if wms_layer_name is None:
                 write_error(response, "Missing WMS_LAYER_NAME parameter")
-            language_code = original_params.get("LANGUAGE_CODE", "it")
         except ClinePrinterException as err:
             write_error(response, str(err))
         else:
+            language_code = original_params.get("LANGUAGE_CODE", "it")
             try:
-                cov_details = get_arpav_cline_details(
-                    (
-                        f"{self.webapp_service_internal_base_url}/api/v2"
-                        f"/coverages/coverages/{cov_identifier}"
-                    ),
-                    self.network_access_manager,
-                )
+                api_details = self.get_api_details(cov_identifier)
             except ClinePrinterException as err:
                 write_error(response, str(err))
             else:
-                adjust_print_layout(
-                    layout_name=self.layout_name,
-                    coverage_details=cov_details,
-                    language_code=language_code,
-                    wms_layer_name=wms_layer_name,
-                    vector_tile_layer_name=self.vector_tile_layer_name,
-                    osm_layer_name=self.osm_layer_name,
-                    municipalities_layer_name=self.municipalities_layer_name,
-                    qgis_project=project,
-                    internal_wms_url_base=self.webapp_service_internal_base_url,
-                    internal_vector_tiles_url_base=(
-                        self.vector_tile_service_internal_base_url
-                    ),
-                    request_id=request_id,
-                )
+                data_category = cov_identifier.partition("-")[0]
+                if data_category in ("forecast", "historical"):
+                    if data_category == "forecast":
+                        self.adjust_forecast_print_layout(
+                            api_details,
+                            language_code,
+                            wms_layer_name,
+                            project,
+                            request_id,
+                        )
+                    else:
+                        self.adjust_historical_print_layout(
+                            api_details,
+                            language_code,
+                            wms_layer_name,
+                            project,
+                            request_id,
+                        )
+                else:
+                    write_error(response, f"Unknown data category {data_category!r}")
                 return call_wms_get_print(
                     request=request,
                     response=response,
                     qgis_project=project,
                     server_iface=self.server_iface,
-                    layout_name=self.layout_name,
+                    layout_name=self._select_layout(data_category),
                     extent=self.extent,
                 )
+
+    def _select_layout(self, data_category: str) -> str:
+        return (
+            self.forecast_layout_name
+            if data_category == "forecast"
+            else self.historical_layout_name
+        )
+
+    def adjust_forecast_print_layout(
+        self,
+        api_details: models.RawApiDetails,
+        language_code: str,
+        wms_layer_name: str,
+        project: QgsProject,
+        request_id: str,
+    ):
+        layout_variables = models.ForecastMapLayoutVariables.from_api_details(
+            api_details, language_code
+        )
+        return adjust_print_layout(
+            layout_name=self.forecast_layout_name,
+            coverage_details=api_details.coverage,
+            layout_variables=layout_variables,
+            wms_layer_name=wms_layer_name,
+            vector_tile_layer_name=self.vector_tile_layer_name,
+            osm_layer_name=self.osm_layer_name,
+            municipalities_layer_name=self.municipalities_layer_name,
+            qgis_project=project,
+            internal_wms_url_base=self.webapp_service_internal_base_url,
+            internal_vector_tiles_url_base=(self.vector_tile_service_internal_base_url),
+            request_id=request_id,
+        )
+
+    def adjust_historical_print_layout(
+        self,
+        api_details: models.RawApiDetails,
+        language_code: str,
+        wms_layer_name: str,
+        project: QgsProject,
+        request_id: str,
+    ):
+        layout_variables = models.HistoricalMapLayoutVariables.from_api_details(
+            api_details, language_code
+        )
+        return adjust_print_layout(
+            layout_name=self.historical_layout_name,
+            coverage_details=api_details.coverage,
+            layout_variables=layout_variables,
+            wms_layer_name=wms_layer_name,
+            vector_tile_layer_name=self.vector_tile_layer_name,
+            osm_layer_name=self.osm_layer_name,
+            municipalities_layer_name=self.municipalities_layer_name,
+            qgis_project=project,
+            internal_wms_url_base=self.webapp_service_internal_base_url,
+            internal_vector_tiles_url_base=(self.vector_tile_service_internal_base_url),
+            request_id=request_id,
+        )
+
+    def get_api_details(self, coverage_identifier: str) -> models.RawApiDetails:
+        cov_details = get_arpav_cline_details(
+            (
+                f"{self.webapp_service_internal_base_url}/api/v2"
+                f"/coverages/coverages/{coverage_identifier}"
+            ),
+            self.network_access_manager,
+        )
+        conf_parameters_details = get_arpav_cline_details(
+            (
+                f"{self.webapp_service_internal_base_url}/api/v2/"
+                f"coverages/configuration-parameters"
+            ),
+            self.network_access_manager,
+        )["items"]
+        climatic_indicator_details = get_arpav_cline_details(
+            (
+                f"{self.webapp_service_internal_base_url}/api/v2"
+                f"/climatic-indicators/"
+                f"{cov_details['climatic_indicator_url'].rpartition('/')[-1]}"
+            ),
+            self.network_access_manager,
+        )
+        return models.RawApiDetails(
+            coverage=cov_details,
+            configuration_parameters=conf_parameters_details,
+            climatic_indicator=climatic_indicator_details,
+        )
 
 
 def add_cache_load_control(request: QtNetwork.QNetworkRequest):
@@ -276,66 +295,6 @@ def call_wms_get_print(
     return wms_service.executeRequest(request, response, qgis_project)
 
 
-def get_display_details(
-    *,
-    language_code: str,
-    coverage_details: dict,
-) -> ForecastCoverageDisplayDetails:
-    lang_key = "italian" if language_code == "it" else "english"
-    climatic_indicator_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "climatological_variable"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    measure_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "measure"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    aggregation_period_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "aggregation_period"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    model_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "climatological_model"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    scenario_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "scenario"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    year_period_display_name = [
-        pv
-        for pv in coverage_details["possible_values"]
-        if pv["configuration_parameter_name"] == "year_period"
-    ][0][f"configuration_parameter_display_name_{lang_key}"]
-    unit_display_name = coverage_details[f"unit_{lang_key}"]
-    try:
-        time_window_display_name = [
-            pv
-            for pv in coverage_details["possible_values"]
-            if pv["configuration_parameter_name"] == "time_window"
-        ][0][f"configuration_parameter_display_name_{lang_key}"]
-    except IndexError:
-        time_window_display_name = None
-    return ForecastCoverageDisplayDetails(
-        title=coverage_details[f"display_name_{lang_key}"],
-        description=coverage_details[f"description_{lang_key}"],
-        climatic_indicator=climatic_indicator_display_name,
-        measure=measure_display_name,
-        aggregation_period=aggregation_period_display_name,
-        model=model_display_name,
-        scenario=scenario_display_name,
-        year_period=year_period_display_name,
-        time_window=time_window_display_name,
-        unit=unit_display_name,
-        full_coverage_details=coverage_details,
-    )
-
-
 def write_error(response: QgsServerResponse, message: str):
     response.write(json.dumps({"detail": message}))
     response.setHeader("Content-Type", "application/json")
@@ -347,7 +306,9 @@ def adjust_print_layout(
     *,
     layout_name: str,
     coverage_details: dict,
-    language_code: str,
+    layout_variables: Union[
+        models.ForecastMapLayoutVariables, models.HistoricalMapLayoutVariables
+    ],
     wms_layer_name: str,
     vector_tile_layer_name: str,
     osm_layer_name: str,
@@ -404,9 +365,6 @@ def adjust_print_layout(
         map_item: QgsLayoutItemMap
         map_item.setKeepLayerSet(False)
         map_item.refresh()
-    layout_variables = ClinePrinterLayoutVariables.from_coverage_details(
-        coverage_details, language_code
-    )
     refresh_layout_variables(print_layout, layout_variables)
     # map_info_html_layout_element = print_layout.itemById("map_info").multiFrame()
     # update_layout_item_html(map_info_html_layout_element, coverage_details)
@@ -484,7 +442,10 @@ def reorder_layers(root: QgsLayerTree, layer_order: Iterable[QgsMapLayer]) -> No
 
 
 def refresh_layout_variables(
-    print_layout: QgsLayout, layout_variables: ClinePrinterLayoutVariables
+    print_layout: QgsLayout,
+    layout_variables: Union[
+        models.ForecastMapLayoutVariables, models.HistoricalMapLayoutVariables
+    ],
 ) -> None:
     logger(f"{layout_variables=}")
     logger(f"{layout_variables.__dict__.items()=}")

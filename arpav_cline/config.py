@@ -120,6 +120,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     palette_num_stops: int = 5
     prefect: PrefectSettings = PrefectSettings()
     vector_tile_server_base_url: str = "http://localhost:5001/vector-tiles"
+    print_server_base_url: str = "http://qgis-server"
     nearest_station_radius_meters: int = 1000
     v2_api_mount_prefix: str = "/api/v2"
     v3_api_mount_prefix: str = "/api/v3"

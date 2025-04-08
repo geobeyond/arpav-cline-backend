@@ -741,11 +741,7 @@ class LegacyForecastCoverageReadListItem(pydantic.BaseModel):
                 if instance.configuration.wms_main_layer_name is not None
                 else None
             ),
-            wms_secondary_layer_name=(
-                instance.get_wms_secondary_layer_name()
-                if instance.configuration.wms_secondary_layer_name is not None
-                else None
-            ),
+            wms_secondary_layer_name=instance.get_wms_secondary_layer_name(),
             related_coverage_configuration_url=str(
                 request.url_for(
                     "legacy_get_coverage_configuration",
@@ -949,11 +945,7 @@ class LegacyForecastCoverageReadDetail(pydantic.BaseModel):
                 )
             ),
             wms_main_layer_name=instance.get_wms_main_layer_name(),
-            wms_secondary_layer_name=(
-                instance.get_wms_secondary_layer_name()
-                if instance.configuration.wms_secondary_layer_name
-                else None
-            ),
+            wms_secondary_layer_name=instance.get_wms_secondary_layer_name(),
             possible_values=cls.prepare_possible_values(instance),
             observation_stations_vector_tile_layer_url=vector_tile_stations_url,
             display_name_english=instance.configuration.climatic_indicator.display_name_english,
@@ -1095,6 +1087,7 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
     possible_values: list[ConfigurationParameterPossibleValueRead]
     reference_period: Optional[HistoricalReferencePeriod] = None
     related_coverage_configuration_url: str
+    climatic_indicator_url: str
     unit_english: str
     unit_italian: str
     url: pydantic.AnyHttpUrl
@@ -1137,6 +1130,12 @@ class LegacyHistoricalCoverageReadDetail(LegacyHistoricalCoverageReadListItem):
             ),
             wms_base_url=str(
                 request.url_for("wms_endpoint", coverage_identifier=instance.identifier)
+            ),
+            climatic_indicator_url=str(
+                request.url_for(
+                    "get_climatic_indicator",
+                    climatic_indicator_identifier=instance.configuration.climatic_indicator.identifier,
+                ),
             ),
             year_period=instance.year_period.value,
             reference_period=(
