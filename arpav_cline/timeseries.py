@@ -217,12 +217,19 @@ def find_nearby_observation_station(
     return nearby_stations[0] if len(nearby_stations) > 0 else None
 
 
+def filter_series_by_year_period(
+    series: pd.Series, year_period: static.ObservationYearPeriod
+) -> pd.Series:
+    return series[series.index.month.isin(year_period.get_month_filter())]
+
+
 def get_nearby_observation_station_time_series(
     session: "sqlmodel.Session",
     location: shapely.Point,
     observation_series_configuration: "observations.ObservationSeriesConfiguration",
     distance_threshold_meters: int,
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
+    year_period: static.ObservationYearPeriod | None = None,
 ) -> Optional[dataseries.ObservationStationDataSeries]:
     result = None
     nearby_station = find_nearby_observation_station(
@@ -248,6 +255,8 @@ def get_nearby_observation_station_time_series(
                 base_name=result.identifier,
                 temporal_range=temporal_range,
             )
+            if year_period is not None:
+                parsed_data = filter_series_by_year_period(parsed_data, year_period)
             result.data_ = parsed_data
         else:
             result = None
@@ -499,6 +508,7 @@ def get_historical_time_series(
             obs_series_conf,
             distance_threshold_meters=settings.nearest_station_radius_meters_historical,
             temporal_range=temporal_range,
+            year_period=static.ObservationYearPeriod(coverage.year_period.value),
         )
         if obs_data_series is not None:
             result.append(obs_data_series)
@@ -613,6 +623,7 @@ def get_forecast_coverage_time_series(
             point_geom=point_geom,
             processing_methods=observation_processing_methods,
             temporal_range=temporal_range,
+            year_period=static.ObservationYearPeriod(coverage.year_period.value),
         )
     return coverage_series, observation_series
 
@@ -702,6 +713,7 @@ def _get_forecast_coverage_observation_time_series(
     point_geom: shapely.Point,
     processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
+    year_period: static.ObservationYearPeriod | None = None,
 ) -> list[dataseries.ObservationStationDataSeries]:
     result = []
     for observation_series_conf in observation_series_configurations:
@@ -711,6 +723,7 @@ def _get_forecast_coverage_observation_time_series(
             observation_series_conf,
             distance_threshold_meters=settings.nearest_station_radius_meters_forecasts,
             temporal_range=temporal_range,
+            year_period=year_period,
         )
         if observation_data_series is not None:
             result.append(observation_data_series)
