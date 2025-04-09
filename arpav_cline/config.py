@@ -120,7 +120,8 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     palette_num_stops: int = 5
     prefect: PrefectSettings = PrefectSettings()
     vector_tile_server_base_url: str = "http://localhost:5001/vector-tiles"
-    nearest_station_radius_meters: int = 1000
+    nearest_station_radius_meters_forecasts: int = 1000
+    nearest_station_radius_meters_historical: int = 2500
     v2_api_mount_prefix: str = "/api/v2"
     v3_api_mount_prefix: str = "/api/v3"
     log_config_file: Path | None = None
