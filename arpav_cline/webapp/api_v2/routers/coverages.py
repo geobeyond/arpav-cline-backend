@@ -1009,7 +1009,7 @@ def get_forecast_time_series(
             ) from err
         else:
             series = []
-            for forecast_cov_series in forecast_series:
+            for forecast_cov_series in forecast_series or []:
                 series.append(
                     LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
                 )

@@ -201,6 +201,27 @@ class ObservationYearPeriod(str, enum.Enum):
     NOVEMBER = "november"
     DECEMBER = "december"
 
+    def get_month_filter(self) -> list[int]:
+        return {
+            ObservationYearPeriod.ALL_YEAR: (7,),
+            ObservationYearPeriod.WINTER: (1, 2, 12),
+            ObservationYearPeriod.SPRING: (3, 4, 5),
+            ObservationYearPeriod.SUMMER: (6, 7, 8),
+            ObservationYearPeriod.AUTUMN: (9, 10, 11),
+            ObservationYearPeriod.JANUARY: (1,),
+            ObservationYearPeriod.FEBRUARY: (2,),
+            ObservationYearPeriod.MARCH: (3,),
+            ObservationYearPeriod.APRIL: (4,),
+            ObservationYearPeriod.MAY: (5,),
+            ObservationYearPeriod.JUNE: (6,),
+            ObservationYearPeriod.JULY: (7,),
+            ObservationYearPeriod.AUGUST: (8,),
+            ObservationYearPeriod.SEPTEMBER: (9,),
+            ObservationYearPeriod.OCTOBER: (10,),
+            ObservationYearPeriod.NOVEMBER: (11,),
+            ObservationYearPeriod.DECEMBER: (12,),
+        }[self]
+
 
 class HistoricalYearPeriod(str, enum.Enum):
     ALL_YEAR = "all_year"
