@@ -497,7 +497,7 @@ def get_historical_time_series(
             session,
             point_geom,
             obs_series_conf,
-            distance_threshold_meters=settings.nearest_station_radius_meters,
+            distance_threshold_meters=settings.nearest_station_radius_meters_historical,
             temporal_range=temporal_range,
         )
         if obs_data_series is not None:
@@ -709,7 +709,7 @@ def _get_forecast_coverage_observation_time_series(
             session,
             point_geom,
             observation_series_conf,
-            distance_threshold_meters=settings.nearest_station_radius_meters,
+            distance_threshold_meters=settings.nearest_station_radius_meters_forecasts,
             temporal_range=temporal_range,
         )
         if observation_data_series is not None:
