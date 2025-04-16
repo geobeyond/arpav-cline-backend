@@ -100,10 +100,12 @@ def _generate_mann_kendall_series(
     mk_end = end_year or original.index[-1].year
     mk_df = original[str(mk_start) : str(mk_end)].copy()
     mk_result = pymannkendall.original_test(mk_df[original_column])
-    mk_df[column_name] = (
-        mk_result.slope * (mk_df.index.year - mk_df.index.year.min())
-        + mk_result.intercept
-    )
+    years = range(mk_start, mk_end + 1)
+    mk_df = pd.Series(
+        data=[mk_result.slope * year + mk_result.intercept for year in years],
+        index=[pd.Timestamp(year=year, month=7, day=1) for year in years],
+        name=column_name,
+    ).to_frame()
     return mk_df, {
         "start_year": mk_start,
         "end_year": mk_end,
@@ -364,8 +366,8 @@ def generate_mann_kendall_derived_observation_station_series(
     original_series: dataseries.ObservationStationDataSeries,
     point_geom: shapely.geometry.Point,
     *,
-    start: dt.datetime | None,
-    end: dt.datetime | None,
+    start_year: int | None,
+    end_year: int | None,
 ) -> dataseries.ObservationStationDataSeries:
     derived_series = dataseries.ObservationStationDataSeries(
         observation_series_configuration=(
@@ -379,8 +381,8 @@ def generate_mann_kendall_derived_observation_station_series(
         location=point_geom,
     )
     df = original_series.data_.to_frame()
-    mk_start = start or df.index[0].year
-    mk_end = end or df.index[-1].year
+    mk_start = start_year or df.index[0].year
+    mk_end = end_year or df.index[-1].year
     df, info = _generate_mann_kendall_series(
         df, original_series.identifier, derived_series.identifier, mk_start, mk_end
     )
@@ -449,8 +451,8 @@ def generate_loess_derived_historical_coverage_series(
 def generate_mann_kendall_derived_historical_coverage_series(
     original_series: dataseries.HistoricalDataSeries,
     *,
-    start: dt.datetime | None,
-    end: dt.datetime | None,
+    start_year: dt.datetime | None,
+    end_year: dt.datetime | None,
 ) -> dataseries.HistoricalDataSeries:
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
@@ -461,8 +463,8 @@ def generate_mann_kendall_derived_historical_coverage_series(
         location=original_series.location,
     )
     df = original_series.data_.to_frame()
-    mk_start = start or df.index[0].year
-    mk_end = end or df.index[-1].year
+    mk_start = start_year or df.index[0].year
+    mk_end = end_year or df.index[-1].year
     df, info = _generate_mann_kendall_series(
         df, original_series.identifier, derived_series.identifier, mk_start, mk_end
     )
@@ -535,8 +537,8 @@ def get_historical_time_series(
                     generate_mann_kendall_derived_observation_station_series(
                         obs_data_series,
                         point_geom,
-                        start=mann_kendall_params.start_year,
-                        end=mann_kendall_params.end_year,
+                        start_year=mann_kendall_params.start_year,
+                        end_year=mann_kendall_params.end_year,
                     )
                 )
         else:
@@ -566,8 +568,8 @@ def get_historical_time_series(
                 result.append(
                     generate_mann_kendall_derived_historical_coverage_series(
                         cov_series,
-                        start=mann_kendall_params.start_year,
-                        end=mann_kendall_params.end_year,
+                        start_year=mann_kendall_params.start_year,
+                        end_year=mann_kendall_params.end_year,
                     )
                 )
     return result
