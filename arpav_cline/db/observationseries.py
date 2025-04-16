@@ -278,7 +278,17 @@ def find_new_station_measurements(
     to_drop = []
     for candidate in candidates:
         for existing in existing_measurements:
-            if candidate.climatic_indicator_id == existing.climatic_indicator_id:
-                if candidate.date == existing.date:
-                    to_drop.append(candidate.identifier)
+            is_same_aggregation_type = (
+                candidate.measurement_aggregation_type
+                == existing.measurement_aggregation_type
+            )
+            is_same_date = candidate.date == existing.date
+            is_same_climatic_indicator = (
+                candidate.climatic_indicator_id == existing.climatic_indicator.id
+            )
+            if all(
+                (is_same_aggregation_type, is_same_climatic_indicator, is_same_date)
+            ):
+                to_drop.append(candidate.identifier)
+                break
     return [m for m in candidates if m.identifier not in to_drop]
