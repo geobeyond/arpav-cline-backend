@@ -24,8 +24,8 @@ class ContactSettings(pydantic.BaseModel):
 class PrefectSettings(pydantic.BaseModel):
     num_flow_retries: int = 5
     flow_retry_delay_seconds: int = 5
-    num_task_retries: int = 5
-    task_retry_delay_seconds: int = 5
+    num_task_retries: int = 10
+    task_retry_delay_seconds: int = 10
     observation_stations_refresher_flow_cron_schedule: str = (
         "0 1 * * 1"  # run once every week, at 01:00 on monday
     )
