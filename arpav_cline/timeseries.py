@@ -102,7 +102,9 @@ def _generate_mann_kendall_series(
     mk_result = pymannkendall.original_test(mk_df[original_column])
     years = range(mk_start, mk_end + 1)
     mk_df = pd.Series(
-        data=[mk_result.slope * year + mk_result.intercept for year in years],
+        data=[
+            mk_result.slope * (year - mk_start) + mk_result.intercept for year in years
+        ],
         index=[pd.Timestamp(year=year, month=7, day=1) for year in years],
         name=column_name,
     ).to_frame()
