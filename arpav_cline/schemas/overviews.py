@@ -176,6 +176,23 @@ class ForecastOverviewSeriesInternal:
             result = None
         return result
 
+    def get_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
+
+    def get_lower_uncertainty_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_lower_uncertainty_thredds_url_fragment()
+        return crawler.get_file_download_url(rendered, settings) if rendered else None
+
+    def get_upper_uncertainty_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        rendered = self._get_upper_uncertainty_thredds_url_fragment()
+        return crawler.get_file_download_url(rendered, settings) if rendered else None
+
     def get_thredds_opendap_url(self, settings: ThreddsServerSettings) -> Optional[str]:
         return crawler.get_opendap_url(self._get_thredds_url_fragment(), settings)
 
@@ -244,3 +261,8 @@ class ObservationOverviewSeriesInternal:
             climatic_indicator=self.configuration.climatic_indicator.name,
             data_category=static.DataCategory.FORECAST.value,
         )
+
+    def get_thredds_file_download_url(
+        self, settings: ThreddsServerSettings
+    ) -> Optional[str]:
+        return crawler.get_file_download_url(self._get_thredds_url_fragment(), settings)
