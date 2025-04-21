@@ -219,7 +219,6 @@ def import_thredds_datasets(
                 session, identifier_filter=coverage_configuration_identifier_filter
             )
         )
-        # TODO: Implement also overviews
         urls = []
         settings: config.ArpavPpcvSettings = ctx.obj["settings"]
 
@@ -250,6 +249,34 @@ def import_thredds_datasets(
             )
             for cov in historical_covs:
                 urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
+        for (
+            forecast_overview_cov_conf
+        ) in db.collect_all_forecast_overview_series_configurations(session):
+            if coverage_configuration_identifier_filter not in (
+                forecast_overview_cov_conf.identifier
+            ):
+                continue
+            for cov in db.generate_forecast_overview_series_from_configuration(
+                forecast_overview_cov_conf
+            ):
+                urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
+                lower_uncert_url = cov.get_lower_uncertainty_thredds_file_download_url(
+                    settings.thredds_server
+                )
+                if lower_uncert_url is not None:
+                    urls.append(lower_uncert_url)
+                upper_uncert_url = cov.get_upper_uncertainty_thredds_file_download_url(
+                    settings.thredds_server
+                )
+                if upper_uncert_url is not None:
+                    urls.append(upper_uncert_url)
+        for (
+            observation_overview_cov_conf
+        ) in db.collect_all_observation_overview_series_configurations(session):
+            cov = db.generate_observation_overview_series_from_configuration(
+                observation_overview_cov_conf
+            )
+            urls.append(cov.get_thredds_file_download_url(settings.thredds_server))
         # restore THREDDS base url
         settings.thredds_server.base_url = old_thredds_base_url
     # remote_urls = [
