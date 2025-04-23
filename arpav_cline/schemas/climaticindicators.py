@@ -221,7 +221,7 @@ class ClimaticIndicatorUpdate(sqlmodel.SQLModel):
     color_scale_max: Optional[float] = None
     data_precision: Optional[int] = None
     sort_order: Optional[int] = None
-    observation_names: list["ClimaticIndicatorObservationNameUpdate"]
+    observation_names: Optional[list["ClimaticIndicatorObservationNameUpdate"]] = None
     forecast_models: Optional[
         list[ClimaticIndicatorForecastModelLinkUpdateEmbeddedInClimaticIndicator]
     ] = None

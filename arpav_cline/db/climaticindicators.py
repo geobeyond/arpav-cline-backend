@@ -12,6 +12,8 @@ from .. import exceptions
 from ..schemas.climaticindicators import (
     ClimaticIndicator,
     ClimaticIndicatorCreate,
+    ClimaticIndicatorForecastModelLinkUpdateEmbeddedInClimaticIndicator,
+    ClimaticIndicatorObservationNameUpdate,
     ClimaticIndicatorUpdate,
 )
 from ..schemas.coverages import ForecastModelClimaticIndicatorLink
@@ -179,51 +181,58 @@ def create_climatic_indicator(
         return db_climatic_indicator
 
 
-def update_climatic_indicator(
+def _update_climatic_indicator_observation_names(
     session: sqlmodel.Session,
-    db_climatic_indicator: ClimaticIndicator,
-    climatic_indicator_update: ClimaticIndicatorUpdate,
-) -> ClimaticIndicator:
-    """Update a climatic indicator."""
-    to_refresh = []
+    climatic_indicator: ClimaticIndicator,
+    observation_names_to_update: list[ClimaticIndicatorObservationNameUpdate],
+):
     requested_obs_names = {
         "-".join(
-            (str(db_climatic_indicator.id), ron.observation_station_manager.value)
+            (str(climatic_indicator.id), ron.observation_station_manager.value)
         ): ron
-        for ron in climatic_indicator_update.observation_names
+        for ron in observation_names_to_update
     }
     logger.debug(f"{requested_obs_names=}")
     existing_obs_names = {
-        "-".join((str(db_climatic_indicator.id), ron.station_manager.value)): ron
-        for ron in db_climatic_indicator.observation_names
+        "-".join((str(climatic_indicator.id), ron.station_manager.value)): ron
+        for ron in climatic_indicator.observation_names
     }
     logger.debug(f"{existing_obs_names=}")
     for existing_key, existing_obs_name in existing_obs_names.items():
         has_been_requested_to_remove = existing_key not in requested_obs_names
         if has_been_requested_to_remove:
             session.delete(existing_obs_name)
-    session.refresh(db_climatic_indicator)
+    session.refresh(climatic_indicator)
     for requested_key, requested_obs_name in requested_obs_names.items():
         if requested_key not in existing_obs_names:  # need to create this one
             db_observation_name = ClimaticIndicatorObservationName(
                 station_manager=requested_obs_name.observation_station_manager,
                 indicator_observation_name=requested_obs_name.indicator_observation_name,
             )
-            db_climatic_indicator.observation_names.append(db_observation_name)
+            climatic_indicator.observation_names.append(db_observation_name)
         else:  # already exists, just update
             existing_db_observation_name = existing_obs_names[requested_key]
             existing_db_observation_name.indicator_observation_name = (
                 requested_obs_name.indicator_observation_name
             )
             session.add(existing_db_observation_name)
-            to_refresh.append(existing_db_observation_name)
+    return climatic_indicator
+
+
+def _update_climatic_indicator_forecast_model_links(
+    session: sqlmodel.Session,
+    climatic_indicator: ClimaticIndicator,
+    forecast_model_links_to_update: list[
+        ClimaticIndicatorForecastModelLinkUpdateEmbeddedInClimaticIndicator
+    ],
+):
     requested_forecast_model_links = {
-        fm.forecast_model_id: fm for fm in climatic_indicator_update.forecast_models
+        fm.forecast_model_id: fm for fm in forecast_model_links_to_update
     }
     logger.debug(f"{requested_forecast_model_links=}")
     existing_forecast_model_links = {
         db_fm.forecast_model_id: db_fm
-        for db_fm in db_climatic_indicator.forecast_model_links
+        for db_fm in climatic_indicator.forecast_model_links
     }
     for existing_fm_id, existing_fm_link in existing_forecast_model_links.items():
         has_been_requested_to_remove = (
@@ -231,22 +240,40 @@ def update_climatic_indicator(
         )
         if has_been_requested_to_remove:
             session.delete(existing_fm_link)
+    session.refresh(climatic_indicator)
     for requested_fm_id, requested_fm in requested_forecast_model_links.items():
         if (
             requested_fm_id not in existing_forecast_model_links
         ):  # need to create this one
             db_fm_link = ForecastModelClimaticIndicatorLink(
                 forecast_model_id=requested_fm_id,
-                climatic_indicator_id=db_climatic_indicator.id,
+                climatic_indicator_id=climatic_indicator.id,
                 thredds_url_base_path=requested_fm.thredds_url_base_path,
                 thredds_url_uncertainties_base_path=requested_fm.thredds_url_uncertainties_base_path,
             )
-            db_climatic_indicator.forecast_model_links.append(db_fm_link)
+            climatic_indicator.forecast_model_links.append(db_fm_link)
         else:  # already exists, just update
             existing_fm_link = existing_forecast_model_links[requested_fm_id]
             existing_fm_link.thredds_url_base_path = requested_fm.thredds_url_base_path
             session.add(existing_fm_link)
-            to_refresh.append(existing_fm_link)
+    return climatic_indicator
+
+
+def update_climatic_indicator(
+    session: sqlmodel.Session,
+    db_climatic_indicator: ClimaticIndicator,
+    climatic_indicator_update: ClimaticIndicatorUpdate,
+) -> ClimaticIndicator:
+    """Update a climatic indicator."""
+    to_refresh = []
+    if (obs_names := climatic_indicator_update.observation_names) is not None:
+        db_climatic_indicator = _update_climatic_indicator_observation_names(
+            session, db_climatic_indicator, obs_names
+        )
+    if (fm_links := climatic_indicator_update.forecast_models) is not None:
+        db_climatic_indicator = _update_climatic_indicator_forecast_model_links(
+            session, db_climatic_indicator, fm_links
+        )
     data_ = climatic_indicator_update.model_dump(
         exclude_unset=True,
         exclude={
