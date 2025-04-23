@@ -490,8 +490,8 @@ def get_historical_time_series(
 ) -> list[dataseries.HistoricalDataSeries | dataseries.ObservationStationDataSeries]:
     """Return a list of historical time series for the input location.
 
-    If there is a nearby observation station, returns station data. Otherwise
-    returns NetCDF coverage data
+    If there is a nearby observation station, returns station data. Otherwise,
+    returns NetCDF coverage data (if any).
     """
     # if the related observation series configuration specifies a different climatic
     # indicator try to retrieve historical data instead
@@ -503,7 +503,6 @@ def get_historical_time_series(
             == oscl.observation_series_configuration.climatic_indicator.identifier
         )
     ]
-
     result = []
     for obs_series_conf in relevant_series_confs:
         obs_data_series = get_nearby_observation_station_time_series(

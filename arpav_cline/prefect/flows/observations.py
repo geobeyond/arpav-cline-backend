@@ -36,6 +36,7 @@ _db_engine = db.get_engine(_settings)
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[PrefectTaskTag.USES_DB.value],
 )
 def refresh_stations_for_climatic_indicator(
@@ -87,6 +88,7 @@ def refresh_station_variables(
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[
         PrefectTaskTag.USES_DB.value,
         PrefectTaskTag.USES_ARPA_V_REST_API,
@@ -121,6 +123,7 @@ def harvest_arpav_stations(
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[
         PrefectTaskTag.USES_DB.value,
         PrefectTaskTag.USES_ARPA_FVG_REST_API,
@@ -153,6 +156,7 @@ def harvest_arpafvg_stations(
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[PrefectTaskTag.USES_DB.value],
 )
 def find_new_stations(
@@ -351,6 +355,7 @@ def refresh_measurements(
     log_prints=True,
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[PrefectTaskTag.USES_DB.value],
 )
 def save_observation_station_measurements(
@@ -382,6 +387,7 @@ def save_observation_station_measurements(
     log_prints=True,
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[
         PrefectTaskTag.USES_DB.value,
         PrefectTaskTag.USES_ARPA_FVG_REST_API,
@@ -429,6 +435,7 @@ def harvest_arpafvg_station_measurements(
 @prefect.task(
     retries=_settings.prefect.num_task_retries,
     retry_delay_seconds=_settings.prefect.task_retry_delay_seconds,
+    retry_jitter_factor=0.5,
     tags=[
         PrefectTaskTag.USES_DB.value,
         PrefectTaskTag.USES_ARPA_V_REST_API,

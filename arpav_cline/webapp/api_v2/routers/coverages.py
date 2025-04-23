@@ -71,7 +71,10 @@ from ....schemas.static import (
     MeasureType,
 )
 from ....schemas.dataseries import MannKendallParameters
-from ... import dependencies
+from ... import (
+    dependencies,
+    parameters,
+)
 from ..schemas.analytics import TimeSeriesDownloadRequestRead
 from ..schemas.coverages import (
     ForecastCoverageDownloadList,
@@ -1036,10 +1039,10 @@ def get_historical_time_series(
     session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
-    coverage_identifier: str,
-    coords: str,
-    datetime: Optional[str] = "../..",
-    mann_kendall_datetime: Optional[str] = None,
+    coverage_identifier: parameters.COVERAGE_IDENTIFIER_PATH_PARAMETER,
+    coords: parameters.COORDS_POINT_QUERY_PARAMETER = parameters.DEFAULT_COORDS_POINT_QUERY_PARAMETER,
+    datetime: parameters.TIME_SERIES_DATETIME_QUERY_PARAMETER = "../..",
+    mann_kendall_datetime: parameters.MANN_KENDALL_DATETIME_QUERY_PARAMETER = None,
     include_moving_average_series: bool = False,
     include_decade_aggregation_series: bool = False,
     include_loess_series: bool = False,
@@ -1058,7 +1061,7 @@ def get_historical_time_series(
     if (
         coverage := db.get_historical_coverage(session, coverage_identifier)
     ) is not None:
-        logger.debug(f"found coverage {coverage.identifier=}")
+        logger.debug(f"found coverage {coverage.identifier!r}")
         temporal_range = operations.parse_temporal_range(datetime)
         mann_kendall_params = None
         if mann_kendall_datetime is not None:
