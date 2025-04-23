@@ -196,7 +196,7 @@ def _parse_ncss_dataset(
     time_start: dt.datetime | None,
     time_end: dt.datetime | None,
     target_series_name: str | None = None,
-) -> pd.Series:
+) -> Optional[pd.Series]:
     df = pd.read_csv(io.StringIO(raw_data), parse_dates=["time"])
     try:
         col_name = [c for c in df.columns if c.startswith(f"{source_main_ds_name}[")][0]
@@ -224,8 +224,9 @@ def _parse_ncss_dataset(
         if time_end is not None:
             df = df[:time_end]
         logger.debug(f"{df=}")
-        return df[target_series_name]
-        # return df.squeeze()
+        result = df[target_series_name]
+        result.dropna(inplace=True)
+        return result if result.size > 0 else None
 
 
 def _simplify_date(raw_date: str) -> str:
