@@ -5,6 +5,7 @@ import random
 from pathlib import Path
 
 import geojson_pydantic
+import pandas as pd
 import pytest
 import shapely.io
 import shapely.geometry
@@ -27,6 +28,7 @@ from arpav_cline.bootstrapper.yearperiods import (
 from arpav_cline.schemas import (
     base,
     climaticindicators,
+    dataseries,
     coverages,
     observations,
     static,
@@ -552,6 +554,36 @@ def sample_real_historical_coverage_configurations(
             )
         )
     return created
+
+
+@pytest.fixture()
+def sample_tas_historical_data_series(
+    arpav_db_session,
+    sample_real_historical_coverage_configurations,
+    sample_tas_csv_data: dict[str, str],
+) -> dataseries.HistoricalDataSeries:
+    historical_cov = db.get_historical_coverage(
+        arpav_db_session, "historical-tas-absolute-annual-arpa_v-all_seasons-winter"
+    )
+    raw_data_buffer = io.StringIO(sample_tas_csv_data["tas"])
+    raw_data_buffer.seek(0)
+    df = pd.read_csv(raw_data_buffer)
+    df.index = pd.DatetimeIndex(pd.to_datetime(df["time"]))
+    series = df['tas[unit="degC"]']
+    result = dataseries.HistoricalDataSeries(
+        coverage=historical_cov,
+        dataset_type=static.DatasetType.MAIN,
+        processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
+        temporal_start=df.index[0].date(),
+        temporal_end=df.index[-1].date(),
+        location=shapely.geometry.Point(
+            df['longitude[unit="degrees_east"]'][0],
+            df['latitude[unit="degrees_north"]'][0],
+        ),
+    )
+    series.name = result.identifier
+    result.data_ = series
+    return result
 
 
 @pytest.fixture()
