@@ -18,6 +18,7 @@ import shapely
 from shapely.ops import transform
 
 from . import db
+from .exceptions import MannKendallInsufficientYearError
 from .thredds import (
     ncss,
     opendap,
@@ -98,6 +99,10 @@ def _generate_mann_kendall_series(
 ) -> tuple[pd.DataFrame, dict]:
     mk_start = start_year or original.index[0].year
     mk_end = end_year or original.index[-1].year
+    if mk_end - mk_start < 27 or original.shape[0] < 27:
+        raise MannKendallInsufficientYearError(
+            "Unsufficient number of years with data - cannot generate trend"
+        )
     mk_df = original[str(mk_start) : str(mk_end)].copy()
     mk_result = pymannkendall.original_test(mk_df[original_column])
     years = range(mk_start, mk_end + 1)
@@ -453,20 +458,20 @@ def generate_loess_derived_historical_coverage_series(
 def generate_mann_kendall_derived_historical_coverage_series(
     original_series: dataseries.HistoricalDataSeries,
     *,
-    start_year: dt.datetime | None,
-    end_year: dt.datetime | None,
+    start_year: int | None,
+    end_year: int | None,
 ) -> dataseries.HistoricalDataSeries:
+    df = original_series.data_.to_frame()
+    mk_start = start_year or df.index[0].year
+    mk_end = end_year or df.index[-1].year
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
         processing_method=static.HistoricalTimeSeriesProcessingMethod.MANN_KENDALL_TREND,
-        temporal_start=original_series.temporal_start,
-        temporal_end=original_series.temporal_end,
+        temporal_start=dt.date(mk_start, 1, 1),
+        temporal_end=dt.date(mk_end, 1, 1),
         location=original_series.location,
     )
-    df = original_series.data_.to_frame()
-    mk_start = start_year or df.index[0].year
-    mk_end = end_year or df.index[-1].year
     df, info = _generate_mann_kendall_series(
         df, original_series.identifier, derived_series.identifier, mk_start, mk_end
     )
@@ -534,14 +539,19 @@ def get_historical_time_series(
                     )
                 )
             if mann_kendall_params is not None:
-                result.append(
-                    generate_mann_kendall_derived_observation_station_series(
-                        obs_data_series,
-                        point_geom,
-                        start_year=mann_kendall_params.start_year,
-                        end_year=mann_kendall_params.end_year,
+                try:
+                    result.append(
+                        generate_mann_kendall_derived_observation_station_series(
+                            obs_data_series,
+                            point_geom,
+                            start_year=mann_kendall_params.start_year,
+                            end_year=mann_kendall_params.end_year,
+                        )
                     )
-                )
+                except MannKendallInsufficientYearError as err:
+                    logger.warning(
+                        f"Could not generate Mann-Kendall trend series: {err}"
+                    )
         else:
             logger.info("No station data found")
     if len(result) == 0:
@@ -566,13 +576,18 @@ def get_historical_time_series(
                     generate_decade_derived_historical_coverage_series(cov_series)
                 )
             if mann_kendall_params is not None:
-                result.append(
-                    generate_mann_kendall_derived_historical_coverage_series(
-                        cov_series,
-                        start_year=mann_kendall_params.start_year,
-                        end_year=mann_kendall_params.end_year,
+                try:
+                    result.append(
+                        generate_mann_kendall_derived_historical_coverage_series(
+                            cov_series,
+                            start_year=mann_kendall_params.start_year,
+                            end_year=mann_kendall_params.end_year,
+                        )
                     )
-                )
+                except MannKendallInsufficientYearError as err:
+                    logger.warning(
+                        f"Could not generate Mann-Kendall trend series: {err}"
+                    )
     return result
 
 

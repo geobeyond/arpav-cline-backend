@@ -431,7 +431,7 @@ def query_dataset(
     latitude: float,
     time_start: dt.datetime | None = None,
     time_end: dt.datetime | None = None,
-) -> str:
+) -> str | None:
     """Query THREDDS for the specified variable."""
     if time_start is None or time_end is None:
         temporal_parameters = {
@@ -454,10 +454,10 @@ def query_dataset(
     )
     try:
         response.raise_for_status()
-    except httpx.HTTPError as err:
+    except httpx.HTTPError:
         logger.exception(msg="Could not retrieve data")
         logger.debug(f"upstream NCSS error: {response.content}")
-        raise CoverageDataRetrievalError() from err
+        result = None
     else:
         result = response.text
     return result

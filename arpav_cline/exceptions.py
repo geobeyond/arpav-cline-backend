@@ -2,6 +2,10 @@ class ArpavError(Exception):
     ...
 
 
+class MannKendallInsufficientYearError(ArpavError):
+    ...
+
+
 class InvalidForecastYearPeriodGroupNameError(ArpavError):
     ...
 
