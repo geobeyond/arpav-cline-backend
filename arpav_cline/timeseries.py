@@ -9,6 +9,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import numpy as np
 import pandas as pd
 import pyloess
 import pymannkendall
@@ -30,7 +31,6 @@ from .schemas import (
 
 if TYPE_CHECKING:
     import httpx
-    import numpy as np
     import sqlmodel
     from . import (
         config,
@@ -76,6 +76,8 @@ def _generate_decade_series(
     original_column: str,
     column_name: str,
 ) -> pd.DataFrame:
+    logger.debug(f"{original=}")
+    logger.debug(f"{original.index.dtype=}")
     # group values by climatological decade, which starts at year 1 and ends at year 10
     decade_grouper = original.groupby(((original.index.year - 1) // 10) * 10)
     decade_df = decade_grouper.agg(
@@ -85,9 +87,22 @@ def _generate_decade_series(
     # discard decades where there are less than 7 years
     decade_df = decade_df[decade_df.num_values >= 7]
     decade_df = decade_df.drop(columns=["num_values"])
-    decade_df["time"] = pd.to_datetime(decade_df.index.astype(str), utc=True)
-    decade_df.set_index("time", inplace=True)
-    return decade_df
+    # prepare a new dataframe with all years that exist in the decades that remain
+    all_years = np.arange(decade_df.index[0] + 1, decade_df.index[-1] + 11)
+    all_years_df = pd.DataFrame(
+        {
+            "year": all_years,
+            "decade_key": ((all_years - 1) // 10) * 10,
+        }
+    )
+    all_years_df[column_name] = all_years_df["decade_key"].apply(
+        lambda year: decade_df.loc[year]
+    )
+    # drop the "decade_key" series and turn the "year" series into a datetime index
+    all_years_df["time"] = pd.to_datetime(all_years_df["year"].astype(str), utc=True)
+    all_years_df.set_index("time", inplace=True)
+    all_years_df = all_years_df.drop(columns=["decade_key", "year"])
+    return all_years_df
 
 
 def _generate_mann_kendall_series(
@@ -163,7 +178,7 @@ def generate_derived_forecast_series(
 
 def _apply_loess_smoothing(
     df: pd.DataFrame, source_column_name: str, ignore_warnings: bool = True
-) -> "np.ndarray":
+) -> np.ndarray:
     with warnings.catch_warnings():
         if ignore_warnings:
             warnings.simplefilter("ignore")
