@@ -76,8 +76,6 @@ def _generate_decade_series(
     original_column: str,
     column_name: str,
 ) -> pd.DataFrame:
-    logger.debug(f"{original=}")
-    logger.debug(f"{original.index.dtype=}")
     # group values by climatological decade, which starts at year 1 and ends at year 10
     decade_grouper = original.groupby(((original.index.year - 1) // 10) * 10)
     decade_df = decade_grouper.agg(
@@ -96,7 +94,7 @@ def _generate_decade_series(
         }
     )
     all_years_df[column_name] = all_years_df["decade_key"].apply(
-        lambda year: decade_df.loc[year]
+        lambda year: decade_df.loc[year, column_name],
     )
     # drop the "decade_key" series and turn the "year" series into a datetime index
     all_years_df["time"] = pd.to_datetime(all_years_df["year"].astype(str), utc=True)
