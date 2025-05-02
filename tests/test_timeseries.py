@@ -68,6 +68,35 @@ def test_generate_mann_kendall_derived_historical_coverage_series(
         assert result.processing_method_info["intercept"] == pytest.approx(e["b"])
 
 
+@pytest.mark.parametrize(
+    "mk_start, mk_end, expected",
+    [
+        pytest.param(1970, 2000, pytest.raises(MannKendallInsufficientYearError)),
+        pytest.param(2000, 2027, pytest.raises(MannKendallInsufficientYearError)),
+        pytest.param(1970, 2010, nullcontext({"start": 1976, "end": 2010})),
+        pytest.param(1980, 2010, nullcontext({"start": 1980, "end": 2010})),
+    ],
+)
+def test_generate_mann_kendall_series_year_span(
+    sample_tas_historical_data_series,
+    mk_start,
+    mk_end,
+    expected,
+):
+    df = sample_tas_historical_data_series.data_.copy(deep=True).to_frame()
+    target_name = "fake_name"
+    with expected as e:
+        mk_df, info = timeseries._generate_mann_kendall_series(
+            original=df,
+            original_column=sample_tas_historical_data_series.data_.name,
+            column_name=target_name,
+            start_year=mk_start,
+            end_year=mk_end,
+        )
+        assert e["start"] == info["start_year"]
+        assert e["end"] == info["end_year"]
+
+
 def test_generate_decade_series(
     sample_tas_historical_data_series,
 ):
