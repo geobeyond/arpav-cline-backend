@@ -107,28 +107,29 @@ def _generate_mann_kendall_series(
     original: pd.DataFrame,
     original_column: str,
     column_name: str,
-    start_year: Optional[int] = None,
-    end_year: Optional[int] = None,
+    start_year: int,
+    end_year: int,
 ) -> tuple[pd.DataFrame, dict]:
-    mk_start = start_year or original.index[0].year
-    mk_end = end_year or original.index[-1].year
-    if mk_end - mk_start < 27 or original.shape[0] < 27:
+    mk_df = original[str(start_year) : str(end_year)].copy()
+    first_year = mk_df.index[0].year
+    last_year = mk_df.index[-1].year
+    if mk_df.shape[0] < 27:
         raise MannKendallInsufficientYearError(
-            "Unsufficient number of years with data - cannot generate trend"
+            "Insufficient number of years with data - cannot generate trend"
         )
-    mk_df = original[str(mk_start) : str(mk_end)].copy()
     mk_result = pymannkendall.original_test(mk_df[original_column])
-    years = range(mk_start, mk_end + 1)
+    years = range(first_year, last_year + 1)
     mk_df = pd.Series(
         data=[
-            mk_result.slope * (year - mk_start) + mk_result.intercept for year in years
+            mk_result.slope * (year - first_year) + mk_result.intercept
+            for year in years
         ],
         index=[pd.Timestamp(year=year, month=7, day=1) for year in years],
         name=column_name,
     ).to_frame()
     return mk_df, {
-        "start_year": mk_start,
-        "end_year": mk_end,
+        "start_year": first_year,
+        "end_year": last_year,
         "trend": mk_result.trend,
         "h": bool(mk_result.h),
         "p": mk_result.p,
