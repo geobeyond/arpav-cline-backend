@@ -158,9 +158,13 @@ docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations extract
 docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations update
 ```
 
-Now use your favorite editor to translate the strings.
+Now use your favorite editor (with [poedit](https://poedit.net/) being a possible choice) to translate the
+strings present in these files:
 
-Finally, compile the translations files:
+- `arpav_cline/translations/en/LC_MESSAGES/messages.po`
+- `arpav_cline/translations/it/LC_MESSAGES/messages.po`
+
+Finally, compile the translation files:
 
 ```shell
 docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations compile

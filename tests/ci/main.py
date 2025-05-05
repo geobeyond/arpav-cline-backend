@@ -264,7 +264,7 @@ async def _run_load_tests(
     # modifications made to the test container:
     # - add a proper ARPAV_PPCV__DB_DSN env var, because we are simulating the live
     #   system
-    webap_service = (
+    webapp_service = (
         test_container.without_entrypoint()
         .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
         .with_service_binding(db_host, db_service)
@@ -290,7 +290,7 @@ async def _run_load_tests(
             client.host().directory(str(REPO_ROOT / "tests/loadtests")),
         )
         # .with_service_binding(db_host, db_service)
-        .with_service_binding(webapp_service_alias, webap_service)
+        .with_service_binding(webapp_service_alias, webapp_service)
     )
     return await (
         locust_container.with_exec(
