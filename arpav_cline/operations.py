@@ -230,6 +230,13 @@ def convert_conf_params_filter(
                 logger.warning(
                     f"Could not parse {param_value!r} as an historical year period, skipping..."
                 )
+        elif param_name == "historical_decade":
+            try:
+                historical_decade = static.HistoricalDecade(param_value)
+            except ValueError:
+                logger.warning(
+                    f"Could not parse {param_value!r} as an historical decade, skipping..."
+                )
         elif param_name == "measure":
             try:
                 measure = static.MeasureType(param_value)
