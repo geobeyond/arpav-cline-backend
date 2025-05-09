@@ -139,7 +139,9 @@ def fetch_station_measurements(
     observation_station: ObservationStation,
     series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
-) -> Generator[tuple[ObservationYearPeriod, dict], None, None]:
+) -> Generator[
+    tuple[MeasurementAggregationType, ObservationYearPeriod, dict], None, None
+]:
     measurements_url = f"{observations_base_url}/clima_indicatori"
     station_identifier = observation_station.code.split("-")[-1]
     indicator_internal_name = common.get_indicator_internal_name(
@@ -162,7 +164,7 @@ def fetch_station_measurements(
         )
         response.raise_for_status()
         for raw_measurement in response.json().get("data", []):
-            yield ObservationYearPeriod.ALL_YEAR, raw_measurement
+            yield aggreg_type, ObservationYearPeriod.ALL_YEAR, raw_measurement
     elif aggreg_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(
             (
@@ -182,7 +184,7 @@ def fetch_station_measurements(
             )
             response.raise_for_status()
             for raw_measurement in response.json().get("data", []):
-                yield year_period, raw_measurement
+                yield aggreg_type, year_period, raw_measurement
     elif aggreg_type == MeasurementAggregationType.MONTHLY:
         for idx, year_period in enumerate(
             (
@@ -210,7 +212,7 @@ def fetch_station_measurements(
             )
             response.raise_for_status()
             for raw_measurement in response.json().get("data", []):
-                yield year_period, raw_measurement
+                yield aggreg_type, year_period, raw_measurement
     else:
         raise NotImplementedError(
             f"measurement aggregation type {aggreg_type!r} not implemented"
@@ -219,6 +221,7 @@ def fetch_station_measurements(
 
 def parse_measurement(
     raw_measurement: dict,
+    aggregation_type: MeasurementAggregationType,
     year_period: ObservationYearPeriod,
     observation_station: ObservationStation,
     climatic_indicator: "ClimaticIndicator",
@@ -227,13 +230,13 @@ def parse_measurement(
 
     Dates are set to the beginning of the corresponding yearly aggregation period.
     """
-    parsed_date, aggreg_type = common.parse_measurement_date(
-        raw_measurement["anno"], year_period
+    parsed_date = common.parse_measurement_date(
+        raw_measurement["anno"], aggregation_type, year_period
     )
     return ObservationMeasurementCreate(
         value=raw_measurement["valore"],
         date=parsed_date,
-        measurement_aggregation_type=aggreg_type,
+        measurement_aggregation_type=aggregation_type,
         observation_station_id=observation_station.id,
         climatic_indicator_id=climatic_indicator.id,
     )
