@@ -32,8 +32,9 @@ def get_indicator_internal_name(
 
 def parse_measurement_date(
     raw_year: int,
+    aggregation_type: MeasurementAggregationType,
     year_period: ObservationYearPeriod,
-) -> tuple[dt.date, MeasurementAggregationType]:
+) -> dt.date:
     """Parse a raw measurement date.
 
     Dates are set to the middle of the corresponding yearly aggregation
@@ -44,73 +45,33 @@ def parse_measurement_date(
     - All year 1991 (i.e. all months of the year) is set to 1st July 1991
     - March 1991 is set to March 15th 1991
     """
-    return {
-        ObservationYearPeriod.ALL_YEAR: (
-            dt.date(raw_year, 7, 1),
-            MeasurementAggregationType.YEARLY,
-        ),
-        ObservationYearPeriod.WINTER: (
-            dt.date(raw_year, 1, 1),
-            MeasurementAggregationType.SEASONAL,
-        ),
-        ObservationYearPeriod.SPRING: (
-            dt.date(raw_year, 4, 1),
-            MeasurementAggregationType.SEASONAL,
-        ),
-        ObservationYearPeriod.SUMMER: (
-            dt.date(raw_year, 7, 1),
-            MeasurementAggregationType.SEASONAL,
-        ),
-        ObservationYearPeriod.AUTUMN: (
-            dt.date(raw_year, 10, 1),
-            MeasurementAggregationType.SEASONAL,
-        ),
-        ObservationYearPeriod.JANUARY: (
-            dt.date(raw_year, 1, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.FEBRUARY: (
-            dt.date(raw_year, 2, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.MARCH: (
-            dt.date(raw_year, 3, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.APRIL: (
-            dt.date(raw_year, 4, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.MAY: (
-            dt.date(raw_year, 5, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.JUNE: (
-            dt.date(raw_year, 6, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.JULY: (
-            dt.date(raw_year, 7, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.AUGUST: (
-            dt.date(raw_year, 8, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.SEPTEMBER: (
-            dt.date(raw_year, 9, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.OCTOBER: (
-            dt.date(raw_year, 10, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.NOVEMBER: (
-            dt.date(raw_year, 11, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-        ObservationYearPeriod.DECEMBER: (
-            dt.date(raw_year, 12, 15),
-            MeasurementAggregationType.MONTHLY,
-        ),
-    }.get(year_period)
+
+    if aggregation_type == MeasurementAggregationType.YEARLY:
+        result = dt.date(raw_year, 7, 1)
+    elif aggregation_type == MeasurementAggregationType.SEASONAL:
+        result = {
+            ObservationYearPeriod.WINTER: dt.date(raw_year, 1, 1),
+            ObservationYearPeriod.SPRING: dt.date(raw_year, 4, 1),
+            ObservationYearPeriod.SUMMER: dt.date(raw_year, 7, 1),
+            ObservationYearPeriod.AUTUMN: dt.date(raw_year, 10, 1),
+        }[year_period]
+    elif aggregation_type == MeasurementAggregationType.MONTHLY:
+        result = {
+            ObservationYearPeriod.JANUARY: dt.date(raw_year, 1, 15),
+            ObservationYearPeriod.FEBRUARY: dt.date(raw_year, 2, 15),
+            ObservationYearPeriod.MARCH: dt.date(raw_year, 3, 15),
+            ObservationYearPeriod.APRIL: dt.date(raw_year, 4, 15),
+            ObservationYearPeriod.MAY: dt.date(raw_year, 5, 15),
+            ObservationYearPeriod.JUNE: dt.date(raw_year, 6, 15),
+            ObservationYearPeriod.JULY: dt.date(raw_year, 7, 15),
+            ObservationYearPeriod.AUGUST: dt.date(raw_year, 8, 15),
+            ObservationYearPeriod.SEPTEMBER: dt.date(raw_year, 9, 15),
+            ObservationYearPeriod.OCTOBER: dt.date(raw_year, 10, 15),
+            ObservationYearPeriod.NOVEMBER: dt.date(raw_year, 11, 15),
+            ObservationYearPeriod.DECEMBER: dt.date(raw_year, 12, 15),
+        }[year_period]
+    else:
+        raise NotImplementedError(
+            f"aggregation type {aggregation_type!r} not implemented"
+        )
+    return result
