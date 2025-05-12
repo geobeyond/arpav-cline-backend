@@ -420,7 +420,7 @@ def harvest_arpafvg_station_measurements(
             _settings.arpafvg_auth_token,
         )
         for aggregation_type, year_period, raw_measurement in raw_measurement_gen:
-            if year_period is not None:
+            if all((aggregation_type, year_period, raw_measurement)):
                 harvested_measurements.append(
                     arpafvg_operations.parse_measurement(
                         raw_measurement,
