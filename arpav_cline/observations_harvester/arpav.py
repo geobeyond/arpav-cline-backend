@@ -195,7 +195,7 @@ def fetch_station_measurements(
                 ObservationYearPeriod.MAY,
                 ObservationYearPeriod.JUNE,
                 ObservationYearPeriod.JULY,
-                ObservationYearPeriod.AUTUMN,
+                ObservationYearPeriod.AUGUST,
                 ObservationYearPeriod.SEPTEMBER,
                 ObservationYearPeriod.OCTOBER,
                 ObservationYearPeriod.NOVEMBER,
