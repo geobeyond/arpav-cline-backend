@@ -100,7 +100,15 @@ def fetch_station_measurements(
     series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
     auth_token: str,
-) -> Generator[tuple[Optional[ObservationYearPeriod], Optional[dict]], None, None]:
+) -> Generator[
+    tuple[
+        Optional[MeasurementAggregationType],
+        Optional[ObservationYearPeriod],
+        Optional[dict],
+    ],
+    None,
+    None,
+]:
     measurements_url = f"{observations_base_url}/clima/indicatori/dati"
     headers = {"Authorization": f"Bearer {auth_token}"}
     station_identifier = observation_station.code.split("-")[-1]
@@ -125,7 +133,7 @@ def fetch_station_measurements(
         )
         response.raise_for_status()
         for raw_measurement in response.json():
-            yield ObservationYearPeriod.ALL_YEAR, raw_measurement
+            yield aggregation_type, ObservationYearPeriod.ALL_YEAR, raw_measurement
     elif aggregation_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(
             (
@@ -146,9 +154,9 @@ def fetch_station_measurements(
             )
             response.raise_for_status()
             for raw_measurement in response.json():
-                yield year_period, raw_measurement
+                yield aggregation_type, year_period, raw_measurement
     elif aggregation_type == MeasurementAggregationType.MONTHLY:
-        yield (None, None)  # ARPA_FVG observation stations do not have monthly data
+        yield None, None, None  # ARPA_FVG observation stations do not have monthly data
     else:
         raise NotImplementedError(
             f"measurement aggregation type {aggregation_type!r} not implemented"
