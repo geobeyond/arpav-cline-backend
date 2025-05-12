@@ -112,7 +112,7 @@ def fetch_station_measurements(
         "indicatore": indicator_internal_name,
     }
     if (
-        aggreg_type := series_configuration.measurement_aggregation_type
+        aggregation_type := series_configuration.measurement_aggregation_type
     ) == MeasurementAggregationType.YEARLY:
         response = client.get(
             measurements_url,
@@ -126,7 +126,7 @@ def fetch_station_measurements(
         response.raise_for_status()
         for raw_measurement in response.json():
             yield ObservationYearPeriod.ALL_YEAR, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.SEASONAL:
+    elif aggregation_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(
             (
                 ObservationYearPeriod.WINTER,
@@ -147,11 +147,11 @@ def fetch_station_measurements(
             response.raise_for_status()
             for raw_measurement in response.json():
                 yield year_period, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.MONTHLY:
+    elif aggregation_type == MeasurementAggregationType.MONTHLY:
         yield (None, None)  # ARPA_FVG observation stations do not have monthly data
     else:
         raise NotImplementedError(
-            f"measurement aggregation type {aggreg_type!r} not implemented"
+            f"measurement aggregation type {aggregation_type!r} not implemented"
         )
 
 

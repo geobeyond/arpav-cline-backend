@@ -152,7 +152,7 @@ def fetch_station_measurements(
         "indicatore": indicator_internal_name,
     }
     if (
-        aggreg_type := series_configuration.measurement_aggregation_type
+        aggregation_type := series_configuration.measurement_aggregation_type
     ) == MeasurementAggregationType.YEARLY:
         response = client.get(
             measurements_url,
@@ -164,8 +164,8 @@ def fetch_station_measurements(
         )
         response.raise_for_status()
         for raw_measurement in response.json().get("data", []):
-            yield aggreg_type, ObservationYearPeriod.ALL_YEAR, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.SEASONAL:
+            yield aggregation_type, ObservationYearPeriod.ALL_YEAR, raw_measurement
+    elif aggregation_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(
             (
                 ObservationYearPeriod.WINTER,
@@ -184,8 +184,8 @@ def fetch_station_measurements(
             )
             response.raise_for_status()
             for raw_measurement in response.json().get("data", []):
-                yield aggreg_type, year_period, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.MONTHLY:
+                yield aggregation_type, year_period, raw_measurement
+    elif aggregation_type == MeasurementAggregationType.MONTHLY:
         for idx, year_period in enumerate(
             (
                 ObservationYearPeriod.JANUARY,
@@ -212,10 +212,10 @@ def fetch_station_measurements(
             )
             response.raise_for_status()
             for raw_measurement in response.json().get("data", []):
-                yield aggreg_type, year_period, raw_measurement
+                yield aggregation_type, year_period, raw_measurement
     else:
         raise NotImplementedError(
-            f"measurement aggregation type {aggreg_type!r} not implemented"
+            f"measurement aggregation type {aggregation_type!r} not implemented"
         )
 
 
