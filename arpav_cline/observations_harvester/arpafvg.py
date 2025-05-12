@@ -112,7 +112,7 @@ def fetch_station_measurements(
         "indicatore": indicator_internal_name,
     }
     if (
-        aggreg_type := series_configuration.measurement_aggregation_type
+        aggregation_type := series_configuration.measurement_aggregation_type
     ) == MeasurementAggregationType.YEARLY:
         response = client.get(
             measurements_url,
@@ -126,7 +126,7 @@ def fetch_station_measurements(
         response.raise_for_status()
         for raw_measurement in response.json():
             yield ObservationYearPeriod.ALL_YEAR, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.SEASONAL:
+    elif aggregation_type == MeasurementAggregationType.SEASONAL:
         for idx, year_period in enumerate(
             (
                 ObservationYearPeriod.WINTER,
@@ -147,27 +147,28 @@ def fetch_station_measurements(
             response.raise_for_status()
             for raw_measurement in response.json():
                 yield year_period, raw_measurement
-    elif aggreg_type == MeasurementAggregationType.MONTHLY:
+    elif aggregation_type == MeasurementAggregationType.MONTHLY:
         yield (None, None)  # ARPA_FVG observation stations do not have monthly data
     else:
         raise NotImplementedError(
-            f"measurement aggregation type {aggreg_type!r} not implemented"
+            f"measurement aggregation type {aggregation_type!r} not implemented"
         )
 
 
 def parse_measurement(
     raw_measurement: dict,
+    aggregation_type: MeasurementAggregationType,
     year_period: ObservationYearPeriod,
     observation_station: ObservationStation,
     climatic_indicator: "ClimaticIndicator",
 ) -> ObservationMeasurementCreate:
-    parsed_date, aggreg_type = common.parse_measurement_date(
-        raw_measurement["anno"], year_period
+    parsed_date = common.parse_measurement_date(
+        raw_measurement["anno"], aggregation_type, year_period
     )
     return ObservationMeasurementCreate(
         value=raw_measurement["valore"],
         date=parsed_date,
-        measurement_aggregation_type=aggreg_type,
+        measurement_aggregation_type=aggregation_type,
         observation_station_id=observation_station.id,
         climatic_indicator_id=climatic_indicator.id,
     )
