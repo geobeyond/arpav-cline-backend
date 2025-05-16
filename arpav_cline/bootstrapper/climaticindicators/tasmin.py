@@ -21,9 +21,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
@@ -77,9 +79,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.ANNUAL,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
@@ -96,9 +100,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.TEN_YEAR,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
@@ -115,9 +121,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.TEN_YEAR,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
@@ -134,9 +142,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.THIRTY_YEAR,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
@@ -152,9 +162,11 @@ def generate_climatic_indicators(
             aggregation_period=AggregationPeriod.THIRTY_YEAR,
             display_name_english="Minimum temperature (TASMIN)",
             display_name_italian="Temperatura minima (TASMIN)",
-            description_english=("Daily minimum air temperature close to the ground"),
+            description_english=(
+                "Average of daily minimum air temperature close to the ground"
+            ),
             description_italian=(
-                "Temperatura minima giornaliera dell'aria vicino al suolo"
+                "Media della temperatura minima giornaliera dell'aria vicino al suolo"
             ),
             unit_english="ºC",
             unit_italian="ºC",
