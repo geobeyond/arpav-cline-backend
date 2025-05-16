@@ -336,7 +336,7 @@ def update_historical_coverage_configuration(
                 db_obs_series_conf_link
             )
     data_ = coverage_configuration_update.model_dump(
-        exclude={"year_period_group"},
+        exclude={"year_period_group", "observation_series_configurations"},
         exclude_unset=True,
         exclude_none=True,
     )
