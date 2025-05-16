@@ -7,9 +7,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-02-20 16:16+0000\n"
-"PO-Revision-Date: 2025-05-05 13:59+0000\n"
-"Last-Translator: Claude <claude@anthropic.com>\n"
+"POT-Creation-Date: 2025-05-16 15:41+0000\n"
+"PO-Revision-Date: 2025-05-16 16:59+0000\n"
+"Last-Translator: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>"
+"\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -549,67 +550,67 @@ msgstr "Historical decade description"
 
 #: schemas/static.py:521
 msgid "decade_1961_1970"
-msgstr "Decade 1961-1970"
+msgstr "1961-1970"
 
 #: schemas/static.py:522
 msgid "decade_1971_1980"
-msgstr "Decade 1971-1980"
+msgstr "1971-1980"
 
 #: schemas/static.py:523
 msgid "decade_1981_1990"
-msgstr "Decade 1981-1990"
+msgstr "1981-1990"
 
 #: schemas/static.py:524
 msgid "decade_1991_2000"
-msgstr "Decade 1991-2000"
+msgstr "1991-2000"
 
 #: schemas/static.py:525
 msgid "decade_2001_2010"
-msgstr "Decade 2001-2010"
+msgstr "2001-2010"
 
 #: schemas/static.py:526
 msgid "decade_2011_2020"
-msgstr "Decade 2011-2020"
+msgstr "2011-2020"
 
 #: schemas/static.py:527
 msgid "decade_2021_2030"
-msgstr "Decade 2021-2030"
+msgstr "2021-2030"
 
 #: schemas/static.py:528
 msgid "decade_2031_2040"
-msgstr "Decade 2031-2040"
+msgstr "2031-2040"
 
 #: schemas/static.py:535
 msgid "decade_1961_1970 description"
-msgstr "Description for decade 1961-1970"
+msgstr "Decade 1961-1970"
 
 #: schemas/static.py:536
 msgid "decade_1971_1980 description"
-msgstr "Description for decade 1971-1980"
+msgstr "Decade 1971-1980"
 
 #: schemas/static.py:537
 msgid "decade_1981_1990 description"
-msgstr "Description for decade 1981-1990"
+msgstr "Decade 1981-1990"
 
 #: schemas/static.py:538
 msgid "decade_1991_2000 description"
-msgstr "Description for decade 1991-2000"
+msgstr "Decade 1991-2000"
 
 #: schemas/static.py:539
 msgid "decade_2001_2010 description"
-msgstr "Description for decade 2001-2010"
+msgstr "Decade 2001-2010"
 
 #: schemas/static.py:540
 msgid "decade_2011_2020 description"
-msgstr "Description for decade 2011-2020"
+msgstr "Decade 2011-2020"
 
 #: schemas/static.py:541
 msgid "decade_2021_2030 description"
-msgstr "Description for decade 2021-2030"
+msgstr "Decade 2021-2030"
 
 #: schemas/static.py:542
 msgid "decade_2031_2040 description"
-msgstr "Description for decade 2031-2040"
+msgstr "Decade 2031-2040"
 
 #: schemas/static.py:569
 msgid "historical reference period"
@@ -629,11 +630,11 @@ msgstr "1991-2020"
 
 #: schemas/static.py:589
 msgid "1961-1990 description"
-msgstr "Description for period 1961-1990"
+msgstr "Thirty-year reference period (climatic normal) 1961-1990"
 
 #: schemas/static.py:590
 msgid "1991-2020 description"
-msgstr "Description for period 1991-2020"
+msgstr "Thirty-year reference period (climatic normal) 1991-2020"
 
 #: schemas/static.py:614
 msgid "coverage data processing method"
