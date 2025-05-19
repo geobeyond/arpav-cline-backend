@@ -23,8 +23,8 @@ def generate_climatic_indicators(
                 "higher than the average for at least 5 consecutive days"
             ),
             description_italian=(
-                "Numero di giorni in cui la temperatura massima è maggiore "
-                "di 5°C rispetto alla media per  almeno 5 giorni consecutivi"
+                "Numero di giorni con temperatura massima maggiore di 5 °C "
+                "rispetto alla media per almeno 5 giorni consecutivi"
             ),
             unit_english="days",
             unit_italian="gg",

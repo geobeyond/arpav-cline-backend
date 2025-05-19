@@ -190,7 +190,7 @@ msgstr "descrizione della serie di dati storici"
 #: schemas/legacy.py:61 schemas/legacy.py:92 schemas/static.py:626
 #: schemas/static.py:683 schemas/static.py:731
 msgid "no processing"
-msgstr "nessuna elaborazione"
+msgstr "annuale"
 
 #: schemas/legacy.py:62 schemas/static.py:627 schemas/static.py:680
 msgid "LOESS"
@@ -198,11 +198,11 @@ msgstr "LOESS"
 
 #: schemas/legacy.py:63 schemas/static.py:628
 msgid "centered 11-year moving average"
-msgstr "media mobile centrata a 11 anni"
+msgstr "media mobile 11 anni"
 
 #: schemas/legacy.py:93 schemas/static.py:682 schemas/static.py:732
 msgid "centered 5-year moving average"
-msgstr "media mobile centrata a 5 anni"
+msgstr "media mobile 5 anni"
 
 #: schemas/observations.py:517
 msgid "observation station"
@@ -242,27 +242,27 @@ msgstr "descrizione dello scenario di previsione"
 
 #: schemas/static.py:33
 msgid "rcp26"
-msgstr "rcp26"
+msgstr "RCP2.6"
 
 #: schemas/static.py:34
 msgid "rcp45"
-msgstr "rcp45"
+msgstr "RCP4.5"
 
 #: schemas/static.py:35
 msgid "rcp85"
-msgstr "rcp85"
+msgstr "RCP8.5"
 
 #: schemas/static.py:42
 msgid "rcp26 description"
-msgstr "descrizione rcp26"
+msgstr "Scenario forte mitigazione emissioni gas serra"
 
 #: schemas/static.py:43
 msgid "rcp45 description"
-msgstr "descrizione rcp45"
+msgstr "Scenario intermedio di stabilizzazione"
 
 #: schemas/static.py:44
 msgid "rcp85 description"
-msgstr "descrizione rcp85"
+msgstr "Scenario nessuna mitigazione"
 
 #: schemas/static.py:70
 msgid "data category"
@@ -354,7 +354,7 @@ msgstr "descrizione del periodo dell'anno"
 
 #: schemas/static.py:261 schemas/static.py:416
 msgid "all year"
-msgstr "tutto l'anno"
+msgstr "Anno"
 
 #: schemas/static.py:266
 msgid "january"
@@ -406,71 +406,71 @@ msgstr "Dicembre"
 
 #: schemas/static.py:284 schemas/static.py:427
 msgid "all year description"
-msgstr "dati relativi a tutto l'anno"
+msgstr "Anno solare (da gennaio a dicembre)"
 
 #: schemas/static.py:285 schemas/static.py:428
 msgid "winter description"
-msgstr "dati relativi alla stagione invernale"
+msgstr "Dicembre, gennaio, febbraio"
 
 #: schemas/static.py:286 schemas/static.py:429
 msgid "spring description"
-msgstr "dati relativi alla stagione primaverile"
+msgstr "Marzo, aprile, maggio"
 
 #: schemas/static.py:287 schemas/static.py:430
 msgid "summer description"
-msgstr "dati relativi alla stagione estiva"
+msgstr "Giugno, luglio, agosto"
 
 #: schemas/static.py:288 schemas/static.py:431
 msgid "autumn description"
-msgstr "dati relativi alla stagione autunnale"
+msgstr "Settembre, ottobre, novembre"
 
 #: schemas/static.py:289
 msgid "january description"
-msgstr "dati relativi al mese di Gennaio"
+msgstr "Mese di gennaio"
 
 #: schemas/static.py:290
 msgid "february description"
-msgstr "dati relativi al mese di Febbraio"
+msgstr "Mese di febbraio"
 
 #: schemas/static.py:291
 msgid "march description"
-msgstr "dati relativi al mese di Marzo"
+msgstr "Mese di marzo"
 
 #: schemas/static.py:292
 msgid "april description"
-msgstr "dati relativi al mese di Aprile"
+msgstr "Mese di aprile"
 
 #: schemas/static.py:293
 msgid "may description"
-msgstr "dati relativi al mese di Maggio"
+msgstr "Mese di maggio"
 
 #: schemas/static.py:294
 msgid "june description"
-msgstr "dati relativi al mese di Giugno"
+msgstr "Mese di giugno"
 
 #: schemas/static.py:295
 msgid "july description"
-msgstr "dati relativi al mese di Luglio"
+msgstr "Mese di luglio"
 
 #: schemas/static.py:296
 msgid "august description"
-msgstr "dati relativi al mese di Agosto"
+msgstr "Mese di agosto"
 
 #: schemas/static.py:297
 msgid "september description"
-msgstr "dati relativi al mese di Settembre"
+msgstr "Mese di settembre"
 
 #: schemas/static.py:298
 msgid "october description"
-msgstr "dati relativi al mese di Ottobre"
+msgstr "Mese di ottobre"
 
 #: schemas/static.py:299
 msgid "november description"
-msgstr "dati relativi al mese di Novembre"
+msgstr "Mese di novembre"
 
 #: schemas/static.py:300
 msgid "december description"
-msgstr "dati relativi al mese di Dicembre"
+msgstr "Mese di dicembre"
 
 #: schemas/static.py:356
 msgid "forecast dataset"
@@ -654,7 +654,7 @@ msgstr "tendenza Mann-Kendall"
 
 #: schemas/static.py:630 schemas/static.py:679 schemas/static.py:734
 msgid "Decade aggregation"
-msgstr "Aggregazione decennale"
+msgstr "media decennale"
 
 #: schemas/static.py:637 schemas/static.py:696 schemas/static.py:741
 msgid "no processing description"
