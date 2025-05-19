@@ -76,7 +76,7 @@ def generate_historical_coverage_configurations(
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
             year_period_group=year_period_groups["only_year"],
             thredds_url_pattern="cline_10yr/{climatic_indicator}_{decade}_ref{reference_period}.nc",
-            wms_main_layer_name="{year_period}_avg",
+            wms_main_layer_name="{year_period}_diffavg_{reference_period}",
             observation_series_configurations=[
                 observation_series_configuration_ids[
                     "su30-absolute-annual-arpa_v:arpa_fvg-yearly"
