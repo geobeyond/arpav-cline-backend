@@ -111,7 +111,7 @@ def generate_historical_coverage_configurations(
             climatic_indicator_id=climatic_indicator_ids["pr-anomaly-ten_year"],
             include_in_advanced_section_combinations=True,
             spatial_region_id=spatial_region_ids["arpa_v"],
-            netcdf_main_dataset_name="{year_period}_diffavg_{reference_period}",
+            netcdf_main_dataset_name="{year_period}_pdiffavg_{reference_period}",
             decades=[
                 HistoricalDecade.DECADE_1991_2000,
                 HistoricalDecade.DECADE_2001_2010,
@@ -120,7 +120,7 @@ def generate_historical_coverage_configurations(
             reference_period=HistoricalReferencePeriod.CLIMATE_STANDARD_NORMAL_1991_2020,
             year_period_group=year_period_groups["all_periods"],
             thredds_url_pattern="cline_10yr/{climatic_indicator}_{decade}_ref{reference_period}.nc",
-            wms_main_layer_name="{year_period}_avg",
+            wms_main_layer_name="{year_period}_pdiffavg_{reference_period}",
             observation_series_configurations=[
                 observation_series_configuration_ids[
                     "pr-absolute-annual-arpa_v:arpa_fvg-monthly"
