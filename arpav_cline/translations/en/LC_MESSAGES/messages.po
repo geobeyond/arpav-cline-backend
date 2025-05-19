@@ -7,9 +7,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-02-20 16:16+0000\n"
-"PO-Revision-Date: 2025-05-05 13:59+0000\n"
-"Last-Translator: Claude <claude@anthropic.com>\n"
+"POT-Creation-Date: 2025-05-16 15:41+0000\n"
+"PO-Revision-Date: 2025-05-16 16:59+0000\n"
+"Last-Translator: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>"
+"\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -189,7 +190,7 @@ msgstr "Historical data series description"
 #: schemas/legacy.py:61 schemas/legacy.py:92 schemas/static.py:626
 #: schemas/static.py:683 schemas/static.py:731
 msgid "no processing"
-msgstr "No processing"
+msgstr "Annual"
 
 #: schemas/legacy.py:62 schemas/static.py:627 schemas/static.py:680
 msgid "LOESS"
@@ -197,11 +198,11 @@ msgstr "LOESS"
 
 #: schemas/legacy.py:63 schemas/static.py:628
 msgid "centered 11-year moving average"
-msgstr "Centered 11-year moving average"
+msgstr "11-year moving average"
 
 #: schemas/legacy.py:93 schemas/static.py:682 schemas/static.py:732
 msgid "centered 5-year moving average"
-msgstr "Centered 5-year moving average"
+msgstr "5-year moving average"
 
 #: schemas/observations.py:517
 msgid "observation station"
@@ -249,15 +250,15 @@ msgstr "RCP8.5"
 
 #: schemas/static.py:42
 msgid "rcp26 description"
-msgstr "RCP2.6 description"
+msgstr "Strong greenhouse gas emissions mitigation scenario"
 
 #: schemas/static.py:43
 msgid "rcp45 description"
-msgstr "RCP4.5 description"
+msgstr "Intermediate stabilization scenario"
 
 #: schemas/static.py:44
 msgid "rcp85 description"
-msgstr "RCP8.5 description"
+msgstr "No mitigation scenario"
 
 #: schemas/static.py:70
 msgid "data category"
@@ -349,7 +350,7 @@ msgstr "Year period description"
 
 #: schemas/static.py:261 schemas/static.py:416
 msgid "all year"
-msgstr "All year"
+msgstr "Year"
 
 #: schemas/static.py:266
 msgid "january"
@@ -401,71 +402,71 @@ msgstr "December"
 
 #: schemas/static.py:284 schemas/static.py:427
 msgid "all year description"
-msgstr "Data for the entire year"
+msgstr "Solar year (from january to december)"
 
 #: schemas/static.py:285 schemas/static.py:428
 msgid "winter description"
-msgstr "Data for the winter season"
+msgstr "December, january, february"
 
 #: schemas/static.py:286 schemas/static.py:429
 msgid "spring description"
-msgstr "Data for the spring season"
+msgstr "March, april, may"
 
 #: schemas/static.py:287 schemas/static.py:430
 msgid "summer description"
-msgstr "Data for the summer season"
+msgstr "June, july, august"
 
 #: schemas/static.py:288 schemas/static.py:431
 msgid "autumn description"
-msgstr "Data for the autumn season"
+msgstr "September, october, november"
 
 #: schemas/static.py:289
 msgid "january description"
-msgstr "Data for the month of January"
+msgstr "Month of january"
 
 #: schemas/static.py:290
 msgid "february description"
-msgstr "Data for the month of February"
+msgstr "Month of february"
 
 #: schemas/static.py:291
 msgid "march description"
-msgstr "Data for the month of March"
+msgstr "Month of march"
 
 #: schemas/static.py:292
 msgid "april description"
-msgstr "Data for the month of April"
+msgstr "Month of april"
 
 #: schemas/static.py:293
 msgid "may description"
-msgstr "Data for the month of May"
+msgstr "Month of may"
 
 #: schemas/static.py:294
 msgid "june description"
-msgstr "Data for the month of June"
+msgstr "Month of june"
 
 #: schemas/static.py:295
 msgid "july description"
-msgstr "Data for the month of July"
+msgstr "Month of july"
 
 #: schemas/static.py:296
 msgid "august description"
-msgstr "Data for the month of August"
+msgstr "Month of august"
 
 #: schemas/static.py:297
 msgid "september description"
-msgstr "Data for the month of September"
+msgstr "Month of september"
 
 #: schemas/static.py:298
 msgid "october description"
-msgstr "Data for the month of October"
+msgstr "Month of october"
 
 #: schemas/static.py:299
 msgid "november description"
-msgstr "Data for the month of November"
+msgstr "Month of november"
 
 #: schemas/static.py:300
 msgid "december description"
-msgstr "Data for the month of December"
+msgstr "Month of december"
 
 #: schemas/static.py:356
 msgid "forecast dataset"
@@ -549,67 +550,67 @@ msgstr "Historical decade description"
 
 #: schemas/static.py:521
 msgid "decade_1961_1970"
-msgstr "Decade 1961-1970"
+msgstr "1961-1970"
 
 #: schemas/static.py:522
 msgid "decade_1971_1980"
-msgstr "Decade 1971-1980"
+msgstr "1971-1980"
 
 #: schemas/static.py:523
 msgid "decade_1981_1990"
-msgstr "Decade 1981-1990"
+msgstr "1981-1990"
 
 #: schemas/static.py:524
 msgid "decade_1991_2000"
-msgstr "Decade 1991-2000"
+msgstr "1991-2000"
 
 #: schemas/static.py:525
 msgid "decade_2001_2010"
-msgstr "Decade 2001-2010"
+msgstr "2001-2010"
 
 #: schemas/static.py:526
 msgid "decade_2011_2020"
-msgstr "Decade 2011-2020"
+msgstr "2011-2020"
 
 #: schemas/static.py:527
 msgid "decade_2021_2030"
-msgstr "Decade 2021-2030"
+msgstr "2021-2030"
 
 #: schemas/static.py:528
 msgid "decade_2031_2040"
-msgstr "Decade 2031-2040"
+msgstr "2031-2040"
 
 #: schemas/static.py:535
 msgid "decade_1961_1970 description"
-msgstr "Description for decade 1961-1970"
+msgstr "Decade 1961-1970"
 
 #: schemas/static.py:536
 msgid "decade_1971_1980 description"
-msgstr "Description for decade 1971-1980"
+msgstr "Decade 1971-1980"
 
 #: schemas/static.py:537
 msgid "decade_1981_1990 description"
-msgstr "Description for decade 1981-1990"
+msgstr "Decade 1981-1990"
 
 #: schemas/static.py:538
 msgid "decade_1991_2000 description"
-msgstr "Description for decade 1991-2000"
+msgstr "Decade 1991-2000"
 
 #: schemas/static.py:539
 msgid "decade_2001_2010 description"
-msgstr "Description for decade 2001-2010"
+msgstr "Decade 2001-2010"
 
 #: schemas/static.py:540
 msgid "decade_2011_2020 description"
-msgstr "Description for decade 2011-2020"
+msgstr "Decade 2011-2020"
 
 #: schemas/static.py:541
 msgid "decade_2021_2030 description"
-msgstr "Description for decade 2021-2030"
+msgstr "Decade 2021-2030"
 
 #: schemas/static.py:542
 msgid "decade_2031_2040 description"
-msgstr "Description for decade 2031-2040"
+msgstr "Decade 2031-2040"
 
 #: schemas/static.py:569
 msgid "historical reference period"
@@ -629,11 +630,11 @@ msgstr "1991-2020"
 
 #: schemas/static.py:589
 msgid "1961-1990 description"
-msgstr "Description for period 1961-1990"
+msgstr "Thirty-year reference period (climatic normal) 1961-1990"
 
 #: schemas/static.py:590
 msgid "1991-2020 description"
-msgstr "Description for period 1991-2020"
+msgstr "Thirty-year reference period (climatic normal) 1991-2020"
 
 #: schemas/static.py:614
 msgid "coverage data processing method"
@@ -649,7 +650,7 @@ msgstr "Mann-Kendall trend"
 
 #: schemas/static.py:630 schemas/static.py:679 schemas/static.py:734
 msgid "Decade aggregation"
-msgstr "Decade aggregation"
+msgstr "Decade average"
 
 #: schemas/static.py:637 schemas/static.py:696 schemas/static.py:741
 msgid "no processing description"

@@ -23,7 +23,7 @@ def generate_climatic_indicators(
                 "with respect to the reference period"
             ),
             description_italian=(
-                "Precipitazione totale cumulata al di sopra del 95o "
+                "Precipitazione totale cumulata al di sopra del 95º "
                 "percentile del periodo di riferimento"
             ),
             unit_english="%",

@@ -22,10 +22,10 @@ def generate_climatic_indicators(
             display_name_english="Tropical nights (TR)",
             display_name_italian="Notti tropicali (TR)",
             description_english=(
-                "Number of days with minimum temperature larger than 20°C"
+                "Number of nights with minimum temperature larger than 20°C"
             ),
             description_italian=(
-                "Numero di giorni con temperatura minima maggiore di 20°C"
+                "Numero di notti con temperatura minima maggiore di 20°C"
             ),
             unit_english="days",
             unit_italian="gg",
@@ -80,10 +80,10 @@ def generate_climatic_indicators(
             display_name_english="Tropical nights (TR)",
             display_name_italian="Notti tropicali (TR)",
             description_english=(
-                "Number of days with minimum temperature larger than 20°C"
+                "Number of nights with minimum temperature larger than 20°C"
             ),
             description_italian=(
-                "Numero di giorni con temperatura minima maggiore di 20°C"
+                "Numero di notti con temperatura minima maggiore di 20°C"
             ),
             unit_english="days",
             unit_italian="gg",
@@ -101,10 +101,10 @@ def generate_climatic_indicators(
             display_name_english="Tropical nights (TR)",
             display_name_italian="Notti tropicali (TR)",
             description_english=(
-                "Number of days with minimum temperature larger than 20°C"
+                "Number of nights with minimum temperature larger than 20°C"
             ),
             description_italian=(
-                "Numero di giorni con temperatura minima maggiore di 20°C"
+                "Numero di notti con temperatura minima maggiore di 20°C"
             ),
             unit_english="days",
             unit_italian="gg",
@@ -122,10 +122,10 @@ def generate_climatic_indicators(
             display_name_english="Tropical nights (TR)",
             display_name_italian="Notti tropicali (TR)",
             description_english=(
-                "Number of days with minimum temperature larger than 20°C"
+                "Number of nights with minimum temperature larger than 20°C"
             ),
             description_italian=(
-                "Numero di giorni con temperatura minima maggiore di 20°C"
+                "Numero di notti con temperatura minima maggiore di 20°C"
             ),
             unit_english="days",
             unit_italian="gg",
@@ -143,10 +143,10 @@ def generate_climatic_indicators(
             display_name_english="Tropical nights (TR)",
             display_name_italian="Notti tropicali (TR)",
             description_english=(
-                "Number of days with minimum temperature larger than 20°C"
+                "Number of nights with minimum temperature larger than 20°C"
             ),
             description_italian=(
-                "Numero di giorni con temperatura minima maggiore di 20°C"
+                "Numero di notti con temperatura minima maggiore di 20°C"
             ),
             unit_english="days",
             unit_italian="gg",

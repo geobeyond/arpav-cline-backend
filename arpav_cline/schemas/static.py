@@ -1,9 +1,12 @@
 import enum
+import logging
 from typing import Final
 
 import babel
 
 from ..config import get_translations
+
+logger = logging.getLogger(__name__)
 
 NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
 FORECAST_MODEL_NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
@@ -623,33 +626,33 @@ class CoverageTimeSeriesProcessingMethod(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_PROCESSING.name: _("no processing"),
-            self.LOESS_SMOOTHING.name: _("LOESS"),
-            self.MOVING_AVERAGE_11_YEARS.name: _("centered 11-year moving average"),
+            self.NO_PROCESSING: _("no processing"),
+            self.LOESS_SMOOTHING: _("LOESS"),
+            self.MOVING_AVERAGE_11_YEARS: _("centered 11-year moving average"),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
-            self.DECADE_AGGREGATION.name: _("Decade aggregation"),
+            self.DECADE_AGGREGATION: _("Decade aggregation"),
         }.get(self, self.value)
 
     def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_PROCESSING.name: _("no processing description"),
-            self.LOESS_SMOOTHING.name: _("LOESS description"),
-            self.MOVING_AVERAGE_11_YEARS.name: _(
+            self.NO_PROCESSING: _("no processing description"),
+            self.LOESS_SMOOTHING: _("LOESS description"),
+            self.MOVING_AVERAGE_11_YEARS: _(
                 "centered 11-year moving average description"
             ),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend description"),
-            self.DECADE_AGGREGATION.name: _("Decade aggregation description"),
+            self.DECADE_AGGREGATION: _("Decade aggregation description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
-            self.NO_PROCESSING.name: 0,
-            self.LOESS_SMOOTHING.name: 1,
-            self.MOVING_AVERAGE_11_YEARS.name: 2,
-            self.MANN_KENDALL_TREND.name: 3,
-            self.DECADE_AGGREGATION.name: 4,
+            self.NO_PROCESSING: 0,
+            self.LOESS_SMOOTHING: 1,
+            self.MOVING_AVERAGE_11_YEARS: 2,
+            self.MANN_KENDALL_TREND: 3,
+            self.DECADE_AGGREGATION: 4,
         }.get(self, 0)
 
 
@@ -676,33 +679,33 @@ class HistoricalTimeSeriesProcessingMethod(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.DECADE_AGGREGATION.name: _("Decade aggregation"),
-            self.LOESS_SMOOTHING.name: _("LOESS"),
+            self.DECADE_AGGREGATION: _("Decade aggregation"),
+            self.LOESS_SMOOTHING: _("LOESS"),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
-            self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
-            self.NO_PROCESSING.name: _("no processing"),
+            self.MOVING_AVERAGE_5_YEARS: _("centered 5-year moving average"),
+            self.NO_PROCESSING: _("no processing"),
         }.get(self, self.value)
 
     def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.DECADE_AGGREGATION.name: _("Decade aggregation description"),
-            self.LOESS_SMOOTHING.name: _("LOESS description"),
+            self.DECADE_AGGREGATION: _("Decade aggregation description"),
+            self.LOESS_SMOOTHING: _("LOESS description"),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend description"),
-            self.MOVING_AVERAGE_5_YEARS.name: _(
+            self.MOVING_AVERAGE_5_YEARS: _(
                 "centered 5-year moving average description"
             ),
-            self.NO_PROCESSING.name: _("no processing description"),
+            self.NO_PROCESSING: _("no processing description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
-            self.DECADE_AGGREGATION.name: 3,
-            self.LOESS_SMOOTHING.name: 1,
-            self.MANN_KENDALL_TREND.name: 2,
-            self.MOVING_AVERAGE_5_YEARS.name: 1,
-            self.NO_PROCESSING.name: 0,
+            self.DECADE_AGGREGATION: 3,
+            self.LOESS_SMOOTHING: 1,
+            self.MANN_KENDALL_TREND: 2,
+            self.MOVING_AVERAGE_5_YEARS: 1,
+            self.NO_PROCESSING: 0,
         }.get(self, 0)
 
 
@@ -728,30 +731,30 @@ class ObservationTimeSeriesProcessingMethod(str, enum.Enum):
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_PROCESSING.name: _("no processing"),
-            self.MOVING_AVERAGE_5_YEARS.name: _("centered 5-year moving average"),
+            self.NO_PROCESSING: _("no processing"),
+            self.MOVING_AVERAGE_5_YEARS: _("centered 5-year moving average"),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend"),
-            self.DECADE_AGGREGATION.name: _("Decade aggregation"),
-        }[self.name] or self.name
+            self.DECADE_AGGREGATION: _("Decade aggregation"),
+        }.get(self, self.value)
 
     def get_value_description(self, locale: babel.Locale) -> str:
         translations = get_translations(locale)
         _ = translations.gettext
         return {
-            self.NO_PROCESSING.name: _("no processing description"),
-            self.MOVING_AVERAGE_5_YEARS.name: _(
+            self.NO_PROCESSING: _("no processing description"),
+            self.MOVING_AVERAGE_5_YEARS: _(
                 "centered 5-year moving average description"
             ),
             self.MANN_KENDALL_TREND: _("Mann-Kendall trend description"),
-            self.DECADE_AGGREGATION.name: _("Decade aggregation description"),
+            self.DECADE_AGGREGATION: _("Decade aggregation description"),
         }.get(self, self.value)
 
     def get_sort_order(self) -> int:
         return {
-            self.NO_PROCESSING.name: 0,
-            self.MOVING_AVERAGE_5_YEARS.name: 1,
-            self.MANN_KENDALL_TREND.name: 2,
-            self.DECADE_AGGREGATION.name: 3,
+            self.NO_PROCESSING: 0,
+            self.MOVING_AVERAGE_5_YEARS: 1,
+            self.MANN_KENDALL_TREND: 2,
+            self.DECADE_AGGREGATION: 3,
         }.get(self, 0)
 
 
