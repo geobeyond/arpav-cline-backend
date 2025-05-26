@@ -521,31 +521,32 @@ def wms_endpoint(
                     wms_response = thredds_utils.proxy_request_sync(
                         wms_url, http_client
                     )
-                except httpx.HTTPStatusError as err:
+                except (httpx.HTTPError, httpx.HTTPStatusError) as err:
                     logger.exception(
                         msg=f"THREDDS server replied with an error: {err.response.text}"
                     )
                     raise HTTPException(
                         status_code=status.HTTP_502_BAD_GATEWAY,
                         detail=err.response.text,
-                    )
-                except httpx.HTTPError as err:
-                    logger.exception(msg="THREDDS server replied with an error")
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
                     ) from err
                 else:
+                    headers = dict(wms_response.headers)
                     if query_params.get("request") == "GetCapabilities":
                         response_content = _modify_capabilities_response(
                             wms_response.text, str(request.url).partition("?")[0]
                         )
+                        headers["content-length"] = str(len(response_content))
+                        try:
+                            del headers["content-encoding"]
+                        except KeyError:
+                            pass
                     else:
                         response_content = wms_response.content
-                    response = Response(
-                        content=response_content,
-                        status_code=wms_response.status_code,
-                        headers=dict(wms_response.headers),
-                    )
+                response = Response(
+                    content=response_content,
+                    status_code=wms_response.status_code,
+                    headers=headers,
+                )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

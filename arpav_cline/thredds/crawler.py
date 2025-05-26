@@ -217,11 +217,14 @@ def find_thredds_dataset_url_fragment(
             )
             if (num_names := len(found_names)) > 0:
                 if num_names > 1:
+                    keeper = sorted(found_names)[-1]
                     logger.warning(
                         f"Found multiple possible thredds dataset URLs {found_names!r}, "
-                        f"kept the first one and ignored the others"
+                        f"sorted them alphabetically and kept only the "
+                        f"last one: {keeper} "
                     )
-                keeper = found_names[0]
+                else:
+                    keeper = found_names[0]
                 result = "/".join((catalog_fragment, keeper))
             else:
                 logger.warning(
