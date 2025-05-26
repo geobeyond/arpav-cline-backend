@@ -273,6 +273,10 @@ def import_thredds_datasets(
         for (
             observation_overview_cov_conf
         ) in db.collect_all_observation_overview_series_configurations(session):
+            if coverage_configuration_identifier_filter not in (
+                observation_overview_cov_conf.identifier
+            ):
+                continue
             cov = db.generate_observation_overview_series_from_configuration(
                 observation_overview_cov_conf
             )
