@@ -29,16 +29,20 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_STATION_CODE_PROPERTY = "statcd"
+
 
 def fetch_remote_stations(
     client: httpx.Client,
     series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
+    ignore_station_codes: list[str] | None = None,
 ) -> Generator[dict, None, None]:
     station_url = f"{observations_base_url}/clima_indicatori/staz_attive_lunghe"
     indicator_internal_name = common.get_indicator_internal_name(
         series_configuration.climatic_indicator, ObservationStationManager.ARPAV
     )
+    station_blacklist = ignore_station_codes or []
     if (
         series_configuration.measurement_aggregation_type
         == MeasurementAggregationType.MONTHLY
@@ -55,7 +59,11 @@ def fetch_remote_stations(
             )
             month_response.raise_for_status()
             for raw_station in month_response.json().get("data", []):
-                yield raw_station
+                raw_code = str(raw_station.get(_STATION_CODE_PROPERTY))
+                if raw_code in station_blacklist:
+                    logger.info(f"station {raw_code!r} is blacklisted - ignoring...")
+                else:
+                    yield raw_station
     elif (
         series_configuration.measurement_aggregation_type
         == MeasurementAggregationType.SEASONAL
@@ -72,7 +80,11 @@ def fetch_remote_stations(
             )
             season_response.raise_for_status()
             for raw_station in season_response.json().get("data", []):
-                yield raw_station
+                raw_code = str(raw_station.get(_STATION_CODE_PROPERTY))
+                if raw_code in station_blacklist:
+                    logger.info(f"station {raw_code!r} is blacklisted - ignoring...")
+                else:
+                    yield raw_station
     elif (
         series_configuration.measurement_aggregation_type
         == MeasurementAggregationType.YEARLY
@@ -88,7 +100,11 @@ def fetch_remote_stations(
         )
         year_response.raise_for_status()
         for raw_station in year_response.json().get("data", []):
-            yield raw_station
+            raw_code = str(raw_station.get(_STATION_CODE_PROPERTY))
+            if raw_code in station_blacklist:
+                logger.info(f"station {raw_code!r} is blacklisted - ignoring...")
+            else:
+                yield raw_station
     else:
         raise NotImplementedError(
             f"{series_configuration.measurement_aggregation_type} not implemented"
@@ -122,7 +138,7 @@ def parse_station(
         code="-".join(
             (
                 ObservationStationManager.ARPAV.value,
-                str(raw_station["statcd"]),
+                str(raw_station[_STATION_CODE_PROPERTY]),
             )
         ),
         geom=geojson_pydantic.Point(type="Point", coordinates=(pt_4326.x, pt_4326.y)),

@@ -114,6 +114,11 @@ def harvest_arpav_stations(
             client,
             series_configuration,
             observations_base_url=_settings.arpav_observations_base_url,
+            ignore_station_codes=[
+                code.rpartition("-")[-1]
+                for code in _settings.observation_stations_blacklist
+                if code.startswith("arpa_v")
+            ],
         )
         for raw_station in retriever:
             stations.add(arpav_operations.parse_station(raw_station, coord_converter))
@@ -147,6 +152,11 @@ def harvest_arpafvg_stations(
             series_configuration,
             observations_base_url=_settings.arpafvg_observations_base_url,
             auth_token=_settings.arpafvg_auth_token,
+            ignore_station_codes=[
+                code.rpartition("-")[-1]
+                for code in _settings.observation_stations_blacklist
+                if code.startswith("arpa_fvg")
+            ],
         )
         for raw_station in retriever:
             stations.add(arpafvg_operations.parse_station(raw_station))

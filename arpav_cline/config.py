@@ -137,6 +137,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     arpav_observations_base_url: str = "https://api.arpa.veneto.it/REST/v1"
     arpafvg_observations_base_url: str = "https://api.meteo.fvg.it"
     arpafvg_auth_token: str = "changeme"
+    observation_stations_blacklist: list[str] = []
 
     @pydantic.model_validator(mode="after")
     def ensure_test_db_dsn(self):
