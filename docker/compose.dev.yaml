@@ -24,6 +24,7 @@ x-common-env: &common-env
   ARPAV_PPCV__THREDDS_SERVER__BASE_URL: http://thredds:8080/thredds
   ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL: http://localhost:8877/vector-tiles
   ARPAV_PPCV__PREFECT__NUM_FLOW_RETRIES: 0
+  ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST: '["arpa_fvg-302"]'
   PREFECT_LOGGING_EXTRA_LOGGERS: arpav_cline
 
 x-common-volumes: &common-volumes

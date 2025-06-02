@@ -28,12 +28,15 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_STATION_CODE_PROPERTY = "statid"
+
 
 def fetch_remote_stations(
     client: httpx.Client,
     series_configuration: ObservationSeriesConfiguration,
     observations_base_url: str,
     auth_token: str,
+    ignore_station_codes: list[str] | None = None,
 ) -> Generator[dict, None, None]:
     # periodo:
     # - 0 means yearly data
@@ -72,8 +75,13 @@ def fetch_remote_stations(
         raise exceptions.ObservationDataRetrievalError(
             f"Could not retrieve observation data: {response.status_code - response.text}"
         )
+    station_blacklist = ignore_station_codes or []
     for raw_station in response.json().get("data", []):
-        yield raw_station
+        raw_code = str(raw_station.get(_STATION_CODE_PROPERTY))
+        if raw_code in station_blacklist:
+            logger.info(f"station {raw_code!r} is blacklisted - ignoring...")
+        else:
+            yield raw_station
 
 
 def parse_station(
@@ -84,7 +92,7 @@ def parse_station(
         code="-".join(
             (
                 ObservationStationManager.ARPAFVG.value,
-                str(raw_station["statid"]),
+                str(raw_station[_STATION_CODE_PROPERTY]),
             )
         ),
         geom=geojson_pydantic.Point(type="Point", coordinates=(pt_4326.x, pt_4326.y)),
