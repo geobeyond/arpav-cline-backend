@@ -109,6 +109,7 @@ class ArpavPpcvSettings(BaseSettings):  # noqa
     db_dsn: pydantic.PostgresDsn = pydantic.PostgresDsn(
         "postgresql://user:password@localhost:5432/arpav_ppcv"
     )
+    db_pool_size: int = 10
     test_db_dsn: Optional[pydantic.PostgresDsn] = None
     verbose_db_logs: bool = False
     contact: ContactSettings = ContactSettings()

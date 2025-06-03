@@ -34,6 +34,7 @@ def get_engine(
             _DB_ENGINE = sqlmodel.create_engine(
                 settings.db_dsn.unicode_string(),
                 echo=True if settings.verbose_db_logs else False,
+                pool_size=settings.db_pool_size,
             )
         result = _DB_ENGINE
     return result
