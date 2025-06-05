@@ -1,10 +1,26 @@
+import dataclasses
 import enum
 import logging
-from typing import Final
+from typing import (
+    Final,
+    TYPE_CHECKING,
+)
 
 import babel
 
-from ..config import get_translations
+from ..config import (
+    get_translations,
+    LOCALE_EN,
+    LOCALE_IT,
+    ThreddsServerSettings,
+)
+
+if TYPE_CHECKING:
+    from .coverages import (
+        ForecastCoverageInternal,
+        HistoricalCoverageInternal,
+    )
+    from .overviews import ForecastOverviewSeriesInternal
 
 logger = logging.getLogger(__name__)
 
@@ -795,3 +811,267 @@ class ObservationStationManager(str, enum.Enum):
             self.ARPAV: 0,
             self.ARPAFVG: 0,
         }.get(self, 0)
+
+
+@dataclasses.dataclass(frozen=True)
+class StaticForecastCoverage:
+    """This class provides static access to properties of a forecast coverage.
+
+    It exists in order to allow THREDDS-related code paths to run without
+    needing a DB connection.
+    """
+
+    aggregation_period: AggregationPeriod
+    climatic_indicator_name: str
+    climatic_indicator_name_translations: dict[babel.Locale, str]
+    climatic_indicator_description_translations: dict[babel.Locale, str]
+    color_scale_min: float
+    color_scale_max: float
+    coverage_configuration_identifier: str
+    coverage_identifier: str
+    forecast_model_name: str
+    forecast_model_name_translations: dict[babel.Locale, str]
+    lower_uncertainty_identifier: str | None
+    lower_uncertainty_ncss_url: str | None
+    lower_uncertainy_netcdf_variable_name: str | None
+    measure_type: MeasureType
+    netcdf_variable_name: str | None
+    ncss_url: str | None
+    palette: str
+    scenario: ForecastScenario
+    upper_uncertainty_identifier: str | None
+    upper_uncertainty_ncss_url: str | None
+    upper_uncertainy_netcdf_variable_name: str | None
+    wms_base_url: str
+    year_period: ForecastYearPeriod
+    related_static_coverages: list["StaticForecastCoverage"] = dataclasses.field(
+        default_factory=list
+    )
+
+    @classmethod
+    def from_coverage(
+        cls,
+        cov: "ForecastCoverageInternal",
+        settings: ThreddsServerSettings,
+        related_covs: list["ForecastCoverageInternal"] | None = None,
+    ) -> "StaticForecastCoverage":
+        if (ncss_url := cov.get_thredds_ncss_url(settings)) is None:
+            logger.warning("Could not find coverage's NCSS URL")
+        if (netcdf_variable_name := cov.get_netcdf_main_dataset_name()) is None:
+            logger.warning("Could not find coverage's NetCDF variable name")
+        if (
+            lower_uncert_nc_var := cov.get_netcdf_lower_uncertainty_main_dataset_name()
+        ) is None:
+            logger.info(
+                f"Coverage {cov.identifier!r} does not specify a lower "
+                f"uncertainty dataset"
+            )
+        if (
+            upper_uncert_nc_var := cov.get_netcdf_upper_uncertainty_main_dataset_name()
+        ) is None:
+            logger.info(
+                f"Coverage {cov.identifier!r} does not specify an upper "
+                f"uncertainty dataset"
+            )
+
+        lower_uncert_ncss_url = None
+        if (
+            lower_uncert := getattr(cov, "lower_uncertainty_identifier", None)
+        ) is not None:
+            lower_uncert_ncss_url = cov.get_lower_uncertainty_thredds_ncss_url(settings)
+        upper_uncert_ncss_url = None
+        if (
+            upper_uncert := getattr(cov, "upper_uncertainty_identifier", None)
+        ) is not None:
+            upper_uncert_ncss_url = cov.get_upper_uncertainty_thredds_ncss_url(settings)
+
+        return cls(
+            aggregation_period=cov.configuration.climatic_indicator.aggregation_period,
+            climatic_indicator_name=cov.configuration.climatic_indicator.name,
+            climatic_indicator_name_translations={
+                LOCALE_EN: cov.configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: cov.configuration.climatic_indicator.display_name_italian,
+            },
+            climatic_indicator_description_translations={
+                LOCALE_EN: cov.configuration.climatic_indicator.description_english,
+                LOCALE_IT: cov.configuration.climatic_indicator.description_italian,
+            },
+            color_scale_min=cov.configuration.climatic_indicator.color_scale_min,
+            color_scale_max=cov.configuration.climatic_indicator.color_scale_max,
+            coverage_configuration_identifier=cov.configuration.identifier,
+            coverage_identifier=cov.identifier,
+            forecast_model_name=cov.forecast_model.name,
+            forecast_model_name_translations={
+                LOCALE_EN: cov.forecast_model.get_display_name(LOCALE_EN),
+                LOCALE_IT: cov.forecast_model.get_display_name(LOCALE_IT),
+            },
+            lower_uncertainty_identifier=lower_uncert,
+            lower_uncertainty_ncss_url=lower_uncert_ncss_url,
+            lower_uncertainy_netcdf_variable_name=lower_uncert_nc_var,
+            measure_type=cov.configuration.climatic_indicator.measure_type,
+            netcdf_variable_name=netcdf_variable_name,
+            ncss_url=ncss_url,
+            palette=cov.configuration.climatic_indicator.palette,
+            scenario=cov.scenario,
+            upper_uncertainty_identifier=upper_uncert,
+            upper_uncertainty_ncss_url=upper_uncert_ncss_url,
+            upper_uncertainy_netcdf_variable_name=upper_uncert_nc_var,
+            wms_base_url=cov.get_wms_base_url(settings),
+            year_period=cov.year_period,
+            related_static_coverages=[
+                StaticForecastCoverage.from_coverage(other_cov, settings)
+                for other_cov in (related_covs or [])
+            ],
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class StaticHistoricalCoverage:
+    """This class provides static access to properties of a historical coverage.
+
+    It exists in order to allow THREDDS-related code paths to run without
+    needing a DB connection.
+    """
+
+    aggregation_period: AggregationPeriod
+    climatic_indicator_name: str
+    climatic_indicator_name_translations: dict[babel.Locale, str]
+    climatic_indicator_description_translations: dict[babel.Locale, str]
+    color_scale_min: float
+    color_scale_max: float
+    coverage_configuration_identifier: str
+    coverage_identifier: str
+    measure_type: MeasureType
+    netcdf_variable_name: str | None
+    ncss_url: str | None
+    palette: str
+    wms_base_url: str
+    year_period: HistoricalYearPeriod
+    decade: HistoricalDecade | None = None
+    coverage_configuration_reference_period: HistoricalReferencePeriod | None = None
+
+    @classmethod
+    def from_coverage(
+        cls,
+        cov: "HistoricalCoverageInternal",
+        settings: ThreddsServerSettings,
+    ) -> "StaticHistoricalCoverage":
+        if (ncss_url := cov.get_thredds_ncss_url(settings)) is None:
+            logger.warning("Could not find coverage's NCSS URL")
+        if (netcdf_variable_name := cov.get_netcdf_main_dataset_name()) is None:
+            logger.warning("Could not find coverage's NetCDF variable name")
+        return cls(
+            aggregation_period=cov.configuration.climatic_indicator.aggregation_period,
+            climatic_indicator_name=cov.configuration.climatic_indicator.name,
+            climatic_indicator_name_translations={
+                LOCALE_EN: cov.configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: cov.configuration.climatic_indicator.display_name_italian,
+            },
+            climatic_indicator_description_translations={
+                LOCALE_EN: cov.configuration.climatic_indicator.description_english,
+                LOCALE_IT: cov.configuration.climatic_indicator.description_italian,
+            },
+            color_scale_min=cov.configuration.climatic_indicator.color_scale_min,
+            color_scale_max=cov.configuration.climatic_indicator.color_scale_max,
+            coverage_configuration_identifier=cov.configuration.identifier,
+            coverage_configuration_reference_period=cov.configuration.reference_period,
+            coverage_identifier=cov.identifier,
+            decade=cov.decade,
+            measure_type=cov.configuration.climatic_indicator.measure_type,
+            netcdf_variable_name=netcdf_variable_name,
+            ncss_url=ncss_url,
+            palette=cov.configuration.climatic_indicator.palette,
+            wms_base_url=cov.get_wms_base_url(settings),
+            year_period=cov.year_period,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class StaticForecastOverviewSeries:
+    """This class provides static access to properties of an overview forecast.
+
+    It exists in order to allow THREDDS-related code paths to run without
+    needing a DB connection.
+    """
+
+    series_configuration_identifier: str
+    file_download_url: str | None
+    lower_uncertainty_file_download_url: str | None
+    lower_uncertainty_identifier: str | None
+    lower_uncertainy_netcdf_variable_name: str
+    lower_uncertainty_opendap_url: str | None
+    opendap_url: str | None
+    netcdf_variable_name: str
+    upper_uncertainty_file_download_url: str | None
+    upper_uncertainty_identifier: str | None
+    upper_uncertainy_netcdf_variable_name: str
+    upper_uncertainty_opendap_url: str | None
+    scenario: ForecastScenario | None = None
+
+    @property
+    def identifier(self) -> str:
+        pattern_parts = [self.series_configuration_identifier]
+        pattern_parts.append(self.scenario.value if self.scenario else "*")
+        return "-".join(pattern_parts)
+
+    @classmethod
+    def from_series(
+        cls,
+        series: "ForecastOverviewSeriesInternal",
+        settings: ThreddsServerSettings,
+    ):
+        if (opendap_url := series.get_thredds_opendap_url(settings)) is None:
+            logger.warning("Could not find overview series' OpenDAP URL")
+        if (
+            lower_opendap_url := series.get_lower_uncertainty_thredds_opendap_url(
+                settings
+            )
+        ) is None:
+            logger.warning(
+                "Could not find overview series' lower uncertainty OpenDAP URL"
+            )
+        if (
+            upper_opendap_url := series.get_upper_uncertainty_thredds_opendap_url(
+                settings
+            )
+        ) is None:
+            logger.warning(
+                "Could not find overview series' upper uncertainty OpenDAP URL"
+            )
+        if (
+            file_download_url := series.get_thredds_file_download_url(settings)
+        ) is None:
+            logger.warning("Could not find overview series' file download URL")
+        if (
+            lower_download_url
+            := series.get_lower_uncertainty_thredds_file_download_url(settings)
+        ) is None:
+            logger.warning(
+                "Could not find overview series' lower uncertainty file " "download URL"
+            )
+        if (
+            upper_download_url
+            := series.get_upper_uncertainty_thredds_file_download_url(settings)
+        ) is None:
+            logger.warning(
+                "Could not find overview series' upper uncertainty file " "download URL"
+            )
+        return cls(
+            series_configuration_identifier=series.configuration.identifier,
+            file_download_url=file_download_url,
+            lower_uncertainty_file_download_url=lower_download_url,
+            lower_uncertainty_identifier=series.lower_uncertainty_identifier,
+            lower_uncertainy_netcdf_variable_name=(
+                series.get_netcdf_lower_uncertainty_main_dataset_name()
+            ),
+            lower_uncertainty_opendap_url=lower_opendap_url,
+            opendap_url=opendap_url,
+            netcdf_variable_name=series.get_netcdf_main_dataset_name(),
+            upper_uncertainty_file_download_url=upper_download_url,
+            upper_uncertainty_identifier=series.upper_uncertainty_identifier,
+            upper_uncertainy_netcdf_variable_name=(
+                series.get_netcdf_upper_uncertainty_main_dataset_name()
+            ),
+            upper_uncertainty_opendap_url=upper_opendap_url,
+            scenario=series.scenario,
+        )

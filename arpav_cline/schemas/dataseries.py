@@ -19,10 +19,6 @@ from . import static
 
 if TYPE_CHECKING:
     import babel
-    from .coverages import (
-        ForecastCoverageInternal,
-        HistoricalCoverageInternal,
-    )
     from .observations import (
         ObservationSeriesConfiguration,
         ObservationStation,
@@ -30,6 +26,10 @@ if TYPE_CHECKING:
     from .overviews import (
         ForecastOverviewSeriesInternal,
         ObservationOverviewSeriesInternal,
+    )
+    from .static import (
+        StaticForecastCoverage,
+        StaticHistoricalCoverage,
     )
 
 
@@ -139,12 +139,12 @@ class ForecastOverviewDataSeries:
 
 @dataclasses.dataclass
 class ForecastDataSeries:
-    coverage: "ForecastCoverageInternal"
+    coverage: "StaticForecastCoverage"
     dataset_type: static.DatasetType
-    processing_method: static.CoverageTimeSeriesProcessingMethod
-    temporal_start: Optional[dt.date]
-    temporal_end: Optional[dt.date]
     location: shapely.Point
+    processing_method: static.CoverageTimeSeriesProcessingMethod
+    temporal_end: Optional[dt.date]
+    temporal_start: Optional[dt.date]
     data_: Optional[pd.Series] = None
     processing_method_info: Optional[dict] = None
 
@@ -152,7 +152,7 @@ class ForecastDataSeries:
     def identifier(self) -> str:
         return "-".join(
             (
-                self.coverage.identifier,
+                self.coverage.coverage_identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
                 (
@@ -183,15 +183,13 @@ class ForecastDataSeries:
 
     def get_legacy_info(self) -> dict:
         return {
-            "coverage_identifier": self.coverage.identifier,
+            "coverage_identifier": self.coverage.coverage_identifier,
             "dataset_type": self.dataset_type,
-            "coverage_configuration": self.coverage.configuration.identifier,
-            "aggregation_period": (
-                self.coverage.configuration.climatic_indicator.aggregation_period.value
-            ),
-            "climatological_model": self.coverage.forecast_model.name,
-            "climatological_variable": self.coverage.configuration.climatic_indicator.name,
-            "measure": self.coverage.configuration.climatic_indicator.measure_type.value,
+            "coverage_configuration": self.coverage.coverage_configuration_identifier,
+            "aggregation_period": self.coverage.aggregation_period.value,
+            "climatological_model": self.coverage.forecast_model_name,
+            "climatological_variable": self.coverage.climatic_indicator_name,
+            "measure": self.coverage.measure_type.value,
             "scenario": self.coverage.scenario.value,
             "year_period": self.coverage.year_period.value,
             "processing_method": self.processing_method.value,
@@ -255,12 +253,12 @@ class ObservationStationDataSeries:
 
 @dataclasses.dataclass
 class HistoricalDataSeries:
-    coverage: "HistoricalCoverageInternal"
+    coverage: "StaticHistoricalCoverage"
     dataset_type: static.DatasetType
-    processing_method: static.HistoricalTimeSeriesProcessingMethod
-    temporal_start: Optional[dt.date]
-    temporal_end: Optional[dt.date]
     location: shapely.Point
+    processing_method: static.HistoricalTimeSeriesProcessingMethod
+    temporal_end: Optional[dt.date]
+    temporal_start: Optional[dt.date]
     data_: Optional[pd.Series] = None
     processing_method_info: Optional[dict] = None
 
@@ -268,7 +266,7 @@ class HistoricalDataSeries:
     def identifier(self) -> str:
         return "-".join(
             (
-                self.coverage.identifier,
+                self.coverage.coverage_identifier,
                 self.dataset_type.value,
                 geohashr.encode(self.location.x, self.location.y),
                 self.processing_method.value,
@@ -289,14 +287,12 @@ class HistoricalDataSeries:
 
     def get_legacy_info(self) -> dict:
         info = {
-            "coverage_identifier": self.coverage.identifier,
-            "coverage_configuration": self.coverage.configuration.identifier,
+            "coverage_identifier": self.coverage.coverage_identifier,
+            "coverage_configuration": self.coverage.coverage_configuration_identifier,
             "dataset_type": self.dataset_type,
-            "aggregation_period": (
-                self.coverage.configuration.climatic_indicator.aggregation_period.value
-            ),
-            "climatological_variable": self.coverage.configuration.climatic_indicator.name,
-            "measure": self.coverage.configuration.climatic_indicator.measure_type.value,
+            "aggregation_period": self.coverage.aggregation_period.value,
+            "climatological_variable": self.coverage.climatic_indicator_name,
+            "measure": self.coverage.measure_type.value,
             "year_period": self.coverage.year_period.value,
             "processing_method": self.processing_method.value,
             "processing_method_info": self.processing_method_info,
@@ -304,8 +300,8 @@ class HistoricalDataSeries:
         }
         if self.coverage.decade is not None:
             info["decade"] = self.coverage.decade
-        if self.coverage.configuration.reference_period is not None:
+        if self.coverage.coverage_configuration_reference_period is not None:
             info[
                 "reference_period"
-            ] = self.coverage.configuration.reference_period.value
+            ] = self.coverage.coverage_configuration_reference_period.value
         return info

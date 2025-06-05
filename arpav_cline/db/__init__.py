@@ -49,7 +49,7 @@ from .forecastcoverages import (
     get_forecast_coverage,  # noqa
     get_forecast_coverage_configuration,  # noqa
     get_forecast_coverage_configuration_by_identifier,  # noqa
-    get_forecast_coverage_data_series,  # noqa
+    # get_forecast_coverage_data_series,  # noqa
     get_forecast_model,  # noqa
     get_forecast_model_by_name,  # noqa
     get_forecast_model_group,  # noqa
