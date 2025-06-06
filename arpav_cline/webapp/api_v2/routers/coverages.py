@@ -51,10 +51,6 @@ from ....schemas.coverages import (
     ForecastCoverageInternal,
 )
 from ....schemas.climaticindicators import ClimaticIndicator
-from ....schemas.dataseries import (
-    HistoricalDataSeries,
-    ObservationStationDataSeries,
-)
 from ....schemas.legacy import (
     parse_legacy_aggregation_period,
     CoverageDataSmoothingStrategy,
@@ -69,6 +65,10 @@ from ....schemas.static import (
     HistoricalReferencePeriod,
     HistoricalYearPeriod,
     MeasureType,
+    StaticForecastCoverage,
+    StaticHistoricalCoverage,
+    StaticForecastOverviewSeries,
+    StaticHistoricalOverviewSeries,
 )
 from ....schemas.dataseries import MannKendallParameters
 from ... import (
@@ -455,7 +455,6 @@ def deprecated_get_coverage_identifier(
 @router.get("/wms/{coverage_identifier}")
 def wms_endpoint(
     request: Request,
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
     coverage_identifier: str,
@@ -465,7 +464,14 @@ def wms_endpoint(
 
     Pass additional relevant WMS query parameters directly to this endpoint.
     """
+    # Note that we do manual DB session management here, instead of asking
+    # FastAPI for the session dependency. This is in order to not tie the
+    # DB session to the external THREDDS requests, as these can take a while
+    # to complete and therefore leave the DB connection open for long time.
+    # So we use up the DB first, then close the session (which frees up the
+    # DB connection) and after we interact with THREDDS
     query_params = {k.lower(): v for k, v in request.query_params.items()}
+
     if query_params.get("request") == "GetMap" and query_params.get("opacity") == "0":
         logger.debug(
             "Bypassing THREDDS server and returning a pre-rendered transparent "
@@ -473,86 +479,80 @@ def wms_endpoint(
         )
         size_ = query_params.get("width", "256")
         image_path = settings.transparent_images_dir / f"transparent-{size_}.png"
-        response = FileResponse(image_path)
+        return FileResponse(image_path)
+
+    try:
+        category = DataCategory(coverage_identifier.partition("-")[0])
+    except ValueError:
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+
+    if category not in (DataCategory.FORECAST, DataCategory.HISTORICAL):
+        raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
+
+    handler, static_generator = (
+        (db.get_forecast_coverage, StaticForecastCoverage.from_coverage)
+        if category == DataCategory.FORECAST
+        else (db.get_historical_coverage, StaticHistoricalCoverage.from_coverage)
+    )
+    with Session(db.get_engine(settings)) as session:
+        if (cov := handler(session, coverage_identifier)) is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
+            )
+        thredds_dataset = static_generator(cov, settings.thredds_server)
+
+    logger.info(f"{thredds_dataset.wms_base_url=}")
+    parsed_url = urllib.parse.urlparse(thredds_dataset.wms_base_url)
+    logger.debug(f"original query params: {query_params=}")
+    if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
+        query_params = thredds_utils.tweak_wms_get_map_request(
+            query_params,
+            ncwms_palette=thredds_dataset.palette,
+            ncwms_color_scale_range=(
+                thredds_dataset.color_scale_min,
+                thredds_dataset.color_scale_max,
+            ),
+            uncertainty_visualization_scale_range=(
+                settings.thredds_server.uncertainty_visualization_scale_range
+            ),
+        )
+    logger.debug(f"{query_params=}")
+    wms_url = parsed_url._replace(
+        query=urllib.parse.urlencode(
+            {
+                **query_params,
+                "service": "WMS",
+                "version": version,
+            }
+        )
+    ).geturl()
+    logger.info(f"{wms_url=}")
+    try:
+        wms_response = thredds_utils.proxy_request_sync(wms_url, http_client)
+    except (httpx.HTTPError, httpx.HTTPStatusError) as err:
+        logger.exception(
+            msg=f"THREDDS server replied with an error: {err.response.text}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=err.response.text,
+        ) from err
+
+    headers = dict(wms_response.headers)
+    if query_params.get("request") == "GetCapabilities":
+        response_content = _modify_capabilities_response(
+            wms_response.text, str(request.url).partition("?")[0]
+        )
+        headers["content-length"] = str(len(response_content))
+        headers.pop("content-encoding", None)
     else:
-        try:
-            category = DataCategory(coverage_identifier.partition("-")[0])
-        except ValueError:
-            raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-        else:
-            if category in (DataCategory.FORECAST, DataCategory.HISTORICAL):
-                if category == DataCategory.FORECAST:
-                    handler = db.get_forecast_coverage
-                else:  # historical
-                    handler = db.get_historical_coverage
-            else:
-                raise HTTPException(
-                    400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL
-                )
-            if (cov := handler(session, coverage_identifier)) is not None:
-                base_wms_url = cov.get_wms_base_url(settings.thredds_server)
-                parsed_url = urllib.parse.urlparse(base_wms_url)
-                logger.info(f"{base_wms_url=}")
-                logger.debug(f"original query params: {query_params=}")
-                if query_params.get("request") in ("GetMap", "GetLegendGraphic"):
-                    query_params = thredds_utils.tweak_wms_get_map_request(
-                        query_params,
-                        ncwms_palette=cov.configuration.climatic_indicator.palette,
-                        ncwms_color_scale_range=(
-                            cov.configuration.climatic_indicator.color_scale_min,
-                            cov.configuration.climatic_indicator.color_scale_max,
-                        ),
-                        uncertainty_visualization_scale_range=(
-                            settings.thredds_server.uncertainty_visualization_scale_range
-                        ),
-                    )
-                logger.debug(f"{query_params=}")
-                wms_url = parsed_url._replace(
-                    query=urllib.parse.urlencode(
-                        {
-                            **query_params,
-                            "service": "WMS",
-                            "version": version,
-                        }
-                    )
-                ).geturl()
-                logger.info(f"{wms_url=}")
-                try:
-                    wms_response = thredds_utils.proxy_request_sync(
-                        wms_url, http_client
-                    )
-                except (httpx.HTTPError, httpx.HTTPStatusError) as err:
-                    logger.exception(
-                        msg=f"THREDDS server replied with an error: {err.response.text}"
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=err.response.text,
-                    ) from err
-                else:
-                    headers = dict(wms_response.headers)
-                    if query_params.get("request") == "GetCapabilities":
-                        response_content = _modify_capabilities_response(
-                            wms_response.text, str(request.url).partition("?")[0]
-                        )
-                        headers["content-length"] = str(len(response_content))
-                        try:
-                            del headers["content-encoding"]
-                        except KeyError:
-                            pass
-                    else:
-                        response_content = wms_response.content
-                response = Response(
-                    content=response_content,
-                    status_code=wms_response.status_code,
-                    headers=headers,
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
-                )
-    return response
+        response_content = wms_response.content
+    return Response(
+        content=response_content,
+        status_code=wms_response.status_code,
+        headers=headers,
+    )
 
 
 @router.get("/forecast-data", response_model=ForecastCoverageDownloadList)
@@ -843,7 +843,6 @@ def _modify_capabilities_response(
     response_model=LegacyTimeSeriesList,
 )
 def get_overview_time_series(
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     data_smoothing: Annotated[list[CoverageDataSmoothingStrategy], Query()] = [
         CoverageDataSmoothingStrategy.NO_SMOOTHING
@@ -851,36 +850,77 @@ def get_overview_time_series(
     include_uncertainty: bool = False,
 ):
     """Get climate barometer time series."""
+    # Note that we do manual DB session management here, instead of asking
+    # FastAPI for the session dependency. This is in order to not tie the
+    # DB session to the external THREDDS requests, as these can take a while
+    # to complete and therefore leave the DB connection open for long time.
+    # So we use up the DB first, then close the session (which frees up the
+    # DB connection) and after we interact with THREDDS
+
     # converting from legacy data_smoothing enum
     processing_methods = [
         strategy.to_processing_method() for strategy in data_smoothing
     ]
-    try:
-        (
-            forecast_overview_time_series,
-            observation_overview_time_series,
-        ) = timeseries.get_overview_time_series(
-            settings=settings,
-            session=session,
-            processing_methods=processing_methods,
-            include_uncertainty=include_uncertainty,
-        )
-    except exceptions.OverviewDataRetrievalError as err:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not retrieve data",
-        ) from err
-    else:
-        series = []
+
+    static_forecast_series = []
+    static_historical_series = []
+    with Session(db.get_engine(settings)) as session:
+        for fsc in db.collect_all_forecast_overview_series_configurations(session):
+            for fs in db.generate_forecast_overview_series_from_configuration(fsc):
+                static_forecast_series.append(
+                    StaticForecastOverviewSeries.from_series(
+                        fs, settings.thredds_server
+                    )
+                )
+        for hsc in db.collect_all_observation_overview_series_configurations(session):
+            hs = db.generate_observation_overview_series_from_configuration(hsc)
+            static_historical_series.append(
+                StaticHistoricalOverviewSeries.from_series(hs, settings.thredds_server)
+            )
+
+    series = []
+    # deal with forecast data
+    for static_forecast_overview in static_forecast_series:
+        try:
+            forecast_overview_time_series = (
+                timeseries.get_forecast_overview_time_series(
+                    settings=settings.thredds_server,
+                    static_overview_series=static_forecast_overview,
+                    processing_methods=processing_methods,
+                    include_uncertainty=include_uncertainty,
+                )
+            )
+        except exceptions.OverviewDataRetrievalError as err:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not retrieve data",
+            ) from err
+
         for forecast_series in forecast_overview_time_series:
             series.append(
                 LegacyTimeSeries.from_forecast_overview_series(forecast_series)
             )
-        for observation_series in observation_overview_time_series:
-            series.append(
-                LegacyTimeSeries.from_historical_overview_series(observation_series)
+    # deal with historical data
+    for static_historical_overview in static_historical_series:
+        try:
+            historical_overview_time_series = (
+                timeseries.get_observation_overview_time_series(
+                    settings=settings.thredds_server,
+                    static_overview_series=static_historical_overview,
+                    processing_methods=processing_methods,
+                )
             )
-        return LegacyTimeSeriesList(series=series)
+        except exceptions.OverviewDataRetrievalError as err:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not retrieve data",
+            ) from err
+
+        for historical_series in historical_overview_time_series:
+            series.append(
+                LegacyTimeSeries.from_historical_overview_series(historical_series)
+            )
+    return LegacyTimeSeriesList(series=series)
 
 
 @router.get(
@@ -940,7 +980,6 @@ def deprecated_get_time_series(
     response_model=LegacyTimeSeriesList,
 )
 def get_forecast_time_series(
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
     coverage_identifier: str,
@@ -966,44 +1005,76 @@ def get_forecast_time_series(
     include_coverage_related_data: bool = False,
 ):
     """Get forecast dataset time series for a geographic location"""
+    # Note that we do manual DB session management here, instead of asking
+    # FastAPI for the session dependency. This is in order to not tie the
+    # DB session to the external THREDDS requests, as these can take a while
+    # to complete and therefore leave the DB connection open for long time.
+    # So we use up the DB first, then close the session (which frees up the
+    # DB connection) and after we interact with THREDDS
     try:
         data_category = DataCategory(coverage_identifier.partition("-")[0])
     except ValueError:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
     if data_category != DataCategory.FORECAST:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-    if (coverage := db.get_forecast_coverage(session, coverage_identifier)) is not None:
-        # converting from legacy data_smoothing enum
-        coverage_processing_methods = [
-            cs.to_processing_method() for cs in coverage_data_smoothing
-        ]
-        observation_processing_methods = [
-            os.to_processing_method() for os in observation_data_smoothing
-        ]
+    try:
+        point_geom = _get_point_location(coords)
+    except shapely.errors.GEOSException as err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+    temporal_range = operations.parse_temporal_range(datetime)
+    coverage_processing_methods = [
+        cs.to_processing_method() for cs in coverage_data_smoothing
+    ]
+    observation_processing_methods = [
+        os.to_processing_method() for os in observation_data_smoothing
+    ]
+    series = []
 
-        try:
-            point_geom = _get_point_location(coords)
-        except shapely.errors.GEOSException as err:
+    with Session(db.get_engine(settings)) as session:
+        # observations data are processed within the DB session, as they are gotten
+        # from the DB
+        if (cov := db.get_forecast_coverage(session, coverage_identifier)) is None:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
             )
-        temporal_range = operations.parse_temporal_range(datetime)
+        static_cov = StaticForecastCoverage.from_coverage(
+            cov,
+            settings.thredds_server,
+            related_covs=db.generate_forecast_coverages_for_other_models(session, cov),
+        )
+
+        if include_observation_data:
+            observations_series = (
+                timeseries.get_forecast_coverage_observation_time_series(
+                    settings=settings,
+                    session=session,
+                    coverage=cov,
+                    point_geom=point_geom,
+                    temporal_range=temporal_range,
+                    observation_processing_methods=observation_processing_methods,
+                )
+            )
+            for obs_station_series in observations_series or []:
+                series.append(
+                    LegacyTimeSeries.from_observation_station_data_series(
+                        obs_station_series
+                    )
+                )
+
+    # forecast series are processed outside of the DB session, so that we can
+    # wait for THREDDS but release the DB connection
+    forecast_series = None
+    if include_coverage_data:
         try:
-            (
-                forecast_series,
-                observations_series,
-            ) = timeseries.get_forecast_coverage_time_series(
-                settings=settings,
-                session=session,
+            forecast_series = timeseries.get_forecast_coverage_time_series(
+                settings=settings.thredds_server,
                 http_client=http_client,
-                coverage=coverage,
+                static_coverage=static_cov,
                 point_geom=point_geom,
                 temporal_range=temporal_range,
-                coverage_processing_methods=coverage_processing_methods,
-                observation_processing_methods=observation_processing_methods,
-                include_coverage_data=include_coverage_data,
-                include_observation_data=include_observation_data,
-                include_coverage_uncertainty=include_coverage_uncertainty,
+                processing_methods=coverage_processing_methods,
+                include_uncertainty=include_coverage_uncertainty,
                 include_coverage_related_models=include_coverage_related_data,
             )
         except exceptions.CoverageDataRetrievalError as err:
@@ -1011,25 +1082,13 @@ def get_forecast_time_series(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not retrieve data",
             ) from err
-        else:
-            series = []
-            for forecast_cov_series in forecast_series or []:
-                series.append(
-                    LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
-                )
-            if observations_series is not None:
-                for obs_station_series in observations_series:
-                    series.append(
-                        LegacyTimeSeries.from_observation_station_data_series(
-                            obs_station_series
-                        )
-                    )
-            return LegacyTimeSeriesList(series=series)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
-        )
+
+        for forecast_cov_series in forecast_series or []:
+            series.append(
+                LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
+            )
+    series.reverse()
+    return LegacyTimeSeriesList(series=series)
 
 
 @router.get(
@@ -1037,7 +1096,6 @@ def get_forecast_time_series(
     response_model=LegacyTimeSeriesList,
 )
 def get_historical_time_series(
-    session: Annotated[Session, Depends(dependencies.get_db_session)],
     settings: Annotated[ArpavPpcvSettings, Depends(dependencies.get_settings)],
     http_client: Annotated[httpx.Client, Depends(dependencies.get_sync_http_client)],
     coverage_identifier: parameters.COVERAGE_IDENTIFIER_PATH_PARAMETER,
@@ -1049,6 +1107,12 @@ def get_historical_time_series(
     include_loess_series: bool = False,
 ):
     """Get historical dataset time series for a geographic location."""
+    # Note that we do manual DB session management here, instead of asking
+    # FastAPI for the session dependency. This is in order to not tie the
+    # DB session to the external THREDDS requests, as these can take a while
+    # to complete and therefore leave the DB connection open for long time.
+    # So we use up the DB first, then close the session (which frees up the
+    # DB connection) and after we interact with THREDDS
     try:
         point_geom = _get_point_location(coords)
     except shapely.errors.GEOSException as err:
@@ -1059,38 +1123,63 @@ def get_historical_time_series(
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
     if data_category != DataCategory.HISTORICAL:
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
-    if (
-        coverage := db.get_historical_coverage(session, coverage_identifier)
-    ) is not None:
-        logger.debug(f"found coverage {coverage.identifier!r}")
-        temporal_range = operations.parse_temporal_range(datetime)
-        mann_kendall_params = None
-        if mann_kendall_datetime is not None:
-            mann_kendall_start, mann_kendall_end = parse_temporal_range(
-                mann_kendall_datetime
+    temporal_range = operations.parse_temporal_range(datetime)
+
+    mann_kendall_params = None
+    if mann_kendall_datetime is not None:
+        mann_kendall_start, mann_kendall_end = parse_temporal_range(
+            mann_kendall_datetime
+        )
+        try:
+            mann_kendall_params = MannKendallParameters(
+                start_year=(
+                    mann_kendall_start.year if mann_kendall_start is not None else None
+                ),
+                end_year=(
+                    mann_kendall_end.year if mann_kendall_end is not None else None
+                ),
             )
-            try:
-                mann_kendall_params = MannKendallParameters(
-                    start_year=(
-                        mann_kendall_start.year
-                        if mann_kendall_start is not None
-                        else None
-                    ),
-                    end_year=(
-                        mann_kendall_end.year if mann_kendall_end is not None else None
-                    ),
-                )
-            except pydantic.ValidationError as err:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=err.errors(include_context=False, include_url=False),
-                ) from err
+        except pydantic.ValidationError as err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=err.errors(include_context=False, include_url=False),
+            ) from err
+
+    time_series = []
+    with Session(db.get_engine(settings)) as session:
+        if (cov := db.get_historical_coverage(session, coverage_identifier)) is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
+            )
+        logger.debug(f"found coverage {cov.identifier!r}")
+        static_cov = StaticHistoricalCoverage.from_coverage(
+            cov, settings.thredds_server
+        )
+
+        station_historical_series = timeseries.get_historical_observation_series(
+            settings=settings,
+            session=session,
+            coverage=cov,
+            point_geom=point_geom,
+            temporal_range=temporal_range,
+            mann_kendall_params=mann_kendall_params,
+            include_moving_average_series=include_moving_average_series,
+            include_decade_aggregation_series=include_decade_aggregation_series,
+            include_loess_series=include_loess_series,
+        )
+        for series in station_historical_series:
+            time_series.append(
+                LegacyTimeSeries.from_observation_station_data_series(series)
+            )
+    if len(time_series) > 0:
+        return LegacyTimeSeriesList(series=time_series)
+    else:  # we could not find station data, let's try with the historical coverages
         try:
             historical_series = timeseries.get_historical_time_series(
                 settings=settings,
-                session=session,
                 http_client=http_client,
-                coverage=coverage,
+                static_coverage=static_cov,
                 point_geom=point_geom,
                 temporal_range=temporal_range,
                 mann_kendall_params=mann_kendall_params,
@@ -1103,25 +1192,9 @@ def get_historical_time_series(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not retrieve data",
             ) from err
-        else:
-            time_series = []
-            for series in historical_series:
-                if isinstance(series, HistoricalDataSeries):
-                    time_series.append(
-                        LegacyTimeSeries.from_historical_data_series(series)
-                    )
-                elif isinstance(series, ObservationStationDataSeries):
-                    time_series.append(
-                        LegacyTimeSeries.from_observation_station_data_series(series)
-                    )
-                else:
-                    logger.warning(f"series {series=} is not implemented")
-            return LegacyTimeSeriesList(series=time_series)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,
-        )
+        for series in historical_series:
+            time_series.append(LegacyTimeSeries.from_historical_data_series(series))
+        return LegacyTimeSeriesList(series=time_series)
 
 
 def _get_point_location(raw_coords: str) -> shapely.Point:

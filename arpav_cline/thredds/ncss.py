@@ -12,8 +12,8 @@ import logging
 import xml.etree.ElementTree as etree
 from typing import (
     Optional,
-    Protocol,
     TYPE_CHECKING,
+    Union,
 )
 
 import httpx
@@ -26,28 +26,19 @@ from . import models
 
 if TYPE_CHECKING:
     from ..config import ThreddsServerSettings
-    from ..schemas.coverages import (
-        ForecastCoverageInternal,
+    from ..schemas.static import (
+        StaticForecastCoverage,
+        StaticHistoricalCoverage,
     )
 
 logger = logging.getLogger(__name__)
-
-
-class RetrievableCoverageProtocol(Protocol):
-    identifier: str
-
-    def get_thredds_ncss_url(self, settings: "ThreddsServerSettings") -> Optional[str]:
-        ...
-
-    def get_netcdf_main_dataset_name(self) -> Optional[str]:
-        ...
 
 
 @dataclasses.dataclass
 class SimpleCoverageDataRetriever:
     settings: "ThreddsServerSettings"
     http_client: httpx.Client
-    coverage: RetrievableCoverageProtocol
+    static_coverage: Union["StaticForecastCoverage", "StaticHistoricalCoverage"]
 
     def retrieve_main_data(
         self,
@@ -55,20 +46,22 @@ class SimpleCoverageDataRetriever:
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
         target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
-        ncss_url = self.coverage.get_thredds_ncss_url(self.settings)
-        netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
-        if all((ncss_url, netcdf_variable_name)):
+        if all(
+            (
+                self.static_coverage.ncss_url,
+                self.static_coverage.netcdf_variable_name,
+            )
+        ):
             return self._retrieve_location_data(
-                ncss_url,
-                netcdf_variable_name,
+                self.static_coverage.ncss_url,
+                self.static_coverage.netcdf_variable_name,
                 location,
                 temporal_range,
-                target_series_name=target_series_name or self.coverage.identifier,
+                target_series_name=target_series_name
+                or self.static_coverage.coverage_identifier,
             )
-        elif ncss_url is None:
-            logger.warning("Could not find coverage's NCSS URL")
         else:
-            logger.warning("Could not find coverage's NetCDF variable name")
+            return None
 
     def _retrieve_location_data(
         self,
@@ -103,28 +96,7 @@ class SimpleCoverageDataRetriever:
 
 @dataclasses.dataclass
 class ForecastCoverageDataRetriever(SimpleCoverageDataRetriever):
-    coverage: "ForecastCoverageInternal"
-
-    def retrieve_main_data(
-        self,
-        location: shapely.Point,
-        temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
-        target_series_name: Optional[str] = None,
-    ) -> Optional[pd.Series]:
-        ncss_url = self.coverage.get_thredds_ncss_url(self.settings)
-        netcdf_variable_name = self.coverage.get_netcdf_main_dataset_name()
-        if all((ncss_url, netcdf_variable_name)):
-            return self._retrieve_location_data(
-                ncss_url,
-                netcdf_variable_name,
-                location,
-                temporal_range,
-                target_series_name=target_series_name or self.coverage.identifier,
-            )
-        elif ncss_url is None:
-            logger.warning("Could not find coverage's NCSS URL")
-        else:
-            logger.warning("Could not find coverage's NetCDF variable name")
+    static_coverage: "StaticForecastCoverage"
 
     def retrieve_lower_uncertainty_data(
         self,
@@ -132,29 +104,24 @@ class ForecastCoverageDataRetriever(SimpleCoverageDataRetriever):
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
         target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
-        identifier = target_series_name or self.coverage.lower_uncertainty_identifier
-        ncss_url = self.coverage.get_lower_uncertainty_thredds_ncss_url(self.settings)
-        netcdf_variable_name = (
-            self.coverage.get_netcdf_lower_uncertainty_main_dataset_name()
+        identifier = (
+            target_series_name or self.static_coverage.lower_uncertainty_identifier
         )
         result = None
-        if all((identifier, ncss_url, netcdf_variable_name)):
+        if all(
+            (
+                identifier,
+                self.static_coverage.lower_uncertainty_ncss_url,
+                self.static_coverage.lower_uncertainy_netcdf_variable_name,
+            )
+        ):
             result = self._retrieve_location_data(
-                ncss_url,
-                netcdf_variable_name,
+                self.static_coverage.lower_uncertainty_ncss_url,
+                self.static_coverage.lower_uncertainy_netcdf_variable_name,
                 location,
                 temporal_range,
                 target_series_name=identifier,
             )
-        elif identifier is None:
-            logger.info(
-                f"Coverage {self.coverage.identifier!r} does not specify a lower "
-                f"uncertainty dataset"
-            )
-        elif ncss_url is None:
-            logger.warning("Could not find coverage's lower uncertainty NCSS URL")
-        else:
-            logger.warning("Could not find coverage's NetCDF variable name")
         return result
 
     def retrieve_upper_uncertainty_data(
@@ -163,31 +130,25 @@ class ForecastCoverageDataRetriever(SimpleCoverageDataRetriever):
         temporal_range: Optional[tuple[dt.date | None, dt.date | None]] = None,
         target_series_name: Optional[str] = None,
     ) -> Optional[pd.Series]:
-        identifier = target_series_name or self.coverage.upper_uncertainty_identifier
-        ncss_url = self.coverage.get_upper_uncertainty_thredds_ncss_url(self.settings)
-        netcdf_variable_name = (
-            self.coverage.get_netcdf_upper_uncertainty_main_dataset_name()
+        identifier = (
+            target_series_name or self.static_coverage.upper_uncertainty_identifier
         )
-        logger.debug(f"{identifier=}")
-        logger.debug(f"{ncss_url=}")
-        logger.debug(f"{netcdf_variable_name=}")
-        if all((identifier, ncss_url, netcdf_variable_name)):
+        if all(
+            (
+                identifier,
+                self.static_coverage.upper_uncertainty_ncss_url,
+                self.static_coverage.upper_uncertainy_netcdf_variable_name,
+            )
+        ):
             return self._retrieve_location_data(
-                ncss_url,
-                netcdf_variable_name,
+                self.static_coverage.upper_uncertainty_ncss_url,
+                self.static_coverage.upper_uncertainy_netcdf_variable_name,
                 location,
                 temporal_range,
                 target_series_name=identifier,
             )
-        elif identifier is None:
-            logger.warning(
-                f"Coverage {self.coverage.identifier!r} does not specify an upper "
-                f"uncertainty dataset"
-            )
-        elif ncss_url is None:
-            logger.warning("Could not find coverage's upper uncertainty NCSS URL")
         else:
-            logger.warning("Could not find coverage's NetCDF variable name")
+            return None
 
 
 def _parse_ncss_dataset(
@@ -223,7 +184,6 @@ def _parse_ncss_dataset(
             df = df[time_start:]
         if time_end is not None:
             df = df[:time_end]
-        logger.debug(f"{df=}")
         result = df[target_series_name]
         result.dropna(inplace=True)
         return result if result.size > 0 else None

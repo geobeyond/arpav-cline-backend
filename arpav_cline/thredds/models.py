@@ -1,52 +1,55 @@
 import dataclasses
 import datetime as dt
-import enum
 import fnmatch
+import logging
 import urllib.parse
 
 import shapely
 
 
-@dataclasses.dataclass
-class _ForecastTemporalPeriodMetadata:
-    name: str
-    code: str
+logger = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class _ForecastYearPeriodMetadata:
-    name: str
-    code: str
-
-
-@dataclasses.dataclass
-class _ForecastScenarioMetadata:
-    name: str
-    code: str
-
-
-class ForecastTemporalPeriod(enum.Enum):
-    TW1 = _ForecastTemporalPeriodMetadata(name="2021 - 2050", code="tw1")
-    TW2 = _ForecastTemporalPeriodMetadata(name="2071 - 2100", code="tw2")
-
-
-class ForecastYearPeriod(enum.Enum):
-    WINTER = _ForecastYearPeriodMetadata(name="Winter", code="DJF")
-    SPRING = _ForecastYearPeriodMetadata(name="Spring", code="MAM")
-    SUMMER = _ForecastYearPeriodMetadata(name="Summer", code="JJA")
-    AUTUMN = _ForecastYearPeriodMetadata(name="Autumn", code="SON")
-    ANNUAL = _ForecastYearPeriodMetadata(name="Annual", code="*")
-
-
-class ForecastScenario(enum.Enum):
-    RCP26 = _ForecastScenarioMetadata(name="RCP26", code="rcp26")
-    RCP45 = _ForecastScenarioMetadata(name="RCP45", code="rcp45")
-    RCP85 = _ForecastScenarioMetadata(name="RCP85", code="rcp85")
-
-
-class AveragingPeriod(enum.Enum):
-    YEAR = "year"
-    THIRTY_YEAR = "thirty-year"
+# @dataclasses.dataclass
+# class _ForecastTemporalPeriodMetadata:
+#     name: str
+#     code: str
+#
+#
+# @dataclasses.dataclass
+# class _ForecastYearPeriodMetadata:
+#     name: str
+#     code: str
+#
+#
+# @dataclasses.dataclass
+# class _ForecastScenarioMetadata:
+#     name: str
+#     code: str
+#
+#
+# class ForecastTemporalPeriod(enum.Enum):
+#     TW1 = _ForecastTemporalPeriodMetadata(name="2021 - 2050", code="tw1")
+#     TW2 = _ForecastTemporalPeriodMetadata(name="2071 - 2100", code="tw2")
+#
+#
+# class ForecastYearPeriod(enum.Enum):
+#     WINTER = _ForecastYearPeriodMetadata(name="Winter", code="DJF")
+#     SPRING = _ForecastYearPeriodMetadata(name="Spring", code="MAM")
+#     SUMMER = _ForecastYearPeriodMetadata(name="Summer", code="JJA")
+#     AUTUMN = _ForecastYearPeriodMetadata(name="Autumn", code="SON")
+#     ANNUAL = _ForecastYearPeriodMetadata(name="Annual", code="*")
+#
+#
+# class ForecastScenario(enum.Enum):
+#     RCP26 = _ForecastScenarioMetadata(name="RCP26", code="rcp26")
+#     RCP45 = _ForecastScenarioMetadata(name="RCP45", code="rcp45")
+#     RCP85 = _ForecastScenarioMetadata(name="RCP85", code="rcp85")
+#
+#
+# class AveragingPeriod(enum.Enum):
+#     YEAR = "year"
+#     THIRTY_YEAR = "thirty-year"
 
 
 @dataclasses.dataclass

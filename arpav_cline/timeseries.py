@@ -3,7 +3,6 @@ import functools
 import logging
 import warnings
 from typing import (
-    cast,
     Optional,
     Sequence,
     TYPE_CHECKING,
@@ -20,13 +19,13 @@ from shapely.ops import transform
 
 from . import db
 from .exceptions import MannKendallInsufficientYearError
-from .thredds import (
-    ncss,
-    opendap,
-)
 from .schemas import (
     dataseries,
     static,
+)
+from .thredds import (
+    ncss,
+    opendap,
 )
 
 if TYPE_CHECKING:
@@ -38,7 +37,6 @@ if TYPE_CHECKING:
     from .schemas import (
         coverages,
         observations,
-        overviews,
     )
 
 logger = logging.getLogger(__name__)
@@ -418,10 +416,12 @@ def generate_moving_average_derived_historical_coverage_series(
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS,
-        temporal_start=original_series.temporal_start,
-        temporal_end=original_series.temporal_end,
         location=original_series.location,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.MOVING_AVERAGE_5_YEARS
+        ),
+        temporal_end=original_series.temporal_end,
+        temporal_start=original_series.temporal_start,
     )
     df = original_series.data_.to_frame()
     df[derived_series.identifier] = (
@@ -437,10 +437,12 @@ def generate_decade_derived_historical_coverage_series(
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.DECADE_AGGREGATION,
-        temporal_start=original_series.temporal_start,
-        temporal_end=original_series.temporal_end,
         location=original_series.location,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.DECADE_AGGREGATION
+        ),
+        temporal_end=original_series.temporal_end,
+        temporal_start=original_series.temporal_start,
     )
     df = original_series.data_.to_frame()
     df = _generate_decade_series(
@@ -456,10 +458,10 @@ def generate_loess_derived_historical_coverage_series(
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.LOESS_SMOOTHING,
-        temporal_start=original_series.temporal_start,
-        temporal_end=original_series.temporal_end,
         location=original_series.location,
+        processing_method=(static.HistoricalTimeSeriesProcessingMethod.LOESS_SMOOTHING),
+        temporal_end=original_series.temporal_end,
+        temporal_start=original_series.temporal_start,
     )
     df = original_series.data_.to_frame()
     df[derived_series.identifier] = _apply_loess_smoothing(
@@ -481,10 +483,12 @@ def generate_mann_kendall_derived_historical_coverage_series(
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.MANN_KENDALL_TREND,
+        location=original_series.location,
+        processing_method=(
+            static.HistoricalTimeSeriesProcessingMethod.MANN_KENDALL_TREND
+        ),
         temporal_start=dt.date(mk_start, 1, 1),
         temporal_end=dt.date(mk_end, 1, 1),
-        location=original_series.location,
     )
     df, info = _generate_mann_kendall_series(
         df, original_series.identifier, derived_series.identifier, mk_start, mk_end
@@ -494,11 +498,10 @@ def generate_mann_kendall_derived_historical_coverage_series(
     return derived_series
 
 
-def get_historical_time_series(
+def get_historical_observation_series(
     *,
     settings: "config.ArpavPpcvSettings",
     session: "sqlmodel.Session",
-    http_client: "httpx.Client",
     coverage: "coverages.HistoricalCoverageInternal",
     point_geom: "shapely.Point",
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
@@ -506,14 +509,12 @@ def get_historical_time_series(
     include_moving_average_series: bool,
     include_decade_aggregation_series: bool,
     include_loess_series: bool,
-) -> list[dataseries.HistoricalDataSeries | dataseries.ObservationStationDataSeries]:
+) -> list[dataseries.ObservationStationDataSeries]:
     """Return a list of historical time series for the input location.
 
-    If there is a nearby observation station, returns station data. Otherwise,
-    returns NetCDF coverage data (if any).
+    Only looks up observation station data and will only return a data
+    series if there is an observation station nearby.
     """
-    # if the related observation series configuration specifies a different climatic
-    # indicator try to retrieve historical data instead
     relevant_series_confs = [
         oscl.observation_series_configuration
         for oscl in coverage.configuration.observation_series_configuration_links
@@ -568,96 +569,137 @@ def get_historical_time_series(
                     )
         else:
             logger.info("No station data found")
-    if len(result) == 0:
-        # could not find any nearby stations, let's fetch historical coverage data
-        cov_series = _retrieve_historical_coverage_data(
-            http_client, settings.thredds_server, coverage, point_geom, temporal_range
-        )
-        if cov_series is not None:
-            result.append(cov_series)
-            if include_loess_series:
-                result.append(
-                    generate_loess_derived_historical_coverage_series(cov_series)
-                )
-            if include_moving_average_series:
-                result.append(
-                    generate_moving_average_derived_historical_coverage_series(
-                        cov_series
-                    )
-                )
-            if include_decade_aggregation_series:
-                result.append(
-                    generate_decade_derived_historical_coverage_series(cov_series)
-                )
-            if mann_kendall_params is not None:
-                try:
-                    result.append(
-                        generate_mann_kendall_derived_historical_coverage_series(
-                            cov_series,
-                            start_year=mann_kendall_params.start_year,
-                            end_year=mann_kendall_params.end_year,
-                        )
-                    )
-                except MannKendallInsufficientYearError as err:
-                    logger.warning(
-                        f"Could not generate Mann-Kendall trend series: {err}"
-                    )
     return result
+
+
+def get_historical_time_series(
+    *,
+    settings: "config.ArpavPpcvSettings",
+    http_client: "httpx.Client",
+    static_coverage: static.StaticHistoricalCoverage,
+    point_geom: "shapely.Point",
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
+    mann_kendall_params: dataseries.MannKendallParameters,
+    include_moving_average_series: bool,
+    include_decade_aggregation_series: bool,
+    include_loess_series: bool,
+) -> list[dataseries.HistoricalDataSeries]:
+    """Return a list of historical time series for the input location.
+
+    Only looks in NetCDF historical data.
+    """
+    result = []
+    cov_series = _retrieve_historical_coverage_data(
+        http_client,
+        settings.thredds_server,
+        static_coverage,
+        point_geom,
+        temporal_range,
+    )
+    if cov_series is not None:
+        result.append(cov_series)
+        if include_loess_series:
+            result.append(generate_loess_derived_historical_coverage_series(cov_series))
+        if include_moving_average_series:
+            result.append(
+                generate_moving_average_derived_historical_coverage_series(cov_series)
+            )
+        if include_decade_aggregation_series:
+            result.append(
+                generate_decade_derived_historical_coverage_series(cov_series)
+            )
+        if mann_kendall_params is not None:
+            try:
+                result.append(
+                    generate_mann_kendall_derived_historical_coverage_series(
+                        cov_series,
+                        start_year=mann_kendall_params.start_year,
+                        end_year=mann_kendall_params.end_year,
+                    )
+                )
+            except MannKendallInsufficientYearError as err:
+                logger.warning(f"Could not generate Mann-Kendall trend series: {err}")
+    return result
+
+
+def get_forecast_coverage_observation_time_series(
+    *,
+    settings: "config.ArpavPpcvSettings",
+    session: "sqlmodel.Session",
+    coverage: "coverages.ForecastCoverageInternal",
+    point_geom: "shapely.Point",
+    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
+    observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
+) -> list[dataseries.ObservationStationDataSeries] | None:
+    # do not gather time series if the related observation series configuration
+    # specifies a different climatic indicator
+    relevant_series_confs = [
+        oscl.observation_series_configuration
+        for oscl in coverage.configuration.observation_series_configuration_links
+        if (
+            coverage.configuration.climatic_indicator.identifier
+            == oscl.observation_series_configuration.climatic_indicator.identifier
+        )
+    ]
+    return _get_forecast_coverage_observation_time_series(
+        settings=settings,
+        session=session,
+        observation_series_configurations=relevant_series_confs,
+        point_geom=point_geom,
+        processing_methods=observation_processing_methods,
+        temporal_range=temporal_range,
+        year_period=static.ObservationYearPeriod(coverage.year_period.value),
+    )
 
 
 def get_forecast_coverage_time_series(
     *,
-    settings: "config.ArpavPpcvSettings",
-    session: "sqlmodel.Session",
+    settings: "config.ThreddsServerSettings",
     http_client: "httpx.Client",
-    coverage: "coverages.ForecastCoverageInternal",
+    static_coverage: static.StaticForecastCoverage,
     point_geom: "shapely.Point",
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
-    coverage_processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
-    observation_processing_methods: list[static.ObservationTimeSeriesProcessingMethod],
-    include_coverage_data: bool = True,
-    include_observation_data: bool = False,
-    include_coverage_uncertainty: bool = False,
+    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
+    include_uncertainty: bool = False,
     include_coverage_related_models: bool = False,
-) -> tuple[
-    Optional[list[dataseries.ForecastDataSeries]],
-    Optional[list[dataseries.ObservationStationDataSeries]],
-]:
-    coverage_series = None
-    observation_series = None
-    if include_coverage_data:
-        coverage_series = _get_forecast_coverage_coverage_time_series(
-            settings.thredds_server,
-            session,
-            http_client,
-            coverage,
-            point_geom,
-            coverage_processing_methods,
-            include_coverage_uncertainty,
-            include_coverage_related_models,
-            temporal_range=temporal_range,
-        )
-    if include_observation_data:
-        # do not gather time series if the related observation series configuration
-        # specifies a different climatic indicator
-        relevant_series_confs = [
-            oscl.observation_series_configuration
-            for oscl in coverage.configuration.observation_series_configuration_links
-            if (
-                coverage.configuration.climatic_indicator.identifier
-                == oscl.observation_series_configuration.climatic_indicator.identifier
+) -> list[dataseries.ForecastDataSeries] | None:
+    data_ = []
+    cov_series = _retrieve_forecast_coverage_data(
+        http_client,
+        settings,
+        static_coverage,
+        point_geom,
+        temporal_range,
+        include_uncertainty=include_uncertainty,
+    )
+    for item in [i for i in cov_series if i is not None]:
+        data_.append(item)
+    if include_coverage_related_models:
+        for other_static_cov in static_coverage.related_static_coverages:
+            other_cov_series = _retrieve_forecast_coverage_data(
+                http_client,
+                settings,
+                other_static_cov,
+                point_geom,
+                temporal_range,
+                include_uncertainty=include_uncertainty,
             )
-        ]
-        observation_series = _get_forecast_coverage_observation_time_series(
-            settings=settings,
-            session=session,
-            observation_series_configurations=relevant_series_confs,
-            point_geom=point_geom,
-            processing_methods=observation_processing_methods,
-            temporal_range=temporal_range,
-            year_period=static.ObservationYearPeriod(coverage.year_period.value),
-        )
-    return coverage_series, observation_series
+            for item in [i for i in other_cov_series if i is not None]:
+                data_.append(item)
+    result = []
+    for cov_data_series in data_:
+        result.append(cov_data_series)
+        for processing_method in [
+            pm
+            for pm in processing_methods
+            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+        ]:
+            derived_series = generate_derived_forecast_series(
+                cov_data_series,
+                processing_method,
+            )
+            result.append(derived_series)
+    return result
 
 
 def generate_derived_observation_series(
@@ -682,58 +724,6 @@ def generate_derived_observation_series(
             f"Processing method {processing_method!r} is not implemented"
         )
     return df, derived_name
-
-
-def _get_forecast_coverage_coverage_time_series(
-    thredds_settings: "config.ThreddsServerSettings",
-    session: "sqlmodel.Session",
-    http_client: "httpx.Client",
-    forecast_coverage: "coverages.ForecastCoverageInternal",
-    point_geom: shapely.Point,
-    processing_methods: Sequence[static.CoverageTimeSeriesProcessingMethod],
-    include_uncertainty: bool,
-    include_related_models: bool,
-    temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
-) -> list[dataseries.ForecastDataSeries]:
-    data_ = []
-    cov_series = _retrieve_forecast_coverage_data(
-        http_client,
-        thredds_settings,
-        forecast_coverage,
-        point_geom,
-        temporal_range,
-        include_uncertainty=include_uncertainty,
-    )
-    for item in [i for i in cov_series if i is not None]:
-        data_.append(item)
-    if include_related_models:
-        for other_cov in db.generate_forecast_coverages_for_other_models(
-            session, forecast_coverage
-        ):
-            other_cov_series = _retrieve_forecast_coverage_data(
-                http_client,
-                thredds_settings,
-                other_cov,
-                point_geom,
-                temporal_range,
-                include_uncertainty=include_uncertainty,
-            )
-            for item in [i for i in other_cov_series if i is not None]:
-                data_.append(item)
-    result = []
-    for cov_data_series in data_:
-        result.append(cov_data_series)
-        for processing_method in [
-            pm
-            for pm in processing_methods
-            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-        ]:
-            derived_series = generate_derived_forecast_series(
-                cov_data_series,
-                processing_method,
-            )
-            result.append(derived_series)
-    return result
 
 
 def _get_forecast_coverage_observation_time_series(
@@ -793,22 +783,22 @@ def _get_forecast_coverage_observation_time_series(
 def _retrieve_historical_coverage_data(
     http_client: "httpx.Client",
     settings: "config.ThreddsServerSettings",
-    coverage: "coverages.HistoricalCoverageInternal",
+    static_coverage: static.StaticHistoricalCoverage,
     point_geom: shapely.Point,
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
 ) -> Optional[dataseries.HistoricalDataSeries]:
     retriever = ncss.SimpleCoverageDataRetriever(
         settings=settings,
         http_client=http_client,
-        coverage=cast(ncss.RetrievableCoverageProtocol, coverage),
+        static_coverage=static_coverage,
     )
     main_series = dataseries.HistoricalDataSeries(
-        coverage=coverage,
+        coverage=static_coverage,
         dataset_type=static.DatasetType.MAIN,
+        location=point_geom,
         processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=temporal_range[0],
         temporal_end=temporal_range[1],
-        location=point_geom,
     )
     main_data = retriever.retrieve_main_data(
         point_geom, temporal_range, target_series_name=main_series.identifier
@@ -823,7 +813,7 @@ def _retrieve_historical_coverage_data(
 def _retrieve_forecast_coverage_data(
     http_client: "httpx.Client",
     settings: "config.ThreddsServerSettings",
-    coverage: "coverages.ForecastCoverageInternal",
+    static_coverage: static.StaticForecastCoverage,
     point_geom: shapely.Point,
     temporal_range: tuple[Optional[dt.datetime], Optional[dt.datetime]],
     include_uncertainty: bool = False,
@@ -835,15 +825,15 @@ def _retrieve_forecast_coverage_data(
     retriever = ncss.ForecastCoverageDataRetriever(
         settings=settings,
         http_client=http_client,
-        coverage=coverage,
+        static_coverage=static_coverage,
     )
     main_series = dataseries.ForecastDataSeries(
-        coverage=coverage,
+        coverage=static_coverage,
         dataset_type=static.DatasetType.MAIN,
-        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
-        temporal_start=temporal_range[0],
-        temporal_end=temporal_range[1],
         location=point_geom,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        temporal_end=temporal_range[1],
+        temporal_start=temporal_range[0],
     )
     lower_uncert_series = None
     upper_uncert_series = None
@@ -854,12 +844,12 @@ def _retrieve_forecast_coverage_data(
         main_series.data_ = main_data
         if include_uncertainty:
             lower_uncert_series = dataseries.ForecastDataSeries(
-                coverage=coverage,
+                coverage=static_coverage,
                 dataset_type=static.DatasetType.LOWER_UNCERTAINTY,
-                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
-                temporal_start=temporal_range[0],
-                temporal_end=temporal_range[1],
                 location=point_geom,
+                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+                temporal_end=temporal_range[1],
+                temporal_start=temporal_range[0],
             )
             lower_uncert_data = retriever.retrieve_lower_uncertainty_data(
                 point_geom,
@@ -871,12 +861,12 @@ def _retrieve_forecast_coverage_data(
             else:
                 lower_uncert_series = None
             upper_uncert_series = dataseries.ForecastDataSeries(
-                coverage=coverage,
+                coverage=static_coverage,
                 dataset_type=static.DatasetType.UPPER_UNCERTAINTY,
-                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
-                temporal_start=temporal_range[0],
-                temporal_end=temporal_range[1],
                 location=point_geom,
+                processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+                temporal_end=temporal_range[1],
+                temporal_start=temporal_range[0],
             )
             upper_uncert_data = retriever.retrieve_upper_uncertainty_data(
                 point_geom,
@@ -892,82 +882,47 @@ def _retrieve_forecast_coverage_data(
     return main_series, lower_uncert_series, upper_uncert_series
 
 
-def get_overview_time_series(
-    *,
-    settings: "config.ArpavPpcvSettings",
-    session: "sqlmodel.Session",
-    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
-    include_uncertainty: bool,
-) -> tuple[
-    list[dataseries.ForecastOverviewDataSeries],
-    list[dataseries.ObservationOverviewDataSeries],
-]:
-    forecast_series_confs = db.collect_all_forecast_overview_series_configurations(
-        session
-    )
-
-    forecast_overview_data_series = []
-    for forecast_series_conf in forecast_series_confs:
-        forecast_series = db.generate_forecast_overview_series_from_configuration(
-            forecast_series_conf
-        )
-        for series in forecast_series:
-            forecast_overview_data_series.extend(
-                get_forecast_overview_time_series(
-                    settings=settings.thredds_server,
-                    overview_series=series,
-                    processing_methods=processing_methods,
-                    include_uncertainty=include_uncertainty,
-                )
-            )
-    observation_overview_data_series = []
-    observation_series_confs = (
-        db.collect_all_observation_overview_series_configurations(session)
-    )
-    for observation_series_conf in observation_series_confs:
-        observation_series = db.generate_observation_overview_series_from_configuration(
-            observation_series_conf
-        )
-        observation_overview_data_series.extend(
-            get_observation_overview_time_series(
-                settings=settings.thredds_server,
-                overview_series=observation_series,
-                processing_methods=processing_methods,
-            )
-        )
-    return forecast_overview_data_series, observation_overview_data_series
-
-
 def get_observation_overview_time_series(
     *,
     settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ObservationOverviewSeriesInternal",
+    static_overview_series: static.StaticHistoricalOverviewSeries,
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
 ) -> list[dataseries.ObservationOverviewDataSeries]:
-    series = _retrieve_observation_overview_data(settings, overview_series)
+    retriever = opendap.ObservationOverviewDataRetriever(
+        settings=settings,
+        static_overview_series=static_overview_series,
+    )
+    series = dataseries.ObservationOverviewDataSeries(
+        overview_series=static_overview_series,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        dataset_type=static.DatasetType.MAIN,
+    )
+    if (main_data := retriever.retrieve_main_data(series.identifier)) is None:
+        return []
+
     result = []
-    if series is not None:
-        result.append(series)
-        for processing_method in (
-            pm
-            for pm in processing_methods
-            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-        ):
-            derived_series = generate_derived_overview_series(series, processing_method)
-            result.append(derived_series)
+    series.data_ = main_data
+    result.append(series)
+    for processing_method in (
+        pm
+        for pm in processing_methods
+        if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+    ):
+        derived_series = generate_derived_overview_series(series, processing_method)
+        result.append(derived_series)
     return result
 
 
 def get_forecast_overview_time_series(
     *,
     settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ForecastOverviewSeriesInternal",
+    static_overview_series: static.StaticForecastOverviewSeries,
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
     include_uncertainty: bool,
 ) -> list[dataseries.ForecastOverviewDataSeries]:
     data_ = []
     series = _retrieve_forecast_overview_data(
-        settings, overview_series, include_uncertainty
+        settings, static_overview_series, include_uncertainty
     )
     for item in [i for i in series if i is not None]:
         data_.append(item)
@@ -988,7 +943,7 @@ def get_forecast_overview_time_series(
 
 def _retrieve_forecast_overview_data(
     settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ForecastOverviewSeriesInternal",
+    static_overview_series: static.StaticForecastOverviewSeries,
     include_uncertainty: bool,
 ) -> tuple[
     dataseries.ForecastOverviewDataSeries | None,
@@ -997,10 +952,10 @@ def _retrieve_forecast_overview_data(
 ]:
     retriever = opendap.ForecastOverviewDataRetriever(
         settings=settings,
-        overview_series=overview_series,
+        static_overview_series=static_overview_series,
     )
     main_series = dataseries.ForecastOverviewDataSeries(
-        overview_series=overview_series,
+        overview_series=static_overview_series,
         processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
         dataset_type=static.DatasetType.MAIN,
     )
@@ -1011,7 +966,7 @@ def _retrieve_forecast_overview_data(
         main_series.data_ = main_data
         if include_uncertainty:
             lower_uncert_series = dataseries.ForecastOverviewDataSeries(
-                overview_series=overview_series,
+                overview_series=static_overview_series,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 dataset_type=static.DatasetType.LOWER_UNCERTAINTY,
             )
@@ -1023,7 +978,7 @@ def _retrieve_forecast_overview_data(
             else:
                 lower_uncert_series = None
             upper_uncert_series = dataseries.ForecastOverviewDataSeries(
-                overview_series=overview_series,
+                overview_series=static_overview_series,
                 processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
                 dataset_type=static.DatasetType.UPPER_UNCERTAINTY,
             )
@@ -1035,24 +990,3 @@ def _retrieve_forecast_overview_data(
             else:
                 upper_uncert_series = None
     return main_series, lower_uncert_series, upper_uncert_series
-
-
-def _retrieve_observation_overview_data(
-    settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ObservationOverviewSeriesInternal",
-) -> Optional[dataseries.ObservationOverviewDataSeries]:
-    retriever = opendap.ObservationOverviewDataRetriever(
-        settings=settings,
-        overview_series=overview_series,
-    )
-    main_series = dataseries.ObservationOverviewDataSeries(
-        overview_series=overview_series,
-        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
-        dataset_type=static.DatasetType.MAIN,
-    )
-    main_data = retriever.retrieve_main_data(main_series.identifier)
-    if main_data is not None:
-        main_series.data_ = main_data
-    else:
-        main_series = None
-    return main_series
