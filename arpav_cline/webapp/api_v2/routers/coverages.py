@@ -68,6 +68,7 @@ from ....schemas.static import (
     StaticForecastCoverage,
     StaticHistoricalCoverage,
     StaticForecastOverviewSeries,
+    StaticHistoricalOverviewSeries,
 )
 from ....schemas.dataseries import MannKendallParameters
 from ... import (
@@ -861,37 +862,30 @@ def get_overview_time_series(
         strategy.to_processing_method() for strategy in data_smoothing
     ]
 
-    series = []
+    static_forecast_series = []
+    static_historical_series = []
     with Session(db.get_engine(settings)) as session:
-        historical_overviews = timeseries.get_historical_overview_time_series(
-            settings=settings, session=session, processing_methods=processing_methods
-        )
-        for historical_series in historical_overviews:
-            series.append(
-                LegacyTimeSeries.from_historical_overview_series(historical_series)
-            )
-
-        forecast_series_confs = db.collect_all_forecast_overview_series_configurations(
-            session
-        )
-        static_forecast_overview_data_series = []
-        for forecast_series_conf in forecast_series_confs:
-            forecast_series = db.generate_forecast_overview_series_from_configuration(
-                forecast_series_conf
-            )
-            for individual_series in forecast_series:
-                static_forecast_series = StaticForecastOverviewSeries.from_series(
-                    individual_series, settings.thredds_server
+        for fsc in db.collect_all_forecast_overview_series_configurations(session):
+            for fs in db.generate_forecast_overview_series_from_configuration(fsc):
+                static_forecast_series.append(
+                    StaticForecastOverviewSeries.from_series(
+                        fs, settings.thredds_server
+                    )
                 )
-                static_forecast_overview_data_series.append(static_forecast_series)
+        for hsc in db.collect_all_observation_overview_series_configurations(session):
+            hs = db.generate_observation_overview_series_from_configuration(hsc)
+            static_historical_series.append(
+                StaticHistoricalOverviewSeries.from_series(hs, settings.thredds_server)
+            )
 
-    # no more database session below this line, about to ask THREDDS for data
-    for static_forecast_series in static_forecast_overview_data_series:
+    series = []
+    # deal with forecast data
+    for static_forecast_overview in static_forecast_series:
         try:
             forecast_overview_time_series = (
                 timeseries.get_forecast_overview_time_series(
                     settings=settings.thredds_server,
-                    static_overview_series=static_forecast_series,
+                    static_overview_series=static_forecast_overview,
                     processing_methods=processing_methods,
                     include_uncertainty=include_uncertainty,
                 )
@@ -905,6 +899,26 @@ def get_overview_time_series(
         for forecast_series in forecast_overview_time_series:
             series.append(
                 LegacyTimeSeries.from_forecast_overview_series(forecast_series)
+            )
+    # deal with historical data
+    for static_historical_overview in static_historical_series:
+        try:
+            historical_overview_time_series = (
+                timeseries.get_observation_overview_time_series(
+                    settings=settings.thredds_server,
+                    static_overview_series=static_historical_overview,
+                    processing_methods=processing_methods,
+                )
+            )
+        except exceptions.OverviewDataRetrievalError as err:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not retrieve data",
+            ) from err
+
+        for historical_series in historical_overview_time_series:
+            series.append(
+                LegacyTimeSeries.from_historical_overview_series(historical_series)
             )
     return LegacyTimeSeriesList(series=series)
 
@@ -1073,6 +1087,7 @@ def get_forecast_time_series(
             series.append(
                 LegacyTimeSeries.from_forecast_data_series(forecast_cov_series)
             )
+    series.reverse()
     return LegacyTimeSeriesList(series=series)
 
 
@@ -1110,6 +1125,7 @@ def get_historical_time_series(
         raise HTTPException(400, detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL)
     temporal_range = operations.parse_temporal_range(datetime)
 
+    mann_kendall_params = None
     if mann_kendall_datetime is not None:
         mann_kendall_start, mann_kendall_end = parse_temporal_range(
             mann_kendall_datetime
@@ -1131,7 +1147,7 @@ def get_historical_time_series(
 
     time_series = []
     with Session(db.get_engine(settings)) as session:
-        if cov := db.get_historical_coverage(session, coverage_identifier) is None:
+        if (cov := db.get_historical_coverage(session, coverage_identifier)) is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=_INVALID_COVERAGE_IDENTIFIER_ERROR_DETAIL,

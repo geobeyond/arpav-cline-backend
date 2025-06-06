@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from .schemas import (
         coverages,
         observations,
-        overviews,
     )
 
 logger = logging.getLogger(__name__)
@@ -826,7 +825,7 @@ def _retrieve_forecast_coverage_data(
     retriever = ncss.ForecastCoverageDataRetriever(
         settings=settings,
         http_client=http_client,
-        thredds_dataset=static_coverage,
+        static_coverage=static_coverage,
     )
     main_series = dataseries.ForecastDataSeries(
         coverage=static_coverage,
@@ -883,75 +882,34 @@ def _retrieve_forecast_coverage_data(
     return main_series, lower_uncert_series, upper_uncert_series
 
 
-def get_historical_overview_time_series(
-    *,
-    settings: "config.ArpavPpcvSettings",
-    session: "sqlmodel.Session",
-    processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
-) -> list[dataseries.ObservationOverviewDataSeries]:
-    overview_data_series = []
-    observation_series_confs = (
-        db.collect_all_observation_overview_series_configurations(session)
-    )
-    for observation_series_conf in observation_series_confs:
-        observation_series = db.generate_observation_overview_series_from_configuration(
-            observation_series_conf
-        )
-        overview_data_series.extend(
-            get_observation_overview_time_series(
-                settings=settings.thredds_server,
-                overview_series=observation_series,
-                processing_methods=processing_methods,
-            )
-        )
-    return overview_data_series
-
-
-# def get_all_forecast_overview_time_series(
-#         *,
-#         settings: "config.ArpavPpcvSettings",
-#         session: "sqlmodel.Session",
-#         processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
-#         include_uncertainty: bool,
-# ) -> list[dataseries.ForecastOverviewDataSeries]:
-#     forecast_series_confs = db.collect_all_forecast_overview_series_configurations(
-#         session
-#     )
-#
-#     overview_data_series = []
-#     for forecast_series_conf in forecast_series_confs:
-#         forecast_series = db.generate_forecast_overview_series_from_configuration(
-#             forecast_series_conf
-#         )
-#         for series in forecast_series:
-#             overview_data_series.extend(
-#                 get_forecast_overview_time_series(
-#                     settings=settings.thredds_server,
-#                     overview_series=series,
-#                     processing_methods=processing_methods,
-#                     include_uncertainty=include_uncertainty,
-#                 )
-#             )
-#     return overview_data_series
-
-
 def get_observation_overview_time_series(
     *,
     settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ObservationOverviewSeriesInternal",
+    static_overview_series: static.StaticHistoricalOverviewSeries,
     processing_methods: list[static.CoverageTimeSeriesProcessingMethod],
 ) -> list[dataseries.ObservationOverviewDataSeries]:
-    series = _retrieve_observation_overview_data(settings, overview_series)
+    retriever = opendap.ObservationOverviewDataRetriever(
+        settings=settings,
+        static_overview_series=static_overview_series,
+    )
+    series = dataseries.ObservationOverviewDataSeries(
+        overview_series=static_overview_series,
+        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
+        dataset_type=static.DatasetType.MAIN,
+    )
+    if (main_data := retriever.retrieve_main_data(series.identifier)) is None:
+        return []
+
     result = []
-    if series is not None:
-        result.append(series)
-        for processing_method in (
-            pm
-            for pm in processing_methods
-            if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
-        ):
-            derived_series = generate_derived_overview_series(series, processing_method)
-            result.append(derived_series)
+    series.data_ = main_data
+    result.append(series)
+    for processing_method in (
+        pm
+        for pm in processing_methods
+        if pm != static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING
+    ):
+        derived_series = generate_derived_overview_series(series, processing_method)
+        result.append(derived_series)
     return result
 
 
@@ -994,7 +952,7 @@ def _retrieve_forecast_overview_data(
 ]:
     retriever = opendap.ForecastOverviewDataRetriever(
         settings=settings,
-        overview_series=static_overview_series,
+        static_overview_series=static_overview_series,
     )
     main_series = dataseries.ForecastOverviewDataSeries(
         overview_series=static_overview_series,
@@ -1032,24 +990,3 @@ def _retrieve_forecast_overview_data(
             else:
                 upper_uncert_series = None
     return main_series, lower_uncert_series, upper_uncert_series
-
-
-def _retrieve_observation_overview_data(
-    settings: "config.ThreddsServerSettings",
-    overview_series: "overviews.ObservationOverviewSeriesInternal",
-) -> Optional[dataseries.ObservationOverviewDataSeries]:
-    retriever = opendap.ObservationOverviewDataRetriever(
-        settings=settings,
-        overview_series=overview_series,
-    )
-    main_series = dataseries.ObservationOverviewDataSeries(
-        overview_series=overview_series,
-        processing_method=static.CoverageTimeSeriesProcessingMethod.NO_PROCESSING,
-        dataset_type=static.DatasetType.MAIN,
-    )
-    main_data = retriever.retrieve_main_data(main_series.identifier)
-    if main_data is not None:
-        main_series.data_ = main_data
-    else:
-        main_series = None
-    return main_series

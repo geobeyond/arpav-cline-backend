@@ -11,8 +11,10 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from ..config import ThreddsServerSettings
-    from ..schemas.overviews import ObservationOverviewSeriesInternal
-    from ..schemas.static import StaticForecastOverviewSeries
+    from ..schemas.static import (
+        StaticForecastOverviewSeries,
+        StaticHistoricalOverviewSeries,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -21,23 +23,19 @@ logger = logging.getLogger(__name__)
 @dataclasses.dataclass
 class ObservationOverviewDataRetriever:
     settings: "ThreddsServerSettings"
-    overview_series: "ObservationOverviewSeriesInternal"
+    static_overview_series: "StaticHistoricalOverviewSeries"
 
     def retrieve_main_data(
         self,
         target_series_name: str,
     ) -> Optional[pd.Series]:
-        opendap_url = self.overview_series.get_thredds_opendap_url(self.settings)
-        netcdf_variable_name = self.overview_series.get_netcdf_main_dataset_name()
         result = None
-        if all((opendap_url, netcdf_variable_name)):
+        if self.static_overview_series.opendap_url is not None:
             result = _retrieve_data(
-                opendap_url, netcdf_variable_name, target_series_name
+                self.static_overview_series.opendap_url,
+                self.static_overview_series.netcdf_variable_name,
+                target_series_name,
             )
-        elif opendap_url is None:
-            logger.warning("Could not find overview series' OpenDAP URL")
-        else:
-            logger.warning("Could not find overview series' NetCDF variable name")
         return result
 
 

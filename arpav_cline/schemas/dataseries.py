@@ -29,7 +29,9 @@ if TYPE_CHECKING:
     )
     from .static import (
         StaticForecastCoverage,
+        StaticForecastOverviewSeries,
         StaticHistoricalCoverage,
+        StaticHistoricalOverviewSeries,
     )
 
 
@@ -73,7 +75,7 @@ class OverviewDataSeriesProtocol(Protocol):
 
 @dataclasses.dataclass
 class ObservationOverviewDataSeries:
-    overview_series: "ObservationOverviewSeriesInternal"
+    overview_series: "StaticHistoricalOverviewSeries"
     dataset_type: static.DatasetType
     processing_method: static.CoverageTimeSeriesProcessingMethod
     data_: Optional[pd.Series] = None
@@ -106,7 +108,7 @@ class ObservationOverviewDataSeries:
 
 @dataclasses.dataclass
 class ForecastOverviewDataSeries:
-    overview_series: "ForecastOverviewSeriesInternal"
+    overview_series: "StaticForecastOverviewSeries"
     processing_method: static.CoverageTimeSeriesProcessingMethod
     dataset_type: static.DatasetType
     data_: Optional[pd.Series] = None

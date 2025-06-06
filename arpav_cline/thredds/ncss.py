@@ -184,7 +184,6 @@ def _parse_ncss_dataset(
             df = df[time_start:]
         if time_end is not None:
             df = df[:time_end]
-        logger.debug(f"{df=}")
         result = df[target_series_name]
         result.dropna(inplace=True)
         return result if result.size > 0 else None

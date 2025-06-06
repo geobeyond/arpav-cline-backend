@@ -79,10 +79,10 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "aggregation_period": {
                     LOCALE_EN.language: (
-                        static.AggregationPeriod.get_param_display_name(LOCALE_EN),
+                        static.AggregationPeriod.get_param_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        static.AggregationPeriod.get_param_display_name(LOCALE_IT),
+                        static.AggregationPeriod.get_param_display_name(LOCALE_IT)
                     ),
                 },
                 "climatological_variable": {
@@ -95,10 +95,10 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "measure": {
                     LOCALE_EN.language: (
-                        static.MeasureType.get_param_display_name(LOCALE_EN),
+                        static.MeasureType.get_param_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        static.MeasureType.get_param_display_name(LOCALE_IT),
+                        static.MeasureType.get_param_display_name(LOCALE_IT)
                     ),
                 },
                 "year_period": {
@@ -213,18 +213,18 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "aggregation_period": {
                     LOCALE_EN.language: (
-                        static.AggregationPeriod.get_param_display_name(LOCALE_EN),
+                        static.AggregationPeriod.get_param_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        static.AggregationPeriod.get_param_display_name(LOCALE_IT),
+                        static.AggregationPeriod.get_param_display_name(LOCALE_IT)
                     ),
                 },
                 "climatological_model": {
                     LOCALE_EN.language: (
-                        coverages.ForecastModel.get_display_name(LOCALE_EN),
+                        coverages.ForecastModel.get_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        coverages.ForecastModel.get_display_name(LOCALE_IT),
+                        coverages.ForecastModel.get_display_name(LOCALE_IT)
                     ),
                 },
                 "climatological_variable": {
@@ -237,18 +237,18 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 },
                 "measure": {
                     LOCALE_EN.language: (
-                        static.MeasureType.get_param_display_name(LOCALE_EN),
+                        static.MeasureType.get_param_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        static.MeasureType.get_param_display_name(LOCALE_IT),
+                        static.MeasureType.get_param_display_name(LOCALE_IT)
                     ),
                 },
                 "scenario": {
                     LOCALE_EN.language: (
-                        static.ForecastScenario.get_param_display_name(LOCALE_EN),
+                        static.ForecastScenario.get_param_display_name(LOCALE_EN)
                     ),
                     LOCALE_IT.language: (
-                        static.ForecastScenario.get_param_display_name(LOCALE_IT),
+                        static.ForecastScenario.get_param_display_name(LOCALE_IT)
                     ),
                 },
                 "year_period": {
@@ -415,20 +415,18 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
 
             names["series_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.get_display_name(locale)
+            ] = StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(locale)
             values["series_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.identifier
+            ] = series.overview_series.coverage_configuration_identifier
 
             names["climatic_indicator"][
                 locale.language
-            ] = series.overview_series.configuration.climatic_indicator.get_display_name(
-                locale
-            )
-            values["climatic_indicator"][locale.language] = {
-                LOCALE_EN: series.overview_series.configuration.climatic_indicator.display_name_english,
-                LOCALE_IT: series.overview_series.configuration.climatic_indicator.display_name_italian,
-            }[locale]
+            ] = climaticindicators.ClimaticIndicator.get_display_name(locale)
+            values["climatic_indicator"] = {
+                loc.language: value
+                for loc, value in series.overview_series.climatic_indicator_name_translations.items()
+            }
 
             names["processing_method"][
                 locale.language
@@ -437,16 +435,21 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
                 locale.language
             ] = series.processing_method.get_value_display_name(locale)
 
-            names["coverage_identifier"][locale.language] = series.get_display_name(
+            names["coverage_identifier"][
+                locale.language
+            ] = StaticCoverageSeriesParameter.COVERAGE_IDENTIFIER.get_display_name(
                 locale
             )
             values["coverage_identifier"][locale.language] = series.identifier
+
             names["coverage_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.get_display_name(locale)
+            ] = StaticCoverageSeriesParameter.COVERAGE_CONFIGURATION.get_display_name(
+                locale
+            )
             values["coverage_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.identifier
+            ] = series.overview_series.coverage_configuration_identifier
 
             names["archive"][
                 locale.language
@@ -455,16 +458,11 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
 
             names["climatological_variable"][
                 locale.language
-            ] = series.overview_series.configuration.climatic_indicator.get_display_name(
-                locale
-            )
-            values["climatological_variable"][locale.language] = {
-                LOCALE_EN: series.overview_series.configuration.climatic_indicator.display_name_english,
-                LOCALE_IT: series.overview_series.configuration.climatic_indicator.display_name_italian,
-            }.get(
-                locale,
-                series.overview_series.configuration.climatic_indicator.identifier,
-            )
+            ] = climaticindicators.ClimaticIndicator.get_display_name(locale)
+            values["climatological_variable"] = {
+                loc.language: value
+                for loc, value in series.overview_series.climatic_indicator_name_translations.items()
+            }
 
             names["scenario"][
                 locale.language
@@ -504,41 +502,32 @@ class LegacyTimeSeriesTranslations(pydantic.BaseModel):
 
             names["series_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.get_display_name(locale)
+            ] = StaticCoverageSeriesParameter.SERIES_NAME.get_display_name(locale)
             values["series_configuration"][
                 locale.language
-            ] = series.overview_series.configuration.identifier
+            ] = series.overview_series.coverage_configuration_identifier
 
             names["climatological_variable"][
                 locale.language
-            ] = series.overview_series.configuration.climatic_indicator.get_display_name(
-                locale
-            )
-            values["climatological_variable"][locale.language] = {
-                LOCALE_EN: series.overview_series.configuration.climatic_indicator.display_name_english,
-                LOCALE_IT: series.overview_series.configuration.climatic_indicator.display_name_italian,
-            }.get(
-                locale,
-                series.overview_series.configuration.climatic_indicator.identifier,
-            )
+            ] = climaticindicators.ClimaticIndicator.get_display_name(locale)
+            values["climatological_variable"] = {
+                loc.language: value
+                for loc, value in series.overview_series.climatic_indicator_name_translations.items()
+            }
 
             names["measure"][
                 locale.language
             ] = static.MeasureType.get_param_display_name(locale)
             values["measure"][
                 locale.language
-            ] = series.overview_series.configuration.climatic_indicator.measure_type.get_value_display_name(
-                locale
-            )
+            ] = series.overview_series.measure_type.get_value_display_name(locale)
 
             names["aggregation_period"][
                 locale.language
             ] = static.AggregationPeriod.get_param_display_name(locale)
             values["aggregation_period"][
                 locale.language
-            ] = series.overview_series.configuration.climatic_indicator.aggregation_period.get_value_display_name(
-                locale
-            )
+            ] = series.overview_series.aggregation_period.get_value_display_name(locale)
 
         return cls(parameter_names=names, parameter_values=values)
 
@@ -601,15 +590,15 @@ class LegacyTimeSeries(pydantic.BaseModel):
         cls, series: "dataseries.ForecastOverviewDataSeries"
     ):
         info = {
-            "series_configuration": series.overview_series.configuration.identifier,
-            "climatic_indicator": series.overview_series.configuration.climatic_indicator.identifier,
+            "series_configuration": series.overview_series.series_configuration_identifier,
+            "climatic_indicator": series.overview_series.climatic_indicator_identifier,
             "processing_method": legacy.CoverageDataSmoothingStrategy.from_processing_method(
                 series.processing_method
             ).value,
             "coverage_identifier": series.overview_series.identifier,
-            "coverage_configuration": series.overview_series.configuration.identifier,
+            "coverage_configuration": series.overview_series.coverage_configuration_identifier,
             "archive": "barometro_climatico",
-            "climatological_variable": series.overview_series.configuration.climatic_indicator.name,
+            "climatological_variable": series.overview_series.climatic_indicator_name,
             "scenario": series.overview_series.scenario.value,
         }
         if series.dataset_type in (
@@ -637,16 +626,16 @@ class LegacyTimeSeries(pydantic.BaseModel):
         cls, series: "dataseries.ObservationOverviewDataSeries"
     ):
         info = {
-            "series_configuration": series.overview_series.configuration.identifier,
-            "climatic_indicator": series.overview_series.configuration.climatic_indicator.identifier,
+            "series_configuration": series.overview_series.series_configuration_identifier,
+            "climatic_indicator": series.overview_series.climatic_indicator_identifier,
             "processing_method": legacy.CoverageDataSmoothingStrategy.from_processing_method(
                 series.processing_method
             ).value,
             "coverage_identifier": series.overview_series.identifier,
-            "coverage_configuration": series.overview_series.configuration.identifier,
+            "coverage_configuration": series.overview_series.coverage_configuration_identifier,
             "archive": "barometro_climatico",
             "climatological_variable": legacy.convert_overview_climatological_variable(
-                series.overview_series.configuration.climatic_indicator
+                series.overview_series.climatic_indicator_name
             ),
         }
         return cls(

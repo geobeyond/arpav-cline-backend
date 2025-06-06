@@ -20,7 +20,10 @@ if TYPE_CHECKING:
         ForecastCoverageInternal,
         HistoricalCoverageInternal,
     )
-    from .overviews import ForecastOverviewSeriesInternal
+    from .overviews import (
+        ForecastOverviewSeriesInternal,
+        ObservationOverviewSeriesInternal,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -902,8 +905,8 @@ class StaticForecastCoverage:
             coverage_identifier=cov.identifier,
             forecast_model_name=cov.forecast_model.name,
             forecast_model_name_translations={
-                LOCALE_EN: cov.forecast_model.get_display_name(LOCALE_EN),
-                LOCALE_IT: cov.forecast_model.get_display_name(LOCALE_IT),
+                LOCALE_EN: cov.forecast_model.display_name_english,
+                LOCALE_IT: cov.forecast_model.display_name_italian,
             },
             lower_uncertainty_identifier=lower_uncert,
             lower_uncertainty_ncss_url=lower_uncert_ncss_url,
@@ -994,7 +997,10 @@ class StaticForecastOverviewSeries:
     needing a DB connection.
     """
 
-    series_configuration_identifier: str
+    coverage_configuration_identifier: str
+    climatic_indicator_identifier: str
+    climatic_indicator_name: str
+    climatic_indicator_name_translations: dict[babel.Locale, str]
     file_download_url: str | None
     lower_uncertainty_file_download_url: str | None
     lower_uncertainty_identifier: str | None
@@ -1002,6 +1008,7 @@ class StaticForecastOverviewSeries:
     lower_uncertainty_opendap_url: str | None
     opendap_url: str | None
     netcdf_variable_name: str
+    series_configuration_identifier: str
     upper_uncertainty_file_download_url: str | None
     upper_uncertainty_identifier: str | None
     upper_uncertainy_netcdf_variable_name: str
@@ -1057,6 +1064,13 @@ class StaticForecastOverviewSeries:
                 "Could not find overview series' upper uncertainty file " "download URL"
             )
         return cls(
+            coverage_configuration_identifier=series.configuration.identifier,
+            climatic_indicator_identifier=series.configuration.climatic_indicator.identifier,
+            climatic_indicator_name=series.configuration.climatic_indicator.name,
+            climatic_indicator_name_translations={
+                LOCALE_EN: series.configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: series.configuration.climatic_indicator.display_name_italian,
+            },
             series_configuration_identifier=series.configuration.identifier,
             file_download_url=file_download_url,
             lower_uncertainty_file_download_url=lower_download_url,
@@ -1074,4 +1088,56 @@ class StaticForecastOverviewSeries:
             ),
             upper_uncertainty_opendap_url=upper_opendap_url,
             scenario=series.scenario,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class StaticHistoricalOverviewSeries:
+    """This class provides static access to properties of an overview historical.
+
+    It exists in order to allow THREDDS-related code paths to run without
+    needing a DB connection.
+    """
+
+    aggregation_period: AggregationPeriod
+    climatic_indicator_identifier: str
+    climatic_indicator_name: str
+    climatic_indicator_name_translations: dict[babel.Locale, str]
+    coverage_configuration_identifier: str
+    measure_type: MeasureType
+    file_download_url: str | None
+    opendap_url: str | None
+    netcdf_variable_name: str
+    series_configuration_identifier: str
+
+    @property
+    def identifier(self) -> str:
+        return "-".join((self.series_configuration_identifier, "series"))
+
+    @classmethod
+    def from_series(
+        cls,
+        series: "ObservationOverviewSeriesInternal",
+        settings: ThreddsServerSettings,
+    ):
+        if (opendap_url := series.get_thredds_opendap_url(settings)) is None:
+            logger.warning("Could not find overview series' OpenDAP URL")
+        if (
+            file_download_url := series.get_thredds_file_download_url(settings)
+        ) is None:
+            logger.warning("Could not find overview series' file download URL")
+        return cls(
+            aggregation_period=series.configuration.climatic_indicator.aggregation_period,
+            climatic_indicator_identifier=series.configuration.climatic_indicator.identifier,
+            climatic_indicator_name=series.configuration.climatic_indicator.name,
+            climatic_indicator_name_translations={
+                LOCALE_EN: series.configuration.climatic_indicator.display_name_english,
+                LOCALE_IT: series.configuration.climatic_indicator.display_name_italian,
+            },
+            coverage_configuration_identifier=series.configuration.identifier,
+            measure_type=series.configuration.climatic_indicator.measure_type,
+            file_download_url=file_download_url,
+            opendap_url=opendap_url,
+            netcdf_variable_name=series.get_netcdf_main_dataset_name(),
+            series_configuration_identifier=series.configuration.identifier,
         )
