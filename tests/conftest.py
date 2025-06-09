@@ -573,9 +573,17 @@ def sample_tas_historical_data_series(
     df.index = pd.DatetimeIndex(pd.to_datetime(df["time"]))
     series = df['tas[unit="degC"]']
 
-    with mock.patch(
-        "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal.get_thredds_ncss_url",
-        return_value="some-fake-url",
+    with (
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_thredds_ncss_url",
+            return_value="some-fake-ncss-url",
+        ),
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_wms_base_url",
+            return_value="some-fake-wms-url",
+        ),
     ):
         result = dataseries.HistoricalDataSeries(
             coverage=static.StaticHistoricalCoverage.from_coverage(
