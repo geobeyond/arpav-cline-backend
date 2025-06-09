@@ -559,6 +559,7 @@ def sample_real_historical_coverage_configurations(
 @pytest.fixture()
 def sample_tas_historical_data_series(
     arpav_db_session,
+    settings,
     sample_real_historical_coverage_configurations,
     sample_tas_csv_data: dict[str, str],
 ) -> dataseries.HistoricalDataSeries:
@@ -571,21 +572,17 @@ def sample_tas_historical_data_series(
     df.index = pd.DatetimeIndex(pd.to_datetime(df["time"]))
     series = df['tas[unit="degC"]']
     result = dataseries.HistoricalDataSeries(
-        aggregation_period=historical_cov.configuration.climatic_indicator.aggregation_period,
-        climatic_indicator_name=historical_cov.configuration.climatic_indicator.name,
-        coverage_identifier=historical_cov.identifier,
-        coverage_configuration_identifier=historical_cov.configuration.identifier,
+        coverage=static.StaticHistoricalCoverage.from_coverage(
+            historical_cov, settings.thredds_server
+        ),
         dataset_type=static.DatasetType.MAIN,
         location=shapely.geometry.Point(
             df['longitude[unit="degrees_east"]'][0],
             df['latitude[unit="degrees_north"]'][0],
         ),
-        measure_type=historical_cov.configuration.climatic_indicator.measure_type,
         processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
         temporal_start=df.index[0].date(),
         temporal_end=df.index[-1].date(),
-        coverage_configuration_reference_period=historical_cov.configuration.reference_period,
-        coverage_decade=historical_cov.decade,
     )
     series.name = result.identifier
     result.data_ = series
