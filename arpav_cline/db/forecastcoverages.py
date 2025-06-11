@@ -1,4 +1,3 @@
-import datetime as dt
 import itertools
 import logging
 from typing import (
@@ -7,8 +6,6 @@ from typing import (
     Union,
 )
 
-import geohashr
-import shapely
 import sqlalchemy
 import sqlmodel
 
@@ -38,11 +35,8 @@ from ..schemas.coverages import (
     ForecastYearPeriodGroupUpdate,
     LegacyConfParamFilterValues,
 )
-from ..schemas.dataseries import ForecastDataSeries
 from ..schemas.static import (
-    CoverageTimeSeriesProcessingMethod,
     DataCategory,
-    DatasetType,
     ForecastScenario,
     ForecastYearPeriod,
     AggregationPeriod,
@@ -909,66 +903,6 @@ def generate_forecast_coverages_for_other_models(
                     f"already present in the result..."
                 )
     return result
-
-
-def get_forecast_coverage_data_series(session: sqlmodel.Session, identifier: str):
-    # a forecast data series is always identified by a string like:
-    # {forecast_coverage_identifier}-{series_identifier}, where {series_identifier} is:
-    # {dataset_type}-{wkt_location}-{temporal_range_start}-{temporal_range_end}-{smoothing_identifier}
-    all_parts = identifier.split("-")
-    forecast_coverage_identifier = "-".join(all_parts[:-5])
-    forecast_coverage = get_forecast_coverage(session, forecast_coverage_identifier)
-    if forecast_coverage is None:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"forecast coverage {forecast_coverage_identifier!r} does not exist"
-        )
-    raw_ds_type, raw_location, raw_start, raw_end, raw_processing_method = identifier
-    try:
-        dataset_type = DatasetType(raw_ds_type)
-    except ValueError:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"dataset type {raw_ds_type} does not exist"
-        )
-    try:
-        location = shapely.Point(geohashr.decode(raw_location))
-    except ValueError:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"location {raw_location} is invalid"
-        )
-    try:
-        start = (
-            dt.date(int(raw_start[:4]), int(raw_start[4:6]), int(raw_start[6:8]))
-            if raw_start != "*"
-            else None
-        )
-    except IndexError:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"temporal range start {raw_start!r} is invalid"
-        )
-    try:
-        end = (
-            dt.date(int(raw_end[:4]), int(raw_end[4:6]), int(raw_end[6:8]))
-            if raw_end != "*"
-            else None
-        )
-    except IndexError:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"temporal range start {raw_start!r} is invalid"
-        )
-    try:
-        processing_method = CoverageTimeSeriesProcessingMethod(raw_processing_method)
-    except ValueError:
-        raise exceptions.InvalidForecastCoverageDataSeriesIdentifierError(
-            f"Processing method {raw_processing_method} does not exist"
-        )
-    return ForecastDataSeries(
-        coverage=forecast_coverage,
-        dataset_type=dataset_type,
-        processing_method=processing_method,
-        temporal_start=start,
-        temporal_end=end,
-        location=location,
-    )
 
 
 def get_forecast_coverage(

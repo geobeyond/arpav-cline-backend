@@ -9,8 +9,6 @@ from . import static
 if typing.TYPE_CHECKING:
     import babel
 
-    from .climaticindicators import ClimaticIndicator
-
 
 def parse_legacy_aggregation_period(
     legacy_value: str,
@@ -42,11 +40,11 @@ def convert_to_uncertainty_type(dataset_type: static.DatasetType) -> Optional[st
 
 
 def convert_overview_climatological_variable(
-    climatic_indicator: "ClimaticIndicator",
+    climatic_indicator_name: str,
 ) -> str:
     return {
         "tas": "tdd",
-    }.get(climatic_indicator.name, "")
+    }.get(climatic_indicator_name, "")
 
 
 class CoverageDataSmoothingStrategy(enum.Enum):

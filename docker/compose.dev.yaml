@@ -16,7 +16,7 @@ x-common-env: &common-env
   ARPAV_PPCV__BIND_PORT: 5001
   ARPAV_PPCV__PUBLIC_URL: http://localhost:8877
   ARPAV_PPCV__DB_DSN: postgresql://arpav:arpavpassword@db:5432/arpav_ppcv
-  ARPAV_PPCV__DB_POOL_SIZE: 10
+  ARPAV_PPCV__DB_POOL_SIZE: 5
   ARPAV_PPCV__TEST_DB_DSN: postgresql://arpavtest:arpavtestpassword@test-db:5432/arpav_ppcv_test
   ARPAV_PPCV__SESSION_SECRET_KEY: some-key
   ARPAV_PPCV__ADMIN_USER__USERNAME: admin

@@ -3,6 +3,7 @@ import datetime as dt
 import io
 import random
 from pathlib import Path
+from unittest import mock
 
 import geojson_pydantic
 import pandas as pd
@@ -559,6 +560,7 @@ def sample_real_historical_coverage_configurations(
 @pytest.fixture()
 def sample_tas_historical_data_series(
     arpav_db_session,
+    settings,
     sample_real_historical_coverage_configurations,
     sample_tas_csv_data: dict[str, str],
 ) -> dataseries.HistoricalDataSeries:
@@ -570,20 +572,35 @@ def sample_tas_historical_data_series(
     df = pd.read_csv(raw_data_buffer)
     df.index = pd.DatetimeIndex(pd.to_datetime(df["time"]))
     series = df['tas[unit="degC"]']
-    result = dataseries.HistoricalDataSeries(
-        coverage=historical_cov,
-        dataset_type=static.DatasetType.MAIN,
-        processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
-        temporal_start=df.index[0].date(),
-        temporal_end=df.index[-1].date(),
-        location=shapely.geometry.Point(
-            df['longitude[unit="degrees_east"]'][0],
-            df['latitude[unit="degrees_north"]'][0],
+
+    with (
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_thredds_ncss_url",
+            return_value="some-fake-ncss-url",
         ),
-    )
-    series.name = result.identifier
-    result.data_ = series
-    return result
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_wms_base_url",
+            return_value="some-fake-wms-url",
+        ),
+    ):
+        result = dataseries.HistoricalDataSeries(
+            coverage=static.StaticHistoricalCoverage.from_coverage(
+                historical_cov, settings.thredds_server
+            ),
+            dataset_type=static.DatasetType.MAIN,
+            location=shapely.geometry.Point(
+                df['longitude[unit="degrees_east"]'][0],
+                df['latitude[unit="degrees_north"]'][0],
+            ),
+            processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
+            temporal_start=df.index[0].date(),
+            temporal_end=df.index[-1].date(),
+        )
+        series.name = result.identifier
+        result.data_ = series
+        return result
 
 
 @pytest.fixture()

@@ -11,9 +11,9 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from ..config import ThreddsServerSettings
-    from ..schemas.overviews import (
-        ForecastOverviewSeriesInternal,
-        ObservationOverviewSeriesInternal,
+    from ..schemas.static import (
+        StaticForecastOverviewSeries,
+        StaticHistoricalOverviewSeries,
     )
 
 
@@ -23,72 +23,50 @@ logger = logging.getLogger(__name__)
 @dataclasses.dataclass
 class ObservationOverviewDataRetriever:
     settings: "ThreddsServerSettings"
-    overview_series: "ObservationOverviewSeriesInternal"
+    static_overview_series: "StaticHistoricalOverviewSeries"
 
     def retrieve_main_data(
         self,
         target_series_name: str,
     ) -> Optional[pd.Series]:
-        opendap_url = self.overview_series.get_thredds_opendap_url(self.settings)
-        netcdf_variable_name = self.overview_series.get_netcdf_main_dataset_name()
         result = None
-        if all((opendap_url, netcdf_variable_name)):
+        if self.static_overview_series.opendap_url is not None:
             result = _retrieve_data(
-                opendap_url, netcdf_variable_name, target_series_name
+                self.static_overview_series.opendap_url,
+                self.static_overview_series.netcdf_variable_name,
+                target_series_name,
             )
-        elif opendap_url is None:
-            logger.warning("Could not find overview series' OpenDAP URL")
-        else:
-            logger.warning("Could not find overview series' NetCDF variable name")
         return result
 
 
 @dataclasses.dataclass
 class ForecastOverviewDataRetriever:
     settings: "ThreddsServerSettings"
-    overview_series: "ForecastOverviewSeriesInternal"
+    static_overview_series: "StaticForecastOverviewSeries"
 
     def retrieve_main_data(
         self,
         target_series_name: str,
     ) -> Optional[pd.Series]:
-        opendap_url = self.overview_series.get_thredds_opendap_url(self.settings)
-        netcdf_variable_name = self.overview_series.get_netcdf_main_dataset_name()
         result = None
-        if all((opendap_url, netcdf_variable_name)):
+        if self.static_overview_series.opendap_url is not None:
             result = _retrieve_data(
-                opendap_url, netcdf_variable_name, target_series_name
+                self.static_overview_series.opendap_url,
+                self.static_overview_series.netcdf_variable_name,
+                target_series_name,
             )
-        elif opendap_url is None:
-            logger.warning("Could not find overview series' OpenDAP URL")
-        else:
-            logger.warning("Could not find overview series' NetCDF variable name")
         return result
 
     def retrieve_lower_uncertainty_data(
         self,
         target_series_name: str,
     ) -> Optional[pd.Series]:
-        opendap_url = self.overview_series.get_lower_uncertainty_thredds_opendap_url(
-            self.settings
-        )
-        netcdf_variable_name = (
-            self.overview_series.get_netcdf_lower_uncertainty_main_dataset_name()
-        )
         result = None
-        if all((opendap_url, netcdf_variable_name)):
+        if self.static_overview_series.lower_uncertainty_opendap_url is not None:
             result = _retrieve_data(
-                opendap_url,
-                netcdf_variable_name,
+                self.static_overview_series.lower_uncertainty_opendap_url,
+                self.static_overview_series.lower_uncertainy_netcdf_variable_name,
                 target_series_name,
-            )
-        elif opendap_url is None:
-            logger.warning(
-                "Could not find overview series' lower uncertainty OpenDAP URL"
-            )
-        else:
-            logger.warning(
-                "Could not find overview series' lower uncertainty NetCDF variable name"
             )
         return result
 
@@ -96,26 +74,12 @@ class ForecastOverviewDataRetriever:
         self,
         target_series_name: str,
     ) -> Optional[pd.Series]:
-        opendap_url = self.overview_series.get_upper_uncertainty_thredds_opendap_url(
-            self.settings
-        )
-        netcdf_variable_name = (
-            self.overview_series.get_netcdf_upper_uncertainty_main_dataset_name()
-        )
         result = None
-        if all((opendap_url, netcdf_variable_name)):
+        if self.static_overview_series.upper_uncertainty_opendap_url is not None:
             result = _retrieve_data(
-                opendap_url,
-                netcdf_variable_name,
+                self.static_overview_series.upper_uncertainty_opendap_url,
+                self.static_overview_series.upper_uncertainy_netcdf_variable_name,
                 target_series_name,
-            )
-        elif opendap_url is None:
-            logger.warning(
-                "Could not find overview series' upper uncertainty OpenDAP URL"
-            )
-        else:
-            logger.warning(
-                "Could not find overview series' upper uncertainty NetCDF variable name"
             )
         return result
 
