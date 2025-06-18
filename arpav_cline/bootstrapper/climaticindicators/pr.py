@@ -88,7 +88,7 @@ def generate_climatic_indicators(
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["model_ensemble"],
                     thredds_url_base_path="ens5ym/clipped",
-                    thredds_url_uncertainties_base_path="ens5ym/clipped",
+                    thredds_url_uncertainties_base_path="ens5ym/std/clipped",
                 ),
                 ClimaticIndicatorForecastModelLinkCreateEmbeddedInClimaticIndicator(
                     forecast_model_id=forecast_model_ids["ec_earth_cclm_4_8_17"],
