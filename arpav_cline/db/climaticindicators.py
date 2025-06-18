@@ -255,6 +255,9 @@ def _update_climatic_indicator_forecast_model_links(
         else:  # already exists, just update
             existing_fm_link = existing_forecast_model_links[requested_fm_id]
             existing_fm_link.thredds_url_base_path = requested_fm.thredds_url_base_path
+            existing_fm_link.thredds_url_uncertainties_base_path = (
+                requested_fm.thredds_url_uncertainties_base_path
+            )
             session.add(existing_fm_link)
     return climatic_indicator
 
