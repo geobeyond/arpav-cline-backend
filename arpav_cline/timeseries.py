@@ -73,7 +73,7 @@ def _generate_decade_series(
     original: pd.DataFrame,
     original_column: str,
     column_name: str,
-) -> pd.DataFrame:
+) -> Optional[pd.DataFrame]:
     # group values by climatological decade, which starts at year 1 and ends at year 10
     decade_grouper = original.groupby(((original.index.year - 1) // 10) * 10)
     decade_df = decade_grouper.agg(
@@ -84,6 +84,11 @@ def _generate_decade_series(
     decade_df = decade_df[decade_df.num_values >= 7]
     decade_df = decade_df.drop(columns=["num_values"])
     # prepare a new dataframe with all years that exist in the decades that remain
+    if decade_df.empty:
+        logger.info(
+            f"Cannot generate decade series - not enough records in {original_column!r}"
+        )
+        return None
     all_years = np.arange(decade_df.index[0] + 1, decade_df.index[-1] + 11)
     all_years_df = pd.DataFrame(
         {
@@ -317,7 +322,7 @@ def parse_observation_station_data(
 def generate_decade_derived_observation_station_series(
     original_series: dataseries.ObservationStationDataSeries,
     point_geom: shapely.geometry.Point,
-) -> dataseries.ObservationStationDataSeries:
+) -> Optional[dataseries.ObservationStationDataSeries]:
     derived_series = dataseries.ObservationStationDataSeries(
         observation_series_configuration=(
             original_series.observation_series_configuration
@@ -330,11 +335,15 @@ def generate_decade_derived_observation_station_series(
         location=point_geom,
     )
     df = original_series.data_.to_frame()
-    df = _generate_decade_series(
-        df, original_series.identifier, derived_series.identifier
-    )
-    derived_series.data_ = df[derived_series.identifier].squeeze()
-    return derived_series
+    result = None
+    if (
+        decade_df := _generate_decade_series(
+            df, original_series.identifier, derived_series.identifier
+        )
+    ) is not None:
+        derived_series.data_ = decade_df[derived_series.identifier].squeeze()
+        result = derived_series
+    return result
 
 
 def generate_loess_derived_observation_station_series(
@@ -433,7 +442,7 @@ def generate_moving_average_derived_historical_coverage_series(
 
 def generate_decade_derived_historical_coverage_series(
     original_series: dataseries.HistoricalDataSeries,
-) -> dataseries.HistoricalDataSeries:
+) -> Optional[dataseries.HistoricalDataSeries]:
     derived_series = dataseries.HistoricalDataSeries(
         coverage=original_series.coverage,
         dataset_type=original_series.dataset_type,
@@ -445,11 +454,15 @@ def generate_decade_derived_historical_coverage_series(
         temporal_start=original_series.temporal_start,
     )
     df = original_series.data_.to_frame()
-    df = _generate_decade_series(
-        df, original_series.identifier, derived_series.identifier
-    )
-    derived_series.data_ = df[derived_series.identifier].squeeze()
-    return derived_series
+    result = None
+    if (
+        decade_df := _generate_decade_series(
+            df, original_series.identifier, derived_series.identifier
+        )
+    ) is not None:
+        derived_series.data_ = decade_df[derived_series.identifier].squeeze()
+        result = derived_series
+    return result
 
 
 def generate_loess_derived_historical_coverage_series(
@@ -548,11 +561,12 @@ def get_historical_observation_series(
                     )
                 )
             if include_decade_aggregation_series:
-                result.append(
-                    generate_decade_derived_observation_station_series(
+                if (
+                    decade_series := generate_decade_derived_observation_station_series(
                         obs_data_series, point_geom
                     )
-                )
+                ) is not None:
+                    result.append(decade_series)
             if mann_kendall_params is not None:
                 try:
                     result.append(
@@ -605,9 +619,12 @@ def get_historical_time_series(
                 generate_moving_average_derived_historical_coverage_series(cov_series)
             )
         if include_decade_aggregation_series:
-            result.append(
-                generate_decade_derived_historical_coverage_series(cov_series)
-            )
+            if (
+                decade_series := generate_decade_derived_historical_coverage_series(
+                    cov_series
+                )
+            ) is not None:
+                result.append(decade_series)
         if mann_kendall_params is not None:
             try:
                 result.append(
