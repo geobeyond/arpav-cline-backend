@@ -380,7 +380,8 @@ class _GenerateComposeFile:
 
     def handle(self) -> None:
         compose_template_path = (
-            self.config.deployment_root / self.config.compose_template
+            self.config.deployment_files_repo_clone_destination
+            / self.config.compose_template
         )
         compose_template = Template(compose_template_path.read_text())
 
