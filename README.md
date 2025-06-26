@@ -14,7 +14,7 @@ A previous version had originally been developed by [inkode](http://inkode.it)
 
 ---
 
-This repository contains source code for the backend components of the ARPAV-PPCV platform.
+This repository contains source code for the backend components of the ARPAV cline platform.
 
 Its main goal is to serve climate-related data in the form of both historical observations and forecast models.
 
@@ -64,7 +64,7 @@ of doing `poetry install`.
 
 ### Configuration
 
-This application is configured via environment variables. By defaul all settings are prefixed with `ARPAV_PPCV__`, but
+This application is configured via environment variables. By default, all settings are prefixed with `ARPAV_PPCV__`, but
 this can also be modified if needed. The system recognizes the following environment variables:
 
 - `ARPAV_PPCV__DEBUG` - (bool - `False`) Whether the application runs in debug mode or not. Debug mode outputs more logging
@@ -75,6 +75,7 @@ this can also be modified if needed. The system recognizes the following environ
 - `ARPAV_PPCV__PUBLIC_URL` - (str - `"http://localhost:5001"`) The public URL of the web application.
 - `ARPAV_PPCV__DB_DSN` - (pydantic.PostgresDsn - `"postgresql://user:password@localhost:5432/arpav_ppcv"`) Connection
   string to be used for accessing the backend database. This application only works with postgresql as the DB server.
+- `ARPAV_PPCV__DB_POOL_SIZE` - (int - `10`) Size of the DB connection pool.
 - `ARPAV_PPCV__TEST_DB_DSN` - (pydantic.PostgresDsn - `None`) Connection string used to connect to the test database.
   This is only needed for running the tests.
 - `ARPAV_PPCV__VERBOSE_DB_LOGS` - (bool - `False`) Whether to output verbose logs related to database-related commands.
@@ -91,27 +92,42 @@ this can also be modified if needed. The system recognizes the following environ
   WMS service. This is mainly useful for development, so avoid modifying it.
 - `ARPAV_PPCV__THREDDS_SERVER__NETCDF_SUBSET_SERVICE_URL_FRAGMENT` - (str - `"ncss/grid"`) URL fragment used by the
   THREDDS server's NetCDF subset service. This is mainly useful for development, so avoid modifying it.
+- `ARPAV_PPCV__THREDDS_SERVER__OPENDAP_SERVICE_URL_FRAGMENT` - (str - `"dodsC"`) URL fragment used by the
+  THREDDS server's OPeNDAP service. This is mainly useful for development, so avoid modifying it.
+- `ARPAV_PPCV__THREDDS_SERVER__FILE_DOWNLOAD_SERVICE_URL_FRAGMENT` - (str - `"fileServer"`) URL fragment used by the
+  THREDDS server's file download service. This is mainly useful for development, so avoid modifying it.
 - `ARPAV_PPCV__THREDDS_SERVER__UNCERTAINTY_VISUALIZATION_SCALE_RANGE` - (tuple[float, float] - `(0, 9)`) - Min, max
   values for the uncertainty pattern used in the WMS uncertainty visualization display.
-- `ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL` - (str - "http://localhost:3000") Base URL of the Martin vector tile server.
-- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS` - (int - 10_000) Distance to use when looking for the nearest
-  observation station.
+- `ARPAV_PPCV__PALETTES_DIR` - (Path - "data/palettes") Path to the WMS palettes
+- `ARPAV_PPCV__PALETTE_NUM_STOPS` - (int - 5) How many intervals should the WMS color scale have
+- `ARPAV_PPCV__TRANSPARENT_IMAGES_DIR` - (Path - "data/transparents") Path to the directory that contains transparent
+  PNGs. This is used to reply fast and avoid contacting the THREDDS server for WMS requests that are known to be
+  returning and empty image
+- `ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL` - (str - "http://localhost:5001/vector-tiles") Base URL of the Martin
+  vector tile server.
+- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS_FORECASTS` - (int - 1000) Distance in meters to use when looking for the
+  nearest observation station in the climate projections sections.
+- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS_HISTORICAL` - (int - 2500) Distance in meters to use when looking for
+  the nearest observation station in the historical sections.
 - `ARPAV_PPCV__PREFECT__NUM_FLOW_RETRIES` - (int - 5) Number of times a prefect flow will retry when it fails
 - `ARPAV_PPCV__PREFECT__FLOW_RETRY_DELAY_SECONDS` - (int - 5) How many seconds should prefect wait after retrying a failed flow
-- `ARPAV_PPCV__PREFECT__NUM_TASK_RETRIES` - (int - 5) Number of times a prefect task will retry when it fails
-- `ARPAV_PPCV__PREFECT__TASK_RETRY_DELAY_SECONDS` - (int - 5) How many seconds should prefect wait after retrying a failed task
+- `ARPAV_PPCV__PREFECT__NUM_TASK_RETRIES` - (int - 10) Number of times a prefect task will retry when it fails
+- `ARPAV_PPCV__PREFECT__TASK_RETRY_DELAY_SECONDS` - (int - 10) How many seconds should prefect wait after retrying a failed task
 - `ARPAV_PPCV__PREFECT__OBSERVATION_STATIONS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 1 * * 1"`) Cron schedule for
   running the flow that refreshes observation stations. The default value should be read like this: run once every week,
   at 01:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_MONTHLY_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 2 * * 1"`) Cron
-  schedule for running the flow that refreshes monthly measurements. The default value should be read like this: run
+- `ARPAV_PPCV__PREFECT__OBSERVATION_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 2 * * 1"`) Cron
+  schedule for running the flow that refreshes observation measurements. The default value should be read like this: run
   once every week, at 02:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_SEASONAL_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 3 * * 1"`) Cron
-  schedule for running the flow that refreshes seasonal measurements. The default value should be read like this: run
-  once every week, at 03:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_YEARLY_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 4 * * 1"`) Cron
-  schedule for running the flow that refreshes yearly measurements. The default value should be read like this: run
-  once every week, at 04:00 on Monday
+- `ARPAV_PPCV__PREFECT__STATION_VARIABLES_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 5 * * 1"`) Cron
+  schedule for running the flow that refreshes the climatic indicators which are available in each observation
+  station. The default value should be read like this: run once every week, at 05:00 on Monday
+- `ARPAV_PPCV__PREFECT__ARPAV_REST_API_TASK_CONCURRENCY_LIMIT` - (int - 20) How many tasks that use the third-party
+  ARPAV REST API are allowed to run concurrently
+- `ARPAV_PPCV__PREFECT__ARPAFVG_REST_API_TASK_CONCURRENCY_LIMIT` - (int - 20) How many tasks that use the third-party
+  ARPA FVG REST API are allowed to run concurrently
+- `ARPAV_PPCV__PREFECT__USE_DB_TASK_CONCURRENCY_LIMIT` - (int - 5) How many tasks that use the system DB are allowed
+  to run concurrently
 - `ARPAV_PPCV__V2_API_MOUNT_PREFIX` - (str - "/api/v2") URL prefix of the web application API. Do not modify this unless
   you know what you are doing, as other parts of the system rely on it.
 - `ARPAV_PPCV__LOG_CONFIG_FILE` - (Path - `None`) - Path to the config file for the logging of the application.
@@ -128,6 +144,17 @@ this can also be modified if needed. The system recognizes the following environ
 - `ARPAV_PPCV__CORS_ORIGINS` - (list[str] - `[]`) Origins that are allowed to make cross-origin requests.
 - `ARPAV_PPCV__CORS_METHODS` - (list[str] - `[]`) Methods allowed for cross-origin requests.
 - `ARPAV_PPCV__ALLOW_CORS_CREDENTIALS` - (bool - `False`) Whether to allow credentials on cross-origin requests.
+- `ARPAV_PPCV__NUM_UVICORN_WORKER_PROCESSES` - (int - `1`) Number of web workers that should be used to process
+  requests. The default value is only suitable for development
+- `ARPAV_PPCV__HTTP_CLIENT_TIMEOUT_SECONDS` - (float - `30.0`) How many seconds before timing out HTTP requests for
+  upstream services (THREDDS, third-party APIs, etc.)
+- `ARPAV_PPCV__ARPAV_OBSERVATIONS_BASE_URL` - (str - `"https://api.arpa.veneto.it/REST/v1"`) Base URL of the ARPAV
+  third-party REST API
+- `ARPAV_PPCV__ARPAFVG_OBSERVATIONS_BASE_URL` - (str - `"https://api.meteo.fvg.it"`) Base URL of the ARPA FVG
+  third-party REST API
+- `ARPAV_PPCV__ARPAFVG_AUTH_TOKEN` - (str - `"changeme"`) Authentication token for the ARPA FVG third-party REST API
+- `ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST` - (list - `"[]"`) List of observation station codes that shall be
+  ignored when querying upstream third-party REST APIs
 
 
 ### Operations
@@ -335,23 +362,7 @@ Relevant places to look for configuration in the staging environment, in additio
 
 ##### Production environment
 
-Deployments to the production environment are automated. They are based on git tags and are governed by a two-stage
-workflow, orchestrated via github actions:
-
-- When a new git tag is pushed into the code repository, a new docker image is built and published to the container
-  registry;
-- After the publication of the docker image in the registry, github sends a request to the production environment,
-  notifying it of the availability of this new tagged docker image;
-- The production environment's infrastructure then takes care of downloading the new docker image and restarting its
-  own deployment in such a way as to have the system run with the updated code.
-
-
-###### NOTES
-
-- In order for this strategy to work, there are a couple of sensitive details which must be stored on the code
-  repository. Access to this information should therefore be controlled
-- Since the production deployment is triggered by pushing a new git tag to the repository, this is a privileged action,
-and therefore should only be granted to whomever is responsible for managing production deployments.
+Production deployments are documented in the wiki
 
 
 ### Testing
