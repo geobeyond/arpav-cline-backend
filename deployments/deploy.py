@@ -414,6 +414,8 @@ class _ComposeCommandExecutor:
 
     def _run_compose_command(self, suffix: str) -> subprocess.CompletedProcess:
         compose_file_path = self.config.deployment_root / "compose.yaml"
+        if not compose_file_path.exists():
+            raise FileNotFoundError()
         docker_compose_command = f"docker compose -f {compose_file_path} {suffix}"
         return subprocess.run(
             shlex.split(docker_compose_command),
@@ -438,6 +440,8 @@ class _StopCompose(_ComposeCommandExecutor):
         print("Stopping docker compose stack...")
         try:
             self._run_compose_command("down")
+        except FileNotFoundError:
+            logger.info("Failed to stop docker compose stack - compose file not found")
         except subprocess.CalledProcessError as exc:
             if exc.returncode == 14:
                 logger.info("docker compose stack was not running, no need to stop")
