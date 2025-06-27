@@ -150,6 +150,17 @@ services:
     depends_on:
       prefect-db:
         condition: service_healthy
+    healthcheck:
+      interval: 20s
+      timeout: 5s
+      start_period: 3m
+      retries: 20
+      test: |
+        status=$$(python -c 'import httpx; print(httpx.get("http://127.0.0.1:4200/api/health").status_code)')
+        if [ $${status} = '200' ];
+        then exit 0;
+        else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
+        fi
     restart: unless-stopped
 
   prefect-static-worker:
