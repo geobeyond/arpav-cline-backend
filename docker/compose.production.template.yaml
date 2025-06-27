@@ -81,6 +81,9 @@ services:
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     depends_on:
       db:
         condition: service_healthy
@@ -173,6 +176,9 @@ services:
       PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
       PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -258,3 +264,6 @@ secrets:
 
   traefik-users-file:
     file: "${traefik_users_file_path}"
+
+  arpa-fvg-auth-token:
+    file: "${arpa_fvg_auth_token_path}"

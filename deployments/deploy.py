@@ -30,6 +30,7 @@ _DO_NOT_UPDATE_FLAG_NAME = "--no-auto-update"
 
 @dataclasses.dataclass
 class DeploymentConfiguration:
+    arpa_fvg_auth_token_path: Path
     backend_image: str
     compose_project_name: str = dataclasses.field(init=False)
     compose_template: str
@@ -189,6 +190,9 @@ class DeploymentConfiguration:
         tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
         tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_key_path")
         return cls(
+            arpa_fvg_auth_token_path=Path(
+                config_parser["main"]["arpa_fvg_auth_token_path"]
+            ),
             backend_image=config_parser["main"]["backend_image"],
             compose_template=config_parser["main"]["compose_template"],
             db_image_tag=config_parser["main"]["db_image_tag"],
