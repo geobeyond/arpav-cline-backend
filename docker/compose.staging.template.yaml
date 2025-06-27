@@ -19,7 +19,6 @@ x-postgres-healthcheck-template: &postgres-healthcheck-template
   timeout: 5s
   start_period: 3m
   retries: 20
-  test: ["CMD-SHELL", "pg_isready -h 127.0.0.1"]
 
 name: "${compose_project_name}"
 
@@ -96,7 +95,7 @@ services:
       - db-data:/var/lib/postgresql/data
     healthcheck:
       <<: *postgres-healthcheck-template
-      test: [ "CMD-SHELL", "pg_isready -U ${db_user} -d ${db_name} -h 127.0.0.1" ]
+      test: "pg_isready -U ${db_user} -d ${db_name} -h 127.0.0.1"
     restart: unless-stopped
 
   martin:
@@ -185,7 +184,7 @@ services:
       - prefect-db-data:/var/lib/postgresql/data
     healthcheck:
       <<: *postgres-healthcheck-template
-      test: [ "CMD-SHELL", "pg_isready -U ${prefect_db_user} -d ${prefect_db_name} -h 127.0.0.1" ]
+      test: "pg_isready -U ${prefect_db_user} -d ${prefect_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
   tolgee-app:
@@ -226,7 +225,7 @@ services:
       - tolgee-db-data:/var/lib/postgresql/data
     healthcheck:
       <<: *postgres-healthcheck-template
-      test: [ "CMD-SHELL", "pg_isready -U ${tolgee_db_user} -d ${tolgee_db_name} -h 127.0.0.1" ]
+      test: "pg_isready -U ${tolgee_db_user} -d ${tolgee_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
 volumes:
