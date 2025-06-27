@@ -187,7 +187,7 @@ class DeploymentConfiguration:
     @classmethod
     def from_config_parser(cls, config_parser: configparser.ConfigParser):
         tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
-        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_path")
+        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_key_path")
         return cls(
             backend_image=config_parser["main"]["backend_image"],
             compose_template=config_parser["main"]["compose_template"],
