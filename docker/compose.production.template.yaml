@@ -196,7 +196,7 @@ services:
       - prefect-db-data:/var/lib/postgresql/data
     healthcheck:
       <<: *postgres-healthcheck-template
-      test: "pg_isready -U ${db_user} -d ${db_name} -h 127.0.0.1"
+      test: "pg_isready -U ${prefect_db_user} -d ${prefect_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
   tolgee-app:
@@ -236,7 +236,7 @@ services:
       - tolgee-db-data:/var/lib/postgresql/data
     healthcheck:
       <<: *postgres-healthcheck-template
-      test: "pg_isready -U ${db_user} -d ${db_name} -h 127.0.0.1"
+      test: "pg_isready -U ${tolgee_db_user} -d ${tolgee_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
 volumes:
