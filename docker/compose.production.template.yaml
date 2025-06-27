@@ -164,9 +164,7 @@ services:
     command: [
       "start-periodic-tasks",
       "--refresh-stations",
-      "--refresh-monthly-measurements",
-      "--refresh-seasonal-measurements",
-      "--refresh-yearly-measurements",
+      "--refresh-measurements",
       "--refresh-station-variables",
     ]
     environment:
