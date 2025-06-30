@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arpav-cline-backend"
-version = "v2.0.1"
+version = "v2.1.0-dev"
 description = "Backend component of the ARPAV cline platform"
 authors = ["Geobeyond <info@geobeyond.it>"]
 license = "AGPL-3.0-or-later"
