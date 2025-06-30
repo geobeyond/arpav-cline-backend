@@ -13,32 +13,11 @@
 # - do not mount source code inside any container - keep volume binds to the
 #   minimum, only for relevant configuration file(s) and data collections
 
-x-postgres-db-healthcheck: &postgres-db-healthcheck
+x-postgres-healthcheck-template: &postgres-healthcheck-template
   interval: 20s
   timeout: 5s
   start_period: 3m
   retries: 20
-  test: |
-    export PGPASSWORD=$${POSTGRES_PASSWORD:-}
-    args="--host 127.0.0.1 --username $${POSTGRES_USER} --dbname $${POSTGRES_DB} --quiet --no-align --tuples-only"
-    response=$$(echo 'SELECT 1' | psql $${args})
-    if [ $${response} = '1' ];
-    then exit 0;
-    else echo "+++++++++++++ DB $${POSTGRES_DB} is not up+++++++++++++"; exit 1;
-    fi
-
-
-x-prefect-server-healthcheck: &prefect-server-healthcheck
-  interval: 20s
-  timeout: 5s
-  start_period: 3m
-  retries: 20
-  test: |
-    status=$$(python -c 'import httpx; print(httpx.get("http://127.0.0.1:4200/api/health").status_code)')
-    if [ $${status} = '200' ];
-    then exit 0;
-    else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
-    fi
 
 name: "${compose_project_name}"
 
@@ -101,6 +80,10 @@ services:
       ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     depends_on:
       db:
         condition: service_healthy
@@ -115,7 +98,9 @@ services:
       POSTGRES_DB: "${db_name}"
     volumes:
       - db-data:/var/lib/postgresql/data
-    healthcheck: *postgres-db-healthcheck
+    healthcheck:
+      <<: *postgres-healthcheck-template
+      test: "pg_isready -U ${db_user} -d ${db_name} -h 127.0.0.1"
     restart: unless-stopped
 
   martin:
@@ -168,17 +153,21 @@ services:
     depends_on:
       prefect-db:
         condition: service_healthy
+    healthcheck:
+      interval: 20s
+      timeout: 5s
+      start_period: 3m
+      retries: 20
+      test: ["CMD", "python", "-c", "import httpx; exit(0 if httpx.get('http://127.0.0.1:4200/api/health', timeout=5).status_code == 200 else 1)"]
     restart: unless-stopped
 
   prefect-static-worker:
     image: "${backend_image}"
-    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-cline", "prefect"]
     command: [
       "start-periodic-tasks",
       "--refresh-stations",
-      "--refresh-monthly-measurements",
-      "--refresh-seasonal-measurements",
-      "--refresh-yearly-measurements",
+      "--refresh-measurements",
       "--refresh-station-variables",
     ]
     environment:
@@ -186,6 +175,10 @@ services:
       ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
       PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
       PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
+      PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -200,7 +193,9 @@ services:
       POSTGRES_DB: "${prefect_db_name}"
     volumes:
       - prefect-db-data:/var/lib/postgresql/data
-    healthcheck: *postgres-db-healthcheck
+    healthcheck:
+      <<: *postgres-healthcheck-template
+      test: "pg_isready -U ${prefect_db_user} -d ${prefect_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
   tolgee-app:
@@ -238,7 +233,9 @@ services:
       POSTGRES_DB: "${tolgee_db_name}"
     volumes:
       - tolgee-db-data:/var/lib/postgresql/data
-    healthcheck: *postgres-db-healthcheck
+    healthcheck:
+      <<: *postgres-healthcheck-template
+      test: "pg_isready -U ${tolgee_db_user} -d ${tolgee_db_name} -h 127.0.0.1"
     restart: unless-stopped
 
 volumes:
@@ -267,3 +264,6 @@ secrets:
 
   traefik-users-file:
     file: "${traefik_users_file_path}"
+
+  arpa-fvg-auth-token:
+    file: "${arpa_fvg_auth_token_path}"

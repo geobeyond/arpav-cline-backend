@@ -11,8 +11,13 @@ the GetFeatureInfo operation.
         <defaults>
             <!-- The global defaults. All elements are mandatory -->
             <allowFeatureInfo>true</allowFeatureInfo>
+            <!--
             <defaultColorScaleRange>-50 50</defaultColorScaleRange>
             <defaultPaletteName>psu-viridis</defaultPaletteName>
+            -->
+            <defaultColorScaleRange>0 6</defaultColorScaleRange>
+            <defaultPaletteName>seq-YlOrRd</defaultPaletteName>
+
             <defaultNumColorBands>20</defaultNumColorBands>
             <logScaling>false</logScaling>
             <intervalTime>false</intervalTime>
@@ -64,6 +69,11 @@ the GetFeatureInfo operation.
         </standardNames>
     </global>
     <overrides>
+        <datasetPath pathSpec="tests/test-script-agree.nc">
+            <pathDefaults>
+                <defaultPaletteName>seq-YlOrRd</defaultPaletteName>
+            </pathDefaults>
+        </datasetPath>
         <datasetPath pathSpec="testAll/20040503*_eta_211.nc">
             <!-- Will apply to all paths that match the path spec above -->
             <pathDefaults>

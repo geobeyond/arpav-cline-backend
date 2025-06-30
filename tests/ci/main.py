@@ -27,6 +27,9 @@ def run_ci_pipeline(
         ),
     ] = False,
     with_load_tests: Annotated[bool, typer.Option(help="Run load tests")] = False,
+    with_api_checks: Annotated[
+        bool, typer.Option(help="Check API conformity with several spectral checks")
+    ] = False,
     with_security_scan: Annotated[
         bool,
         typer.Option(
@@ -35,7 +38,7 @@ def run_ci_pipeline(
                 "published, including the image tag. This assumes that logging in to the "
                 "registry has already been made (for example by running the "
                 "`docker login` command beforehand)."
-                "Example: ghcr.io/geobeyond/arpav-ppcv-backend:latest"
+                "Example: ghcr.io/geobeyond/arpav-cline-backend:latest"
             )
         ),
     ] = False,
@@ -69,6 +72,7 @@ def run_ci_pipeline(
         _run_pipeline(
             with_tests=with_tests,
             with_load_tests=with_load_tests,
+            with_api_checks=with_api_checks,
             with_security_scan=with_security_scan,
             with_linter=with_linter,
             with_formatter=with_formatter,
@@ -163,7 +167,7 @@ async def _run_tests(
         test_container = test_container.with_env_variable(var_name, var_value)
     return await (
         test_container.with_exec(shlex.split("poetry install --with dev"))
-        .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
+        .with_exec(shlex.split("poetry run arpav-cline translations compile"))
         .with_exec(shlex.split("poetry run pytest "))
     ).stdout()
 
@@ -187,6 +191,60 @@ def _get_arpav_db_service(
     )
 
 
+async def _run_api_checks(
+    client: dagger.Client,
+    test_container: dagger.Container,
+) -> tuple[dagger.Container, dagger.Service]:
+    # "ARPAV_PPCV__DB_DSN": "postgresql://arpav:arpavpassword@db:5432/arpav_ppcv",
+    db_user = "arpav"
+    db_password = "arpavpassword"
+    db_host = "db"
+    db_port = 5432
+    db_name = "arpav_ppcv"
+    db_service = _get_arpav_db_service(client, db_name, db_user, db_password, db_port)
+    db_dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
+    # modifications made to the test container:
+    # - add a proper ARPAV_PPCV__DB_DSN env var, because we are simulating the live
+    #   system
+    webap_service = (
+        test_container.without_entrypoint()
+        .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
+        .with_service_binding(db_host, db_service)
+        .with_exec(shlex.split("poetry run arpav-cline db upgrade"))
+        .with_exec(
+            shlex.split(
+                "poetry run arpav-cline bootstrap all data/spatial-regions "
+                "data/municipalities-istat-2021.geojson"
+            )
+        )
+        .with_exec(shlex.split("poetry run arpav-cline translations compile"))
+        .with_exec(shlex.split("poetry run arpav-cline run-server"))
+        .with_exposed_port(5001)
+        .as_service()
+    )
+    webapp_service_alias = "webapp"
+    spectral_dir_mount_path = "/mnt/spectral"
+    spectral_container = (
+        client.container()
+        .from_("stoplight/spectral")
+        .with_mounted_directory(
+            spectral_dir_mount_path,
+            client.host().directory(str(REPO_ROOT / ".spectral")),
+        )
+        .with_service_binding(webapp_service_alias, webap_service)
+    )
+    return await spectral_container.with_exec(
+        shlex.split(
+            f"lint "
+            f"--ruleset /mnt/spectral/.spectral.yaml "
+            f"--fail-severity error "
+            f"--display-only-failures "
+            f"http://{webapp_service_alias}:5001/api/v2/openapi.json"
+        )
+    ).stdout()
+
+
 async def _run_load_tests(
     client: dagger.Client,
     test_container: dagger.Container,
@@ -206,22 +264,19 @@ async def _run_load_tests(
     # modifications made to the test container:
     # - add a proper ARPAV_PPCV__DB_DSN env var, because we are simulating the live
     #   system
-    webap_service = (
+    webapp_service = (
         test_container.without_entrypoint()
         .with_env_variable("ARPAV_PPCV__DB_DSN", db_dsn)
         .with_service_binding(db_host, db_service)
-        .with_exec(shlex.split("poetry run arpav-ppcv db upgrade"))
-        .with_exec(shlex.split("poetry run arpav-ppcv bootstrap observation-variables"))
+        .with_exec(shlex.split("poetry run arpav-cline db upgrade"))
         .with_exec(
             shlex.split(
-                "poetry run arpav-ppcv bootstrap coverage-configuration-parameters"
+                "poetry run arpav-cline bootstrap all data/spatial-regions "
+                "data/municipalities-istat-2021.geojson"
             )
         )
-        .with_exec(
-            shlex.split("poetry run arpav-ppcv bootstrap coverage-configurations")
-        )
-        .with_exec(shlex.split("poetry run arpav-ppcv translations compile"))
-        .with_exec(shlex.split("poetry run arpav-ppcv run-server"))
+        .with_exec(shlex.split("poetry run arpav-cline translations compile"))
+        .with_exec(shlex.split("poetry run arpav-cline run-server"))
         .with_exposed_port(5001)
         .as_service()
     )
@@ -235,7 +290,7 @@ async def _run_load_tests(
             client.host().directory(str(REPO_ROOT / "tests/loadtests")),
         )
         # .with_service_binding(db_host, db_service)
-        .with_service_binding(webapp_service_alias, webap_service)
+        .with_service_binding(webapp_service_alias, webapp_service)
     )
     return await (
         locust_container.with_exec(
@@ -255,6 +310,7 @@ async def _run_pipeline(
     *,
     with_tests: bool,
     with_load_tests: bool,
+    with_api_checks: bool,
     with_security_scan: bool,
     with_linter: bool,
     with_formatter: bool,
@@ -279,13 +335,8 @@ async def _run_pipeline(
         build_args.append(dagger.BuildArg(name="GIT_COMMIT", value=git_commit))
     async with dagger.Connection(conf) as client:
         src = client.host().directory(str(REPO_ROOT))
-        built_container = (
-            client.container()
-            .build(context=src, dockerfile="docker/Dockerfile", build_args=build_args)
-            .with_label(
-                "org.opencontainers.image.source",
-                "https://github.com/geobeyond/Arpav-PPCV-backend",
-            )
+        built_container = client.container().build(
+            context=src, dockerfile="docker/Dockerfile", build_args=build_args
         )
         if with_formatter:
             await _run_formatter(built_container)
@@ -293,7 +344,7 @@ async def _run_pipeline(
             await _run_linter(built_container)
         if with_security_scan:
             await _run_security_scan(built_container)
-        if with_tests or with_load_tests:
+        if with_tests or with_load_tests or with_api_checks:
             test_container = built_container
             for var_name, var_value in env_variables.items():
                 test_container = test_container.with_env_variable(var_name, var_value)
@@ -304,9 +355,20 @@ async def _run_pipeline(
                     client,
                     test_container,
                 )
+            if with_api_checks:
+                await _run_api_checks(client, test_container)
         if publish_docker_image is not None:
+            print("About to publish docker image")
+            org_name, repo_name = publish_docker_image.split("/")[1:3]
+            label = f"https://github.com/{org_name}/{repo_name}"
+            print(f"{label=}")
             sanitized_name = _sanitize_docker_image_name(publish_docker_image)
-            await built_container.publish(sanitized_name)
+            print(f"{sanitized_name=}")
+            built_container = built_container.with_label(
+                "org.opencontainers.image.source", label
+            )
+            published_ref = await built_container.publish(sanitized_name)
+            print(f"{published_ref=}")
         print("Done")
 
 

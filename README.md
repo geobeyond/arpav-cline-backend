@@ -2,8 +2,7 @@
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/geobeyond/Arpav-PPCV-backend/ci.yaml)
 
-This work is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/3.0/it/deed.en">Creative Commons Attribution-ShareAlike 3.0 IT License</a>.
-<br/><a rel="license" href="https://creativecommons.org/licenses/by-sa/3.0/it/deed.en"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
+This work is licensed under GNU AGPLv3.
 
 Commissioned by & Data credits to <br/>
 <a href="https://www.arpa.veneto.it/"><img src="https://github.com/inkode-it/Arpav-PPCV/raw/main/public/img/logo_arpav.png" alt="ARPAV" style="background-color:white;padding:4px"></a>
@@ -15,7 +14,7 @@ A previous version had originally been developed by [inkode](http://inkode.it)
 
 ---
 
-This repository contains source code for the backend components of the ARPAV-PPCV platform.
+This repository contains source code for the backend components of the ARPAV cline platform.
 
 Its main goal is to serve climate-related data in the form of both historical observations and forecast models.
 
@@ -65,7 +64,7 @@ of doing `poetry install`.
 
 ### Configuration
 
-This application is configured via environment variables. By defaul all settings are prefixed with `ARPAV_PPCV__`, but
+This application is configured via environment variables. By default, all settings are prefixed with `ARPAV_PPCV__`, but
 this can also be modified if needed. The system recognizes the following environment variables:
 
 - `ARPAV_PPCV__DEBUG` - (bool - `False`) Whether the application runs in debug mode or not. Debug mode outputs more logging
@@ -76,6 +75,7 @@ this can also be modified if needed. The system recognizes the following environ
 - `ARPAV_PPCV__PUBLIC_URL` - (str - `"http://localhost:5001"`) The public URL of the web application.
 - `ARPAV_PPCV__DB_DSN` - (pydantic.PostgresDsn - `"postgresql://user:password@localhost:5432/arpav_ppcv"`) Connection
   string to be used for accessing the backend database. This application only works with postgresql as the DB server.
+- `ARPAV_PPCV__DB_POOL_SIZE` - (int - `10`) Size of the DB connection pool.
 - `ARPAV_PPCV__TEST_DB_DSN` - (pydantic.PostgresDsn - `None`) Connection string used to connect to the test database.
   This is only needed for running the tests.
 - `ARPAV_PPCV__VERBOSE_DB_LOGS` - (bool - `False`) Whether to output verbose logs related to database-related commands.
@@ -92,27 +92,42 @@ this can also be modified if needed. The system recognizes the following environ
   WMS service. This is mainly useful for development, so avoid modifying it.
 - `ARPAV_PPCV__THREDDS_SERVER__NETCDF_SUBSET_SERVICE_URL_FRAGMENT` - (str - `"ncss/grid"`) URL fragment used by the
   THREDDS server's NetCDF subset service. This is mainly useful for development, so avoid modifying it.
+- `ARPAV_PPCV__THREDDS_SERVER__OPENDAP_SERVICE_URL_FRAGMENT` - (str - `"dodsC"`) URL fragment used by the
+  THREDDS server's OPeNDAP service. This is mainly useful for development, so avoid modifying it.
+- `ARPAV_PPCV__THREDDS_SERVER__FILE_DOWNLOAD_SERVICE_URL_FRAGMENT` - (str - `"fileServer"`) URL fragment used by the
+  THREDDS server's file download service. This is mainly useful for development, so avoid modifying it.
 - `ARPAV_PPCV__THREDDS_SERVER__UNCERTAINTY_VISUALIZATION_SCALE_RANGE` - (tuple[float, float] - `(0, 9)`) - Min, max
   values for the uncertainty pattern used in the WMS uncertainty visualization display.
-- `ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL` - (str - "http://localhost:3000") Base URL of the Martin vector tile server.
-- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS` - (int - 10_000) Distance to use when looking for the nearest
-  observation station.
+- `ARPAV_PPCV__PALETTES_DIR` - (Path - "data/palettes") Path to the WMS palettes
+- `ARPAV_PPCV__PALETTE_NUM_STOPS` - (int - 5) How many intervals should the WMS color scale have
+- `ARPAV_PPCV__TRANSPARENT_IMAGES_DIR` - (Path - "data/transparents") Path to the directory that contains transparent
+  PNGs. This is used to reply fast and avoid contacting the THREDDS server for WMS requests that are known to be
+  returning and empty image
+- `ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL` - (str - "http://localhost:5001/vector-tiles") Base URL of the Martin
+  vector tile server.
+- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS_FORECASTS` - (int - 1000) Distance in meters to use when looking for the
+  nearest observation station in the climate projections sections.
+- `ARPAV_PPCV__NEAREST_STATION_RADIUS_METERS_HISTORICAL` - (int - 2500) Distance in meters to use when looking for
+  the nearest observation station in the historical sections.
 - `ARPAV_PPCV__PREFECT__NUM_FLOW_RETRIES` - (int - 5) Number of times a prefect flow will retry when it fails
 - `ARPAV_PPCV__PREFECT__FLOW_RETRY_DELAY_SECONDS` - (int - 5) How many seconds should prefect wait after retrying a failed flow
-- `ARPAV_PPCV__PREFECT__NUM_TASK_RETRIES` - (int - 5) Number of times a prefect task will retry when it fails
-- `ARPAV_PPCV__PREFECT__TASK_RETRY_DELAY_SECONDS` - (int - 5) How many seconds should prefect wait after retrying a failed task
+- `ARPAV_PPCV__PREFECT__NUM_TASK_RETRIES` - (int - 10) Number of times a prefect task will retry when it fails
+- `ARPAV_PPCV__PREFECT__TASK_RETRY_DELAY_SECONDS` - (int - 10) How many seconds should prefect wait after retrying a failed task
 - `ARPAV_PPCV__PREFECT__OBSERVATION_STATIONS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 1 * * 1"`) Cron schedule for
   running the flow that refreshes observation stations. The default value should be read like this: run once every week,
   at 01:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_MONTHLY_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 2 * * 1"`) Cron
-  schedule for running the flow that refreshes monthly measurements. The default value should be read like this: run
+- `ARPAV_PPCV__PREFECT__OBSERVATION_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 2 * * 1"`) Cron
+  schedule for running the flow that refreshes observation measurements. The default value should be read like this: run
   once every week, at 02:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_SEASONAL_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 3 * * 1"`) Cron
-  schedule for running the flow that refreshes seasonal measurements. The default value should be read like this: run
-  once every week, at 03:00 on Monday
-- `ARPAV_PPCV__PREFECT__OBSERVATION_YEARLY_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 4 * * 1"`) Cron
-  schedule for running the flow that refreshes yearly measurements. The default value should be read like this: run
-  once every week, at 04:00 on Monday
+- `ARPAV_PPCV__PREFECT__STATION_VARIABLES_REFRESHER_FLOW_CRON_SCHEDULE` - (str - `"0 5 * * 1"`) Cron
+  schedule for running the flow that refreshes the climatic indicators which are available in each observation
+  station. The default value should be read like this: run once every week, at 05:00 on Monday
+- `ARPAV_PPCV__PREFECT__ARPAV_REST_API_TASK_CONCURRENCY_LIMIT` - (int - 20) How many tasks that use the third-party
+  ARPAV REST API are allowed to run concurrently
+- `ARPAV_PPCV__PREFECT__ARPAFVG_REST_API_TASK_CONCURRENCY_LIMIT` - (int - 20) How many tasks that use the third-party
+  ARPA FVG REST API are allowed to run concurrently
+- `ARPAV_PPCV__PREFECT__USE_DB_TASK_CONCURRENCY_LIMIT` - (int - 5) How many tasks that use the system DB are allowed
+  to run concurrently
 - `ARPAV_PPCV__V2_API_MOUNT_PREFIX` - (str - "/api/v2") URL prefix of the web application API. Do not modify this unless
   you know what you are doing, as other parts of the system rely on it.
 - `ARPAV_PPCV__LOG_CONFIG_FILE` - (Path - `None`) - Path to the config file for the logging of the application.
@@ -129,16 +144,65 @@ this can also be modified if needed. The system recognizes the following environ
 - `ARPAV_PPCV__CORS_ORIGINS` - (list[str] - `[]`) Origins that are allowed to make cross-origin requests.
 - `ARPAV_PPCV__CORS_METHODS` - (list[str] - `[]`) Methods allowed for cross-origin requests.
 - `ARPAV_PPCV__ALLOW_CORS_CREDENTIALS` - (bool - `False`) Whether to allow credentials on cross-origin requests.
+- `ARPAV_PPCV__NUM_UVICORN_WORKER_PROCESSES` - (int - `1`) Number of web workers that should be used to process
+  requests. The default value is only suitable for development
+- `ARPAV_PPCV__HTTP_CLIENT_TIMEOUT_SECONDS` - (float - `30.0`) How many seconds before timing out HTTP requests for
+  upstream services (THREDDS, third-party APIs, etc.)
+- `ARPAV_PPCV__ARPAV_OBSERVATIONS_BASE_URL` - (str - `"https://api.arpa.veneto.it/REST/v1"`) Base URL of the ARPAV
+  third-party REST API
+- `ARPAV_PPCV__ARPAFVG_OBSERVATIONS_BASE_URL` - (str - `"https://api.meteo.fvg.it"`) Base URL of the ARPA FVG
+  third-party REST API
+- `ARPAV_PPCV__ARPAFVG_AUTH_TOKEN` - (str - `"changeme"`) Authentication token for the ARPA FVG third-party REST API
+- `ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST` - (list - `"[]"`) List of observation station codes that shall be
+  ignored when querying upstream third-party REST APIs
 
 
 ### Operations
 
-##### Accessing the CLI
+#### Manually refreshing stations and measurements
 
-The CLI is named `arpav-ppcv`. When running under docker compose, it can be used with the following incantation:
+After having stood up the docker stack, observation stations and measurements will be automatically refreshed
+periodically, with a weekly frequency. The first time however, it is convenient to do a manual refresh, at least for
+the observation stations, as it also requires a reboot of the martin tile server:
 
 ```shell
-docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv <sub-command>
+# this should take around 5 minutes to run
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline observations-harvester refresh-stations
+
+# now restart the martin container
+
+# this one will take a while to finish
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline observations-harvester refresh-measurements
+```
+
+##### Translations
+
+```shell
+# look for new translatable strings in the codebase
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations extract
+
+# update existing catalogs with the new strings found in the previous step
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations update
+```
+
+Now use your favorite editor (with [poedit](https://poedit.net/) being a possible choice) to translate the
+strings present in these files:
+
+- `arpav_cline/translations/en/LC_MESSAGES/messages.po`
+- `arpav_cline/translations/it/LC_MESSAGES/messages.po`
+
+Finally, compile the translation files:
+
+```shell
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline translations compile
+```
+
+##### Accessing the CLI
+
+The CLI is named `arpav-cline`. When running under docker compose, it can be used with the following incantation:
+
+```shell
+docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline <sub-command>
 ```
 
 There are numerous sub-commands and each may accept additional arguments, so please check the help of the sub-command
@@ -147,7 +211,7 @@ you want to run, by passing the `--help` flag.
 For example, running the web application  server can be achieved with:
 
 ```shell
-docker exec -ti poetry run arpav-ppcv run-server
+docker exec -ti poetry run arpav-cline run-server
 ```
 
 ##### Accessing the web API
@@ -184,19 +248,19 @@ dev environment is located at individual devs machine(s). In order to get a work
 - The system will eventually be initialized. Now bootstrap the system by running:
 
     ```shell
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv db upgrade
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap municipalities
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap observation-variables
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap coverage-configuration-parameters
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv bootstrap coverage-configurations
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline db upgrade
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap municipalities
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap observation-variables
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap coverage-configuration-parameters
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline bootstrap coverage-configurations
     ```
 
 - If needed, you can download some NetCDF datasets from the remote THREDDS server by running
-  the `arpav-ppcv dev import-thredds-datasets` command. Check its help for more detail. As an example:
+  the `arpav-cline dev import-thredds-datasets` command. Check its help for more detail. As an example:
 
     ```shell
     # downloads all su30 netcdf datasets in order to use them in the dev environment
-    docker exec -ti arpav-ppcv-webapp-1 poetry run arpav-ppcv dev import-thredds-datasets \
+    docker exec -ti arpav-cline-webapp-1 poetry run arpav-cline dev import-thredds-datasets \
         https://thredds.arpa.veneto.it/thredds \
         /home/appuser/data/datasets \
         --name-filter su30
@@ -213,27 +277,63 @@ dev environment is located at individual devs machine(s). In order to get a work
   order to check which env variables are set and how to further interact with the system
 
 
+##### Standing up the frontend for development
+
+The frontend uses another code repository:
+
+https://github.com/geobeyond/arpav-cline-frontend
+
+It can be useful to have it running in dev mode alongside the backend, for development purposes. More
+detailed instructions are available in the project's README file, but in a nutshell:
+
+```shell
+
+# ensure you are running node v16
+nvm use 16
+
+# 1. put these in the environment and then run the `inject-env` command
+ARPAV_BACKEND_API_BASE_URL=http://localhost:8877 \
+ARPAV_TOLGEE_BASE_URL=http://localhost:8899 \
+yarn inject-env public
+
+# 2. launch the frontend
+yarn start
+```
+
+
+
 ##### Building the docker image locally
 
 Build the docker image by running this command:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend
+docker build \
+    --tag ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend \
+    --label "org.opencontainers.image.source=https://github.com/geobeyond/arpav-cline-backend" \
+    --build-arg "GIT_COMMIT=$(git rev-parse --short HEAD)" \
+    --file docker/Dockerfile \
+    .
 ```
 
 If you want to build an image for the current branch, such as when you added a new third-party dependency as part of
 an ongoing task, add the branch name to the build image:
 
 ```shell
-docker build --tag ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:$(git branch --show-current)
+docker build \
+    --tag ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:$(git branch --show-current) \
+    --file docker/Dockerfile \
+    .
 ```
 
 In order to use this custom named image on your local development, set the `CURRENT_GIT_BRANCH` env variable before
 launching the docker compose stack, _i.e._:
 
 ```shell
-export CURRENT_GIT_BRANCH=$(git branch --show-current)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+CURRENT_GIT_BRANCH=$(git branch --show-current) \
+    docker compose \
+    -f docker/compose.yaml \
+    -f docker/compose.dev.yaml \
+    up -d --force-recreate
 ```
 
 
@@ -262,23 +362,7 @@ Relevant places to look for configuration in the staging environment, in additio
 
 ##### Production environment
 
-Deployments to the production environment are automated. They are based on git tags and are governed by a two-stage
-workflow, orchestrated via github actions:
-
-- When a new git tag is pushed into the code repository, a new docker image is built and published to the container
-  registry;
-- After the publication of the docker image in the registry, github sends a request to the production environment,
-  notifying it of the availability of this new tagged docker image;
-- The production environment's infrastructure then takes care of downloading the new docker image and restarting its
-  own deployment in such a way as to have the system run with the updated code.
-
-
-###### NOTES
-
-- In order for this strategy to work, there are a couple of sensitive details which must be stored on the code
-  repository. Access to this information should therefore be controlled
-- Since the production deployment is triggered by pushing a new git tag to the repository, this is a privileged action,
-and therefore should only be granted to whomever is responsible for managing production deployments.
+Production deployments are documented in the wiki
 
 
 ### Testing
@@ -291,7 +375,9 @@ to the repository's `main` branch. This is triggered by means of a github action
 - Running the following command:
 
     ```shell
-    dagger run poetry run python tests/ci/main.py \
+    # using `dagger --progress plain` because it sometimes locks up the terminal - probably because of
+    # https://github.com/dagger/dagger/issues/7160
+    dagger --progress plain run poetry run python tests/ci/main.py \
         --with-formatter \
         --with-linter \
         --with-tests
@@ -301,6 +387,15 @@ Testing uses these main additional libraries/frameworks:
 
 - pytest
 - ruff
+
+
+It is also possible, and very likely faster, to run the tests from inside an already up development docker
+compose stack. This involves running the following commands:
+
+````shell
+docker exec -ti arpav-cline-webapp-1 poetry install --with dev
+docker exec -ti arpav-cline-webapp-1 poetry run pytest
+````
 
 
 ##### Git pre-commit

@@ -30,6 +30,7 @@ _DO_NOT_UPDATE_FLAG_NAME = "--no-auto-update"
 
 @dataclasses.dataclass
 class DeploymentConfiguration:
+    arpa_fvg_auth_token_path: Path
     backend_image: str
     compose_project_name: str = dataclasses.field(init=False)
     compose_template: str
@@ -187,8 +188,11 @@ class DeploymentConfiguration:
     @classmethod
     def from_config_parser(cls, config_parser: configparser.ConfigParser):
         tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
-        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_path")
+        tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_key_path")
         return cls(
+            arpa_fvg_auth_token_path=Path(
+                config_parser["main"]["arpa_fvg_auth_token_path"]
+            ),
             backend_image=config_parser["main"]["backend_image"],
             compose_template=config_parser["main"]["compose_template"],
             db_image_tag=config_parser["main"]["db_image_tag"],
@@ -380,7 +384,8 @@ class _GenerateComposeFile:
 
     def handle(self) -> None:
         compose_template_path = (
-            self.config.deployment_root / self.config.compose_template
+            self.config.deployment_files_repo_clone_destination
+            / self.config.compose_template
         )
         compose_template = Template(compose_template_path.read_text())
 
@@ -414,6 +419,8 @@ class _ComposeCommandExecutor:
 
     def _run_compose_command(self, suffix: str) -> subprocess.CompletedProcess:
         compose_file_path = self.config.deployment_root / "compose.yaml"
+        if not compose_file_path.exists():
+            raise FileNotFoundError()
         docker_compose_command = f"docker compose -f {compose_file_path} {suffix}"
         return subprocess.run(
             shlex.split(docker_compose_command),
@@ -438,6 +445,8 @@ class _StopCompose(_ComposeCommandExecutor):
         print("Stopping docker compose stack...")
         try:
             self._run_compose_command("down")
+        except FileNotFoundError:
+            logger.info("Failed to stop docker compose stack - compose file not found")
         except subprocess.CalledProcessError as exc:
             if exc.returncode == 14:
                 logger.info("docker compose stack was not running, no need to stop")
@@ -463,7 +472,7 @@ class _CompileTranslations:
         subprocess.run(
             shlex.split(
                 f"docker exec {self.config.executable_webapp_service_name} poetry run "
-                f"arpav-ppcv translations compile"
+                f"arpav-cline translations compile"
             ),
             check=True,
         )
@@ -478,7 +487,7 @@ class _RunMigrations:
         subprocess.run(
             shlex.split(
                 f"docker exec {self.config.executable_webapp_service_name} poetry run "
-                f"arpav-ppcv db upgrade"
+                f"arpav-cline db upgrade"
             ),
             check=True,
         )
@@ -601,7 +610,7 @@ if __name__ == "__main__":
         help=(
             "Full name of the docker image to be used for the backend. "
             "Example: "
-            "'ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:v1.0.0'. "
+            "'ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:v1.0.0'. "
             "Defaults to whatever is specified in the configuration file."
         ),
     )
@@ -610,7 +619,7 @@ if __name__ == "__main__":
         "--frontend-image",
         help=(
             "Full name of the docker image to be used for the frontend. "
-            "Example: 'ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:v1.0.0'. "
+            "Example: 'ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:v1.0.0'. "
             "Defaults to whatever is specified in the configuration file."
         ),
     )

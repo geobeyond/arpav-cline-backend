@@ -5,6 +5,20 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     curl \
     apt-utils \
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libasound2 \
+    libatspi2.0-0 \
     tini
 
 # download poetry
@@ -35,6 +49,8 @@ COPY --chown=appuser:appuser pyproject.toml poetry.lock ./
 
 RUN poetry install --no-root --only main
 
+RUN poetry run playwright install chromium
+
 EXPOSE 8000
 
 ARG GIT_COMMIT
@@ -52,6 +68,6 @@ RUN echo $GIT_COMMIT > /home/appuser/git-commit.txt
 RUN poetry run python -c "import compileall; compileall.compile_path(maxlevels=10)"
 
 # use tini as the init process
-ENTRYPOINT ["tini", "-g", "--", "poetry", "run", "arpav-ppcv"]
+ENTRYPOINT ["tini", "-g", "--", "poetry", "run", "arpav-cline"]
 
 CMD ["run-server"]

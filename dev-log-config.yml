@@ -1,7 +1,7 @@
 # uvicorn logging configuration suitable for development
 #
 # This mostly copies the default uvicorn config and then adds an extra logger
-# that logs messages of the `arpav_ppcv` logger
+# that logs messages of the `arpav_cline` logger
 
 version: 1
 disable_existing_loggers: false
@@ -46,7 +46,7 @@ loggers:
     level: INFO
     propagate: false
 
-  arpav_ppcv:
+  arpav_cline:
     handlers:
       - default
     level: DEBUG

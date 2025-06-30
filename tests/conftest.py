@@ -2,8 +2,11 @@ import csv
 import datetime as dt
 import io
 import random
+from pathlib import Path
+from unittest import mock
 
 import geojson_pydantic
+import pandas as pd
 import pytest
 import shapely.io
 import shapely.geometry
@@ -14,26 +17,145 @@ from fastapi.testclient import TestClient
 from geoalchemy2.shape import from_shape
 from typer.testing import CliRunner
 
-from arpav_ppcv import (
+from arpav_cline import (
     config,
-    database,
+    db,
     main,
 )
-from arpav_ppcv.schemas import (
+from arpav_cline.bootstrapper.yearperiods import (
+    generate_forecast_year_period_groups,
+    generate_historical_year_period_groups,
+)
+from arpav_cline.schemas import (
+    base,
+    climaticindicators,
+    dataseries,
     coverages,
     observations,
+    static,
 )
-from arpav_ppcv.webapp import dependencies
-from arpav_ppcv.webapp.app import create_app_from_settings
-from arpav_ppcv.webapp.api_v2.app import create_app as create_v2_app
-from arpav_ppcv.bootstrapper.configurationparameters import (
-    generate_configuration_parameters as bootstrappable_configuration_parameters,
+from arpav_cline.webapp import dependencies
+from arpav_cline.webapp.app import create_app_from_settings
+from arpav_cline.webapp.api_v2.app import create_app as create_v2_app
+from arpav_cline.bootstrapper.forecastmodels import (
+    generate_forecast_models,
+    generate_forecast_model_groups,
 )
-from arpav_ppcv.bootstrapper.coverage_configurations.forecast import (
-    tas as tas_forecast_bootstrappable_configurations,
+from arpav_cline.bootstrapper.forecasttimewindows import generate_forecast_time_windows
+from arpav_cline.bootstrapper.spatialregions import generate_spatial_regions
+from arpav_cline.bootstrapper.climaticindicators.cdd import (
+    generate_climatic_indicators as generate_cdd_climatic_indicators,
 )
-from arpav_ppcv.bootstrapper.variables import (
-    generate_variable_configurations as bootstrappable_variables,
+from arpav_cline.bootstrapper.climaticindicators.cdds import (
+    generate_climatic_indicators as generate_cdds_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.fd import (
+    generate_climatic_indicators as generate_fd_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.hdds import (
+    generate_climatic_indicators as generate_hdds_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.hwdi import (
+    generate_climatic_indicators as generate_hwdi_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.pr import (
+    generate_climatic_indicators as generate_pr_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.r95ptot import (
+    generate_climatic_indicators as generate_r95ptot_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.snwdays import (
+    generate_climatic_indicators as generate_snwdays_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.su30 import (
+    generate_climatic_indicators as generate_su30_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.tas import (
+    generate_climatic_indicators as generate_tas_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.tasmax import (
+    generate_climatic_indicators as generate_tasmax_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.tasmin import (
+    generate_climatic_indicators as generate_tasmin_climatic_indicators,
+)
+from arpav_cline.bootstrapper.climaticindicators.tr import (
+    generate_climatic_indicators as generate_tr_climatic_indicators,
+)
+
+from arpav_cline.bootstrapper.forecast_coverage_configurations.cdd import (
+    generate_forecast_coverage_configurations as generate_cdd_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.cdds import (
+    generate_forecast_coverage_configurations as generate_cdds_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.fd import (
+    generate_forecast_coverage_configurations as generate_fd_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.hdds import (
+    generate_forecast_coverage_configurations as generate_hdds_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.hwdi import (
+    generate_forecast_coverage_configurations as generate_hwdi_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.pr import (
+    generate_forecast_coverage_configurations as generate_pr_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.r95ptot import (
+    generate_forecast_coverage_configurations as generate_r95ptot_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.snwdays import (
+    generate_forecast_coverage_configurations as generate_snwdays_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.su30 import (
+    generate_forecast_coverage_configurations as generate_su30_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.tas import (
+    generate_forecast_coverage_configurations as generate_tas_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.tasmax import (
+    generate_forecast_coverage_configurations as generate_tasmax_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.tasmin import (
+    generate_forecast_coverage_configurations as generate_tasmin_forecast_coverage_configurations,
+)
+from arpav_cline.bootstrapper.forecast_coverage_configurations.tr import (
+    generate_forecast_coverage_configurations as generate_tr_forecast_coverage_configurations,
+)
+
+from arpav_cline.bootstrapper.historical_coverage_configurations.cdds import (
+    generate_historical_coverage_configurations as generate_cdds_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.fd import (
+    generate_historical_coverage_configurations as generate_fd_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.hdds import (
+    generate_historical_coverage_configurations as generate_hdds_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.pr import (
+    generate_historical_coverage_configurations as generate_pr_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.su30 import (
+    generate_historical_coverage_configurations as generate_su30_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.tas import (
+    generate_historical_coverage_configurations as generate_tas_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.tasmax import (
+    generate_historical_coverage_configurations as generate_tasmax_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.tasmin import (
+    generate_historical_coverage_configurations as generate_tasmin_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.historical_coverage_configurations.tr import (
+    generate_historical_coverage_configurations as generate_tr_historical_coverage_configurations,
+)
+from arpav_cline.bootstrapper.overview_series_configurations import (
+    generate_forecast_overview_series_configurations,
+    generate_observation_overview_series_configurations,
+)
+from arpav_cline.bootstrapper.observation_series_configurations import (
+    generate_observation_series_configurations,
 )
 
 
@@ -113,21 +235,21 @@ def cli_app(settings, arpav_db):
 
 
 @pytest.fixture()
-def sample_real_station(arpav_db_session) -> observations.Station:
-    db_station = observations.Station(
-        code="91",
-        altitude_m=1621,
-        name="Passo Monte Croce Comelico",
-        type_="meteo",
-        active_since=dt.date(1986, 10, 30),
+def sample_real_station(arpav_db_session) -> observations.ObservationStation:
+    db_station = observations.ObservationStation(
+        code="arpa_v-104",
+        altitude_m=67,
+        name="Villafranca di Verona",
+        active_since=dt.date(1990, 11, 20),
         active_until=None,
         geom=from_shape(
             shapely.io.from_geojson(
                 geojson_pydantic.Point(
-                    type="Point", coordinates=(12.42397152, 46.65215334)
+                    type="Point", coordinates=(10.83262812, 45.3724202)
                 ).model_dump_json()
             )
         ),
+        managed_by=static.ObservationStationManager.ARPAV,
     )
     arpav_db_session.add(db_station)
     arpav_db_session.commit()
@@ -136,12 +258,13 @@ def sample_real_station(arpav_db_session) -> observations.Station:
 
 
 @pytest.fixture()
-def sample_stations(arpav_db_session) -> list[observations.Station]:
+def sample_stations(arpav_db_session) -> list[observations.ObservationStation]:
     db_stations = []
     for i in range(50):
+        manager = random.choice(list(static.ObservationStationManager))
         db_stations.append(
-            observations.Station(
-                code=f"teststation{i}",
+            observations.ObservationStation(
+                code=f"{manager.value}-{i}",
                 geom=from_shape(
                     shapely.io.from_geojson(
                         geojson_pydantic.Point(
@@ -151,7 +274,7 @@ def sample_stations(arpav_db_session) -> list[observations.Station]:
                 ),
                 altitude_m=2,
                 name=f"teststation{i}name",
-                type_="sometype",
+                managed_by=manager,
             )
         )
     for db_station in db_stations:
@@ -163,227 +286,321 @@ def sample_stations(arpav_db_session) -> list[observations.Station]:
 
 
 @pytest.fixture()
-def sample_variables(arpav_db_session) -> list[observations.Variable]:
-    db_variables = []
-    for i in range(20):
-        db_variables.append(
-            observations.Variable(
-                name=f"testvariable{i}",
-                description=f"Description for test variable {i}",
-            )
-        )
-    for db_variable in db_variables:
-        arpav_db_session.add(db_variable)
-    arpav_db_session.commit()
-    for db_station in db_variables:
-        arpav_db_session.refresh(db_station)
-    return db_variables
-
-
-@pytest.fixture()
-def sample_real_variables(arpav_db_session) -> list[observations.Variable]:
+def sample_real_spatial_regions(
+    arpav_db_session,
+) -> list[base.SpatialRegion]:
     created = []
-    for var_to_create in bootstrappable_variables():
-        created.append(database.create_variable(arpav_db_session, var_to_create))
+    geoms_base_path = Path(__file__).parents[1] / "data/spatial-regions"
+    for spatial_region_to_create in generate_spatial_regions(geoms_base_path):
+        created.append(
+            db.create_spatial_region(arpav_db_session, spatial_region_to_create)
+        )
     return created
 
 
 @pytest.fixture()
-def sample_monthly_measurements(
-    arpav_db_session, sample_variables, sample_stations
-) -> list[observations.MonthlyMeasurement]:
-    db_monthly_measurements = []
-    unique_measurement_instances = set()
-    while len(unique_measurement_instances) < 200:
-        sampled_date = dt.date(random.randrange(1920, 2020), random.randrange(1, 13), 1)
-        sampled_station_id = random.choice(sample_stations).id
-        sampled_variable_id = random.choice(sample_variables).id
-        unique_measurement_instances.add(
-            (sampled_date, sampled_station_id, sampled_variable_id)
-        )
-
-    for date_, station_id, variable_id in unique_measurement_instances:
-        db_monthly_measurements.append(
-            observations.MonthlyMeasurement(
-                value=random.random() * 20 - 10,
-                date=date_,
-                station_id=station_id,
-                variable_id=variable_id,
-            )
-        )
-    for db_monthly_measurement in db_monthly_measurements:
-        arpav_db_session.add(db_monthly_measurement)
-    arpav_db_session.commit()
-    for db_station in db_monthly_measurements:
-        arpav_db_session.refresh(db_station)
-    return db_monthly_measurements
-
-
-@pytest.fixture()
-def sample_real_configuration_parameters(arpav_db_session):
-    params_to_create = bootstrappable_configuration_parameters()
-    created_params = []
-    for param_to_create in params_to_create:
-        created_param = database.create_configuration_parameter(
-            arpav_db_session, param_to_create
-        )
-        created_params.append(created_param)
-    return created_params
-
-
-@pytest.fixture()
-def sample_configuration_parameters(arpav_db_session):
-    db_conf_params = []
-    for i in range(5):
-        allowed_values = []
-        for j in range(4):
-            allowed_values.append(
-                coverages.ConfigurationParameterValue(
-                    internal_value=f"fake-param{j}",
-                    name=f"fake_parameter_value{j}",
-                    description_english=f"Description for fake param value {j}",
-                )
-            )
-        db_conf_params.append(
-            coverages.ConfigurationParameter(
-                name=f"fake_parameter_{i}",
-                description_english=f"Description for fake param {i}",
-                allowed_values=allowed_values,
-            )
-        )
-    for db_conf_param in db_conf_params:
-        arpav_db_session.add(db_conf_param)
-    arpav_db_session.commit()
-    for db_conf_param in db_conf_params:
-        arpav_db_session.refresh(db_conf_param)
-    return db_conf_params
-
-
-@pytest.fixture()
-def sample_coverage_configurations(
-    arpav_db_session, sample_configuration_parameters
-) -> list[coverages.CoverageConfiguration]:
-    db_cov_confs = []
-    for i in range(10):
-        params_to_use = random.sample(sample_configuration_parameters, k=2)
-        param_values_to_use = []
-        for param in params_to_use:
-            possible_value = coverages.ConfigurationParameterPossibleValue(
-                configuration_parameter_value=random.choice(param.allowed_values)
-            )
-            param_values_to_use.append(possible_value)
-        db_cov_confs.append(
-            coverages.CoverageConfiguration(
-                name=f"coverage_configuration{i}",
-                netcdf_main_dataset_name="some-dataset-name",
-                thredds_url_pattern=(
-                    f"the_thredds-param_"
-                    f"{{"
-                    f"{random.choice(param_values_to_use).configuration_parameter_value.configuration_parameter.name}"
-                    f"}}"
-                ),
-                palette="fake",
-                possible_values=param_values_to_use,
-            )
-        )
-    for db_cov_conf in db_cov_confs:
-        arpav_db_session.add(db_cov_conf)
-    arpav_db_session.commit()
-    for db_cov_conf in db_cov_confs:
-        arpav_db_session.refresh(db_cov_conf)
-    return db_cov_confs
-
-
-@pytest.fixture()
-def sample_real_coverage_configurations(
+def sample_real_forecast_models(
     arpav_db_session,
-    sample_real_configuration_parameters,
-    sample_real_variables,
+) -> list[coverages.ForecastModel]:
+    created = []
+    for forecast_model_to_create in generate_forecast_models():
+        created.append(
+            db.create_forecast_model(arpav_db_session, forecast_model_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_historical_year_period_groups(
+    arpav_db_session,
+) -> list[coverages.HistoricalYearPeriodGroup]:
+    created = []
+    for year_group_create in generate_historical_year_period_groups():
+        created.append(
+            db.create_historical_year_period_group(arpav_db_session, year_group_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_year_period_groups(
+    arpav_db_session,
+) -> list[coverages.ForecastYearPeriodGroup]:
+    created = []
+    for year_group_create in generate_forecast_year_period_groups():
+        created.append(
+            db.create_forecast_year_period_group(arpav_db_session, year_group_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_model_groups(
+    arpav_db_session,
+    sample_real_forecast_models,
+) -> list[coverages.ForecastModelGroup]:
+    created = []
+    forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
+
+    for item_create in generate_forecast_model_groups(forecast_model_ids):
+        created.append(db.create_forecast_model_group(arpav_db_session, item_create))
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_time_windows(
+    arpav_db_session,
+) -> list[coverages.ForecastTimeWindow]:
+    created = []
+    for time_window_to_create in generate_forecast_time_windows():
+        created.append(
+            db.create_forecast_time_window(arpav_db_session, time_window_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_climatic_indicators(
+    arpav_db_session,
+    sample_real_forecast_models,
+) -> list[climaticindicators.ClimaticIndicator]:
+    forecast_model_ids = {fm.name: fm.id for fm in sample_real_forecast_models}
+    to_create = []
+    for handler in (
+        generate_cdd_climatic_indicators,
+        generate_cdds_climatic_indicators,
+        generate_fd_climatic_indicators,
+        generate_hdds_climatic_indicators,
+        generate_hwdi_climatic_indicators,
+        generate_pr_climatic_indicators,
+        generate_r95ptot_climatic_indicators,
+        generate_snwdays_climatic_indicators,
+        generate_su30_climatic_indicators,
+        generate_tas_climatic_indicators,
+        generate_tasmax_climatic_indicators,
+        generate_tasmin_climatic_indicators,
+        generate_tr_climatic_indicators,
+    ):
+        to_create.extend(handler(forecast_model_ids))
+    created = []
+    for indicator_to_create in to_create:
+        created.append(
+            db.create_climatic_indicator(arpav_db_session, indicator_to_create)
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_observation_series_configurations(
+    arpav_db_session,
+    sample_real_climatic_indicators,
 ):
-    all_vars = database.collect_all_variables(arpav_db_session)
-    all_conf_param_values = database.collect_all_configuration_parameter_values(
-        arpav_db_session
-    )
-    cov_confs_to_create = (
-        tas_forecast_bootstrappable_configurations.generate_configurations(
-            conf_param_values={
-                (pv.configuration_parameter.name, pv.name): pv
-                for pv in all_conf_param_values
-            },
-            variables={v.name: v for v in all_vars},
-        )
-    )
-    created_cov_confs = {}
-    for cov_conf_to_create in cov_confs_to_create:
-        cov_conf = database.create_coverage_configuration(
-            arpav_db_session, cov_conf_to_create
-        )
-        created_cov_confs[cov_conf.name] = cov_conf
-
-    to_update = {}
-    for name, related_names in {
-        **tas_forecast_bootstrappable_configurations.get_related_map(),
-    }.items():
-        to_update[name] = {
-            "related": related_names,
-        }
-
-    for name, uncertainties in {
-        **tas_forecast_bootstrappable_configurations.get_uncertainty_map(),
-    }.items():
-        info = to_update.setdefault(name, {})
-        info["uncertainties"] = uncertainties
-    for name, info in to_update.items():
-        main_cov_conf = created_cov_confs[name]
-        secondaries = info.get("related")
-        uncertainties = info.get("uncertainties")
-        update_kwargs = {}
-        if secondaries is not None:
-            secondary_cov_confs = [
-                cc for name, cc in created_cov_confs.items() if name in secondaries
-            ]
-            update_kwargs["secondary_coverage_configurations_ids"] = [
-                cc.id for cc in secondary_cov_confs
-            ]
-        else:
-            update_kwargs["secondary_coverage_configurations_ids"] = []
-        if uncertainties is not None:
-            lower_uncert_id = [
-                cc.id
-                for name, cc in created_cov_confs.items()
-                if name == uncertainties[0]
-            ][0]
-            upper_uncert_id = [
-                cc.id
-                for name, cc in created_cov_confs.items()
-                if name == uncertainties[1]
-            ][0]
-            update_kwargs.update(
-                uncertainty_lower_bounds_coverage_configuration_id=lower_uncert_id,
-                uncertainty_upper_bounds_coverage_configuration_id=upper_uncert_id,
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators
+    }
+    to_create = generate_observation_series_configurations(climatic_indicator_ids)
+    created = []
+    for observation_series_conf_to_create in to_create:
+        created.append(
+            db.create_observation_series_configuration(
+                arpav_db_session, observation_series_conf_to_create
             )
-        cov_update = coverages.CoverageConfigurationUpdate(
-            **main_cov_conf.model_dump(
-                exclude={
-                    "uncertainty_lower_bounds_coverage_configuration_id",
-                    "uncertainty_upper_bounds_coverage_configuration_id",
-                    "secondary_coverage_configurations_ids",
-                    "possible_values",
-                }
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_observation_overview_series_configurations(
+    arpav_db_session,
+    sample_real_climatic_indicators,
+):
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators
+    }
+    to_create = generate_observation_overview_series_configurations(
+        climatic_indicator_ids
+    )
+    created = []
+    for series_conf_to_create in to_create:
+        created.append(
+            db.create_observation_overview_series_configuration(
+                arpav_db_session, series_conf_to_create
+            )
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_overview_series_configurations(
+    arpav_db_session,
+    sample_real_climatic_indicators,
+):
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators
+    }
+    to_create = generate_forecast_overview_series_configurations(climatic_indicator_ids)
+    created = []
+    for series_conf_to_create in to_create:
+        created.append(
+            db.create_forecast_overview_series_configuration(
+                arpav_db_session, series_conf_to_create
+            )
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_forecast_coverage_configurations(
+    arpav_db_session,
+    sample_real_spatial_regions,
+    sample_real_climatic_indicators,
+    sample_real_forecast_model_groups,
+    sample_real_forecast_time_windows,
+    sample_real_forecast_year_period_groups,
+    sample_real_observation_series_configurations,
+):
+    spatial_region_ids = {sr.name: sr.id for sr in sample_real_spatial_regions}
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators
+    }
+    forecast_model_group_ids = {
+        fmg.name: fmg.id for fmg in sample_real_forecast_model_groups
+    }
+    time_window_ids = {tw.name: tw.id for tw in sample_real_forecast_time_windows}
+    obs_series_confs_ids = {
+        osc.identifier: osc.id for osc in sample_real_observation_series_configurations
+    }
+    year_period_group_ids = {
+        ypg.name: ypg.id for ypg in sample_real_forecast_year_period_groups
+    }
+    to_create = []
+    for handler in (
+        generate_cdd_forecast_coverage_configurations,
+        generate_cdds_forecast_coverage_configurations,
+        generate_fd_forecast_coverage_configurations,
+        generate_hdds_forecast_coverage_configurations,
+        generate_hwdi_forecast_coverage_configurations,
+        generate_pr_forecast_coverage_configurations,
+        generate_r95ptot_forecast_coverage_configurations,
+        generate_snwdays_forecast_coverage_configurations,
+        generate_su30_forecast_coverage_configurations,
+        generate_tas_forecast_coverage_configurations,
+        generate_tasmax_forecast_coverage_configurations,
+        generate_tasmin_forecast_coverage_configurations,
+        generate_tr_forecast_coverage_configurations,
+    ):
+        to_create.extend(
+            handler(
+                climatic_indicator_ids=climatic_indicator_ids,
+                spatial_region_ids=spatial_region_ids,
+                forecast_time_window_ids=time_window_ids,
+                year_period_groups=year_period_group_ids,
+                forecast_model_groups=forecast_model_group_ids,
+                observation_series_configuration_ids=obs_series_confs_ids,
+            )
+        )
+    created = []
+    for forecast_cov_conf_to_create in to_create:
+        created.append(
+            db.create_forecast_coverage_configuration(
+                arpav_db_session, forecast_cov_conf_to_create
+            )
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_real_historical_coverage_configurations(
+    arpav_db_session,
+    sample_real_spatial_regions,
+    sample_real_climatic_indicators,
+    sample_real_historical_year_period_groups,
+    sample_real_observation_series_configurations,
+):
+    spatial_region_ids = {sr.name: sr.id for sr in sample_real_spatial_regions}
+    climatic_indicator_ids = {
+        ci.identifier: ci.id for ci in sample_real_climatic_indicators
+    }
+    obs_series_confs_ids = {
+        osc.identifier: osc.id for osc in sample_real_observation_series_configurations
+    }
+    year_period_group_ids = {
+        ypg.name: ypg.id for ypg in sample_real_historical_year_period_groups
+    }
+    to_create = []
+    for handler in (
+        generate_cdds_historical_coverage_configurations,
+        generate_fd_historical_coverage_configurations,
+        generate_hdds_historical_coverage_configurations,
+        generate_pr_historical_coverage_configurations,
+        generate_su30_historical_coverage_configurations,
+        generate_tas_historical_coverage_configurations,
+        generate_tasmax_historical_coverage_configurations,
+        generate_tasmin_historical_coverage_configurations,
+        generate_tr_historical_coverage_configurations,
+    ):
+        to_create.extend(
+            handler(
+                climatic_indicator_ids=climatic_indicator_ids,
+                spatial_region_ids=spatial_region_ids,
+                year_period_groups=year_period_group_ids,
+                observation_series_configuration_ids=obs_series_confs_ids,
+            )
+        )
+    created = []
+    for cov_conf_to_create in to_create:
+        created.append(
+            db.create_historical_coverage_configuration(
+                arpav_db_session, cov_conf_to_create
+            )
+        )
+    return created
+
+
+@pytest.fixture()
+def sample_tas_historical_data_series(
+    arpav_db_session,
+    settings,
+    sample_real_historical_coverage_configurations,
+    sample_tas_csv_data: dict[str, str],
+) -> dataseries.HistoricalDataSeries:
+    historical_cov = db.get_historical_coverage(
+        arpav_db_session, "historical-tas-absolute-annual-arpa_v-all_seasons-winter"
+    )
+    raw_data_buffer = io.StringIO(sample_tas_csv_data["tas"])
+    raw_data_buffer.seek(0)
+    df = pd.read_csv(raw_data_buffer)
+    df.index = pd.DatetimeIndex(pd.to_datetime(df["time"]))
+    series = df['tas[unit="degC"]']
+
+    with (
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_thredds_ncss_url",
+            return_value="some-fake-ncss-url",
+        ),
+        mock.patch(
+            "arpav_cline.db.historicalcoverages.HistoricalCoverageInternal"
+            ".get_wms_base_url",
+            return_value="some-fake-wms-url",
+        ),
+    ):
+        result = dataseries.HistoricalDataSeries(
+            coverage=static.StaticHistoricalCoverage.from_coverage(
+                historical_cov, settings.thredds_server
             ),
-            **update_kwargs,
-            possible_values=[
-                coverages.ConfigurationParameterPossibleValueUpdate(
-                    configuration_parameter_value_id=pv.configuration_parameter_value_id
-                )
-                for pv in main_cov_conf.possible_values
-            ],
+            dataset_type=static.DatasetType.MAIN,
+            location=shapely.geometry.Point(
+                df['longitude[unit="degrees_east"]'][0],
+                df['latitude[unit="degrees_north"]'][0],
+            ),
+            processing_method=static.HistoricalTimeSeriesProcessingMethod.NO_PROCESSING,
+            temporal_start=df.index[0].date(),
+            temporal_end=df.index[-1].date(),
         )
-        database.update_coverage_configuration(
-            arpav_db_session,
-            main_cov_conf,
-            cov_update,
-        )
+        series.name = result.identifier
+        result.data_ = series
+        return result
 
 
 @pytest.fixture()
@@ -441,11 +658,11 @@ def sample_tas_csv_data():
 
 
 @pytest.fixture()
-def sample_real_monthly_measurements(
+def sample_monthly_measurements(
     arpav_db_session,
-    sample_real_variables,
+    sample_real_climatic_indicators,
     sample_real_station,
-) -> observations.MonthlyMeasurement:
+) -> list[observations.ObservationMeasurement]:
     raw_measurements = io.StringIO(
         """
     value,date
@@ -898,18 +1115,19 @@ def sample_real_monthly_measurements(
     """.strip()
     )
     reader = csv.reader(raw_measurements, delimiter=",")
-    vars = {v.name: v for v in sample_real_variables}
+    indicators = {i.identifier: i.id for i in sample_real_climatic_indicators}
     measurements = []
     for idx, row in enumerate(reader):
         if idx == 0:  # skip the header
             continue
         value, raw_date = row[:2]
         measurements.append(
-            observations.MonthlyMeasurement(
-                station_id=sample_real_station.id,
-                variable_id=vars["TDd"].id,
+            observations.ObservationMeasurement(
                 value=float(value),
                 date=dt.datetime.strptime(raw_date, "%Y-%m-%d"),
+                measurement_aggregation_type=static.MeasurementAggregationType.MONTHLY,
+                climatic_indicator_id=indicators["tas-absolute-annual"],
+                observation_station_id=sample_real_station.id,
             )
         )
     for db_measurement in measurements:
@@ -926,7 +1144,7 @@ def _override_get_settings():
 
 
 def _override_get_db_engine(settings=Depends(dependencies.get_settings)):
-    yield database.get_engine(settings, use_test_db=True)
+    yield db.get_engine(settings, use_test_db=True)
 
 
 def _override_get_db_session(engine=Depends(dependencies.get_db_engine)):

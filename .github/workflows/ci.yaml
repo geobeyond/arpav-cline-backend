@@ -6,9 +6,10 @@ on:
   pull_request:
 
 env:
+  COLUMNS: 120
   PUBLISH_IMAGE: ${{ (github.ref_name == 'main' || github.ref_type == 'tag') && 'TRUE' || 'FALSE'}}
   IMAGE_TAG: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/arpav-ppcv-backend
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ github.event.repository.name }}
 
 jobs:
   run-dagger-ci:
@@ -52,5 +53,6 @@ jobs:
             --with-formatter
             --with-tests
             --with-load-tests
+            --with-api-checks
             ${{ env.PUBLISH_IMAGE == 'TRUE' && format('--publish-docker-image {0}:{1}', env.IMAGE_NAME, env.IMAGE_TAG)  || ''}}
           version: 0.9.9

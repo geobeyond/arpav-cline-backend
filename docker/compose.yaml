@@ -23,8 +23,8 @@
 # blocks with a name like `x-something`. Then we mark these as being YAML
 # anchors. Later in the file we refer to them using YAML aliases.
 
-x-prefect-image: &prefect-image "prefecthq/prefect:3.0.0rc17-python3.10"
-x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:latest"
+x-prefect-image: &prefect-image "prefecthq/prefect:3.1.13-python3.10"
+x-backend-image: &backend-image "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:latest"
 
 x-postgres-db-healthcheck: &postgres-db-healthcheck
   interval: 20s
@@ -53,7 +53,7 @@ x-prefect-server-healthcheck: &prefect-server-healthcheck
     else echo "+++++++++++++ Prefect server is not up+++++++++++++"; exit 1;
     fi
 
-name: arpav-ppcv
+name: arpav-cline
 
 services:
 
@@ -67,7 +67,7 @@ services:
       - traefik-users-file
 
   frontend:
-    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:latest"
+    image: "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:latest"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.arpav-frontend-router.rule=!PathRegexp(`^/(api|admin|prefect|vector-tiles)`)"
@@ -81,6 +81,8 @@ services:
       - "traefik.http.services.arpav-backend-service.loadbalancer.server.port=5001"
     depends_on:
       db:
+        condition: service_healthy
+      prefect-server:
         condition: service_healthy
 
   db:
@@ -123,13 +125,11 @@ services:
 
   prefect-static-worker:
     image: *backend-image
-    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-ppcv", "prefect"]
+    entrypoint: ["tini", "-g", "--", "poetry", "run", "arpav-cline", "prefect"]
     command: [
       "start-periodic-tasks",
       "--refresh-stations",
-      "--refresh-monthly-measurements",
-      "--refresh-seasonal-measurements",
-      "--refresh-yearly-measurements",
+      "--refresh-measurements",
       "--refresh-station-variables",
     ]
     depends_on:

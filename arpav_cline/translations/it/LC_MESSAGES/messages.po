@@ -1,0 +1,715 @@
+# Italian translations for arpav-ppcv.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the arpav-ppcv project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-05-16 15:41+0000\n"
+"PO-Revision-Date: 2025-05-16 16:59+0000\n"
+"Last-Translator: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>"
+"\n"
+"Language: it\n"
+"Language-Team: it <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: schemas/base.py:49 schemas/static.py:262 schemas/static.py:417
+msgid "winter"
+msgstr "Inverno"
+
+#: schemas/base.py:50 schemas/static.py:263 schemas/static.py:418
+msgid "spring"
+msgstr "Primavera"
+
+#: schemas/base.py:51 schemas/static.py:264 schemas/static.py:419
+msgid "summer"
+msgstr "Estate"
+
+#: schemas/base.py:52 schemas/static.py:265 schemas/static.py:420
+msgid "autumn"
+msgstr "Autunno"
+
+#: schemas/base.py:70 schemas/base.py:89
+msgid "series name"
+msgstr "Nome della serie"
+
+#: schemas/base.py:71 schemas/base.py:90
+msgid "processing method"
+msgstr "Metodo di elaborazione"
+
+#: schemas/base.py:72
+msgid "coverage identifier"
+msgstr "Identificatore di copertura"
+
+#: schemas/base.py:73
+msgid "coverage configuration"
+msgstr "Configurazione della copertura"
+
+#: schemas/base.py:91
+msgid "variable"
+msgstr "Variabile"
+
+#: schemas/base.py:92
+msgid "station"
+msgstr "Stazione"
+
+#: schemas/base.py:93
+msgid "series elaboration"
+msgstr "elaborazione in serie"
+
+#: schemas/base.py:94
+msgid "derived series"
+msgstr "Serie derivate"
+
+#: schemas/base.py:106
+msgid "original"
+msgstr "Originale"
+
+#: schemas/base.py:107
+msgid "derived"
+msgstr "Derivata"
+
+#: schemas/base.py:119
+msgid "decade series"
+msgstr "serie decennale"
+
+#: schemas/base.py:120
+msgid "Mann-Kendall series"
+msgstr "serie Mann-Kendall"
+
+#: schemas/climaticindicators.py:133
+msgid "climatic indicator"
+msgstr "indicatore"
+
+#: schemas/climaticindicators.py:139
+msgid "climatic indicator description"
+msgstr "indicatore climatico"
+
+#: schemas/coverages.py:62
+msgid "time window"
+msgstr "finestra temporale"
+
+#: schemas/coverages.py:68
+msgid "time window description"
+msgstr "descrizione della finestra temporale"
+
+#: schemas/coverages.py:118
+msgid "forecast model"
+msgstr "modello di previsione"
+
+#: schemas/coverages.py:124
+msgid "forecast model description"
+msgstr "descrizione del modello di previsione"
+
+#: schemas/coverages.py:196
+msgid "forecast model group"
+msgstr "gruppo di modelli di previsione"
+
+#: schemas/coverages.py:202
+msgid "forecast model group description"
+msgstr "descrizione del gruppo di modelli di previsione"
+
+#: schemas/coverages.py:273
+msgid "forecast year period"
+msgstr "periodo annuale di previsione"
+
+#: schemas/coverages.py:279
+msgid "forecast year period description"
+msgstr "descrizione del periodo annuale di previsione"
+
+#: schemas/coverages.py:306
+msgid "historical year period"
+msgstr "periodo annuale storico"
+
+#: schemas/coverages.py:312
+msgid "historical year period description"
+msgstr "descrizione del periodo annuale storico"
+
+#: schemas/coverages.py:986
+msgid "forecast coverage configuration"
+msgstr "configurazione della copertura di previsione"
+
+#: schemas/coverages.py:992
+msgid "forecast coverage configuration description"
+msgstr "descrizione della configurazione della copertura di previsione"
+
+#: schemas/coverages.py:1291
+msgid "historical coverage configuration"
+msgstr "configurazione della copertura storica"
+
+#: schemas/coverages.py:1297
+msgid "historical coverage configuration description"
+msgstr "descrizione della configurazione della copertura storica"
+
+#: schemas/dataseries.py:95
+msgid "observation overview data series"
+msgstr "serie di dati di panoramica delle osservazioni"
+
+#: schemas/dataseries.py:101
+msgid "observation overview data series description"
+msgstr "descrizione della serie di dati di panoramica delle osservazioni"
+
+#: schemas/dataseries.py:128
+msgid "forecast overview data series"
+msgstr "serie di dati di panoramica delle previsioni"
+
+#: schemas/dataseries.py:134
+msgid "forecast overview data series description"
+msgstr "descrizione della serie di dati di panoramica delle previsioni"
+
+#: schemas/dataseries.py:176
+msgid "forecast data series"
+msgstr "serie di dati previsionali"
+
+#: schemas/dataseries.py:182
+msgid "forecast data series description"
+msgstr "descrizione della serie di dati previsionali"
+
+#: schemas/dataseries.py:228
+msgid "observation station data series"
+msgstr "serie di dati della stazione di osservazione"
+
+#: schemas/dataseries.py:234
+msgid "observation station data series description"
+msgstr "descrizione della serie di dati della stazione di osservazione"
+
+#: schemas/dataseries.py:282
+msgid "historical data series"
+msgstr "serie di dati storici"
+
+#: schemas/dataseries.py:288
+msgid "historical data series description"
+msgstr "descrizione della serie di dati storici"
+
+#: schemas/legacy.py:61 schemas/legacy.py:92 schemas/static.py:626
+#: schemas/static.py:683 schemas/static.py:731
+msgid "no processing"
+msgstr "annuale"
+
+#: schemas/legacy.py:62 schemas/static.py:627 schemas/static.py:680
+msgid "LOESS"
+msgstr "LOESS"
+
+#: schemas/legacy.py:63 schemas/static.py:628
+msgid "centered 11-year moving average"
+msgstr "media mobile 11 anni"
+
+#: schemas/legacy.py:93 schemas/static.py:682 schemas/static.py:732
+msgid "centered 5-year moving average"
+msgstr "media mobile 5 anni"
+
+#: schemas/observations.py:517
+msgid "observation station"
+msgstr "stazione di osservazione"
+
+#: schemas/observations.py:523
+msgid "observation station description"
+msgstr "descrizione della stazione di osservazione"
+
+#: schemas/overviews.py:53
+msgid "observation overview series configuration"
+msgstr "configurazione della serie di panoramica delle osservazioni"
+
+#: schemas/overviews.py:59
+msgid "observation overview series configuration description"
+msgstr ""
+"descrizione della configurazione della serie di panoramica delle "
+"osservazioni"
+
+#: schemas/overviews.py:102
+msgid "forecast overview series configuration"
+msgstr "configurazione della serie di panoramica delle previsioni"
+
+#: schemas/overviews.py:108
+msgid "forecast overview series configuration description"
+msgstr ""
+"descrizione della configurazione della serie di panoramica delle "
+"previsioni"
+
+#: schemas/static.py:21
+msgid "forecast scenario"
+msgstr "scenario di previsione"
+
+#: schemas/static.py:27
+msgid "forecast scenario description"
+msgstr "descrizione dello scenario di previsione"
+
+#: schemas/static.py:33
+msgid "rcp26"
+msgstr "RCP2.6"
+
+#: schemas/static.py:34
+msgid "rcp45"
+msgstr "RCP4.5"
+
+#: schemas/static.py:35
+msgid "rcp85"
+msgstr "RCP8.5"
+
+#: schemas/static.py:42
+msgid "rcp26 description"
+msgstr "Scenario forte mitigazione emissioni gas serra"
+
+#: schemas/static.py:43
+msgid "rcp45 description"
+msgstr "Scenario intermedio di stabilizzazione"
+
+#: schemas/static.py:44
+msgid "rcp85 description"
+msgstr "Scenario nessuna mitigazione"
+
+#: schemas/static.py:70
+msgid "data category"
+msgstr "categoria di dati"
+
+#: schemas/static.py:76
+msgid "data category description"
+msgstr "descrizione della categoria di dati"
+
+#: schemas/static.py:82
+msgid "forecast"
+msgstr "previsione"
+
+#: schemas/static.py:83
+msgid "historical"
+msgstr "storico"
+
+#: schemas/static.py:90
+msgid "forecast description"
+msgstr "descrizione della previsione"
+
+#: schemas/static.py:91
+msgid "historical description"
+msgstr "descrizione storica"
+
+#: schemas/static.py:109
+msgid "measure type"
+msgstr "Tipo di misurazione"
+
+#: schemas/static.py:115
+msgid "measure type description"
+msgstr "Tipo di misurazione climatologica"
+
+#: schemas/static.py:121
+msgid "absolute"
+msgstr "Valore assoluto"
+
+#: schemas/static.py:122
+msgid "anomaly"
+msgstr "Anomalia"
+
+#: schemas/static.py:129
+msgid "absolute description"
+msgstr "Valore effettivo nel periodo selezionato"
+
+#: schemas/static.py:130
+msgid "anomaly description"
+msgstr "Variazione nel futuro rispetto al periodo di riferimento"
+
+#: schemas/static.py:149
+msgid "aggregation period"
+msgstr "Periodo di aggregazione temporale"
+
+#: schemas/static.py:155
+msgid "aggregation period description"
+msgstr "Periodo di aggregazione per i set di dati climatologici"
+
+#: schemas/static.py:161
+msgid "annual"
+msgstr "Annuale"
+
+#: schemas/static.py:162
+msgid "10yr"
+msgstr "Decennale"
+
+#: schemas/static.py:163
+msgid "30yr"
+msgstr "Trentennale"
+
+#: schemas/static.py:170
+msgid "annual description"
+msgstr "Media sull'anno selezionato"
+
+#: schemas/static.py:171
+msgid "10yr description"
+msgstr "Media sul decennio selezionato"
+
+#: schemas/static.py:172
+msgid "30yr description"
+msgstr "Media sul trentennio selezionato"
+
+#: schemas/static.py:249 schemas/static.py:404
+msgid "year period"
+msgstr "periodo dell'anno"
+
+#: schemas/static.py:255 schemas/static.py:410
+msgid "year period description"
+msgstr "descrizione del periodo dell'anno"
+
+#: schemas/static.py:261 schemas/static.py:416
+msgid "all year"
+msgstr "Anno"
+
+#: schemas/static.py:266
+msgid "january"
+msgstr "Gennaio"
+
+#: schemas/static.py:267
+msgid "february"
+msgstr "Febbraio"
+
+#: schemas/static.py:268
+msgid "march"
+msgstr "Marzo"
+
+#: schemas/static.py:269
+msgid "april"
+msgstr "Aprile"
+
+#: schemas/static.py:270
+msgid "may"
+msgstr "Maggio"
+
+#: schemas/static.py:271
+msgid "june"
+msgstr "Giugno"
+
+#: schemas/static.py:272
+msgid "july"
+msgstr "Luglio"
+
+#: schemas/static.py:273
+msgid "august"
+msgstr "Agosto"
+
+#: schemas/static.py:274
+msgid "september"
+msgstr "Settembre"
+
+#: schemas/static.py:275
+msgid "october"
+msgstr "Ottobre"
+
+#: schemas/static.py:276
+msgid "november"
+msgstr "Novembre"
+
+#: schemas/static.py:277
+msgid "december"
+msgstr "Dicembre"
+
+#: schemas/static.py:284 schemas/static.py:427
+msgid "all year description"
+msgstr "Anno solare (da gennaio a dicembre)"
+
+#: schemas/static.py:285 schemas/static.py:428
+msgid "winter description"
+msgstr "Dicembre, gennaio, febbraio"
+
+#: schemas/static.py:286 schemas/static.py:429
+msgid "spring description"
+msgstr "Marzo, aprile, maggio"
+
+#: schemas/static.py:287 schemas/static.py:430
+msgid "summer description"
+msgstr "Giugno, luglio, agosto"
+
+#: schemas/static.py:288 schemas/static.py:431
+msgid "autumn description"
+msgstr "Settembre, ottobre, novembre"
+
+#: schemas/static.py:289
+msgid "january description"
+msgstr "Mese di gennaio"
+
+#: schemas/static.py:290
+msgid "february description"
+msgstr "Mese di febbraio"
+
+#: schemas/static.py:291
+msgid "march description"
+msgstr "Mese di marzo"
+
+#: schemas/static.py:292
+msgid "april description"
+msgstr "Mese di aprile"
+
+#: schemas/static.py:293
+msgid "may description"
+msgstr "Mese di maggio"
+
+#: schemas/static.py:294
+msgid "june description"
+msgstr "Mese di giugno"
+
+#: schemas/static.py:295
+msgid "july description"
+msgstr "Mese di luglio"
+
+#: schemas/static.py:296
+msgid "august description"
+msgstr "Mese di agosto"
+
+#: schemas/static.py:297
+msgid "september description"
+msgstr "Mese di settembre"
+
+#: schemas/static.py:298
+msgid "october description"
+msgstr "Mese di ottobre"
+
+#: schemas/static.py:299
+msgid "november description"
+msgstr "Mese di novembre"
+
+#: schemas/static.py:300
+msgid "december description"
+msgstr "Mese di dicembre"
+
+#: schemas/static.py:356
+msgid "forecast dataset"
+msgstr "set di dati previsionali"
+
+#: schemas/static.py:362
+msgid "forecast dataset description"
+msgstr "descrizione del set di dati previsionali"
+
+#: schemas/static.py:368
+msgid "main"
+msgstr "principale"
+
+#: schemas/static.py:369
+msgid "lower uncertainty"
+msgstr "incertezza inferiore"
+
+#: schemas/static.py:370
+msgid "observation measurement"
+msgstr "misurazione dell'osservazione"
+
+#: schemas/static.py:371
+msgid "upper uncertainty"
+msgstr "incertezza superiore"
+
+#: schemas/static.py:378
+msgid "main description"
+msgstr "descrizione principale"
+
+#: schemas/static.py:379
+msgid "lower uncertainty description"
+msgstr "descrizione dell'incertezza inferiore"
+
+#: schemas/static.py:380
+msgid "observation measurement description"
+msgstr "descrizione della misurazione dell'osservazione"
+
+#: schemas/static.py:381
+msgid "upper uncertainty description"
+msgstr "descrizione dell'incertezza superiore"
+
+#: schemas/static.py:461
+msgid "measurement aggregation type"
+msgstr "tipo di aggregazione delle misurazioni"
+
+#: schemas/static.py:467
+msgid "measurement aggregation description"
+msgstr "descrizione dell'aggregazione delle misurazioni"
+
+#: schemas/static.py:473
+msgid "monthly"
+msgstr "Mensile"
+
+#: schemas/static.py:474
+msgid "seasonal"
+msgstr "Di stagione"
+
+#: schemas/static.py:475
+msgid "yearly"
+msgstr "Annuale"
+
+#: schemas/static.py:482
+msgid "monthly description"
+msgstr "descrizione dell'aggregazione mensile"
+
+#: schemas/static.py:483
+msgid "seasonal description"
+msgstr "descrizione dell'aggregazione stagionale"
+
+#: schemas/static.py:484
+msgid "yearly description"
+msgstr "descrizione dell'aggregazione annuale"
+
+#: schemas/static.py:509
+msgid "historical decade"
+msgstr "decennio storico"
+
+#: schemas/static.py:515
+msgid "historical decade description"
+msgstr "descrizione del decennio storico"
+
+#: schemas/static.py:521
+msgid "decade_1961_1970"
+msgstr "1961-1970"
+
+#: schemas/static.py:522
+msgid "decade_1971_1980"
+msgstr "1971-1980"
+
+#: schemas/static.py:523
+msgid "decade_1981_1990"
+msgstr "1981-1990"
+
+#: schemas/static.py:524
+msgid "decade_1991_2000"
+msgstr "1991-2000"
+
+#: schemas/static.py:525
+msgid "decade_2001_2010"
+msgstr "2001-2010"
+
+#: schemas/static.py:526
+msgid "decade_2011_2020"
+msgstr "2011-2020"
+
+#: schemas/static.py:527
+msgid "decade_2021_2030"
+msgstr "2021-2030"
+
+#: schemas/static.py:528
+msgid "decade_2031_2040"
+msgstr "2031-2040"
+
+#: schemas/static.py:535
+msgid "decade_1961_1970 description"
+msgstr "Decennio 1961-1970"
+
+#: schemas/static.py:536
+msgid "decade_1971_1980 description"
+msgstr "Decennio 1971-1980"
+
+#: schemas/static.py:537
+msgid "decade_1981_1990 description"
+msgstr "Decennio 1981-1990"
+
+#: schemas/static.py:538
+msgid "decade_1991_2000 description"
+msgstr "Decennio 1991-2000"
+
+#: schemas/static.py:539
+msgid "decade_2001_2010 description"
+msgstr "Decennio 2001-2010"
+
+#: schemas/static.py:540
+msgid "decade_2011_2020 description"
+msgstr "Decennio 2011-2020"
+
+#: schemas/static.py:541
+msgid "decade_2021_2030 description"
+msgstr "Decennio 2021-2030"
+
+#: schemas/static.py:542
+msgid "decade_2031_2040 description"
+msgstr "Decennio 2031-2040"
+
+#: schemas/static.py:569
+msgid "historical reference period"
+msgstr "periodo di riferimento storico"
+
+#: schemas/static.py:575
+msgid "historical reference period description"
+msgstr "descrizione del periodo di riferimento storico"
+
+#: schemas/static.py:581
+msgid "1961-1990"
+msgstr "1961-1990"
+
+#: schemas/static.py:582
+msgid "1991-2020"
+msgstr "1991-2020"
+
+#: schemas/static.py:589
+msgid "1961-1990 description"
+msgstr "Trentennio di riferimento (normale climatico) 1961-1990"
+
+#: schemas/static.py:590
+msgid "1991-2020 description"
+msgstr "Trentennio di riferimento (normale climatico) 1991-2020"
+
+#: schemas/static.py:614
+msgid "coverage data processing method"
+msgstr "metodo di elaborazione dei dati di copertura"
+
+#: schemas/static.py:620
+msgid "coverage data processing method description"
+msgstr "descrizione del metodo di elaborazione dei dati di copertura"
+
+#: schemas/static.py:629 schemas/static.py:681 schemas/static.py:733
+msgid "Mann-Kendall trend"
+msgstr "tendenza Mann-Kendall"
+
+#: schemas/static.py:630 schemas/static.py:679 schemas/static.py:734
+msgid "Decade aggregation"
+msgstr "media decennale"
+
+#: schemas/static.py:637 schemas/static.py:696 schemas/static.py:741
+msgid "no processing description"
+msgstr "descrizione di nessuna elaborazione"
+
+#: schemas/static.py:638 schemas/static.py:691
+msgid "LOESS description"
+msgstr "descrizione LOESS"
+
+#: schemas/static.py:639
+msgid "centered 11-year moving average description"
+msgstr "descrizione della media mobile centrata a 11 anni"
+
+#: schemas/static.py:642 schemas/static.py:692 schemas/static.py:745
+msgid "Mann-Kendall trend description"
+msgstr "descrizione della tendenza Mann-Kendall"
+
+#: schemas/static.py:643 schemas/static.py:690 schemas/static.py:746
+msgid "Decade aggregation description"
+msgstr "descrizione dell'aggregazione decennale"
+
+#: schemas/static.py:667 schemas/static.py:719
+msgid "observation data processing method"
+msgstr "metodo di elaborazione dei dati di osservazione"
+
+#: schemas/static.py:673 schemas/static.py:725
+msgid "observation data processing method description"
+msgstr "descrizione del metodo di elaborazione dei dati di osservazione"
+
+#: schemas/static.py:693 schemas/static.py:742
+msgid "centered 5-year moving average description"
+msgstr "descrizione della media mobile centrata a 5 anni"
+
+#: schemas/static.py:766
+msgid "observation station manager"
+msgstr "gestore della stazione di osservazione"
+
+#: schemas/static.py:772
+msgid "observation station manager description"
+msgstr "descrizione del gestore della stazione di osservazione"
+
+#: schemas/static.py:778
+msgid "ARPAV"
+msgstr "ARPAV"
+
+#: schemas/static.py:779
+msgid "ARPAFVG"
+msgstr "ARPAFVG"
+
+#: schemas/static.py:786
+msgid "ARPAV description"
+msgstr "Agenzia Regionale per la Prevenzione e Protezione Ambientale del Veneto"
+
+#: schemas/static.py:787
+msgid "ARPAFVG description"
+msgstr ""
+"Agenzia regionale per la protezione dell'ambiente del Friuli Venezia "
+"Giulia"
