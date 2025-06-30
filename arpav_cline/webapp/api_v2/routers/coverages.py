@@ -531,9 +531,12 @@ def wms_endpoint(
     try:
         wms_response = thredds_utils.proxy_request_sync(wms_url, http_client)
     except (httpx.HTTPError, httpx.HTTPStatusError) as err:
-        logger.exception(
-            msg=f"THREDDS server replied with an error: {err.response.text}"
-        )
+        msg = "THREDDS server replied with an error"
+        try:
+            msg += f": {err.response.text}"
+        except AttributeError:
+            pass
+        logger.exception(msg=msg)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=err.response.text,
