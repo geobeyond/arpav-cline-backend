@@ -1,390 +1,285 @@
+import itertools
 import random
-import re
+import typing
 
 import httpx
-import pytest_httpx
 import pytest
+import sqlmodel
 
-from arpav_ppcv.schemas import (
-    coverages,
-    observations,
-)
-from arpav_ppcv import database
+from arpav_cline import db
 
-random.seed(0)
+if typing.TYPE_CHECKING:
+    from arpav_cline.schemas import coverages
 
 
 def test_coverage_configurations_list(
     test_client_v2_app: httpx.Client,
-    sample_coverage_configurations: list[coverages.CoverageConfiguration],
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
 ):
     list_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for("list_coverage_configurations"),
+        test_client_v2_app.app.url_path_for("legacy_list_coverage_configurations"),
         headers={"accept": "application/json"},
     )
     assert list_response.status_code == 200
-    assert len(list_response.json()["items"]) == 10
+    assert len(list_response.json()["items"]) == min(
+        20, len(sample_real_forecast_coverage_configurations)
+    )
 
 
 def test_coverage_identifiers_list(
     test_client_v2_app: httpx.Client,
-    sample_coverage_configurations: list[coverages.CoverageConfiguration],
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
 ):
     list_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for("list_coverage_identifiers"),
+        test_client_v2_app.app.url_path_for("legacy_list_coverages"),
         headers={"accept": "application/json"},
     )
     assert list_response.status_code == 200
 
 
 @pytest.mark.parametrize(
-    "possible_values, expected_identifiers",
+    "climatological_variable, expected_total, expected_total_filtered",
     [
-        pytest.param(
-            {
-                "aggregation_period": "annual",
-                "climatological_variable": "tas",
-                "climatological_model": "model_ensemble",
-                "archive": "forecast",
-                "measure": "absolute",
-                "scenario": "rcp26",
-                "year_period": "winter",
-            },
-            [
-                "tas_seasonal_absolute_model_ensemble-annual-forecast-model_ensemble-tas-absolute-rcp26-winter",
-                "tas_seasonal_absolute_model_ensemble_lower_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-lower_bound-winter",
-                "tas_seasonal_absolute_model_ensemble_upper_uncertainty-annual-forecast-model_ensemble-tas-absolute-rcp26-upper_bound-winter",
-            ],
-        )
+        pytest.param(None, 2385, 1728),
+        pytest.param("tas", 2385, 306),
+        pytest.param("su30", 2385, 54),
     ],
 )
-def test_coverage_identifiers_list_with_possible_values_filter(
+def test_real_forecast_coverages_list_climatological_variable_filter(
     test_client_v2_app: httpx.Client,
-    sample_real_coverage_configurations: list[coverages.CoverageConfiguration],
-    possible_values: dict[str, str],
-    expected_identifiers: list[str],
+    arpav_db_session: sqlmodel.Session,
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
+    sample_real_historical_coverage_configurations: list[
+        "coverages.HistoricalCoverageConfiguration"
+    ],
+    climatological_variable: typing.Optional[str],
+    expected_total,
+    expected_total_filtered,
 ):
+    request_params = {"possible_value": ["archive:forecast"]}
+    if climatological_variable is not None:
+        request_params["possible_value"].append(
+            f"climatological_variable:{climatological_variable}"
+        )
     list_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for("list_coverage_identifiers"),
-        params={"possible_value": [f"{k}:{v}" for k, v in possible_values.items()]},
-        headers={"accept": "application/json"},
+        test_client_v2_app.app.url_path_for("legacy_list_coverages"),
+        params=request_params,
     )
-    items = list_response.json()["items"]
-    identifiers = [i["identifier"] for i in items]
-    for expected_id in expected_identifiers:
-        assert expected_id in identifiers
-    for found_id in identifiers:
-        assert found_id in expected_identifiers
-
-
-def test_get_time_series(
-    httpx_mock: pytest_httpx.HTTPXMock,
-    test_client_v2_app: httpx.Client,
-    arpav_db_session,
-    sample_tas_csv_data: dict[str, str],
-):
-    db_cov_conf = coverages.CoverageConfiguration(
-        name="fake_tas",
-        netcdf_main_dataset_name="tas",
-        thredds_url_pattern="fake",
-        palette="fake",
-    )
-    arpav_db_session.add(db_cov_conf)
-    arpav_db_session.commit()
-    arpav_db_session.refresh(db_cov_conf)
-
-    httpx_mock.add_response(
-        url=re.compile(r".*ncss/grid.*"),
-        method="get",
-        text=sample_tas_csv_data["tas"],
-    )
-    identifiers = database.generate_coverage_identifiers(db_cov_conf)
-    cov_id = random.choice(identifiers)
-    series_response = test_client_v2_app.get(
-        test_client_v2_app.app.url_path_for(
-            "get_time_series", coverage_identifier=cov_id
+    all_forecast_coverages = db.collect_all_forecast_coverages(arpav_db_session)
+    all_historical_coverages = db.collect_all_historical_coverages(arpav_db_session)
+    total_coverages = len(all_forecast_coverages) + len(all_historical_coverages)
+    filtered_coverages = db.collect_all_forecast_coverages(
+        arpav_db_session,
+        climatological_variable_filter=(
+            [climatological_variable] if climatological_variable is not None else None
         ),
-        params={
-            "coords": "POINT(11.5469 44.9524)",
-            "include_observation_data": False,
-            "coverage_data_smoothing": ["NO_SMOOTHING"],
-        },
-        headers={"accept": "application/json"},
     )
-    print(series_response.content)
-    assert series_response.status_code == 200
+    print(f"{total_coverages=}")
+    print(f"{len(filtered_coverages)=}")
+    assert list_response.status_code == 200
+    assert list_response.json()["meta"]["total_records"] == expected_total
+    assert (
+        list_response.json()["meta"]["total_filtered_records"]
+        == expected_total_filtered
+    )
+    assert list_response.json()["meta"]["returned_records"] == 20
+
+
+def test_forecast_tas_absolute_annual_details(
+    test_client_v2_app: httpx.Client,
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
+):
+    response = test_client_v2_app.get(
+        test_client_v2_app.app.url_path_for(
+            "legacy_get_coverage",
+            coverage_identifier=(
+                "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble-"
+                "model_ensemble-rcp26-winter"
+            ),
+        )
+    )
+    assert response.status_code == 200
+    details = response.json()
+    assert details["data_precision"] == 1
+    assert details["forecast_model"] == "model_ensemble"
+    assert details["identifier"] == (
+        "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble-"
+        "model_ensemble-rcp26-winter"
+    )
+    assert details["legend"]["color_entries"][0]["color"] == "#ffffffcc"
+    assert details["legend"]["color_entries"][0]["value"] == -6.0
+    assert details["legend"]["color_entries"][1]["color"] == "#fffed976"
+    assert details["legend"]["color_entries"][1]["value"] == 3.0
+    assert details["observation_stations_vector_tile_layer_url"].endswith(
+        "/vector-tiles/stations_tas_absolute_annual/{z}/{x}/{y}"
+    )
+    assert details["related_coverage_configuration_url"].endswith(
+        "/coverages/coverage-configurations/"
+        "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble"
+    )
+    assert details["scenario"] == "rcp26"
+    assert details["time_window"] is None
+    assert details["unit_italian"] == "ºC"
+    assert details["url"].endswith(
+        "/coverages/coverages/"
+        "forecast-tas-absolute-annual-arpa_vfvg-all_seasons-ensemble-"
+        "model_ensemble-rcp26-winter"
+    )
+    assert details["wms_base_url"].endswith(
+        "/coverages/wms/forecast-tas-absolute-annual-arpa_vfvg-"
+        "all_seasons-ensemble-model_ensemble-rcp26-winter"
+    )
+    assert details["wms_main_layer_name"] == "tas"
+    assert details["wms_secondary_layer_name"] is None
+    assert details["year_period"] == "winter"
 
 
 @pytest.mark.parametrize(
+    "navigation_section",
     [
-        "include_coverage_data",
-        "coverage_data_smoothing",
-        "include_observation_data",
-        "observation_data_smoothing",
-        "include_coverage_uncertainty",
-        "include_coverage_related_data",
-        "expected_italian_parameter_values",
-    ],
-    [
-        pytest.param(
-            True,
-            ["NO_SMOOTHING"],
-            False,
-            None,
-            False,
-            False,
-            [
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-            ],
-        ),
-        pytest.param(
-            True,
-            ["NO_SMOOTHING", "MOVING_AVERAGE_11_YEARS"],
-            False,
-            None,
-            False,
-            False,
-            [
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-            ],
-        ),
-        pytest.param(
-            True,
-            ["NO_SMOOTHING", "MOVING_AVERAGE_11_YEARS"],
-            False,
-            None,
-            True,
-            False,
-            [
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                    ("uncertainty_type", "Limiti inferiori dell'incertezza"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                    ("uncertainty_type", "Limiti inferiori dell'incertezza"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                    ("uncertainty_type", "Limiti superiori dell'incertezza"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                    ("uncertainty_type", "Limiti superiori dell'incertezza"),
-                },
-            ],
-        ),
-        pytest.param(
-            True,
-            ["NO_SMOOTHING", "MOVING_AVERAGE_11_YEARS"],
-            False,
-            None,
-            False,
-            True,
-            [
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH RCA4"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH RCA4"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "HadGEM RACMO22E"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "HadGEM RACMO22E"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "Insieme di 5 modelli"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "Insieme di 5 modelli"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH RACMO22E"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH RACMO22E"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "MPI-ESM-LR-REMO2009"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "MPI-ESM-LR-REMO2009"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH CCLM4-8-17"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("climatological_model", "EC-EARTH CCLM4-8-17"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-            ],
-        ),
-        pytest.param(
-            True,
-            ["NO_SMOOTHING", "MOVING_AVERAGE_11_YEARS"],
-            True,
-            ["NO_SMOOTHING", "MOVING_AVERAGE_5_YEARS"],
-            False,
-            False,
-            [
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    ("series_name", "Temperatura media"),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-                {
-                    (
-                        "series_name",
-                        "Temperatura media (dalla stazione di osservazione)",
-                    ),
-                    ("processing_method", "nessuna elaborazione"),
-                },
-                {
-                    (
-                        "series_name",
-                        "Temperatura media (dalla stazione di osservazione)",
-                    ),
-                    ("processing_method", "media mobile centrata a 11 anni"),
-                },
-            ],
-        ),
+        pytest.param(None),
+        pytest.param("advanced"),
+        pytest.param("simple"),
     ],
 )
-def test_real_get_time_series(
-    httpx_mock: pytest_httpx.HTTPXMock,
+def test_forecast_variable_combinations(
     test_client_v2_app: httpx.Client,
-    arpav_db_session,
-    sample_real_coverage_configurations: list[coverages.CoverageConfiguration],
-    sample_real_monthly_measurements: list[observations.MonthlyMeasurement],
-    sample_tas_csv_data: dict[str, str],
-    include_coverage_data: bool,
-    coverage_data_smoothing: list[str],
-    include_observation_data: bool,
-    observation_data_smoothing: list[str],
-    include_coverage_uncertainty: bool,
-    include_coverage_related_data: bool,
-    expected_italian_parameter_values: list[set[tuple[str, str]]],
+    sample_real_forecast_coverage_configurations: list[
+        "coverages.ForecastCoverageConfiguration"
+    ],
+    navigation_section,
 ):
-    coverage_identifier = "tas_seasonal_absolute_model_ensemble-annual-forecast-model_ensemble-tas-absolute-rcp45-winter"
-    tas_thredds_url_pattern = "tas_avg_"
-    tas_stddown_thredds_url_pattern = "tas_stddown_.*"
-    tas_stdup_thredds_url_pattern = "tas_stdup_.*"
-    httpx_mock.add_response(
-        url=re.compile(rf".*?ncss/grid.*?{tas_thredds_url_pattern}.*"),
-        method="get",
-        text=sample_tas_csv_data["tas"],
+    """
+    Ensure combinations can be used to create a coverage.
+
+    In order to keep this test from taking forever to run (it can take up to
+    10 mins to test all coverages that result from the bootstrap), we randomly
+    select 10 coverages to test.
+    In case of a failure, the test output should provide the necessary info for
+    being able to replicate it
+    """
+    params = (
+        None
+        if navigation_section is None
+        else {"navigation_section": navigation_section}
     )
-    if include_coverage_uncertainty:
-        httpx_mock.add_response(
-            url=re.compile(rf".*?ncss/grid.*?{tas_stddown_thredds_url_pattern}"),
-            method="get",
-            text=sample_tas_csv_data["tas_stddown"],
-        )
-        httpx_mock.add_response(
-            url=re.compile(rf".*?ncss/grid.*?{tas_stdup_thredds_url_pattern}"),
-            method="get",
-            text=sample_tas_csv_data["tas_stdup"],
-        )
-    if include_coverage_related_data:
-        patterns = (
-            "tas_EC-EARTH_CCLM4-8-17_",
-            "tas_EC-EARTH_RACMO22E_",
-            "tas_EC-EARTH_RCA4_",
-            "tas_MPI-ESM-LR_REMO2009_",
-            "tas_HadGEM2-ES_RACMO22E_",
-        )
-        for patt in patterns:
-            httpx_mock.add_response(
-                url=re.compile(rf".*?ncss/grid.*?{patt}.*"),
-                method="get",
-                text=sample_tas_csv_data["tas"],
-            )
-    request_params = {
-        "coords": "POINT(11.5469 44.9524)",
-        "include_coverage_data": include_coverage_data,
-        "include_observation_data": include_observation_data,
-        "include_coverage_uncertainty": include_coverage_uncertainty,
-        "include_coverage_related_data": include_coverage_related_data,
-    }
-    if coverage_data_smoothing is not None:
-        request_params["coverage_data_smoothing"] = coverage_data_smoothing
-    if observation_data_smoothing is not None:
-        request_params["observation_data_smoothing"] = observation_data_smoothing
-    series_response = test_client_v2_app.get(
+    response = test_client_v2_app.get(
         test_client_v2_app.app.url_path_for(
-            "get_time_series", coverage_identifier=coverage_identifier
+            "get_forecast_variable_combinations",
         ),
-        params=request_params,
-        headers={"accept": "application/json"},
+        params=params,
     )
-    print(series_response.content)
-    for found_series in series_response.json()["series"]:
-        found_italian_values = {
-            (k, v["it"])
-            for k, v in found_series["translations"]["parameter_values"].items()
-        }
-        print(f"{found_italian_values=}")
-        for expected in expected_italian_parameter_values:
-            print(f"{expected=}")
-            if expected <= found_italian_values:
-                break
-        else:
-            assert False
+    assert response.status_code == 200
+    details = response.json()
+    all_possible_values = []
+    for combination in details["combinations"]:
+        coverage_listing_params = [
+            f"{k}:{v}" for k, v in combination.items() if k != "other_parameters"
+        ]
+        other_names = list(
+            combination["other_parameters"].keys()
+        )  # this only works because dicts are ordered now
+        for combined_params in itertools.product(
+            *combination["other_parameters"].values()
+        ):
+            possible_values = coverage_listing_params[:]
+            for idx, param in enumerate(combined_params):
+                possible_values.append(f"{other_names[idx]}:{param}")
+            all_possible_values.append(possible_values)
+    tested_coverages = []
+    while len(tested_coverages) < 10:
+        chosen_index = random.choice(list(range(len(all_possible_values))))
+        chosen = all_possible_values[chosen_index]
+        print(f"{chosen=}")
+        coverage_list_response = test_client_v2_app.get(
+            test_client_v2_app.app.url_path_for("legacy_list_coverages"),
+            params={"possible_value": chosen},
+        )
+        assert coverage_list_response.status_code == 200
+        details = coverage_list_response.json()
+        for item in details["items"]:
+            if random.random() < 0.05:  # there is a 5% chance we test this
+                coverage_detail_url = item["url"]
+                coverage_detail_response = test_client_v2_app.get(coverage_detail_url)
+                print(coverage_detail_url)
+                assert coverage_detail_response.status_code == 200
+                tested_coverages.append(coverage_detail_url)
+
+
+@pytest.mark.parametrize(
+    "navigation_section",
+    [
+        pytest.param(None),
+        pytest.param("advanced"),
+        pytest.param("simple"),
+    ],
+)
+def test_historical_variable_combinations(
+    test_client_v2_app: httpx.Client,
+    sample_real_historical_coverage_configurations: list[
+        "coverages.HistoricalCoverageConfiguration"
+    ],
+    navigation_section,
+):
+    """
+    Ensure combinations can be used to create a coverage.
+
+    In order to keep this test from taking forever to run (it can take up to
+    10 mins to test all coverages that result from the bootstrap), we randomly
+    select 10 coverages to test.
+    In case of a failure, the test output should provide the necessary info for
+    being able to replicate it
+    """
+    params = (
+        None
+        if navigation_section is None
+        else {"navigation_section": navigation_section}
+    )
+    response = test_client_v2_app.get(
+        test_client_v2_app.app.url_path_for(
+            "get_historical_variable_combinations",
+        ),
+        params=params,
+    )
+    assert response.status_code == 200
+    details = response.json()
+    all_possible_values = []
+    for combination in details["combinations"]:
+        coverage_listing_params = [
+            f"{k}:{v}" for k, v in combination.items() if k != "other_parameters"
+        ]
+        other_names = list(
+            combination["other_parameters"].keys()
+        )  # this only works because dicts are ordered now
+        for combined_params in itertools.product(
+            *combination["other_parameters"].values()
+        ):
+            possible_values = coverage_listing_params[:]
+            for idx, param in enumerate(combined_params):
+                possible_values.append(f"{other_names[idx]}:{param}")
+            all_possible_values.append(possible_values)
+    tested_coverages = []
+    while len(tested_coverages) < 10:
+        chosen_index = random.choice(list(range(len(all_possible_values))))
+        chosen = all_possible_values[chosen_index]
+        coverage_list_response = test_client_v2_app.get(
+            test_client_v2_app.app.url_path_for("legacy_list_coverages"),
+            params={"possible_value": chosen},
+        )
+        assert coverage_list_response.status_code == 200
+        details = coverage_list_response.json()
+        for item in details["items"]:
+            if random.random() < 0.05:  # there is a 5% chance we test this
+                coverage_detail_url = item["url"]
+                coverage_detail_response = test_client_v2_app.get(coverage_detail_url)
+                print(coverage_detail_url)
+                assert coverage_detail_response.status_code == 200
+                tested_coverages.append(coverage_detail_url)

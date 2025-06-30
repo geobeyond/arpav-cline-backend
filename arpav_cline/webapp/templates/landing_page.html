@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>ARPAV-PPCV backend</h1>
+<p>This is the root of the ARPAV-PPCV backend web application.</p>
+<p>Please head over to either:</p>
+<ul>
+    <li><a href="{{ v2_api_docs_url }}">{{ v2_api_docs_url }}</a> for info in version 2 of the API</li>
+    <li><a href="{{ v1_api_docs_url }}">{{ v1_api_docs_url }}</a> for info in version 1 of the API</li>
+    <li><a href="{{ legacy_base_url }}">{{ legacy_base_url }}</a> for accessing the older django-rest-framework API -
+        There is no docs URL for this unfortunately</li>
+    <li><a href="{{ url_for('admin:index') }}">{{ url_for('admin:index') }}</a> for the backend administration section</li>
+</ul>
+
+</body>
+</html>

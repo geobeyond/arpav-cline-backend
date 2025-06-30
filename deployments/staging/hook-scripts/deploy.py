@@ -1,7 +1,7 @@
 # ARPAV-PPCV deployment script
 #
 # This script is to be run by the `webhook` server whenever there
-# is a push to the arpav-ppcv-backend repository.
+# is a push to the arpav-cline-backend repository.
 #
 # NOTE: IN ORDER TO SIMPLIFY DEPLOYMENT, THIS SCRIPT SHALL ONLY USE STUFF FROM THE
 # PYTHON STANDARD LIBRARY
@@ -222,7 +222,7 @@ class _CompileTranslations:
         run(
             shlex.split(
                 f"docker exec {self.webapp_service_name} poetry run "
-                f"arpav-ppcv translations compile"
+                f"arpav-cline translations compile"
             ),
             check=True,
         )
@@ -238,7 +238,7 @@ class _RunMigrations:
         run(
             shlex.split(
                 f"docker exec {self.webapp_service_name} poetry run "
-                f"arpav-ppcv db upgrade"
+                f"arpav-cline db upgrade"
             ),
             check=True,
         )
@@ -287,7 +287,7 @@ def perform_deployment(
     compose_files = (
         f"-f {docker_dir}/compose.yaml " f"-f {docker_dir}/compose.staging.yaml"
     )
-    clone_destination = Path("/tmp/arpav-ppcv-backend")
+    clone_destination = Path("/tmp/arpav-cline-backend")
     deployment_env_files = {
         "db_service": deployment_root / "environment-files/db-service.env",
         "webapp_service": deployment_root / "environment-files/webapp-service.env",
@@ -300,19 +300,19 @@ def perform_deployment(
         "prefect_static_worker_service": deployment_root
         / "environment-files/prefect-static-worker-service.env",
     }
-    webapp_service_name = "arpav-ppcv-staging-webapp-1"
+    webapp_service_name = "arpav-cline-staging-webapp-1"
     deployment_steps = [
         _ValidateRequestPayload(
             raw_payload=raw_request_payload,
             valid_repositories=(
-                "geobeyond/arpav-ppcv",
-                "geobeyond/arpav-ppcv-backend",
+                "geobeyond/arpav-cline-frontend",
+                "geobeyond/arpav-cline-backend",
             ),
         ),
         _FindEnvFiles(env_files=deployment_env_files),
         _CloneRepo(
             clone_destination=clone_destination,
-            repo_url="https://github.com/geobeyond/Arpav-PPCV-backend.git ",
+            repo_url="https://github.com/geobeyond/arpav-cline-backend.git ",
         ),
     ]
     if auto_update:
@@ -326,8 +326,8 @@ def perform_deployment(
             _ReplaceDockerDir(repo_dir=clone_destination, docker_dir=docker_dir),
             _PullImages(
                 images=(
-                    "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend",
-                    "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv",
+                    "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend",
+                    "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend",
                 )
             ),
             _StartCompose(

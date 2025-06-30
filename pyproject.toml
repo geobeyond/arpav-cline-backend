@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "arpav-ppcv-backend"
-version = "v2.0.0-dev"
-description = "Backend component of the ARPAV-PPCV platform"
+name = "arpav-cline-backend"
+version = "v2.1.0-dev"
+description = "Backend component of the ARPAV cline platform"
 authors = ["Geobeyond <info@geobeyond.it>"]
-license = "MIT"
+license = "AGPL-3.0-or-later"
 readme = "README.md"
 packages = [
-    {include = "arpav_ppcv"},
+    {include = "arpav_cline"},
 ]
 
 [tool.poetry.dependencies]
@@ -41,9 +41,11 @@ netcdf4 = "<1.7"
 cftime = "^1.6.4"
 babel = "^2.15.0"
 pyloess = "^0.1.0"
-prefect = {version = "^3.0.0rc14", allow-prereleases = true}
+prefect = "3.1.13"
 matplotlib = "^3.9.2"
 numpy = "<2"
+geohashr = "^1.4.0"
+playwright = "^1.50.0"
 
 
 [tool.poetry.group.dev]
@@ -71,17 +73,17 @@ ipyleaflet = "^0.19.2"
 sidecar = "^0.7.0"
 
 [tool.poetry.scripts]
-arpav-ppcv = "arpav_ppcv.main:app"
+arpav-cline = "arpav_cline.main:app"
 
 [tool.ruff]
-extend-exclude = ["backend", "arpav_ppcv/migrations"]
+extend-exclude = ["backend", "arpav_cline/migrations"]
 
 [tool.pytest.ini_options]
 addopts = "--verbose --cov --cov-branch --log-level=warning"
 
 [tool.coverage.run]
 branch = true
-source = ["arpav_ppcv"]
+source = ["arpav_cline"]
 
 [build-system]
 requires = ["poetry-core"]

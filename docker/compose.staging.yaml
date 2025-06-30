@@ -25,7 +25,7 @@ x-env-file-prefect-static-worker: &env-file-prefect-static-worker ${ARPAV_PPCV_D
 x-env-file-tolgee-db: &env-file-tolgee-db ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_DB_SERVICE:-/home/arpav/environment-files/tolgee-db-service.env}
 x-env-file-tolgee-app: &env-file-tolgee-app ${ARPAV_PPCV_DEPLOYMENT_ENV_FILE_TOLGEE_APP_SERVICE:-/home/arpav/environment-files/tolgee-app-service.env}
 
-name: arpav-ppcv-staging
+name: arpav-cline-staging
 
 networks:
 
@@ -81,6 +81,9 @@ services:
       - type: bind
         source: $HOME/data/arpav-ppcv/netcdf-uncertainty-example
         target: /home/appuser/data/additional
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     restart: unless-stopped
 
   db:
@@ -106,7 +109,7 @@ services:
   thredds:
     networks:
       - back
-    image: unidata/thredds-docker:5.4
+    image: unidata/thredds-docker:5.6
     env_file:
       - *env-file-webapp
     volumes:
@@ -149,6 +152,9 @@ services:
       - back
     env_file:
       - *env-file-prefect-static-worker
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     restart: unless-stopped
 
   prefect-db:
@@ -194,3 +200,8 @@ configs:
 
   martin-conf:
     file: /home/arpav/docker/martin/config.yaml
+
+
+secrets:
+  arpa-fvg-auth-token:
+    file: "/opt/arpav-cline/ARPAFVG_AUTH_TOKEN"

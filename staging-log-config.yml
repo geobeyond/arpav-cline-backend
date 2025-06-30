@@ -43,7 +43,7 @@ loggers:
     level: INFO
     propagate: False
 
-  arpav_ppcv:
+  arpav_cline:
     handlers:
       - default
     level: INFO

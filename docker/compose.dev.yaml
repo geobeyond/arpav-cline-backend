@@ -8,7 +8,7 @@
 #   dev, testing and debugging
 # - mounts code repository inside the relevant container as a bind volume
 
-x-webapp-image: &webapp-image "ghcr.io/geobeyond/arpav-ppcv-backend/arpav-ppcv-backend:${CURRENT_GIT_BRANCH:-latest}"
+x-webapp-image: &webapp-image "ghcr.io/geobeyond/arpav-cline-backend/arpav-cline-backend:${CURRENT_GIT_BRANCH:-latest}"
 
 x-common-env: &common-env
   ARPAV_PPCV__DEBUG: true
@@ -16,13 +16,17 @@ x-common-env: &common-env
   ARPAV_PPCV__BIND_PORT: 5001
   ARPAV_PPCV__PUBLIC_URL: http://localhost:8877
   ARPAV_PPCV__DB_DSN: postgresql://arpav:arpavpassword@db:5432/arpav_ppcv
+  ARPAV_PPCV__DB_POOL_SIZE: 5
   ARPAV_PPCV__TEST_DB_DSN: postgresql://arpavtest:arpavtestpassword@test-db:5432/arpav_ppcv_test
   ARPAV_PPCV__SESSION_SECRET_KEY: some-key
   ARPAV_PPCV__ADMIN_USER__USERNAME: admin
   ARPAV_PPCV__ADMIN_USER__PASSWORD: 12345678
   ARPAV_PPCV__LOG_CONFIG_FILE: /home/appuser/app/dev-log-config.yml
   ARPAV_PPCV__THREDDS_SERVER__BASE_URL: http://thredds:8080/thredds
-  ARPAV_PPCV__MARTIN_TILE_SERVER_BASE_URL: http://martin:3000
+  ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL: http://localhost:8877/vector-tiles
+  ARPAV_PPCV__PREFECT__NUM_FLOW_RETRIES: 0
+  ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST: '["arpa_fvg-302"]'
+  PREFECT_LOGGING_EXTRA_LOGGERS: arpav_cline
 
 x-common-volumes: &common-volumes
   - type: bind
@@ -51,9 +55,11 @@ services:
     command: --configFile /traefik.toml
 
   frontend:
-    image: "ghcr.io/geobeyond/arpav-ppcv/arpav-ppcv:${FRONTEND_GIT_BRANCH:-latest}"
+    image: "ghcr.io/geobeyond/arpav-cline-frontend/arpav-cline-frontend:${FRONTEND_GIT_BRANCH:-latest}"
     labels:
       - "traefik.http.routers.arpav-frontend-router.entrypoints=web"
+    environment:
+      ARPAV_BACKEND_API_BASE_URL: "http://localhost:8877"
     ports:
       - target: 80
         published: 5003
@@ -62,6 +68,9 @@ services:
     image: *webapp-image
     labels:
       - "traefik.http.routers.arpav-backend-router.entrypoints=web"
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       <<: *common-env
       ARPAV_PPCV__CORS_ORIGINS: '["*"]'
@@ -77,6 +86,9 @@ services:
 
   jupyter:
     image: *webapp-image
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       *common-env
     ports:
@@ -123,7 +135,7 @@ services:
       - test-db-data:/var/lib/postgresql/data
 
   thredds:
-    image: unidata/thredds-docker:5.4
+    image: unidata/thredds-docker:5.6
     ports:
       - target: "8080"
         published: "8081"
@@ -186,6 +198,9 @@ services:
 
   prefect-static-worker:
     image: *webapp-image
+    secrets:
+      - source: arpa-fvg-auth-token
+        target: ARPAV_PPCV__arpafvg_auth_token
     environment:
       PREFECT_API_URL: "http://prefect-server:4200/api"
       PREFECT_DEBUG_MODE: true
@@ -247,6 +262,19 @@ services:
     volumes:
       - tolgee-db-data:/var/lib/postgresql/data
 
+  analytics:
+    image: metabase/metabase:v0.53.x
+    environment:
+      MB_DB_TYPE: "postgres"
+      MB_DB_DBNAME: "arpav_ppcv"
+      MB_DB_PORT: "5432"
+      MB_DB_USER: "arpav"
+      MB_DB_PASS: "arpavpassword"
+      MB_DB_HOST: "db"
+    ports:
+      - target: 3000
+        published: 3003
+
 
 volumes:
   db-data:
@@ -262,3 +290,8 @@ configs:
 
   traefik-conf:
     file: $PWD/docker/traefik/dev-config.toml
+
+
+secrets:
+  arpa-fvg-auth-token:
+    environment: "ARPAFVG_AUTH_TOKEN"
