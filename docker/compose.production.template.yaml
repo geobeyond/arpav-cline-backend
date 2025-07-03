@@ -80,6 +80,7 @@ services:
       ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+      ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL: "${webapp_env_vector_tile_server_base_url}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
     secrets:
       - source: arpa-fvg-auth-token

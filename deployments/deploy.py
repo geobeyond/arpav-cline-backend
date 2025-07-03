@@ -120,6 +120,7 @@ class DeploymentConfiguration:
     webapp_env_session_secret_key: str
     webapp_env_thredds_server_base_url: str
     webapp_env_uvicorn_log_config_file: Path
+    webapp_env_vector_tile_server_server_base_url: str
 
     def __post_init__(self):
         _debug = False
@@ -273,6 +274,9 @@ class DeploymentConfiguration:
             webapp_env_uvicorn_log_config_file=Path(
                 config_parser["webapp"]["env_uvicorn_log_config_file"]
             ),
+            webapp_env_vector_tile_server_server_base_url=config_parser["webapp"][
+                "env_vector_tile_server_server_base_url"
+            ],
         )
 
     def ensure_paths_exist(self):
