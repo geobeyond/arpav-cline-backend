@@ -274,8 +274,8 @@ class DeploymentConfiguration:
             webapp_env_uvicorn_log_config_file=Path(
                 config_parser["webapp"]["env_uvicorn_log_config_file"]
             ),
-            webapp_env_vector_tile_server_server_base_url=config_parser["webapp"][
-                "env_vector_tile_server_server_base_url"
+            webapp_env_vector_tile_server_base_url=config_parser["webapp"][
+                "env_vector_tile_server_base_url"
             ],
         )
 
