@@ -57,6 +57,8 @@ services:
 
   webapp:
     image: "${backend_image}"
+    extra_hosts:
+      - "clima.arpa.veneto.it:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
