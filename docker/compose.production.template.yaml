@@ -177,6 +177,10 @@ services:
     environment:
       ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_arpav_ppcv_debug}"
       ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
+      ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST: '${observation_stations_blacklist}'
+      ARPAV_PPCV__PREFECT__OBSERVATION_STATIONS_REFRESHER_FLOW_CRON_SCHEDULE: "${observation_stations_refresher_flow_cron_schedule}"
+      ARPAV_PPCV__PREFECT__OBSERVATION_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE: "${observation_measurements_refresher_flow_cron_schedule}"
+      ARPAV_PPCV__PREFECT__STATION_VARIABLES_REFRESHER_FLOW_CRON_SCHEDULE: "${station_variables_refresher_flow_cron_schedule}"
       PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
       PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
