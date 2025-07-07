@@ -52,6 +52,10 @@ class DeploymentConfiguration:
     )  # is copied to inside the deployment_root dir
     martin_env_database_url: str = dataclasses.field(init=False)
     martin_image_tag: str
+    observation_station_blacklist: str
+    observation_stations_refresher_flow_cron_schedule: str
+    observation_measurements_refresher_flow_cron_schedule: str
+    station_variables_refresher_flow_cron_schedule: str
     prefect_db_name: str
     prefect_db_password: str
     prefect_db_user: str
@@ -114,12 +118,14 @@ class DeploymentConfiguration:
     webapp_env_cors_methods: list[str] = dataclasses.field(init=False)
     webapp_env_cors_origins: list[str]
     webapp_env_db_dsn: str = dataclasses.field(init=False)
+    webapp_env_db_pool_size: int
     webapp_env_debug: bool = dataclasses.field(init=False)
     webapp_env_num_uvicorn_worker_processes: int
     webapp_env_public_url: str
     webapp_env_session_secret_key: str
     webapp_env_thredds_server_base_url: str
     webapp_env_uvicorn_log_config_file: Path
+    webapp_env_vector_tile_server_base_url: str
 
     def __post_init__(self):
         _debug = False
@@ -189,6 +195,11 @@ class DeploymentConfiguration:
     def from_config_parser(cls, config_parser: configparser.ConfigParser):
         tls_cert_path = config_parser["reverse_proxy"].get("tls_cert_path")
         tls_cert_key_path = config_parser["reverse_proxy"].get("tls_cert_key_path")
+        station_blacklist = [
+            i.strip()
+            for i in config_parser["main"]["observation_station_blacklist"].split(",")
+            if i != ""
+        ]
         return cls(
             arpa_fvg_auth_token_path=Path(
                 config_parser["main"]["arpa_fvg_auth_token_path"]
@@ -212,6 +223,20 @@ class DeploymentConfiguration:
             frontend_image=config_parser["main"]["frontend_image"],
             martin_image_tag=config_parser["martin"]["image_tag"],
             martin_config_source=config_parser["martin"]["config_source"],
+            observation_station_blacklist=json.dumps(station_blacklist),
+            observation_stations_refresher_flow_cron_schedule=(
+                config_parser["main"][
+                    "observation_stations_refresher_flow_cron_schedule"
+                ]
+            ),
+            observation_measurements_refresher_flow_cron_schedule=(
+                config_parser["main"][
+                    "observation_measurements_refresher_flow_cron_schedule"
+                ]
+            ),
+            station_variables_refresher_flow_cron_schedule=(
+                config_parser["main"]["station_variables_refresher_flow_cron_schedule"]
+            ),
             prefect_db_name=config_parser["prefect_db"]["name"],
             prefect_db_password=config_parser["prefect_db"]["password"],
             prefect_db_user=config_parser["prefect_db"]["user"],
@@ -260,6 +285,7 @@ class DeploymentConfiguration:
                 for i in config_parser["webapp"]["env_cors_origins"].split(",")
                 if i != ""
             ],
+            webapp_env_db_pool_size=int(config_parser["webapp"]["env_db_pool_size"]),
             webapp_env_num_uvicorn_worker_processes=config_parser.getint(
                 "webapp", "env_num_uvicorn_worker_processes"
             ),
@@ -273,9 +299,12 @@ class DeploymentConfiguration:
             webapp_env_uvicorn_log_config_file=Path(
                 config_parser["webapp"]["env_uvicorn_log_config_file"]
             ),
+            webapp_env_vector_tile_server_base_url=config_parser["webapp"][
+                "env_vector_tile_server_base_url"
+            ],
         )
 
-    def ensure_paths_exist(self):
+    def ensure_paths_exist(self, raise_error: bool = True) -> None:
         paths_to_test = (
             self.deployment_root,
             self.tls_cert_path,
@@ -283,9 +312,11 @@ class DeploymentConfiguration:
         )
         for path in (p for p in paths_to_test if p is not None):
             if not path.exists():
-                raise RuntimeError(
-                    f"Could not find referenced configuration file {path!r}"
-                )
+                message = f"Could not find referenced configuration file {path!r}"
+                if raise_error:
+                    raise RuntimeError(message)
+                else:
+                    logger.warning(message)
 
 
 class DeployStepProtocol(Protocol):
@@ -633,7 +664,7 @@ if __name__ == "__main__":
             deployment_config.backend_image = backend_image_name
         if (frontend_image_name := parsed_args.frontend_image) is not None:
             deployment_config.frontend_image = frontend_image_name
-        deployment_config.ensure_paths_exist()
+        deployment_config.ensure_paths_exist(raise_error=parsed_args.confirm)
         logger.debug("Configuration:")
         for k, v in dataclasses.asdict(deployment_config).items():
             logger.debug(f"{k}: {v}")
