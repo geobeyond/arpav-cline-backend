@@ -59,6 +59,8 @@ services:
 
   webapp:
     image: "${backend_image}"
+    extra_hosts:
+      - "clima.arpa.veneto.it:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.arpav-backend-router.rule=Host(`${reverse_proxy_main_domain_name}`) && PathRegexp(`^/(api|admin)`)"
@@ -72,6 +74,7 @@ services:
       ARPAV_PPCV__PUBLIC_URL: "${webapp_env_public_url}"
       ARPAV_PPCV__NUM_UVICORN_WORKER_PROCESSES: "${webapp_env_num_uvicorn_worker_processes}"
       ARPAV_PPCV__DB_DSN: "${webapp_env_db_dsn}"
+      ARPAV_PPCV__DB_POOL_SIZE: "${webapp_env_db_pool_size}"
       ARPAV_PPCV__UVICORN_LOG_CONFIG_FILE: "${webapp_env_uvicorn_log_config_file}"
       ARPAV_PPCV__SESSION_SECRET_KEY: "${webapp_env_session_secret_key}"
       ARPAV_PPCV__ADMIN_USER__USERNAME: "${webapp_env_admin_user_username}"
@@ -80,6 +83,7 @@ services:
       ARPAV_PPCV__CORS_ORIGINS: '${webapp_env_cors_origins}'
       ARPAV_PPCV__CORS_METHODS: '${webapp_env_cors_methods}'
       ARPAV_PPCV__ALLOW_CORS_CREDENTIALS: "${webapp_env_allow_cors_credentials}"
+      ARPAV_PPCV__VECTOR_TILE_SERVER_BASE_URL: "${webapp_env_vector_tile_server_base_url}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
     secrets:
       - source: arpa-fvg-auth-token
@@ -173,6 +177,10 @@ services:
     environment:
       ARPAV_PPCV__DEBUG: "${prefect_static_worker_env_arpav_ppcv_debug}"
       ARPAV_PPCV__DB_DSN: "${prefect_static_worker_env_arpav_ppcv_db_dsn}"
+      ARPAV_PPCV__OBSERVATION_STATIONS_BLACKLIST: '${observation_station_blacklist}'
+      ARPAV_PPCV__PREFECT__OBSERVATION_STATIONS_REFRESHER_FLOW_CRON_SCHEDULE: "${observation_stations_refresher_flow_cron_schedule}"
+      ARPAV_PPCV__PREFECT__OBSERVATION_MEASUREMENTS_REFRESHER_FLOW_CRON_SCHEDULE: "${observation_measurements_refresher_flow_cron_schedule}"
+      ARPAV_PPCV__PREFECT__STATION_VARIABLES_REFRESHER_FLOW_CRON_SCHEDULE: "${station_variables_refresher_flow_cron_schedule}"
       PREFECT_API_URL: "${prefect_static_worker_env_prefect_api_url}"
       PREFECT_DEBUG_MODE: "${prefect_static_worker_env_prefect_debug_mode}"
       PREFECT_LOGGING_EXTRA_LOGGERS: "arpav_cline"
