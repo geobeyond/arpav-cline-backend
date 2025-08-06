@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Added missing historical coverage download detail
+
 
 ## [2.0.1] - 2025-06-30
 
