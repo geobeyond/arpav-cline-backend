@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.3] - 2025-08-07
 
-## [2.0.2] - 2025-0806
+### Changed
+- Made coords query param for time series downloads longer
+
+
+## [2.0.2] - 2025-08-06
 
 ### Fixed
 - Added missing historical coverage download detail
@@ -40,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous version, developed by a different team
 
 
-[Unreleased]: https://github.com/geobeyond/arpav-ppcv-backend/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/geobeyond/arpav-ppcv-backend/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/geobeyond/arpav-ppcv-backend/compare/2.0.2...v2.0.3
 [2.0.2]: https://github.com/geobeyond/arpav-ppcv-backend/compare/2.0.1...v2.0.2
 [2.0.1]: https://github.com/geobeyond/arpav-ppcv-backend/compare/2.0.0...v2.0.1
 [2.0.0]: https://github.com/geobeyond/arpav-ppcv-backend/compare/2.0.0-rc1...v2.0.0
