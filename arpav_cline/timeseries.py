@@ -551,12 +551,15 @@ def get_historical_observation_series(
             result.append(obs_data_series)
             if include_loess_series:
                 loess_series = generate_loess_derived_observation_station_series(
-                    obs_data_series, point_geom)
+                    obs_data_series, point_geom
+                )
                 if not math.isnan(loess_series.data_):
                     result.append(loess_series)
             if include_moving_average_series:
-                moving_average_series = generate_moving_average_derived_observation_station_series(
-                    obs_data_series, point_geom
+                moving_average_series = (
+                    generate_moving_average_derived_observation_station_series(
+                        obs_data_series, point_geom
+                    )
                 )
                 if not math.isnan(moving_average_series.data_):
                     result.append(moving_average_series)
@@ -617,7 +620,9 @@ def get_historical_time_series(
             if not math.isnan(loess_series.data_):
                 result.append(loess_series)
         if include_moving_average_series:
-            moving_average_series = generate_moving_average_derived_historical_coverage_series(cov_series)
+            moving_average_series = (
+                generate_moving_average_derived_historical_coverage_series(cov_series)
+            )
             if not math.isnan(moving_average_series.data_):
                 result.append(moving_average_series)
         if include_decade_aggregation_series:
@@ -629,10 +634,12 @@ def get_historical_time_series(
                 result.append(decade_series)
         if mann_kendall_params is not None:
             try:
-                mann_kendall_series = generate_mann_kendall_derived_historical_coverage_series(
-                    cov_series,
-                    start_year=mann_kendall_params.start_year,
-                    end_year=mann_kendall_params.end_year,
+                mann_kendall_series = (
+                    generate_mann_kendall_derived_historical_coverage_series(
+                        cov_series,
+                        start_year=mann_kendall_params.start_year,
+                        end_year=mann_kendall_params.end_year,
+                    )
                 )
                 result.append(mann_kendall_series)
             except MannKendallInsufficientYearError as err:
