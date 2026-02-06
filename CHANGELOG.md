@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Production deployment configuration file now accepts the additional `env_http_client_timeout_seconds` parameter,
+  which allows customizing the timeout (in seconds) for the HTTP client. The default value is 30.0
+
+
 ## [2.0.3] - 2025-08-07
 
 ### Changed
