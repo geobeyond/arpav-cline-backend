@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which allows customizing the timeout (in seconds) for the HTTP client. The default value is 30.0
 - Implemented custom filtering for the admin section that works with Observation measurements
 
+### Changed
+- Translations are now compiled during the docker build process
+
 
 ## [2.0.3] - 2025-08-07
 
