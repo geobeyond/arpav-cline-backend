@@ -33,6 +33,7 @@ class ForecastCoverageDownloadRequestView(ModelView):
 
     exclude_fields_from_list = ("id",)
     exclude_fields_from_detail = ("id",)
+    search_builder = False
 
     fields = (
         starlette_admin.IntegerField("id"),
@@ -111,6 +112,7 @@ class HistoricalCoverageDownloadRequestView(ModelView):
 
     exclude_fields_from_list = ("id",)
     exclude_fields_from_detail = ("id",)
+    search_builder = False
 
     fields = (
         starlette_admin.IntegerField("id"),
@@ -188,6 +190,7 @@ class TimeSeriesDownloadRequestView(ModelView):
 
     exclude_fields_from_list = ("id",)
     exclude_fields_from_detail = ("id",)
+    search_builder = False
 
     fields = (
         starlette_admin.IntegerField("id"),
