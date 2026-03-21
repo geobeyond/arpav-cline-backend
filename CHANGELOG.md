@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## [2.0.5] - 2026-03-19
+
+### Changed
+- Disabled admin search builder for most views - it did not work
+
+#### Fixed
 - Fixed timeseries handling of empty datasets
 
 
@@ -58,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous version, developed by a different team
 
 
-[Unreleased]: https://github.com/geobeyond/arpav-cline-backend/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/geobeyond/arpav-cline-backend/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/geobeyond/arpav-cline-backend/compare/2.0.4...v2.0.5
 [2.0.4]: https://github.com/geobeyond/arpav-cline-backend/compare/2.0.3...v2.0.4
 [2.0.3]: https://github.com/geobeyond/arpav-cline-backend/compare/2.0.2...v2.0.3
 [2.0.2]: https://github.com/geobeyond/arpav-cline-backend/compare/2.0.1...v2.0.2
