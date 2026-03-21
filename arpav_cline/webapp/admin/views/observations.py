@@ -211,6 +211,7 @@ class ObservationStationView(ModelView):
         starlette_admin.DateField("active_until"),
         starlette_admin.FloatField("altitude_m"),
     )
+    search_builder = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -329,6 +330,7 @@ class ObservationSeriesConfigurationView(ModelView):
         "identifier",
     )
     exclude_fields_from_create = ("identifier",)
+    search_builder = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
